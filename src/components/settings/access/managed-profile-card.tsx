@@ -188,6 +188,7 @@ function ManagedProfileRow({
           {guardians.data && (
             <ConfirmButton
               slot="managed-profile-delete"
+              destructive
               size="sm"
               className="min-h-11 sm:min-h-9"
               label={t("recordSharing.managed.delete")}

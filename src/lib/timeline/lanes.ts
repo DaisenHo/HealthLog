@@ -34,6 +34,7 @@ import { surfaceModule } from "@/lib/modules/surface";
 import type { ShareDomain } from "@/lib/sharing/scope";
 import { dateOnlyKey } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
+import { visitPath } from "@/lib/encounters/visit-links";
 
 /**
  * The sharing domain each lane reads, or `null` for a lane only the record's
@@ -423,7 +424,7 @@ async function visitsLane(frame: LaneFrame): Promise<LaneRead> {
           r.practitioner?.name ??
           "",
         sub: r.kind,
-        href: `/checkups?visit=${r.id}`,
+        href: visitPath(r.id),
       }),
     ),
     standing: [],

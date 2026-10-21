@@ -120,7 +120,8 @@ const SUB_PAGE_METRIC = {
   // ── cardiovascular ──
   "resting-pulse": ["RESTING_HEART_RATE"],
   // v1.17.0 — HRV surfaces both flavours: SDNN (`HEART_RATE_VARIABILITY`,
-  // Apple / Fitbit) and RMSSD (`HRV_RMSSD`, Oura / Polar / WHOOP). A
+  // Apple Health) and RMSSD (`HRV_RMSSD`, Oura / Polar / WHOOP / Fitbit /
+  // Google Health). A
   // ring / strap user stores only RMSSD; listing both keeps the tab,
   // pill, and dashboard tile lit whichever source the user has.
   hrv: ["HEART_RATE_VARIABILITY", "HRV_RMSSD"],

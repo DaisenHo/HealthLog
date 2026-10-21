@@ -63,6 +63,10 @@ vi.mock("@/lib/ai/consent-guard", () => ({
   hasActiveConsentForSurface: vi.fn(),
 }));
 
+vi.mock("@/lib/auth/audit", () => ({
+  auditLog: vi.fn(),
+}));
+
 import { GET, PATCH } from "../route";
 import { prisma } from "@/lib/db";
 import { resolveProviderAvailability } from "@/lib/ai/provider";
@@ -72,6 +76,7 @@ import { readServerProviderHealth } from "@/lib/ai/server-provider-health";
 import { getAssistantFlags } from "@/lib/feature-flags";
 import { providerCredentialPolicy } from "@/lib/sharing/provider-work-authority";
 import { hasActiveConsentForSurface } from "@/lib/ai/consent-guard";
+import { auditLog } from "@/lib/auth/audit";
 
 function patchRequest(body: unknown): Request {
   return new Request("http://localhost/api/user/ai-provider", {
@@ -240,6 +245,53 @@ describe("PATCH /api/user/ai-provider — v1.22 fields", () => {
         data: expect.objectContaining({ aiResponseTimeoutSeconds: null }),
       }),
     );
+  });
+});
+
+describe("PATCH /api/user/ai-provider — key changes are audited", () => {
+  const patch = PATCH as (req: Request) => Promise<Response>;
+
+  it("audits a removed key, naming its slot and never a value", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiAnthropicKeyEncrypted: "enc:old",
+    } as never);
+    const res = await patch(patchRequest({ anthropicKey: null }));
+    expect(res.status).toBe(200);
+    expect(vi.mocked(auditLog)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(auditLog)).toHaveBeenCalledWith(
+      "user.ai-provider.key.remove",
+      expect.objectContaining({
+        userId: "u-1",
+        details: { slot: "anthropic" },
+      }),
+    );
+  });
+
+  it("audits a stored key without its value", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiCompatKeyEncrypted: "enc:old",
+    } as never);
+    await patch(patchRequest({ openaiKey: "sk-test-123", compatKey: "" }));
+    const calls = vi.mocked(auditLog).mock.calls;
+    expect(calls.map(([action, opts]) => [action, opts?.details])).toEqual([
+      ["user.ai-provider.key.set", { slot: "openai" }],
+      ["user.ai-provider.key.remove", { slot: "openai-compatible" }],
+    ]);
+    expect(JSON.stringify(calls)).not.toContain("sk-test-123");
+  });
+
+  it("writes no remove audit for a slot that held no key", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiAnthropicKeyEncrypted: null,
+    } as never);
+    const res = await patch(patchRequest({ anthropicKey: null }));
+    expect(res.status).toBe(200);
+    expect(vi.mocked(auditLog)).not.toHaveBeenCalled();
+  });
+
+  it("writes no key audit for a change that touches no key", async () => {
+    await patch(patchRequest({ responseTimeoutSeconds: 120 }));
+    expect(vi.mocked(auditLog)).not.toHaveBeenCalled();
   });
 });
 

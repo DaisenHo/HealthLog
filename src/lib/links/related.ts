@@ -34,6 +34,7 @@ import type {
   RELATED_KINDS,
   RELATED_VIA,
 } from "@/lib/validations/relation-links";
+import { visitPath } from "@/lib/encounters/visit-links";
 
 export type RelatedKind = (typeof RELATED_KINDS)[number];
 export type RelatedVia = (typeof RELATED_VIA)[number];
@@ -191,7 +192,7 @@ async function hydrate(
             row.practitioner?.name ??
             row.kind,
           date: iso(row.occurredAt),
-          href: `/checkups?visit=${encodeURIComponent(row.id)}`,
+          href: visitPath(row.id),
         });
       }
       return out;

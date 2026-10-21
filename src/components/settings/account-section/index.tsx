@@ -1,5 +1,6 @@
 "use client";
 
+import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Languages, Loader2, Save, User } from "lucide-react";
@@ -95,12 +96,16 @@ export function AccountSection() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<string>("");
   const [timezone, setTimezone] = useState<string>(DEFAULT_TIMEZONE);
+  // The name the app addresses the account by; set in the setup flow, and
+  // until now not editable anywhere after it.
+  const [displayName, setDisplayName] = useState("");
   // v1.7.0 — optional patient-identity fields for the health-record export.
   const [fullName, setFullName] = useState("");
   const [insurerName, setInsurerName] = useState("");
   const [insuranceNumber, setInsuranceNumber] = useState("");
   const [profileSeed, setProfileSeed] = useState({
     email: "",
+    displayName: "",
     height: EMPTY_HEIGHT_DRAFT,
     dateOfBirth: "",
     gender: "",
@@ -149,6 +154,7 @@ export function AccountSection() {
   if (user && user.id !== seededUserId) {
     const seed = {
       email: user.email ?? "",
+      displayName: user.displayName ?? "",
       height: heightAdapter.toDraft(user.heightCm),
       dateOfBirth: user.dateOfBirth
         ? dateOnlyKey(new Date(user.dateOfBirth))
@@ -161,6 +167,7 @@ export function AccountSection() {
     };
     setSeededUserId(user.id);
     setEmail(seed.email);
+    setDisplayName(seed.displayName);
     setHeight(seed.height);
     setDateOfBirth(seed.dateOfBirth);
     setGender(seed.gender);
@@ -192,6 +199,7 @@ export function AccountSection() {
     seed: profileSeed,
     value: {
       email,
+      displayName,
       height,
       dateOfBirth,
       gender,
@@ -253,132 +261,148 @@ export function AccountSection() {
     setSaveMsg(null);
     setSaveMsgType(null);
     setFieldErrors({});
-    const savedProfile = {
-      email: email.trim(),
-      height,
-      dateOfBirth,
-      gender,
-      timezone,
-      fullName: fullName.trim(),
-      insurerName: insurerName.trim(),
-      insuranceNumber: insuranceNumber.trim(),
-    };
+    try {
+      const savedProfile = {
+        email: email.trim(),
+        displayName: displayName.trim(),
+        height,
+        dateOfBirth,
+        gender,
+        timezone,
+        fullName: fullName.trim(),
+        insurerName: insurerName.trim(),
+        insuranceNumber: insuranceNumber.trim(),
+      };
 
-    // The timezone is owned by a dedicated route (v1.4.25 W7) so the
-    // resolver cache can be invalidated without piping the flag
-    // through the bigger profile patch path. Run the two PUTs in
-    // parallel — they're independent.
-    const [profileRes, tzRes] = await Promise.all([
-      apiFetchRaw("/api/auth/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: savedProfile.email || null,
-          ...(emailChanged && emailPassword
-            ? { currentPassword: emailPassword }
-            : {}),
-          heightCm: heightAdapter.toCanonicalCm(savedProfile.height),
-          dateOfBirth: savedProfile.dateOfBirth || null,
-          gender: savedProfile.gender || null,
-          fullName: savedProfile.fullName || null,
-          insurerName: savedProfile.insurerName || null,
-          insuranceNumber: savedProfile.insuranceNumber || null,
+      // The timezone is owned by a dedicated route (v1.4.25 W7) so the
+      // resolver cache can be invalidated without piping the flag
+      // through the bigger profile patch path. Run the two PUTs in
+      // parallel — they're independent.
+      const [profileRes, tzRes] = await Promise.all([
+        apiFetchRaw("/api/auth/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: savedProfile.email || null,
+            // An emptied field clears the name; the greeting falls back to
+            // the username, as it does for an account that never set one.
+            displayName: savedProfile.displayName || null,
+            ...(emailChanged && emailPassword
+              ? { currentPassword: emailPassword }
+              : {}),
+            heightCm: heightAdapter.toCanonicalCm(savedProfile.height),
+            dateOfBirth: savedProfile.dateOfBirth || null,
+            gender: savedProfile.gender || null,
+            fullName: savedProfile.fullName || null,
+            insurerName: savedProfile.insurerName || null,
+            insuranceNumber: savedProfile.insuranceNumber || null,
+          }),
         }),
-      }),
-      user && timezone && timezone !== user.timezone
-        ? apiFetchRaw("/api/auth/me/timezone", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ timezone }),
-          })
-        : Promise.resolve({ ok: true } as Response),
-    ]);
+        user && timezone && timezone !== user.timezone
+          ? apiFetchRaw("/api/auth/me/timezone", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ timezone }),
+            })
+          : Promise.resolve({ ok: true } as Response),
+      ]);
 
-    setEmailPassword("");
+      setEmailPassword("");
 
-    if (profileRes.ok && tzRes.ok) {
-      // Instant same-tab flip of every rendered timestamp (issue #490):
-      // mirror the accepted zone before the `/me` refetch confirms it —
-      // the same synchronous-update pattern the time/date-format selects
-      // use. `refetch()` → `fetchMe` re-writes the mirror authoritatively.
-      if (user && timezone && timezone !== user.timezone) {
-        storeTimezone(timezone);
-      }
-      const profileJson = (await profileRes.json().catch(() => null)) as {
-        data?: { rejectedFields?: RejectedProfileField[] };
-      } | null;
-      const rejected = profileJson?.data?.rejectedFields;
+      if (profileRes.ok && tzRes.ok) {
+        // Instant same-tab flip of every rendered timestamp (issue #490):
+        // mirror the accepted zone before the `/me` refetch confirms it —
+        // the same synchronous-update pattern the time/date-format selects
+        // use. `refetch()` → `fetchMe` re-writes the mirror authoritatively.
+        if (user && timezone && timezone !== user.timezone) {
+          storeTimezone(timezone);
+        }
+        const profileJson = (await profileRes.json().catch(() => null)) as {
+          data?: { rejectedFields?: RejectedProfileField[] };
+        } | null;
+        const rejected = profileJson?.data?.rejectedFields;
 
-      if (!afterFactor && needsSecondFactor(rejected, undefined)) {
-        if (await proveFactorThenSave()) return;
-      }
+        if (!afterFactor && needsSecondFactor(rejected, undefined)) {
+          if (await proveFactorThenSave()) return;
+        }
 
-      if (rejected && rejected.length > 0) {
-        // The write is field-independent: everything but the rejected
-        // field(s) landed. Name the field instead of implying full
-        // success, and reseed the form from what the server actually
-        // persisted — the client's optimistic value for the rejected
-        // field was never written, so it must not read as saved.
-        setSaveMsg({
-          key: "settings.profilePartiallySaved",
-          params: { field: describeRejectedProfileField(rejected, t) ?? "" },
-        });
-        setSaveMsgType("warning");
-        setFieldErrors(describeRejectedProfileFields(rejected, t));
-        await refetch();
-        setSeededUserId(null);
+        if (rejected && rejected.length > 0) {
+          // The write is field-independent: everything but the rejected
+          // field(s) landed. Name the field instead of implying full
+          // success, and reseed the form from what the server actually
+          // persisted — the client's optimistic value for the rejected
+          // field was never written, so it must not read as saved.
+          setSaveMsg({
+            key: "settings.profilePartiallySaved",
+            params: { field: describeRejectedProfileField(rejected, t) ?? "" },
+          });
+          setSaveMsgType("warning");
+          setFieldErrors(describeRejectedProfileFields(rejected, t));
+          await refetch();
+          setSeededUserId(null);
+        } else {
+          setSaveMsg({ key: "settings.profileSaved" });
+          setSaveMsgType("success");
+          setEmail(savedProfile.email);
+          setDisplayName(savedProfile.displayName);
+          setFullName(savedProfile.fullName);
+          setInsurerName(savedProfile.insurerName);
+          setInsuranceNumber(savedProfile.insuranceNumber);
+          setProfileSeed(savedProfile);
+          await refetch();
+        }
+      } else if (!tzRes.ok) {
+        // The dedicated tz endpoint owns the IANA validation error
+        // text. Surface its message verbatim so the user sees
+        // "Not a valid IANA timezone." instead of the generic save
+        // failure copy.
+        try {
+          const json = (await (tzRes as Response).json()) as { error?: string };
+          setSaveMsg(
+            json.error
+              ? { text: json.error }
+              : { key: "settings.timezoneInvalid" },
+          );
+        } catch {
+          setSaveMsg({ key: "settings.timezoneInvalid" });
+        }
+        setSaveMsgType("error");
       } else {
-        setSaveMsg({ key: "settings.profileSaved" });
-        setSaveMsgType("success");
-        setEmail(savedProfile.email);
-        setFullName(savedProfile.fullName);
-        setInsurerName(savedProfile.insurerName);
-        setInsuranceNumber(savedProfile.insuranceNumber);
-        setProfileSeed(savedProfile);
-        await refetch();
+        // The server's top-level `error` string is intentionally generic
+        // (never a raw validator message); resolve the specific, localized
+        // reason through `meta.errorCode` instead of echoing it verbatim.
+        const json = (await profileRes.json().catch(() => null)) as {
+          meta?: { errorCode?: string };
+          details?: { issues?: RejectedProfileField[] };
+        } | null;
+        const errorCode = json?.meta?.errorCode;
+        if (!afterFactor && needsSecondFactor(undefined, errorCode)) {
+          if (await proveFactorThenSave()) return;
+        }
+        const field = describeRejectedProfileField(json?.details?.issues, t);
+        setFieldErrors(describeRejectedProfileFields(json?.details?.issues, t));
+        if (errorCode === "profile.update.nothingSaved" && field) {
+          setSaveMsg({
+            key: "settings.profileNothingSaved",
+            params: { field },
+          });
+        } else if (translateCodeOrNull(t, "apiErrors", errorCode) !== null) {
+          // Only a code with a sentence of its own: every refusal carries a
+          // code now, and the generic `http.*` family has no translation.
+          setSaveMsg({ key: `apiErrors.${errorCode}` });
+        } else {
+          setSaveMsg({ key: "settings.savingError" });
+        }
+        setSaveMsgType("error");
       }
-    } else if (!tzRes.ok) {
-      // The dedicated tz endpoint owns the IANA validation error
-      // text. Surface its message verbatim so the user sees
-      // "Not a valid IANA timezone." instead of the generic save
-      // failure copy.
-      try {
-        const json = (await (tzRes as Response).json()) as { error?: string };
-        setSaveMsg(
-          json.error
-            ? { text: json.error }
-            : { key: "settings.timezoneInvalid" },
-        );
-      } catch {
-        setSaveMsg({ key: "settings.timezoneInvalid" });
-      }
+    } catch {
+      // The request never reached the server (offline, a dropped
+      // connection): a failed save, said as one, never a card left saving.
+      setSaveMsg({ key: "settings.savingError" });
       setSaveMsgType("error");
-    } else {
-      // The server's top-level `error` string is intentionally generic
-      // (never a raw validator message); resolve the specific, localized
-      // reason through `meta.errorCode` instead of echoing it verbatim.
-      const json = (await profileRes.json().catch(() => null)) as {
-        meta?: { errorCode?: string };
-        details?: { issues?: RejectedProfileField[] };
-      } | null;
-      const errorCode = json?.meta?.errorCode;
-      if (!afterFactor && needsSecondFactor(undefined, errorCode)) {
-        if (await proveFactorThenSave()) return;
-      }
-      const field = describeRejectedProfileField(json?.details?.issues, t);
-      setFieldErrors(describeRejectedProfileFields(json?.details?.issues, t));
-      if (errorCode === "profile.update.nothingSaved" && field) {
-        setSaveMsg({ key: "settings.profileNothingSaved", params: { field } });
-      } else if (translateCodeOrNull(t, "apiErrors", errorCode) !== null) {
-        // Only a code with a sentence of its own: every refusal carries a
-        // code now, and the generic `http.*` family has no translation.
-        setSaveMsg({ key: `apiErrors.${errorCode}` });
-      } else {
-        setSaveMsg({ key: "settings.savingError" });
-      }
-      setSaveMsgType("error");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   if (!mounted || isLoading) {
@@ -438,43 +462,79 @@ export function AccountSection() {
                 autoComplete="username"
               />
             </div>
+            {/* The name the greeting and the reports use. The setup flow
+                asks for it once; this is where it changes afterwards. */}
             <div className="space-y-2">
-              <Label htmlFor="email">{t("auth.email")}</Label>
+              <Label htmlFor="display-name">
+                {t("onboarding.baseline.displayNameLabel")}
+              </Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
+                id="display-name"
+                value={displayName}
                 onChange={(e) => {
-                  setEmail(e.target.value);
-                  clearFieldError("email");
+                  setDisplayName(e.target.value);
+                  clearFieldError("displayName");
                 }}
-                placeholder={t("auth.emailPlaceholder")}
-                maxLength={320}
-                autoComplete="email"
+                placeholder={t("onboarding.baseline.displayNamePlaceholder")}
+                maxLength={DISPLAY_NAME_MAX_LENGTH}
+                autoComplete="nickname"
                 enterKeyHint="next"
-                aria-invalid={fieldErrors.email ? true : undefined}
-                aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                aria-invalid={fieldErrors.displayName ? true : undefined}
+                aria-describedby={
+                  fieldErrors.displayName
+                    ? "display-name-hint display-name-error"
+                    : "display-name-hint"
+                }
               />
-              <FieldError id="email-error" message={fieldErrors.email} />
-              {emailChanged && !emailNeedsFactor && (
-                <div className="space-y-2 pt-1">
-                  <Label htmlFor="email-current-password">
-                    {t("settings.emailChangePassword")}
-                  </Label>
-                  <Input
-                    id="email-current-password"
-                    type="password"
-                    value={emailPassword}
-                    onChange={(e) => {
-                      setEmailPassword(e.target.value);
-                      clearFieldError("email");
-                    }}
-                    autoComplete="current-password"
-                    maxLength={512}
-                  />
-                </div>
-              )}
+              <p
+                id="display-name-hint"
+                className="text-muted-foreground text-xs"
+              >
+                {t("onboarding.baseline.displayNameHint")}
+              </p>
+              <FieldError
+                id="display-name-error"
+                message={fieldErrors.displayName}
+              />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">{t("auth.email")}</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                clearFieldError("email");
+              }}
+              placeholder={t("auth.emailPlaceholder")}
+              maxLength={320}
+              autoComplete="email"
+              enterKeyHint="next"
+              aria-invalid={fieldErrors.email ? true : undefined}
+              aria-describedby={fieldErrors.email ? "email-error" : undefined}
+            />
+            <FieldError id="email-error" message={fieldErrors.email} />
+            {emailChanged && !emailNeedsFactor && (
+              <div className="space-y-2 pt-1">
+                <Label htmlFor="email-current-password">
+                  {t("settings.emailChangePassword")}
+                </Label>
+                <Input
+                  id="email-current-password"
+                  type="password"
+                  value={emailPassword}
+                  onChange={(e) => {
+                    setEmailPassword(e.target.value);
+                    clearFieldError("email");
+                  }}
+                  autoComplete="current-password"
+                  maxLength={512}
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

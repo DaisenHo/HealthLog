@@ -285,6 +285,7 @@ export function LifeEventForm({
           className="mr-auto min-h-11 sm:min-h-9"
           icon={<Trash2 className="size-4" aria-hidden="true" />}
           slot="life-event-delete"
+          destructive
         />
       )}
       {onCancel && (

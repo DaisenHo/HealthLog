@@ -56,6 +56,7 @@ import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getUserFitbitCredentials } from "@/lib/fitbit/credentials";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 function connectRequest(): NextRequest {
   return new NextRequest("http://localhost/api/fitbit/connect", {
@@ -111,5 +112,17 @@ describe("GET /api/fitbit/connect", () => {
     expect(location).toContain("fitbit=error");
     expect(location).toContain("reason=nocreds");
     expect(prisma.fitbitOAuthState.create).not.toHaveBeenCalled();
+  });
+  it("redirects to reason=retired once Google has turned the Web API off", async () => {
+    vi.mocked(isFitbitRetired).mockReturnValue(true);
+    try {
+      const response = await GET(connectRequest());
+      const location = response.headers.get("location") ?? "";
+      expect(location).toContain("fitbit=error");
+      expect(location).toContain("reason=retired");
+      expect(prisma.fitbitOAuthState.create).not.toHaveBeenCalled();
+    } finally {
+      vi.mocked(isFitbitRetired).mockReturnValue(false);
+    }
   });
 });

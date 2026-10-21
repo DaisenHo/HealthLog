@@ -36,6 +36,7 @@ import {
   PICK_DECIDED_REASONS,
   type AiCapabilityKey,
 } from "@/lib/ai/capabilities/types";
+import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { callTimeoutMs } from "@/lib/ai/effective-timeout";
 import { prisma } from "@/lib/db";
 import { loadOwnedDocument } from "@/lib/documents/ai-route-support";
@@ -87,6 +88,7 @@ import { requireLabsOcrProvider } from "@/lib/labs/ocr-capability";
 import {
   executeOcrExtraction,
   OCR_EXTRACT_MODEL_CALLS,
+  type OcrSchedule,
 } from "@/lib/labs/ocr-run";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
@@ -246,6 +248,35 @@ async function runDocumentIndex(
   });
 }
 
+/**
+ * Arm the deadline for one lab read and hand the read a schedule: it then
+ * plans as many reads as the deadline allows (a long PDF a page at a time)
+ * and moves the deadline to cover them.
+ */
+async function labsOcrSchedule(
+  runId: string,
+  responseTimeoutSeconds: number | null | undefined,
+  deadlineAt: number | undefined,
+  now: () => number,
+): Promise<OcrSchedule> {
+  const perCallMs = callTimeoutMs(
+    { timeoutMs: AI_BUDGETS.ocrExtract.timeoutMs },
+    responseTimeoutSeconds,
+  );
+  await armDeadline(runId, perCallMs, OCR_EXTRACT_MODEL_CALLS, deadlineAt, now);
+  return {
+    maxModelCalls: () =>
+      deadlineAt === undefined
+        ? Number.POSITIVE_INFINITY
+        : // A second of slack for the time between planning and arming.
+          Math.floor(
+            (deadlineAt - now() - AI_RUN_MARGIN_MS - 1000) / perCallMs,
+          ),
+    arm: (modelCalls) =>
+      armDeadline(runId, perCallMs, modelCalls, deadlineAt, now),
+  };
+}
+
 async function runLabsOcr(
   run: ClaimedAiRun,
   deadlineAt: number | undefined,
@@ -255,16 +286,16 @@ async function runLabsOcr(
   if (run.params.mode === "text") {
     const pick = await requireLabsOcrProvider(run.userId, "text");
     await assertRunMayEgress("labsOcr", run.userId, [pick.providerType]);
-    await armDeadline(
+    const schedule = await labsOcrSchedule(
       run.id,
-      callTimeoutMs({}, pick.entry.instance.responseTimeoutSeconds),
-      OCR_EXTRACT_MODEL_CALLS,
+      pick.entry.instance.responseTimeoutSeconds,
       deadlineAt,
       now,
     );
     return executeOcrExtraction({
       userId: run.userId,
       budget: run.params.budget,
+      schedule,
       input: { mode: "text", text: run.input.toString("utf8"), pick },
     });
   }
@@ -272,16 +303,16 @@ async function runLabsOcr(
   if (!mime) throw new Error("lab scan run without a MIME type");
   const pick = await requireLabsOcrProvider(run.userId, "vision");
   await assertRunMayEgress("labsOcr", run.userId, [pick.providerType]);
-  await armDeadline(
+  const schedule = await labsOcrSchedule(
     run.id,
-    callTimeoutMs({}, pick.entry.instance.responseTimeoutSeconds),
-    OCR_EXTRACT_MODEL_CALLS,
+    pick.entry.instance.responseTimeoutSeconds,
     deadlineAt,
     now,
   );
   return executeOcrExtraction({
     userId: run.userId,
     budget: run.params.budget,
+    schedule,
     input: { mode: "vision", bytes: run.input, mime, pick },
   });
 }

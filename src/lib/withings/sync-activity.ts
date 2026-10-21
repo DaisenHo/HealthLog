@@ -38,6 +38,7 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { canonicalDailyTimestamp } from "@/lib/measurements/consolidation-tz";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { daysWithOtherStepSource } from "@/lib/withings/other-step-source-days";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { getEvent } from "@/lib/logging/context";
 import { safeFetch } from "@/lib/safe-fetch";
@@ -82,6 +83,9 @@ const WITHINGS_MEASURE_URL = "https://wbsapi.withings.net/v2/measure";
  */
 const ACTIVITY_BACKFILL_DAYS = 30;
 
+/** `brand` of a Getactivity day that came from outside Withings. */
+const WITHINGS_EXTERNAL_BRAND = 18;
+
 /**
  * Withings `getactivity` response shape — one entry per calendar day.
  * Only the fields we consume are typed; the response carries 15+ more
@@ -95,6 +99,13 @@ export interface WithingsActivityEntry {
   steps?: number;
   distance?: number; // metres
   calories?: number; // active kcal (NOT totalcalories)
+  /**
+   * Where the day came from: 1 for a Withings device or the Health Mate
+   * app's own tracker, 18 for "an external way" (Getactivity: "Value is 1
+   * for Withings and 18 for external"), i.e. data another app wrote into
+   * Health Mate, such as an Apple Health or Google Fit day.
+   */
+  brand?: number;
   // The fields below are not ingested today (see file header):
   elevation?: number;
   totalcalories?: number;
@@ -357,8 +368,31 @@ export async function syncUserActivity(
     externalId: string;
   }
   const collected: PlannedRow[] = [];
+  // A day Health Mate holds from another app is that app's data. When the
+  // app reaches HealthLog through its own integration (Apple Health, Health
+  // Connect, Google Health, a wearable), the WITHINGS import was a second
+  // copy under the wrong name, and on a day that copy was the only Withings
+  // row it could outrank a native source further down the ladder. When
+  // nothing else delivered steps that day, Health Mate is the account's only
+  // way in for them, so the day is kept.
+  const externalDates = entries
+    .filter((e) => e.date && e.brand === WITHINGS_EXTERNAL_BRAND)
+    .map((e) => e.date);
+  const duplicateDays = await daysWithOtherStepSource(
+    userId,
+    externalDates,
+    timeZone,
+  );
+  let external = 0;
   for (const entry of entries) {
     if (!entry.date) continue;
+    if (
+      entry.brand === WITHINGS_EXTERNAL_BRAND &&
+      duplicateDays.has(entry.date)
+    ) {
+      external++;
+      continue;
+    }
     // Local noon of the date in the user's zone: the instant reads the same
     // calendar day there. Noon UTC read as the next day from UTC+13 on
     // (Auckland in summer, Tonga, Samoa), so every daily total landed a day
@@ -378,6 +412,12 @@ export async function syncUserActivity(
         externalId: `withings:activity:${userId}:${entry.date}:${field}`,
       });
     }
+  }
+
+  if (external > 0) {
+    getEvent()?.addWarning(
+      `withings activity: skipped ${external} day(s) Health Mate holds from another app that syncs its own steps`,
+    );
   }
 
   // A daily-activity total the app's own band calls impossible (a step count

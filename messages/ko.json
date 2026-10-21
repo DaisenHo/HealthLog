@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "순서가 Codex → OpenAI → Anthropic → 로컬 → 관리자 OpenAI로 돌아가요. 저장한 인증 정보는 그대로예요."
       },
       "activeProviderHeading": "사용 중인 제공자",
-      "activeProviderLabel": "기본 제공자",
+      "activeProviderLabel": "설정할 제공자",
       "providerSelect": {
         "codex": "ChatGPT 계정 (Codex)",
         "openai": "OpenAI (내 API 키)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "코치에서는 코치 설정의 사고 깊이가 적용됩니다."
       },
-      "providerCardDescription": "HealthLog가 가장 먼저 쓰는 제공자와 그 키, 모델이에요.",
+      "providerCardDescription": "제공자마다 키와 모델을 설정하고, 아래 순서로 HealthLog가 먼저 쓸 제공자를 정해요.",
       "runtimeTitle": "확인 및 새로고침",
       "usage": {
         "title": "AI 사용량",
@@ -6440,6 +6440,14 @@
         "followsDefault": "서버 기본값({level})을 따르고 있어요.",
         "useDefault": "서버 기본값 사용({level})",
         "saveError": "단계를 저장하지 못했어요. 다시 시도해 주세요."
+      },
+      "removeKey": {
+        "label": "API 키 삭제",
+        "title": "저장된 API 키를 삭제할까요?",
+        "body": "HealthLog가 저장된 키를 삭제하며 되돌릴 수 없어요. 계속 쓰려면 키를 다시 입력하세요.",
+        "confirm": "API 키 삭제",
+        "done": "API 키를 삭제했어요.",
+        "failed": "API 키를 삭제하지 못했어요."
       }
     },
     "dashboard": {
@@ -6619,7 +6627,8 @@
       "nocode": "Fitbit이 인증 코드를 보내지 않았어요. 다시 시도하고 Fitbit 창에서 접근을 허용해 주세요.",
       "nocreds": "Fitbit이 설정되지 않았어요. 위에 Fitbit OAuth 자격 증명을 추가하고 다시 시도해 주세요.",
       "token": "Fitbit과의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
+      "retired": "Google이 Fitbit Web API를 종료해서 새 Fitbit 연결을 만들 수 없어요. 같은 기기의 데이터를 읽는 Google Health를 대신 연결해 주세요."
     },
     "integrations": {
       "withings": {
@@ -6851,7 +6860,7 @@
       "errorRateLimit": "이번 시간의 내보내기 한도에 도달했어요.",
       "errorModuleDisabled": "이 계정에서는 건강 기록 내보내기가 꺼져 있어요.",
       "visitOffer": "{when}에 예정된 진료가 있어요: {what}.",
-      "visitOfferApply": "그날까지로 리포트 만들기"
+      "visitOfferApplyWindow": "이 기간 사용하기"
     },
     "globalExcludedInjectionSitesLabel": "전체 제외 주사 부위",
     "globalExcludedInjectionSitesHint": "약이 선호하더라도 용량을 기록할 때 추천하지 않고 선택도 막아요.",
@@ -6909,7 +6918,9 @@
       "reselectReason": "이 링크는 선택한 적 없는 범위를 제공하고 있어서 닫았어요. 새로 만들고 담을 내용을 골라 주세요.",
       "reselectAction": "새 링크 만들기",
       "createDetail": "토큰은 만들 때 한 번만 보여줘요. 그때 저장해 두세요. 복구할 수 없어요.",
-      "activeDescription": "공유한 링크와 만료 시점, 열람 횟수를 보여줘요."
+      "activeDescription": "공유한 링크와 만료 시점, 열람 횟수를 보여줘요.",
+      "revokedToast": "링크를 해지했어요.",
+      "revokeFailed": "링크를 해지하지 못했어요."
     },
     "genderOther": "기타",
     "nightscout": "Nightscout",
@@ -7096,7 +7107,9 @@
         "lastUsed": "마지막 사용 {date}",
         "neverUsed": "사용한 적 없음",
         "added": "{date} 추가됨",
-        "nameLabel": "보안 키 이름"
+        "nameLabel": "보안 키 이름",
+        "addedToast": "보안 키를 추가했어요.",
+        "removedToast": "보안 키를 삭제했어요."
       },
       "passkeyNudge": {
         "title": "패스키를 추가하면 더 빠르게 로그인해요",
@@ -7439,7 +7452,20 @@
       "homePlaceUnknown": "Dawarich 인스턴스에 이 장소가 더 이상 없습니다.",
       "notConnected": "Dawarich가 연결되어 있지 않습니다.",
       "generic": "실패했습니다. 다시 시도하세요."
-    }
+    },
+    "fitbitRetirement": {
+      "ending": "Google이 {date}에 Fitbit Web API를 종료해요. 그 이후로 이 연결은 더 이상 동기화되지 않아요.",
+      "ended": "Google이 {date}에 Fitbit Web API를 종료했어요. 이 연결은 더 이상 동기화되지 않아요.",
+      "move": "Google Health는 같은 Fitbit 및 Pixel 기기의 데이터를 읽어요. 데이터를 계속 받으려면 아래에서 연결해 주세요. Fitbit 연결은 옮길 수 없어서 Google이 동의를 한 번 더 요청해요. 이미 가져온 데이터는 모두 그대로 남아요.",
+      "toCard": "Google Health로 이동",
+      "guide": "Google Health 연결 방법",
+      "badgeEnding": "종료 예정",
+      "badgeEnded": "종료됨"
+    },
+    "passkeyAddedToast": "패스키를 추가했어요.",
+    "passkeyRemovedToast": "패스키를 삭제했어요.",
+    "integrationDisconnected": "{provider} 연결을 해제했어요.",
+    "integrationDisconnectFailed": "{provider} 연결을 해제하지 못했어요."
   },
   "admin": {
     "title": "관리자",
@@ -9878,6 +9904,17 @@
       "reviewHint": "측정값을 하나씩 확인하고, 남길 항목만 저장하세요.",
       "foundCount": "측정값 {count}개를 찾았어요",
       "pagesCapped": "전체 {total}쪽 중 처음 {read}쪽만 읽었습니다. 이후 쪽의 값은 이 목록에 없습니다.",
+      "stoppedBudget": "결과지를 읽는 도중 오늘의 AI 사용량이 소진되어 나머지 페이지는 읽지 못했어요.",
+      "stoppedUnavailable": "결과지를 읽는 도중 AI가 꺼져서 나머지 페이지는 읽지 못했어요.",
+      "stoppedError": "서버 오류로 스캔을 계속할 수 없어서 나머지 페이지는 읽지 못했어요. 잠시 후 다시 시도해 주세요.",
+      "tooLarge": "한 번에 스캔하기에는 텍스트가 너무 길어요. 결과지를 한 페이지씩 스캔해 주세요.",
+      "truncated": "AI 제공자가 결과지 끝에 닿기 전에 출력 한도에 도달했어요. 그 뒤의 수치가 빠졌을 수 있으니 목록을 결과지와 비교해 주세요.",
+      "truncatedPages": "AI 제공자가 다음 페이지에서 출력 한도에 도달했어요: {pages}. 해당 페이지 아래쪽 수치가 빠졌을 수 있으니 결과지와 비교해 주세요.",
+      "unreadPages": "다음 페이지를 읽지 못해서 해당 수치가 이 목록에 없어요: {pages}.",
+      "unreadParts": "결과지 일부를 읽지 못해서 해당 수치가 이 목록에 없어요.",
+      "rowsCapped": "결과지에 수치가 {found}개 있어요. 한 번 스캔할 때 {kept}개까지 담을 수 있어서 처음 {kept}개만 보여 드려요.",
+      "outputLimit": "AI 제공자가 수치를 하나도 돌려주기 전에 출력 한도에 도달했어요. 한 페이지만 찍은 사진이나 더 긴 답변을 허용하는 모델로 다시 시도해 주세요.",
+      "errorTooLong": "{max}자 이내로 줄여 주세요.",
       "confirmRow": "이 측정값 포함",
       "analyteLabel": "검사 항목",
       "resultLabel": "결과",
@@ -10392,6 +10429,7 @@
     "vital": {
       "RESTING_HEART_RATE": "안정 시 심박수",
       "HEART_RATE_VARIABILITY": "심박변이도",
+      "HRV_RMSSD": "심박변이도 (RMSSD)",
       "RECOVERY_SCORE": "회복",
       "OXYGEN_SATURATION": "산소포화도",
       "BODY_TEMPERATURE": "체온",
@@ -11997,6 +12035,8 @@
       "logDose": "복용 기록",
       "reconnect": "다시 연결",
       "viewCheckups": "건강검진 보기",
+      "viewAppointment": "예약 보기",
+      "viewAppointments": "예약 목록 보기",
       "checkinKeep": "계속하기",
       "checkinAdjust": "조정",
       "checkinLetGo": "놓아주기",
@@ -12721,6 +12761,13 @@
       "noMatchTitle": "이 필터에 맞는 항목이 없습니다",
       "clearFilter": "필터 지우기",
       "loadError": "시술 목록을 불러올 수 없습니다."
+    },
+    "preparation": {
+      "practitioner": "{date} {name} 마지막 방문 이후",
+      "specialty": "{date} 마지막 {specialty} 방문 이후",
+      "kind": "{date} 같은 유형({kind})의 마지막 방문 이후",
+      "default": "최근 {days}일",
+      "defaultReason": "같은 병원, 진료과 또는 유형의 이전 방문이 없어요."
     }
   },
   "checkups": {
@@ -12970,7 +13017,6 @@
     "meanOfReadingsFew": "측정 {count}회 평균",
     "meanOfReadingsOther": "측정 {count}회 평균",
     "sinceLastVisit": {
-      "title": "{date} 마지막 방문 이후",
       "countOne": "기록 1개",
       "countFew": "기록 {count}개",
       "countOther": "기록 {count}개",

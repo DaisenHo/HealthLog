@@ -159,6 +159,41 @@ describe("briefingForToday", () => {
     );
   });
 
+  it("keeps an HRV signal for an account whose only HRV is RMSSD", () => {
+    // Fitbit, Google Health and every ring file nightly HRV as `HRV_RMSSD`;
+    // the Coach reads the `hrv` source over both series, so a signal written
+    // for such an account is a reading of today when the RMSSD row is.
+    const hrvBriefing: DailyBriefing = {
+      ...BRIEFING,
+      signalsOfDay: [
+        {
+          sourceMetric: "hrv",
+          tone: "info",
+          headline: "HRV höher als üblich",
+          nudge: "Guter Tag für Bewegung.",
+          delta: "+6,4 ms vs. dein 30-Tage-Mittel",
+        },
+      ],
+    };
+    const out = briefingForToday(hrvBriefing, {
+      ...BERLIN,
+      generatedAt: "2026-10-05T04:00:00Z",
+      lastSeenAt: (type) =>
+        type === "HRV_RMSSD" ? "2026-10-05T04:30:00Z" : null,
+    });
+    expect(out?.signalsOfDay?.map((s) => s.delta)).toEqual([
+      "+6 ms vs. dein 30-Tage-Mittel",
+    ]);
+    // Neither series measured today: still dropped.
+    const stale = briefingForToday(hrvBriefing, {
+      ...BERLIN,
+      generatedAt: "2026-10-05T04:00:00Z",
+      lastSeenAt: (type) =>
+        type === "HRV_RMSSD" ? "2026-10-04T04:30:00Z" : null,
+    });
+    expect(stale?.signalsOfDay).toEqual([]);
+  });
+
   it("serves no briefing written on an earlier day, just after midnight", () => {
     // Written 23:30 on the 4th, read 00:10 on the 5th (Berlin).
     expect(

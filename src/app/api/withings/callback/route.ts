@@ -216,6 +216,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
           // A reconnect may come with another developer app (another plan), so
           // what the old grant's plan refused is asked for again.
           apiPlanState: Prisma.DbNull,
+          // A reconnect may be another account or device, so nights it gave
+          // up on are tried again.
+          sleepStageReads: Prisma.DbNull,
         },
         create: {
           userId: user.id,

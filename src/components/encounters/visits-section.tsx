@@ -72,8 +72,11 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
     resolve: fetchVisit,
   });
   const empty = upcoming.length === 0 && past.length === 0;
-  // The last visit that took place: the start of the visit preparation.
-  const lastDone = past.find((encounter) => encounter.status === "DONE");
+  // The next booked visit carries the window before it, resolved by the
+  // server (`EncounterDTO.preparation`): which earlier visit it starts at and
+  // why. Never picked here from the past list, which would be the last visit
+  // of any kind — the rule the server replaced.
+  const prepared = upcoming.find((encounter) => encounter.preparation);
 
   const addButton = canAddVisit ? (
     <Button
@@ -135,18 +138,21 @@ export function VisitsSection({ enabled = true }: { enabled?: boolean }) {
                 icon={CalendarClock}
                 title={t("encounters.upcomingHeading")}
               />
-              {upcoming.map((encounter, i) => (
+              {upcoming.map((encounter) => (
                 <Fragment key={encounter.id}>
                   <VisitCard
                     encounter={encounter}
                     onOpen={canManageVisits ? openSheet : undefined}
                   />
-                  {/* v1.42 — the next appointment carries what happened
-                      since the last one, each date opening its day. The
-                      component draws its own card, and none when it has
-                      nothing to list. */}
-                  {i === 0 && lastDone ? (
-                    <SinceLastVisit next={encounter} last={lastDone} />
+                  {/* v1.42 — the next booked appointment carries what
+                      happened in the window before it, each date opening its
+                      day. The component draws its own card, and none when it
+                      has nothing to list. */}
+                  {encounter.id === prepared?.id && prepared.preparation ? (
+                    <SinceLastVisit
+                      next={encounter}
+                      preparation={prepared.preparation}
+                    />
                   ) : null}
                 </Fragment>
               ))}

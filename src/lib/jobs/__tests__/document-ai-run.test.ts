@@ -346,6 +346,47 @@ describe("runDocumentAiRun", () => {
       }),
     );
   });
+
+  it("hands a lab scan a schedule that fits the deadline and moves it", async () => {
+    claimAiRun.mockResolvedValue(
+      claimed({
+        kind: "LABS_OCR_EXTRACT",
+        documentId: null,
+        params: { mode: "vision", mime: "application/pdf", budget },
+        input: Buffer.from("%PDF-1.4"),
+      }),
+    );
+    requireLabsOcrProvider.mockResolvedValue({
+      entry: {
+        providerType: "anthropic",
+        instance: { responseTimeoutSeconds: null },
+      },
+      providerType: "anthropic",
+      pdfSupported: true,
+    });
+    executeOcrExtraction.mockImplementation(async (args) => {
+      // 2 700 s of job budget, a 60 s margin and a second of slack, at the
+      // read's own 120 s default per call: 21 sequential calls fit.
+      expect(args.schedule.maxModelCalls()).toBe(21);
+      await args.schedule.arm(20);
+      return {
+        ok: true,
+        data: { reportDate: null, providerType: "anthropic", rows: [] },
+      };
+    });
+    expect(await runDocumentAiRun("run1", NOW + 2_700_000, now)).toBe(
+      "succeeded",
+    );
+    // One read armed first, then the twenty calls the read planned.
+    expect(updateMany).toHaveBeenNthCalledWith(1, {
+      where: { id: "run1", status: "RUNNING" },
+      data: { expiresAt: new Date(NOW + 2 * 120_000 + 60_000) },
+    });
+    expect(updateMany).toHaveBeenLastCalledWith({
+      where: { id: "run1", status: "RUNNING" },
+      data: { expiresAt: new Date(NOW + 20 * 120_000 + 60_000) },
+    });
+  });
 });
 
 describe("handleDocumentAiRunJobs", () => {

@@ -63,6 +63,7 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
   APPOINTMENT_REMINDER_ADDRESS_INCLUDE,
   appointmentReminderAddress,
+  appointmentReminderVisitPath,
 } from "@/lib/encounters/appointment-reminder";
 
 /**
@@ -479,6 +480,7 @@ export async function runMeasurementReminderTick(
       // An appointment's address lives encrypted on its practitioner and is
       // resolved here; a checkup's is its own free-text column.
       const address = appointmentReminderAddress(reminder);
+      const visitUrl = appointmentReminderVisitPath(reminder);
       const { title, body } = buildMeasurementReminderPayload(
         await resolveJobLocale(reminder.user.locale),
         reminder.label,
@@ -510,6 +512,9 @@ export async function runMeasurementReminderTick(
         metadata: {
           scheduledAt: now.toISOString(),
           reminderId: reminder.id,
+          // An appointment opens its visit; a checkup keeps the event's
+          // default, the checkups list.
+          ...(visitUrl ? { url: visitUrl } : {}),
         },
       });
 

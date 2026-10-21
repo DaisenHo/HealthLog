@@ -32,6 +32,12 @@ vi.mock("@/lib/db", () => {
   };
 });
 
+// Which brand-18 days another connected source already covers; each test
+// that needs one sets it. Its SQL is covered by the integration suite.
+vi.mock("@/lib/withings/other-step-source-days", () => ({
+  daysWithOtherStepSource: vi.fn().mockResolvedValue(new Set()),
+}));
+
 vi.mock("@/lib/tz/resolver", () => ({
   resolveUserTimezone: vi.fn(),
 }));
@@ -85,6 +91,7 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   };
 });
 
+import { daysWithOtherStepSource } from "@/lib/withings/other-step-source-days";
 import { prisma } from "@/lib/db";
 import {
   parkIntegrationAtReauth,
@@ -101,6 +108,7 @@ interface FakeActivity {
   steps?: number;
   distance?: number;
   calories?: number;
+  brand?: number;
 }
 
 function installFetchMock(entries: FakeActivity[]) {
@@ -412,6 +420,58 @@ describe("syncUserActivity — field mapping + idempotency", () => {
     expect(imported).toBe(2);
     const types = createManyRows().map((r) => r.type as string);
     expect(types).not.toContain("WALKING_RUNNING_DISTANCE");
+  });
+
+  it("skips a day Health Mate holds from another app that syncs its own steps (brand 18)", async () => {
+    // An Apple Health or Google Fit day written into Health Mate comes back
+    // from Getactivity as brand 18 ("external"). When that app reaches
+    // HealthLog from its own integration, under WITHINGS it is a second copy.
+    installFetchMock([
+      { date: "2026-05-12", steps: 8000, calories: 380, brand: 1 },
+      { date: "2026-05-13", steps: 9100, calories: 410, brand: 18 },
+    ]);
+    vi.mocked(daysWithOtherStepSource).mockResolvedValueOnce(
+      new Set(["2026-05-13"]),
+    );
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.measurement.createMany).mockResolvedValue({
+      count: 2,
+    } as never);
+
+    await syncUserActivity("user-1");
+
+    expect(vi.mocked(daysWithOtherStepSource)).toHaveBeenCalledWith(
+      "user-1",
+      ["2026-05-13"],
+      expect.any(String),
+    );
+    const rows = createManyRows();
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.value)).toEqual(
+      expect.not.arrayContaining([9100, 410]),
+    );
+  });
+
+  it("keeps a brand-18 day when no other source delivered steps that day", async () => {
+    // A phone whose steps only Health Mate reads: the external day is the
+    // account's only copy, so skipping it would lose the day.
+    installFetchMock([
+      { date: "2026-05-12", steps: 8000, calories: 380, brand: 1 },
+      { date: "2026-05-13", steps: 9100, calories: 410, brand: 18 },
+    ]);
+    vi.mocked(daysWithOtherStepSource).mockResolvedValueOnce(new Set());
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.measurement.createMany).mockResolvedValue({
+      count: 4,
+    } as never);
+
+    await syncUserActivity("user-1");
+
+    const rows = createManyRows();
+    expect(rows).toHaveLength(4);
+    expect(rows.map((r) => r.value)).toEqual(
+      expect.arrayContaining([9100, 410]),
+    );
   });
 
   it("ingests a 0-step rest day rather than dropping it", async () => {

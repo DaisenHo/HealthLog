@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.43.10
+  version: 1.43.11
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -20339,6 +20339,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
+        "410":
+          description: Google turned the legacy Fitbit Web API off on 2026-10-30; nothing is fetched. `meta.errorCode` =
+            `provider_retired`. The data already imported stays; Google Health reads the same devices.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "413":
           description: Body exceeds 64 KiB.
           content:
@@ -20953,6 +20960,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/FitbitIntegrationTestEnvelope"
         "401": *a1
+        "410":
+          description: Google turned the legacy Fitbit Web API off on 2026-10-30; nothing is probed. `meta.errorCode` =
+            `provider_retired`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a49
         "429": *a50
         "502": *a51
@@ -24166,10 +24180,11 @@ paths:
       description: "What stood out and what changed in a window, for the preparation of the next visit: deterministic
         observations (a value highest or lowest for at least three months, a first reading, a regular reading that
         stopped for two weeks or more) and context changes (dose changes, medication and course starts and ends, pauses,
-        illness onsets and recoveries, vaccinations, procedures, lab days). Without `from` the window starts at the last
-        completed visit the caller may see (else 90 days back); without `to` it ends today; at most 1096 days. Keys and
-        the record's own names only, no judgement. Days are cut in the record's own time zone. Sections the caller's
-        grant does not cover are left out."
+        illness onsets and recoveries, vaccinations, procedures, lab days). Without `from` the window is the one the
+        next planned visit prepares (its `preparation.from` on `GET /api/encounters`, `anchor: nextVisit`); with nothing
+        booked it starts at the last completed visit the caller may see (else 90 days back); without `to` it ends today;
+        at most 1096 days. Keys and the record's own names only, no judgement. Days are cut in the record's own time
+        zone. Sections the caller's grant does not cover are left out."
       parameters:
         - in: query
           name: from
@@ -26637,9 +26652,10 @@ components:
                 - OTHER
             - type: "null"
         displayName:
+          description: Trimmed before its bound is checked. Null, an empty string or only spaces clears it; an omitted field is
+            left untouched.
           anyOf:
             - type: string
-              minLength: 1
               maxLength: 80
             - type: "null"
         locale:
@@ -31776,7 +31792,7 @@ components:
       properties:
         rows:
           minItems: 1
-          maxItems: 100
+          maxItems: 400
           type: array
           items:
             type: object
@@ -31838,10 +31854,10 @@ components:
       description: The rows a human confirmed on the Lab-OCR review screen. Each row is EITHER numeric (`value` + `unit`,
         optional reference bounds) OR qualitative (`valueText`) — exactly one. `analyte` drives a resolve-or-mint of the
         user-scoped biomarker; `takenAt` is a backdatable ISO instant. No `userId` field — it is narrowed from the
-        session. 1..100 rows. The route skips a row that duplicates a live reading (same analyte + day + value). The
-        optional `encounterId` files the panel against a visit the caller owns — ONE link per written result row, so a
-        marker re-run on a different day belongs to its own visit; always optional, and a link that could not be made
-        never fails the commit.
+        session. 1..400 rows (`analyte` and `valueText` up to 120 characters, `unit` up to 40). The route skips a row
+        that duplicates a live reading (same analyte + day + value). The optional `encounterId` files the panel against
+        a visit the caller owns — ONE link per written result row, so a marker re-run on a different day belongs to its
+        own visit; always optional, and a link that could not be made never fails the commit.
     CreateBiomarkerRequest:
       type: object
       properties:
@@ -33746,8 +33762,7 @@ components:
           maxLength: 64
         displayName:
           type: string
-          minLength: 1
-          maxLength: 50
+          maxLength: 80
         heightCm:
           type: number
           minimum: 50
@@ -36231,10 +36246,10 @@ components:
                 labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch, labs.biomarker.notFound,
                 labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
                 labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge,
-                labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.pdfNeedsAnthropic, labs.ocr.providerUnsupported,
-                labs.ocr.rateLimited, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
-                labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
-                labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
+                labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.outputLimit, labs.ocr.pdfNeedsAnthropic,
+                labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.ocr.tooLarge, labs.restore.invalid,
+                labs.result.notFound, labs.unit.mismatch, labs.update.invalid, labs.update.linkedFieldsImmutable,
+                labs.update.numericExpected, labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
                 labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
                 managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
                 managed_profile.guardian.required, managed_profile.handover.no_pending,
@@ -36298,8 +36313,8 @@ components:
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
                 modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
-                private_origin_not_approved, private_origin_not_grantable, rate_limited_self, sync_in_progress,
-                too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
+                private_origin_not_approved, private_origin_not_grantable, provider_retired, rate_limited_self,
+                sync_in_progress, too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
               type: string
             capability:
               description: "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`,
@@ -71279,8 +71294,8 @@ components:
           items:
             $ref: "#/components/schemas/OcrExtractedRow"
         pageCoverage:
-          description: "Present only when a PDF ran past the pages a scan reads: the rows come from the first `read` of `total`
-            pages. Absent when the whole document was read."
+          description: "Present only when a PDF ran past the pages a scan reads (20): the rows come from the first `read` of
+            `total` pages. Absent when the whole document was read."
           type: object
           properties:
             read:
@@ -71295,13 +71310,75 @@ components:
             - read
             - total
           additionalProperties: false
+        truncated:
+          description: Present only when a read stopped at the provider's output limit. The rows that read produced before the cut
+            are kept; readings after the cut may be missing. `pages` names the pages whose read was cut, or is empty
+            when the report went to the provider as one read (a photo, a one-page PDF, OCR'd text).
+          type: object
+          properties:
+            pages:
+              type: array
+              items:
+                type: integer
+                exclusiveMinimum: 0
+                maximum: 9007199254740991
+          required:
+            - pages
+          additionalProperties: false
+        unreadPages:
+          description: "Present only when part of a multi-part read produced nothing: the provider failed partway through, or a
+            part's reply could not be read. The rows of the other parts are kept; these pages are not in `rows`. Empty
+            when the parts were not pages (OCR'd text)."
+          type: array
+          items:
+            type: integer
+            exclusiveMinimum: 0
+            maximum: 9007199254740991
+        stoppedBy:
+          description: "Present only when the scan stopped before its last read for a reason other than the provider: `budget`,
+            the day's AI budget ran out (every read after the first is reserved on its own); `unavailable`, AI was
+            turned off for the record while it ran (the wire is re-checked before every read); `error`, that check or
+            the reservation failed itself, so the scan stopped rather than read on unchecked. The pages it did not reach
+            are in `unreadPages`."
+          type: string
+          enum:
+            - budget
+            - unavailable
+            - error
+        rowsCapped:
+          description: "Present only when the report held more readings than one scan carries (400): `rows` holds the first `kept`
+            of the `found` readings."
+          type: object
+          properties:
+            kept:
+              type: integer
+              exclusiveMinimum: 0
+              maximum: 9007199254740991
+            found:
+              type: integer
+              exclusiveMinimum: 0
+              maximum: 9007199254740991
+          required:
+            - kept
+            - found
+          additionalProperties: false
       required:
         - reportDate
         - providerType
         - rows
       additionalProperties: false
-      description: The proposed rows for the human review screen, served by `GET /api/ai-runs/{id}` for a `LABS_OCR_EXTRACT`
-        run. Never written to the person's record; the commit route is the only write.
+      description: "The proposed rows for the human review screen, served by `GET /api/ai-runs/{id}` for a `LABS_OCR_EXTRACT`
+        run. A PDF of more than one page is read a page at a time, each rendered page sent with its text layer as a hint
+        the image overrules, and the pages merged in order, a reading an earlier page already listed listed once. Never
+        written to the person's record; the commit route is the only write. A run in which no read produced a single
+        complete row fails with 422 `labs.ocr.outputLimit` when the reads stopped at the provider's output limit, else
+        `labs.ocr.extractFailed`; OCR'd text too long for the reads the deadline allows is refused up front with 422
+        `labs.ocr.tooLarge`. A scan stopped before any read produced a row answers with the stop: 429
+        `labs.ocr.budgetExceeded` when the day's budget refused a further read; the wire's own refusal (its status and
+        code, e.g. 403 `consent.ai.required`, `assistant.disabled.*`, `module.disabled`) when AI was turned off for the
+        record; 500 `aiRuns.failed` when the check before a read failed. A scan stopped after some rows succeeds with
+        them and names the stop in `stoppedBy` (`budget`, `unavailable`, `error`) and the pages it did not reach in
+        `unreadPages`."
     OcrExtractedRow:
       type: object
       properties:
@@ -71911,6 +71988,12 @@ components:
           $ref: "#/components/schemas/EncounterLinks"
         skipped:
           $ref: "#/components/schemas/EncounterSkipReport"
+        preparation:
+          description: "On the list read only (`GET /api/encounters`): the window before this visit when it is booked (PLANNED,
+            upcoming), null on every other row. Absent on the detail and on write responses."
+          anyOf:
+            - $ref: "#/components/schemas/EncounterPreparation"
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -72062,6 +72145,78 @@ components:
         checkup, which is a measurements-domain write a health-background delegate cannot perform. The visit still
         saves; the checkup stays due and the response says so, because somebody who believes a checkup was closed will
         not look at it again."
+    EncounterPreparation:
+      type: object
+      properties:
+        from:
+          type: string
+          description: "First day of the window, `YYYY-MM-DD` on the record's own calendar: the day of `since`, or 90 days before
+            today on `default`."
+        to:
+          type: string
+          description: The booked visit's own day, `YYYY-MM-DD` on the same calendar as `from` (the record's, not the reader's). A
+            report window offered for the appointment ends here.
+        basis:
+          type: string
+          enum:
+            - practitioner
+            - specialty
+            - kind
+            - default
+          description: "The rule that chose `from`, first match wins over the visits that took place (DONE) before this one:
+            `practitioner` (the last visit with the same practitioner), `specialty` (the last visit with a practitioner
+            of the same specialty, compared without case or extra spaces), `kind` (the last visit of the same kind, for
+            ROUTINE, PREVENTIVE and THERAPY only), `default` (none matched: the last 90 days)."
+        since:
+          anyOf:
+            - $ref: "#/components/schemas/EncounterPreparationAnchor"
+            - type: "null"
+      required:
+        - from
+        - to
+        - basis
+        - since
+      additionalProperties: false
+      description: "The window before a booked visit, resolved server-side: where the visit preparation and the doctor report
+        offered for the appointment start, and why there. Never the last visit of any kind, which is how a dermatology
+        appointment was offered a week of data from an internist visit. A client shows `from` with its reason and lets
+        the person change the dates; it does not recompute the rule."
+    EncounterPreparationAnchor:
+      type: object
+      properties:
+        id:
+          type: string
+        occurredAt:
+          type: string
+        kind:
+          type: string
+          enum:
+            - ROUTINE
+            - ACUTE
+            - SPECIALIST
+            - PREVENTIVE
+            - EMERGENCY
+            - HOSPITAL
+            - THERAPY
+            - OTHER
+            - PROCEDURE
+        practitionerName:
+          type:
+            - string
+            - "null"
+        specialty:
+          type:
+            - string
+            - "null"
+      required:
+        - id
+        - occurredAt
+        - kind
+        - practitionerName
+        - specialty
+      additionalProperties: false
+      description: "The earlier visit the window starts at: its id, instant and kind, and the practitioner's name and
+        specialty as they read now."
     CreateEncounterEnvelope:
       type: object
       properties:
@@ -79322,13 +79477,42 @@ components:
         allowPrivateHost:
           description: Nightscout only.
           type: boolean
+        retirement:
+          description: Fitbit only. The end of the legacy Fitbit Web API.
+          type: object
+          properties:
+            endsOn:
+              type: string
+              pattern: ^\d{4}-\d{2}-\d{2}$
+              description: The day Google turns the legacy Fitbit Web API off.
+            ended:
+              type: boolean
+              description: "The day has come: the connection no longer syncs, its imported data stays, and `health` is null."
+            successor:
+              type: string
+              enum:
+                - google-health
+              description: The integration that reads the same Fitbit and Pixel devices. Moving needs a fresh consent; the Fitbit
+                grant cannot be carried over.
+            offered:
+              type: boolean
+              description: "Whether the Fitbit card is shown. False once `ended` for an account that never connected Fitbit, has no
+                Fitbit app of its own and holds no Fitbit data: there is nothing to explain the move for. True before
+                the turndown and for every account that had Fitbit."
+          required:
+            - endsOn
+            - ended
+            - successor
+            - offered
+          additionalProperties: false
         health:
           anyOf:
             - $ref: "#/components/schemas/ConnectionHealth"
             - type: "null"
-          description: The unified connection state, null when the provider is not connected. It supersedes `state`, `lastError`,
-            `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`,
-            `planUnavailable` and `scopeReconnect` on this entry; those nine are deprecated and removed in v1.44.
+          description: The unified connection state, null when the provider is not connected (and for Fitbit once
+            `retirement.ended`). It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`,
+            `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry;
+            those nine are deprecated and removed in v1.44.
       required:
         - integration
         - state
@@ -82724,10 +82908,58 @@ components:
           items:
             type: string
           description: Every event category the server knows, in declaration order — the list a client renders rows for.
+        eventDefaults:
+          type: object
+          propertyNames:
+            type: string
+            enum:
+              - MEDICATION_REMINDER
+              - MEASUREMENT_ANOMALY
+              - COMPLIANCE_LOW
+              - WITHINGS_SYNC_FAILED
+              - SYSTEM_ALERT
+              - PERSONAL_RECORD
+              - MOOD_REMINDER
+              - CYCLE_PERIOD_SOON
+              - CYCLE_PERIOD_CONFIRM
+              - CYCLE_FERTILE_SOON
+              - COACH_NUDGE
+              - MEDICATION_LOW_STOCK
+              - MEASUREMENT_REMINDER
+              - MEDICATION_INTAKE_SYNC
+              - SECURITY_ALERT
+              - DAILY_BRIEFING
+              - SHARED_RECORD_INTAKE
+            description: Notification category a per-channel preference can toggle.
+          additionalProperties:
+            type: boolean
+          required:
+            - MEDICATION_REMINDER
+            - MEASUREMENT_ANOMALY
+            - COMPLIANCE_LOW
+            - WITHINGS_SYNC_FAILED
+            - SYSTEM_ALERT
+            - PERSONAL_RECORD
+            - MOOD_REMINDER
+            - CYCLE_PERIOD_SOON
+            - CYCLE_PERIOD_CONFIRM
+            - CYCLE_FERTILE_SOON
+            - COACH_NUDGE
+            - MEDICATION_LOW_STOCK
+            - MEASUREMENT_REMINDER
+            - MEDICATION_INTAKE_SYNC
+            - SECURITY_ALERT
+            - DAILY_BRIEFING
+            - SHARED_RECORD_INTAKE
+          description: What each event does on a channel with no stored row, resolved for this account by the function delivery
+            uses. Most are constant per category; the mood reminder follows the account's mood-reminder setting
+            (`moodReminderEnabled` on `/api/user/profile`). Render a switch without a row from this map rather than from
+            a copy of the defaults. Since v1.43.11.
       required:
         - channels
         - preferences
         - eventTypes
+        - eventDefaults
       additionalProperties: false
       description: The caller's notification channels, their stored per-event overrides, and the full event vocabulary.
     NotificationChannelSummary:
@@ -82797,9 +83029,8 @@ components:
         - eventType
         - enabled
       additionalProperties: false
-      description: An explicit per-(channel, event) override. Only STORED rows appear — an event with no row here follows the
-        server-side default for that category, which is ON for most and OFF for the opt-in ones (personal records, mood
-        and cycle reminders). Absence is therefore not 'disabled'.
+      description: An explicit per-(channel, event) override. Only STORED rows appear — an event with no row here follows
+        `eventDefaults` on the same response. Absence is therefore not 'disabled'.
     PutNotificationPreferenceResponse:
       type: object
       properties:
@@ -85655,11 +85886,15 @@ components:
         anchor:
           type: string
           enum:
+            - nextVisit
             - lastVisit
             - requested
             - fallback
-          description: "Where `from` came from: the last completed visit, the request, or the fallback of 90 days when the record
-            holds no visit the caller may see."
+          description: "Where `from` came from. `requested`: the request named it. `nextVisit`: no `from` was sent and a visit is
+            booked; `from` is that visit's `preparation.from` on `GET /api/encounters` (the soonest PLANNED visit
+            ahead), so a client that omits `from` reads the window the web shows for it. `lastVisit`: nothing is booked;
+            the day of the last completed visit. `fallback`: 90 days, when the record holds no visit the caller may see.
+            Clients should treat an unknown value like `fallback`."
         observations:
           type: array
           items:

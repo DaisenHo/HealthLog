@@ -91,9 +91,9 @@ vi.mock("@/lib/documents/assist", async (importOriginal) => ({
 vi.mock("@/lib/labs/ocr-extract", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/labs/ocr-extract")>()),
   runOcrExtraction: vi.fn(async () => ({
-    reportDate: "2027-01-10",
-    providerType: "anthropic",
-    rows: [],
+    data: { reportDate: "2027-01-10", providerType: "anthropic", rows: [] },
+    spentTokens: 900,
+    cachedTokens: 0,
   })),
 }));
 vi.mock("@/lib/documents/extract", async (importOriginal) => ({
@@ -427,7 +427,10 @@ describe("a lab scan in the background", () => {
 
     expect(await work(runId)).toBe("succeeded");
     expect(runOcrExtraction).toHaveBeenCalledWith(
-      expect.objectContaining({ ocrText: "Hämoglobin 14,2 g/dL" }),
+      expect.objectContaining({
+        mode: "text",
+        chunks: [{ text: "Hämoglobin 14,2 g/dL", pages: [] }],
+      }),
     );
 
     const after = await getPrismaClient().documentAiRun.findUniqueOrThrow({

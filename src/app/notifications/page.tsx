@@ -13,14 +13,11 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import Link from "next/link";
 import { Bell, Settings, AlertCircle } from "lucide-react";
 import {
-  EVENT_DEFAULT_ENABLED,
-  type EventType,
-} from "@/lib/notifications/types";
-import {
   eventDescriptionTranslationKey,
   eventTranslationKey,
 } from "@/lib/notifications/event-labels";
 import { queryKeys } from "@/lib/query-keys";
+import { preferenceCellEnabled } from "@/lib/notifications/event-default-rule";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import {
   Card,
@@ -48,6 +45,12 @@ interface PreferencesData {
   channels: ChannelInfo[];
   preferences: Preference[];
   eventTypes: string[];
+  /**
+   * What each event does on a channel with no stored row, resolved by the
+   * server for this account with the function the dispatcher uses.
+   */
+  /** Absent on a response cached by a build before the field. */
+  eventDefaults?: Record<string, boolean>;
 }
 
 export default function NotificationsPage() {
@@ -112,14 +115,11 @@ export default function NotificationsPage() {
   });
 
   function isEnabled(channelId: string, eventType: string): boolean {
-    const pref = data?.preferences?.find(
-      (p) => p.channelId === channelId && p.eventType === eventType,
-    );
-    if (pref) return pref.enabled;
-    // v1.4.25 — per-event default. Most events stay opt-out
-    // (no row = ON); PERSONAL_RECORD flips to opt-in (no row = OFF)
-    // so a backfill doesn't fire hundreds of pushes on first sync.
-    return EVENT_DEFAULT_ENABLED[eventType as EventType] ?? true;
+    // No row: the server's resolved default for this account. Read, never
+    // recomputed here: the mood reminder's follows the reminder card, and a
+    // copy of the constant table showed it off while it was being delivered.
+    // A cached payload without the map falls back to the shared rule.
+    return preferenceCellEnabled(data, channelId, eventType);
   }
 
   // Cross-links to the other two notification surfaces (reminder types +

@@ -187,6 +187,7 @@ export function AiServerKeySection() {
           {configured && (
             <ConfirmButton
               slot="admin-ai-server-key-remove"
+              destructive
               variant="outline"
               size="sm"
               label={t("admin.aiServerKey.remove")}

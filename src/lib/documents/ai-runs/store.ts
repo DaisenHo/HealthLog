@@ -188,13 +188,22 @@ export async function settleAiRunBudget(
   budget: AiRunBudget | undefined,
   actual: number,
   servedBy: ProviderChainType | null,
+  /** The share of `actual` the provider served from its prompt cache. */
+  cachedTokens = 0,
 ): Promise<void> {
   if (!budget || budget.reserved <= 0) return;
   try {
-    await reconcileSpend(userId, budget.reserved, actual, budget.dateKey, 0, {
-      servedBy,
-      reservedOwner: budget.owner,
-    });
+    await reconcileSpend(
+      userId,
+      budget.reserved,
+      actual,
+      budget.dateKey,
+      cachedTokens,
+      {
+        servedBy,
+        reservedOwner: budget.owner,
+      },
+    );
   } catch {
     // The run's outcome is already decided; a failed refund is not a reason
     // to change it.

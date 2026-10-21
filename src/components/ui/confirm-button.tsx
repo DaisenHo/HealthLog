@@ -114,6 +114,7 @@ export function ConfirmButton({
   ariaLabel,
   slot,
   extra,
+  destructive = false,
 }: ConfirmCopy & {
   /** The control's own label, before the dialog opens. */
   label: string;
@@ -156,6 +157,7 @@ export function ConfirmButton({
         pending={pending}
         slot={slot}
         extra={extra}
+        destructive={destructive}
       />
     </AlertDialog>
   );

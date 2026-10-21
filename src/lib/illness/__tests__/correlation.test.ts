@@ -17,6 +17,7 @@ import {
   computeIllnessCorrelation,
   dayDiff,
   FUNCTIONAL_IMPACT_RETURN_KEY,
+  ILLNESS_SCAN_TYPES,
   isAdverseDeviation,
   MIN_BASELINE_DAYS,
   MIN_EPISODE_COVERAGE_DAYS,
@@ -801,6 +802,12 @@ describe("isAdverseDeviation", () => {
     expect(isAdverseDeviation("RESTING_HEART_RATE", "below")).toBe(false);
     expect(isAdverseDeviation("HEART_RATE_VARIABILITY", "below")).toBe(true);
     expect(isAdverseDeviation("HEART_RATE_VARIABILITY", "above")).toBe(false);
+  });
+
+  it("reads a drop in the nightly RMSSD series as adverse, like SDNN", () => {
+    expect(ILLNESS_SCAN_TYPES).toContain("HRV_RMSSD");
+    expect(isAdverseDeviation("HRV_RMSSD", "below")).toBe(true);
+    expect(isAdverseDeviation("HRV_RMSSD", "above")).toBe(false);
   });
 
   it("treats neutral-direction vitals (WEIGHT) as never adverse", () => {

@@ -12,6 +12,7 @@ import { notificationPreferenceSchema } from "@/lib/validations/notifications";
 import { EVENT_TYPES, CHANNEL_TYPE_LABELS } from "@/lib/notifications/types";
 import type { ChannelType } from "@/lib/notifications/types";
 import { decrypt, encrypt } from "@/lib/crypto";
+import { resolveEventDefaults } from "@/lib/notifications/event-defaults";
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
@@ -92,6 +93,12 @@ export const GET = apiHandler(async () => {
     channels: channelData,
     preferences,
     eventTypes: EVENT_TYPES as unknown as string[],
+    // What an event does on a channel with no stored row, resolved for this
+    // account by the same function the dispatcher asks. A client renders a
+    // switch without a row from this map, never from its own copy of the
+    // defaults: the mood reminder's follows the reminder card, which a
+    // constant table cannot know.
+    eventDefaults: await resolveEventDefaults(user.id),
   });
 });
 

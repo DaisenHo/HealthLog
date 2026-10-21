@@ -35,6 +35,7 @@ import {
   practitionerListQuerySchema,
 } from "@/lib/validations/practitioners";
 import { bodySiteQuerySchema } from "@/lib/validations/body-sites";
+import { PREPARATION_BASES } from "@/lib/encounters/preparation";
 import {
   illnessLifecycleEnum,
   illnessTypeEnum,
@@ -169,6 +170,45 @@ const skipReport = z
       "What the write could not do, named. `links: 0` with an empty list is the ordinary answer. Anything else is a side effect the caller's grant did not reach — today only `checkupClosure`, the closing of a preventive-care checkup, which is a measurements-domain write a health-background delegate cannot perform. The visit still saves; the checkup stays due and the response says so, because somebody who believes a checkup was closed will not look at it again.",
   });
 
+const preparationAnchor = z
+  .object({
+    id: z.string(),
+    occurredAt: z.string(),
+    kind: encounterKindEnum,
+    practitionerName: z.string().nullable(),
+    specialty: z.string().nullable(),
+  })
+  .meta({
+    id: "EncounterPreparationAnchor",
+    description:
+      "The earlier visit the window starts at: its id, instant and kind, and the practitioner's name and specialty as they read now.",
+  });
+
+const encounterPreparation = z
+  .object({
+    from: z
+      .string()
+      .describe(
+        "First day of the window, `YYYY-MM-DD` on the record's own calendar: the day of `since`, or 90 days before today on `default`.",
+      ),
+    to: z
+      .string()
+      .describe(
+        "The booked visit's own day, `YYYY-MM-DD` on the same calendar as `from` (the record's, not the reader's). A report window offered for the appointment ends here.",
+      ),
+    basis: z
+      .enum(PREPARATION_BASES)
+      .describe(
+        "The rule that chose `from`, first match wins over the visits that took place (DONE) before this one: `practitioner` (the last visit with the same practitioner), `specialty` (the last visit with a practitioner of the same specialty, compared without case or extra spaces), `kind` (the last visit of the same kind, for ROUTINE, PREVENTIVE and THERAPY only), `default` (none matched: the last 90 days).",
+      ),
+    since: preparationAnchor.nullable(),
+  })
+  .meta({
+    id: "EncounterPreparation",
+    description:
+      "The window before a booked visit, resolved server-side: where the visit preparation and the doctor report offered for the appointment start, and why there. Never the last visit of any kind, which is how a dermatology appointment was offered a week of data from an internist visit. A client shows `from` with its reason and lets the person change the dates; it does not recompute the rule.",
+  });
+
 const encounter = z
   .object({
     id: z.string(),
@@ -183,6 +223,12 @@ const encounter = z
     reminderNextDueAt: z.string().nullable(),
     links: encounterLinks.optional(),
     skipped: skipReport.optional(),
+    preparation: encounterPreparation
+      .nullable()
+      .optional()
+      .describe(
+        "On the list read only (`GET /api/encounters`): the window before this visit when it is booked (PLANNED, upcoming), null on every other row. Absent on the detail and on write responses.",
+      ),
     createdAt: z.string(),
     updatedAt: z.string(),
   })

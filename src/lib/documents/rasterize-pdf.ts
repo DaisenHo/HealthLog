@@ -54,6 +54,13 @@ export const RASTERIZATION_AVAILABLE = true;
 export const RASTER_MAX_PAGES = 10;
 
 /**
+ * The ceiling a caller may raise the page count to. The lab scan reads a
+ * multi-panel report page by page and asks for more than the document read's
+ * default; nothing may ask for more than this.
+ */
+export const RASTER_HARD_MAX_PAGES = 20;
+
+/**
  * Longest-edge pixel cap per page. Tighter than the client upload downscale
  * ceiling because these feed a token-metered vision model; ~1600px is legible
  * for a document read without blowing up the tile count.
@@ -94,6 +101,12 @@ export type RasterResult =
        * reading covers the first pages only.
        */
       pageCount: number;
+      /**
+       * Only with `withText`: each rendered page's text layer, in order and
+       * aligned with `images`. Empty for a page that has none (a scan) or
+       * whose text could not be read.
+       */
+      texts?: string[];
     }
   | { ok: false; reason: "unsupported" | "render-failed" };
 
@@ -133,6 +146,9 @@ interface PdfPage {
     canvas: unknown;
   }): { promise: Promise<void> };
   cleanup(): void;
+  getTextContent(): Promise<{
+    items: Array<{ str?: string; hasEOL?: boolean }>;
+  }>;
 }
 interface PdfDocument {
   numPages: number;
@@ -268,15 +284,93 @@ export function __resetPdfjsAssetsForTests(): void {
 }
 
 /**
+ * The most text kept from one page's text layer. Collection stops here while
+ * the items are read, so a PDF whose content streams inflate to megabytes of
+ * text cannot hold them in memory for the length of a run. A dense lab page
+ * is well below it.
+ */
+export const RASTER_PAGE_TEXT_MAX = 12_000;
+
+/** Marks where a text layer was cut. */
+export const TEXT_LAYER_CUT_MARK = "[text layer cut here]";
+
+/**
+ * The head of `text` that fits `room` characters: cut at the last space before
+ * the limit so no number is cut in half, or hard at the limit when the text
+ * has no space to cut at.
+ */
+function headThatFits(text: string, room: number): string {
+  if (text.length <= room) return text;
+  const head = text.slice(0, room);
+  const space = head.lastIndexOf(" ");
+  return space > 0 ? head.slice(0, space) : head;
+}
+
+/**
+ * A page's text layer, line by line: what the PDF states as characters.
+ * Empty for a page without one or on any failure. Past
+ * `RASTER_PAGE_TEXT_MAX` it is cut (at a line, else a space, else hard) and
+ * marked.
+ */
+export async function pageText(
+  page: Pick<PdfPage, "getTextContent">,
+): Promise<string> {
+  const max = RASTER_PAGE_TEXT_MAX;
+  try {
+    const { items } = await page.getTextContent();
+    const lines: string[] = [];
+    let length = 0;
+    let line = "";
+    // Cut at the last whole line; only a page whose first line alone runs
+    // past the cap keeps part of that line, cut at a space or hard.
+    const cut = (): string => {
+      if (lines.length === 0) {
+        const room = max - TEXT_LAYER_CUT_MARK.length - 1;
+        const head = headThatFits(line.replace(/\s+/g, " ").trim(), room);
+        if (head.trim()) lines.push(head.trim());
+      }
+      lines.push(TEXT_LAYER_CUT_MARK);
+      return lines.join("\n");
+    };
+    /** Adds the line in hand; false when it does not fit. */
+    const flush = (): boolean => {
+      const clean = line.replace(/\s+/g, " ").trim();
+      if (!clean) {
+        line = "";
+        return true;
+      }
+      if (length + clean.length + 1 > max - TEXT_LAYER_CUT_MARK.length - 1) {
+        return false;
+      }
+      lines.push(clean);
+      length += clean.length + 1;
+      line = "";
+      return true;
+    };
+    for (const item of items) {
+      line += `${item.str ?? ""} `;
+      // A line that runs on without a break is judged at the cap, so one
+      // endless line cannot grow past it either.
+      if ((item.hasEOL || line.length > max) && !flush()) return cut();
+    }
+    if (!flush()) return cut();
+    return lines.join("\n");
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Render the first `RASTER_MAX_PAGES` pages of a PDF to bounded JPEG images
- * (or fewer when `maxPages` is passed — the thumbnail path renders page 1
- * only). Returns `{ ok: false }` on any failure (malformed PDF, render throw,
+ * (or another count when `maxPages` is passed — the thumbnail path renders
+ * page 1 only, the lab scan up to `RASTER_HARD_MAX_PAGES`). Returns `{ ok: false }` on any failure (malformed PDF, render throw,
  * missing binary, or zero renderable pages) — the caller degrades to local
  * text or un-indexed. Never throws.
  */
 export async function rasterizePdf(
   buffer: Buffer,
   maxPages: number = RASTER_MAX_PAGES,
+  opts: { withText?: boolean } = {},
 ): Promise<RasterResult> {
   let doc: PdfDocument | null = null;
   let task: PdfLoadingTask | null = null;
@@ -326,9 +420,10 @@ export async function rasterizePdf(
     doc = await task.promise;
 
     // Never exceed the standing DoS ceiling, even if a caller asks for more.
-    const cap = Math.min(Math.max(1, maxPages), RASTER_MAX_PAGES);
+    const cap = Math.min(Math.max(1, maxPages), RASTER_HARD_MAX_PAGES);
     const pageCount = Math.min(doc.numPages, cap);
     const images: RasterImage[] = [];
+    const texts: string[] = [];
     let blankPages = 0;
 
     for (let pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
@@ -363,6 +458,7 @@ export async function rasterizePdf(
           dataBase64: jpeg.toString("base64"),
         });
         factory.destroy?.(cc);
+        if (opts.withText) texts.push(await pageText(page));
       } finally {
         page.cleanup();
       }
@@ -392,7 +488,12 @@ export async function rasterizePdf(
       action: { name: "documents.rasterize.ok" },
       meta: { pages: images.length, cappedFrom: doc.numPages, blankPages },
     });
-    return { ok: true, images, pageCount: doc.numPages };
+    return {
+      ok: true,
+      images,
+      pageCount: doc.numPages,
+      ...(opts.withText ? { texts } : {}),
+    };
   } catch (err) {
     annotate({
       action: { name: "documents.rasterize.failed" },

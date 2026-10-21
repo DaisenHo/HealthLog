@@ -61,6 +61,15 @@ import {
 
 import { hasActivityScope } from "./client";
 import {
+  nextSleepStageReads,
+  parseSleepStageReads,
+  serialiseSleepStageReads,
+  isSleepNightGivenUp,
+  sleepNightKey,
+  type SleepStageReadOutcome,
+  type SleepStageReads,
+} from "./sleep-stage-reads";
+import {
   isPlanGatedError,
   isPlanReprobeDue,
   parseWithingsApiPlanState,
@@ -122,6 +131,8 @@ export interface WithingsSleepSummary {
   id?: number;
   startdate: number;
   enddate: number;
+  /** When Withings last changed the night (unix seconds), e.g. a re-score. */
+  modified?: number;
   data?: {
     hr_average?: number | null;
     rr_average?: number | null;
@@ -385,56 +396,156 @@ export async function syncUserSleep(
     return 0;
   }
 
-  void opts.fullSync;
   const now = new Date();
   const start = new Date(
     now.getTime() - SLEEP_BACKFILL_DAYS * 24 * 60 * 60 * 1000,
   );
-  const startUnix = Math.floor(start.getTime() / 1000);
   const endUnix = Math.floor(now.getTime() / 1000);
 
-  let segments: WithingsSleepSegment[];
+  // The nights come first: `action=getsummary` lists every night of the
+  // window (and carries its vitals), and the stage timeline is then read per
+  // night. `action=get` answers only the first 24 hours after its
+  // `startdate` ("If your input startdate and enddate are separated by more
+  // than 24h, only the first 24h after startdate will be returned", Sleep v2
+  // Get); asked for the whole window it returned the night a month back and
+  // nothing since, so every night's stages arrived when the sliding window
+  // reached it, weeks late.
+  //
+  // Withings API plans (2026-10-12): the sleep score, the overnight HRV and
+  // the respiration rate are Advanced Biomarkers, and one of them in
+  // `data_fields` has the whole summary refused with 277. Ask only for what
+  // the plan allows, remember what it refused, and re-probe weekly.
+  let summaries: WithingsSleepSummary[] = [];
+  let summaryFailure: unknown = null;
+  let nightsKnown = false;
+  let stageReads: SleepStageReads = new Map();
   try {
-    segments = await fetchWithingsSleep(
-      tokenInfo.accessToken,
-      startUnix,
-      endUnix,
-    );
-  } catch (err) {
-    // The stage timeline is a free-plan biomarker, so a plan refusal here is
-    // not expected. If Withings ever moves it, the leg reads nothing rather
-    // than failing: a 277 must not climb the strike ladder and park the
-    // measures, activity and ECG legs along with it.
-    if (isPlanGatedError(err)) {
-      annotate({ meta: { withings_sleep_segments_skipped: "api_plan" } });
-      await recordSyncSuccess(userId, "withings", { leg: WITHINGS_LEG_SLEEP });
-      return 0;
-    }
-    // v1.4.43 — typed-classification path (see sync-activity.ts
-    // for the full rationale). The thrown `WithingsApiError` carries
-    // the classification verdict; `recordWithingsSyncFailure` routes
-    // it through `classifyError`, which falls back to the legacy regex
-    // for un-prototyped errors (pg-boss JSON round-trip).
-    //
-    // BL-P3-2 defence-in-depth — symmetric to sync-activity. A 403 on
-    // this scope-gated endpoint always means scope-missing or
-    // token-revoked; force `reauth_required` so the 3-strike alert
-    // still pages on the unexpected case.
-    const withingsStatus =
-      err instanceof WithingsApiError ? err.withingsStatus : undefined;
-    if (withingsStatus === 403) {
-      await recordSyncFailure({
-        userId,
-        integration: "withings",
-        kind: "reauth_required",
-        message: err instanceof Error ? err.message : String(err),
-        errorCode: "403",
-        leg: WITHINGS_LEG_SLEEP,
+    const planRow = await prisma.withingsConnection.findUnique({
+      where: { userId },
+      select: { apiPlanState: true, sleepStageReads: true },
+    });
+    stageReads = parseSleepStageReads(planRow?.sleepStageReads);
+    const sleepPlan = parseWithingsApiPlanState(
+      planRow?.apiPlanState,
+    ).sleepSummary;
+    const reprobed = isPlanReprobeDue(sleepPlan, now);
+    const skip = planSkipFor(sleepPlan, now);
+    const plan = await requestWithinPlan({
+      keys: SLEEP_SUMMARY_DATA_FIELDS.filter((f) => !skip.includes(f)),
+      knownGated: WITHINGS_ADVANCED_SLEEP_FIELDS,
+      fetch: (fields) =>
+        fetchWithingsSleepSummary(
+          tokenInfo.accessToken,
+          ymdUtc(start),
+          ymdUtc(now),
+          fields,
+        ),
+    });
+    summaries = plan.results;
+    nightsKnown = plan.acceptedAny;
+    if (
+      shouldPersistPlanLeg({
+        gated: plan.gated,
+        reprobed,
+        acceptedAny: plan.acceptedAny,
+      })
+    ) {
+      await persistWithingsPlanLeg(userId, "sleepSummary", {
+        unavailable: [...skip, ...plan.unavailable],
+        checkedAt: planCheckedAtFor(sleepPlan, reprobed, now),
       });
-      throw err;
     }
-    await recordWithingsSyncFailure(userId, err, WITHINGS_LEG_SLEEP);
-    throw err;
+  } catch (err) {
+    // Booked as this leg's failure once the stages are written: the summary
+    // carries the vitals and names the nights, and a run without it is not
+    // a healthy one. It used to be a warning, and the leg read green.
+    summaryFailure = err;
+    getEvent()?.addWarning(
+      `withings sleep: summary fetch failed for ${userId}: ${err}`,
+    );
+  }
+
+  // Without the night list (the summary failed, or the plan refused every
+  // field it was asked for) the last 24 hours are read as one slice, so last
+  // night still lands. Such a slice can cut a night, so it is never swept.
+  const windows: StageWindow[] = nightsKnown
+    ? await stageWindowsToFetch(userId, summaries, now, {
+        all: opts.fullSync === true,
+        reads: stageReads,
+      })
+    : [
+        {
+          startdate: endUnix - DAY_SECONDS,
+          enddate: endUnix,
+          wholeNight: false,
+          recent: true,
+        },
+      ];
+
+  const segments: WithingsSleepSegment[] = [];
+  const wholeNightSessions = new Set<number>();
+  const seenSegments = new Set<string>();
+  // How each night's read went, for the per-night record below.
+  const outcomes = new Map<string, SleepStageReadOutcome>();
+  // The first read that failed. The nights read before and after it are
+  // still written, and the summary vitals with them; the failure is booked
+  // as the leg's once they are, and the night is read first next run.
+  let stageFailure: unknown = null;
+  for (const window of windows) {
+    let series: WithingsSleepSegment[];
+    try {
+      series = await fetchWithingsSleep(
+        tokenInfo.accessToken,
+        window.startdate,
+        window.enddate,
+      );
+    } catch (err) {
+      // The stage timeline is a free-plan biomarker, so a plan refusal here
+      // is not expected. If Withings ever moves it, the leg reads no stages
+      // rather than failing: a 277 must not climb the strike ladder and park
+      // the measures, activity and ECG legs along with it.
+      if (isPlanGatedError(err)) {
+        annotate({ meta: { withings_sleep_segments_skipped: "api_plan" } });
+        break;
+      }
+      if (window.nightKey) outcomes.set(window.nightKey, "failed");
+      const reauth =
+        err instanceof WithingsApiError &&
+        (err.withingsStatus === 403 ||
+          err.classification === "reauth_required");
+      // An older night that will not read is that night's problem, not the
+      // connection's: the rest synced, so it is a warning, and the record
+      // gives the night up after a few tries. A recent night, the blind
+      // slice, or a refused grant fails the leg.
+      if (window.recent || reauth) {
+        stageFailure ??= err;
+      } else {
+        getEvent()?.addWarning(
+          `withings sleep: stage read failed for an older night of ${userId}: ${err}`,
+        );
+        annotate({ meta: { withings_sleep_older_night_failed: true } });
+      }
+      // A revoked grant or a missing scope refuses every night alike, so the
+      // rest are not asked for.
+      if (reauth) break;
+      continue;
+    }
+    let staged = false;
+    for (const segment of series) {
+      if (mapWithingsSleepState(segment.state)) staged = true;
+      // Two windows can return the same segment (a night longer than its
+      // 24-hour slice, a nap inside a night); it is written once.
+      const key = `${segment.id ?? "no-id"}:${segment.startdate}`;
+      if (seenSegments.has(key)) continue;
+      seenSegments.add(key);
+      segments.push(segment);
+      if (window.wholeNight && typeof segment.id === "number") {
+        wholeNightSessions.add(segment.id);
+      }
+    }
+    if (window.nightKey) {
+      outcomes.set(window.nightKey, staged ? "staged" : "empty");
+    }
   }
 
   let imported = 0;
@@ -528,63 +639,19 @@ export async function syncUserSleep(
   // running-index row for re-fetched sessions. Sessions absent from this fetch
   // are never touched; a sweep failure never fails the sync (the session stays
   // inside the rolling 30-day window, so the hourly cron retries it).
-  const sweeps: SleepSegmentSweep[] = [...freshBySession].map(
-    ([sessionId, keepIds]) => ({
+  const sweeps: SleepSegmentSweep[] = [...freshBySession]
+    // Only a session read across its whole night is swept: a 24-hour slice
+    // can cut one, and sweeping it would retire the part outside the slice.
+    .filter(([sessionId]) => wholeNightSessions.has(sessionId))
+    .map(([sessionId, keepIds]) => ({
       prefix: `withings:sleep:${userId}:${sessionId}:`,
       keepIds,
-    }),
-  );
+    }));
   await sweepStaleSleepSegments(userId, "WITHINGS", sweeps);
 
   // v1.18.10 — nightly sleep vitals (avg HR / respiratory rate / SDNN HRV
-  // / avg SpO2 / sleep score) from the per-night summary. Fetch failure stays
-  // isolated from the stage writes; database failures are hard sync failures.
-  //
-  // Withings API plans (2026-10-12): the sleep score, the overnight HRV and the
-  // respiration rate are Advanced Biomarkers, and one of them in `data_fields`
-  // has the whole summary refused with 277. Ask only for what the plan allows,
-  // remember what it refused, and re-probe weekly.
-  let summaries: WithingsSleepSummary[] = [];
-  try {
-    const planRow = await prisma.withingsConnection.findUnique({
-      where: { userId },
-      select: { apiPlanState: true },
-    });
-    const sleepPlan = parseWithingsApiPlanState(
-      planRow?.apiPlanState,
-    ).sleepSummary;
-    const reprobed = isPlanReprobeDue(sleepPlan, now);
-    const skip = planSkipFor(sleepPlan, now);
-    const plan = await requestWithinPlan({
-      keys: SLEEP_SUMMARY_DATA_FIELDS.filter((f) => !skip.includes(f)),
-      knownGated: WITHINGS_ADVANCED_SLEEP_FIELDS,
-      fetch: (fields) =>
-        fetchWithingsSleepSummary(
-          tokenInfo.accessToken,
-          ymdUtc(start),
-          ymdUtc(now),
-          fields,
-        ),
-    });
-    summaries = plan.results;
-    if (
-      shouldPersistPlanLeg({
-        gated: plan.gated,
-        reprobed,
-        acceptedAny: plan.acceptedAny,
-      })
-    ) {
-      await persistWithingsPlanLeg(userId, "sleepSummary", {
-        unavailable: [...skip, ...plan.unavailable],
-        checkedAt: planCheckedAtFor(sleepPlan, reprobed, now),
-      });
-    }
-  } catch (err) {
-    getEvent()?.addWarning(
-      `withings sleep: summary fetch failed for ${userId}: ${err}`,
-    );
-  }
-
+  // / avg SpO2 / sleep score) from the per-night summary read above. Database
+  // failures are hard sync failures.
   await prisma
     .$transaction(
       async (tx) => {
@@ -656,6 +723,181 @@ export async function syncUserSleep(
     () => {},
   );
 
+  if (nightsKnown) {
+    const windowNightKeys = new Set(summaries.map(sleepNightKey));
+    try {
+      await prisma.withingsConnection.update({
+        where: { userId },
+        data: {
+          sleepStageReads: serialiseSleepStageReads(
+            nextSleepStageReads(stageReads, outcomes, windowNightKeys),
+          ),
+        },
+      });
+    } catch (err) {
+      // Bookkeeping only: without it the next run reads as it did before.
+      getEvent()?.addWarning(
+        `withings sleep: stage-read record not saved for ${userId}: ${err}`,
+      );
+    }
+  }
+
+  if (stageFailure !== null) {
+    // v1.4.43 — typed-classification path (see sync-activity.ts for the full
+    // rationale). The thrown `WithingsApiError` carries the classification
+    // verdict; `recordWithingsSyncFailure` routes it through
+    // `classifyError`, which falls back to the legacy regex for
+    // un-prototyped errors (pg-boss JSON round-trip).
+    //
+    // BL-P3-2 defence-in-depth — symmetric to sync-activity. A 403 on this
+    // scope-gated endpoint always means scope-missing or token-revoked; force
+    // `reauth_required` so the 3-strike alert still pages on the unexpected
+    // case.
+    const withingsStatus =
+      stageFailure instanceof WithingsApiError
+        ? stageFailure.withingsStatus
+        : undefined;
+    if (withingsStatus === 403) {
+      await recordSyncFailure({
+        userId,
+        integration: "withings",
+        kind: "reauth_required",
+        message:
+          stageFailure instanceof Error
+            ? stageFailure.message
+            : String(stageFailure),
+        errorCode: "403",
+        leg: WITHINGS_LEG_SLEEP,
+      });
+    } else {
+      await recordWithingsSyncFailure(userId, stageFailure, WITHINGS_LEG_SLEEP);
+    }
+    throw stageFailure;
+  }
+  if (summaryFailure !== null) {
+    await recordWithingsSyncFailure(userId, summaryFailure, WITHINGS_LEG_SLEEP);
+    return imported;
+  }
   await recordSyncSuccess(userId, "withings", { leg: WITHINGS_LEG_SLEEP });
   return imported;
+}
+
+const DAY_SECONDS = 24 * 60 * 60;
+
+/** Nights that ended this recently are read again on every run (re-scores). */
+const RECENT_NIGHT_SECONDS = 2 * DAY_SECONDS;
+
+/**
+ * Stage reads per run beyond the recent nights. A new connection, or a
+ * window the sleep-timeline backfill just cleared, fills in over a few runs
+ * instead of firing thirty requests at once; a full sync reads every night.
+ */
+export const SLEEP_STAGE_NIGHTS_PER_RUN = 8;
+
+/** One `action=get` read: a night's own span, at most 24 hours. */
+interface StageWindow {
+  startdate: number;
+  enddate: number;
+  /** The read covers the whole night, so its session may be swept. */
+  wholeNight: boolean;
+  /** The summary night it reads (`sleepNightKey`), absent for the blind slice. */
+  nightKey?: string;
+  /**
+   * The night ended, or Withings changed it, in the last 48 hours (the blind
+   * slice is always recent). Only a failed recent read fails the leg.
+   */
+  recent: boolean;
+}
+
+/**
+ * The nights whose stage timeline this run reads, from the summary's night
+ * list: every night that ended, or that Withings changed (`modified`), in the
+ * last 48 hours, since Withings re-scores a night after the fact; then nights
+ * that hold no Withings stage row yet,
+ * up to `SLEEP_STAGE_NIGHTS_PER_RUN`. The missing nights rotate by the hour,
+ * so a night that never carries stages (a tracker without them) cannot keep
+ * the ones behind it waiting.
+ */
+async function stageWindowsToFetch(
+  userId: string,
+  summaries: readonly WithingsSleepSummary[],
+  now: Date,
+  opts: { all: boolean; reads: SleepStageReads },
+): Promise<StageWindow[]> {
+  const nights = new Map<
+    string,
+    { startdate: number; enddate: number; changed: number }
+  >();
+  for (const s of summaries) {
+    if (!Number.isFinite(s.startdate) || !Number.isFinite(s.enddate)) continue;
+    if (s.enddate <= s.startdate) continue;
+    const modified = Number.isFinite(s.modified) ? s.modified! : 0;
+    const key = `${s.startdate}:${s.enddate}`;
+    nights.set(key, {
+      startdate: s.startdate,
+      enddate: s.enddate,
+      changed: Math.max(s.enddate, modified, nights.get(key)?.changed ?? 0),
+    });
+  }
+  const all = [...nights.values()].sort((x, y) => y.enddate - x.enddate);
+  const nowUnix = Math.floor(now.getTime() / 1000);
+  const toWindow = (n: {
+    startdate: number;
+    enddate: number;
+    changed: number;
+  }): StageWindow => ({
+    startdate: n.startdate,
+    enddate: Math.min(n.enddate, n.startdate + DAY_SECONDS),
+    wholeNight: n.enddate - n.startdate <= DAY_SECONDS,
+    nightKey: sleepNightKey(n),
+    recent: n.changed >= nowUnix - RECENT_NIGHT_SECONDS,
+  });
+  if (opts.all || all.length === 0) return all.map(toWindow);
+
+  // Recent: ended, or was changed by Withings, within the last 48 hours.
+  const recent = all.filter((n) => n.changed >= nowUnix - RECENT_NIGHT_SECONDS);
+  const older = all.filter((n) => n.changed < nowUnix - RECENT_NIGHT_SECONDS);
+  if (older.length === 0) return recent.map(toWindow);
+
+  // Segments are stamped at their END, so a night holds a stage row when one
+  // ends inside (startdate, enddate]. One read over the span of the older
+  // nights, on the `(user_id, type, measured_at)` index.
+  const first = Math.min(...older.map((n) => n.startdate));
+  const last = Math.max(...older.map((n) => n.enddate));
+  const stored = await prisma.measurement.findMany({
+    where: {
+      userId,
+      source: "WITHINGS",
+      type: SLEEP_TYPE,
+      deletedAt: null,
+      measuredAt: { gt: new Date(first * 1000), lte: new Date(last * 1000) },
+    },
+    select: { measuredAt: true },
+  });
+  const endsAt = stored.map((row) => row.measuredAt.getTime() / 1000);
+  // A night whose last read failed goes first. One that answered without a
+  // stage `SLEEP_STAGE_MAX_EMPTY_READS` times is not asked again: the tracker
+  // does not stage it, and reading it every run for a month cost a request
+  // an hour for nothing.
+  const record = (n: { startdate: number; enddate: number }) =>
+    opts.reads.get(sleepNightKey(n));
+  const missing = older
+    .filter((n) => !endsAt.some((t) => t > n.startdate && t <= n.enddate))
+    .filter((n) => !isSleepNightGivenUp(record(n)))
+    .sort((x, y) => x.enddate - y.enddate);
+  const failed = missing.filter((n) => record(n)?.failed === true);
+  const rest = missing.filter((n) => record(n)?.failed !== true);
+  const budget = Math.max(0, SLEEP_STAGE_NIGHTS_PER_RUN - recent.length);
+  if (missing.length <= budget) {
+    return [...recent, ...failed, ...rest].map(toWindow);
+  }
+  const restBudget = Math.max(0, budget - failed.length);
+  const offset =
+    rest.length === 0 ? 0 : Math.floor(nowUnix / 3600) % rest.length;
+  const rotated = [...rest.slice(offset), ...rest.slice(0, offset)];
+  return [
+    ...recent,
+    ...failed.slice(0, budget),
+    ...rotated.slice(0, restBudget),
+  ].map(toWindow);
 }

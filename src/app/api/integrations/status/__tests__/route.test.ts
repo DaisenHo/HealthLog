@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
@@ -16,6 +16,7 @@ vi.mock("@/lib/db", () => ({
     fitbitConnection: { findUnique: vi.fn(async () => null) },
     googleHealthConnection: { findUnique: vi.fn(async () => null) },
     moodEntry: { count: vi.fn(async () => 0) },
+    measurement: { findFirst: vi.fn(async () => null) },
     $queryRaw: vi.fn(async () => []),
     workout: { groupBy: vi.fn(async () => []) },
   },
@@ -65,6 +66,7 @@ vi.mock("@/lib/oura/credentials", async () => ({
 }));
 
 import { GET } from "../route";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 import { prisma } from "@/lib/db";
 import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import { ATTEMPT_STALE_AFTER_MS } from "@/lib/integrations/sync-verdict";
@@ -506,5 +508,63 @@ describe("/api/integrations/status — one round of reads", () => {
     release({});
     const envelope = await pending;
     expect(envelope.integrations.length).toBeGreaterThan(0);
+  });
+});
+
+describe("/api/integrations/status — the Fitbit card after the turndown", () => {
+  const fitbitFind = prisma.fitbitConnection.findUnique as ReturnType<
+    typeof vi.fn
+  >;
+  const fitbitDataFind = prisma.measurement.findFirst as ReturnType<
+    typeof vi.fn
+  >;
+  const offered = async () =>
+    (
+      (await fetchEntries()).find((e) => e.integration === "fitbit") as {
+        retirement?: { ended: boolean; offered: boolean };
+      }
+    ).retirement;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    userFind.mockResolvedValue({});
+    fitbitFind.mockResolvedValue(null);
+    fitbitDataFind.mockResolvedValue(null);
+    // The suites run before the turndown by default (`vitest.setup.ts`).
+    vi.mocked(isFitbitRetired).mockReturnValue(true);
+  });
+  afterEach(() => {
+    vi.mocked(isFitbitRetired).mockReturnValue(false);
+  });
+
+  it("is not offered to an account that never had Fitbit", async () => {
+    expect(await offered()).toMatchObject({ ended: true, offered: false });
+    expect(fitbitDataFind).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: "u1", source: "FITBIT" }),
+      }),
+    );
+  });
+
+  it("stays, with its notice, for an account holding Fitbit data", async () => {
+    fitbitDataFind.mockResolvedValue({ id: "m1" });
+    expect(await offered()).toMatchObject({ ended: true, offered: true });
+  });
+
+  it("stays for an account still holding its Fitbit connection", async () => {
+    fitbitFind.mockResolvedValue({
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      tokenExpiresAt: new Date("2026-11-01T00:00:00.000Z"),
+      lastSyncedAt: null,
+      backfillCompletedAt: null,
+    });
+    expect(await offered()).toMatchObject({ ended: true, offered: true });
+    expect(fitbitDataFind).not.toHaveBeenCalled();
+  });
+
+  it("is offered to everyone before the turndown", async () => {
+    vi.mocked(isFitbitRetired).mockReturnValue(false);
+    expect(await offered()).toMatchObject({ ended: false, offered: true });
+    expect(fitbitDataFind).not.toHaveBeenCalled();
   });
 });

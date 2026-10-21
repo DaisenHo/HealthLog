@@ -26,6 +26,8 @@ import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
+import { visitPath } from "@/lib/encounters/visit-links";
+import { loadVisitPreparations } from "@/lib/encounters/preparation-read";
 
 /** The window when the record holds no visit the caller may see. */
 export const FALLBACK_WINDOW_DAYS = 90;
@@ -275,7 +277,7 @@ async function procedureChanges(w: Window): Promise<DayChange[]> {
       kind: "procedure",
       id: row.id,
       title: openText(row.reasonEncrypted, "procedure reason") ?? "",
-      href: `/checkups?visit=${row.id}`,
+      href: visitPath(row.id),
     }),
   );
 }
@@ -338,6 +340,43 @@ async function lastVisitDay(
   return row ? userDayKey(row.occurredAt, tz) : null;
 }
 
+/**
+ * The first day of the window the next planned visit prepares, exactly as
+ * `EncounterDTO.preparation.from` publishes it on that visit: the same visit
+ * (the soonest PLANNED one still ahead) and the same rule
+ * (`loadVisitPreparations`). Null when nothing is booked.
+ */
+async function nextVisitPreparationFrom(
+  recordId: string,
+  now: Date,
+): Promise<string | null> {
+  const next = await prisma.encounter.findFirst({
+    where: {
+      userId: recordId,
+      deletedAt: null,
+      status: "PLANNED",
+      occurredAt: { gt: now },
+    },
+    select: {
+      id: true,
+      occurredAt: true,
+      kind: true,
+      status: true,
+      practitionerId: true,
+      practitioner: { select: { name: true, specialty: true } },
+    },
+    orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
+  });
+  if (!next) return null;
+  const preparations = await loadVisitPreparations(
+    prisma,
+    recordId,
+    [next],
+    now,
+  );
+  return preparations.get(next.id)?.from ?? null;
+}
+
 export async function loadSinceLastVisit(args: {
   recordId: string;
   access: DayAccess;
@@ -345,6 +384,7 @@ export async function loadSinceLastVisit(args: {
   today: string;
   from?: string;
   to?: string;
+  now?: Date;
 }): Promise<DayNotableWindowResponse> {
   const { recordId, access, tz } = args;
   const to = args.to ?? args.today;
@@ -354,11 +394,25 @@ export async function loadSinceLastVisit(args: {
     from = args.from;
     anchor = "requested";
   } else {
-    const last = access.readable.has("visits")
-      ? await lastVisitDay(recordId, tz, startOfLocalDayKey(to, tz))
+    // Without `from`, the window the web shows: the one the next planned
+    // visit prepares. The web passes that day as `from`; a client that asks
+    // without one (the shipped iOS app) got the window since the last
+    // completed visit of any kind instead, a different list for the same
+    // appointment. Without a booked visit, the last completed one.
+    const visitsReadable = access.readable.has("visits");
+    const prepared = visitsReadable
+      ? await nextVisitPreparationFrom(recordId, args.now ?? new Date())
       : null;
-    from = last ?? shiftDateKey(to, -FALLBACK_WINDOW_DAYS);
-    anchor = last ? "lastVisit" : "fallback";
+    if (prepared !== null && prepared <= to) {
+      from = prepared;
+      anchor = "nextVisit";
+    } else {
+      const last = visitsReadable
+        ? await lastVisitDay(recordId, tz, startOfLocalDayKey(to, tz))
+        : null;
+      from = last ?? shiftDateKey(to, -FALLBACK_WINDOW_DAYS);
+      anchor = last ? "lastVisit" : "fallback";
+    }
   }
   if (daysBetweenDateKeys(from, to) >= DAY_NOTABLE_MAX_SPAN_DAYS) {
     from = shiftDateKey(to, -(DAY_NOTABLE_MAX_SPAN_DAYS - 1));

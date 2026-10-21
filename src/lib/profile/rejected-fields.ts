@@ -37,6 +37,7 @@ export interface RejectedProfileField {
  */
 export const PROFILE_FIELD_LABEL_KEYS: Record<string, string> = {
   email: "auth.email",
+  displayName: "onboarding.baseline.displayNameLabel",
   heightCm: "settings.height",
   dateOfBirth: "settings.dateOfBirth",
   gender: "settings.gender",

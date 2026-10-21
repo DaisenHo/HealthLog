@@ -18,6 +18,8 @@ import { apiPatch } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
+import { RemoveSavedKeyButton } from "./remove-saved-key-button";
+
 import {
   ANTHROPIC_MODEL_PRESETS,
   CUSTOM_MODEL_SENTINEL,
@@ -169,6 +171,9 @@ export function AnthropicProviderForm({
       )}
 
       <SettingsCardActions>
+        {userProvider?.hasAnthropicKey && (
+          <RemoveSavedKeyButton field="anthropicKey" />
+        )}
         <Button
           type="submit"
           size="sm"

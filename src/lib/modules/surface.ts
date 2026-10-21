@@ -212,6 +212,8 @@ const STATIC_SURFACE_MODULE = {
   "correlation:SLEEP_DURATION": "sleep",
   "correlation:BLOOD_GLUCOSE": "glucose",
   "correlation:RESTING_HEART_RATE": "recovery",
+  // The RMSSD series is the recovery module's (see `summary:HRV_RMSSD`).
+  "correlation:HRV_RMSSD": "recovery",
   "correlation:MEDICATION_COMPLIANCE": "medications",
   // Symptom burden is read from the illness journal.
   "correlation:SYMPTOM_SEVERITY": "illness",

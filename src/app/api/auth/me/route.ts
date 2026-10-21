@@ -391,6 +391,10 @@ export const GET = apiHandler(async () => {
     // resolved `ai.capabilities.coach` and `modules.coach` below, which fold
     // in the record's own opt-out, the operator's switches and the grant.
     disableCoach: user.disableCoach ?? false,
+    // The name the app addresses the account by (dashboard greeting,
+    // reports). Set in the setup flow and edited on the profile card, which
+    // seeds its field from here.
+    displayName: user.displayName ?? null,
     // v1.7.0 — health-record export identity fields. All optional.
     fullName: user.fullName ?? null,
     insurerName: user.insurerName ?? null,

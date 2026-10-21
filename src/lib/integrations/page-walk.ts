@@ -49,6 +49,13 @@ import { annotate } from "@/lib/logging/context";
 export interface WalkPage<C, T> {
   items: readonly T[];
   next: C | null | undefined;
+  /**
+   * The provider refused to go on for now (a rate limit) with history left.
+   * The walk ends here with what it read, reported `truncated` like a walk
+   * cut off at its ceiling, so a backfill resumes later instead of stamping
+   * a history it did not finish.
+   */
+  interrupted?: boolean;
 }
 
 /** What the walk came to. */
@@ -78,6 +85,9 @@ export async function walkPages<C, T>(
   for (let page = 0; page < maxPages; page += 1) {
     const result = await fetchPage(cursor, page);
     items.push(...result.items);
+    if (result.interrupted) {
+      return truncated(label, items, page + 1, "interrupted");
+    }
     const next = result.next;
     if (next === null || next === undefined || next === "") {
       return { items, pages: page + 1, truncated: false };
@@ -93,7 +103,7 @@ function truncated<T>(
   label: string,
   items: T[],
   pages: number,
-  reason: "ceiling" | "repeat",
+  reason: "ceiling" | "repeat" | "interrupted",
 ): PageWalk<T> {
   annotate({
     action: { name: "integration.page_walk.truncated" },

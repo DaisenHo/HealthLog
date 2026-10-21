@@ -8,7 +8,7 @@
  *   - weight                                → WEIGHT
  *   - body-fat                              → BODY_FAT
  *   - daily-oxygen-saturation               → OXYGEN_SATURATION
- *   - daily-heart-rate-variability          → HEART_RATE_VARIABILITY (SDNN slot; see mapper)
+ *   - daily-heart-rate-variability          → HRV_RMSSD (RMSSD; see mapper)
  *   - daily-resting-heart-rate              → RESTING_HEART_RATE
  *   - daily-respiratory-rate                → RESPIRATORY_RATE
  *   - heart-rate (intraday)                 → PULSE
@@ -117,7 +117,7 @@ const METRIC_RESOURCES: MetricResource[] = [
     dataType: GOOGLE_HEALTH_DATA_TYPES.heartRateVariability,
     map: mapHeartRateVariability,
     verb: "fetchHrv",
-    type: "HEART_RATE_VARIABILITY",
+    type: "HRV_RMSSD",
   },
   {
     dataType: GOOGLE_HEALTH_DATA_TYPES.restingHeartRate,

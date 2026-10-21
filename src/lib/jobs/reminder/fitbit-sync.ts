@@ -13,6 +13,7 @@ import { runFitbitPollCohort } from "@/lib/fitbit/sync";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { cleanupExpiredFitbitOAuthStates } from "@/lib/jobs/fitbit-oauth-state-cleanup";
 import { getWorkerPrisma } from "./shared";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 /**
  * v1.12.0 — Fitbit poll-sync payload. Poll-only (no webhook at launch): the
@@ -28,6 +29,20 @@ export async function handleFitbitSync(
   jobs: Job<FitbitSyncPayload>[],
 ): Promise<JobOutcome> {
   return withBackgroundEvent("job.fitbit_sync", async (evt) => {
+    // Google turned the Web API off (`@/lib/fitbit/retirement`): the cron
+    // tick reads no connection and calls nothing.
+    if (isFitbitRetired()) {
+      evt.setBackground({
+        task_name: "job.fitbit_sync",
+        result: { retired: true },
+      });
+      return jobDone({
+        total: 0,
+        users_synced: 0,
+        users_failed: 0,
+        measurements_imported: 0,
+      });
+    }
     const prisma = getWorkerPrisma();
     try {
       const targets: Array<{ userId: string }> = [];

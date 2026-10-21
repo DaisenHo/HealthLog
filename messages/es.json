@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "La cadena vuelve a Codex → OpenAI → Anthropic → Local → OpenAI de administrador. Tus credenciales guardadas no se modifican."
       },
       "activeProviderHeading": "Proveedor activo",
-      "activeProviderLabel": "Proveedor principal",
+      "activeProviderLabel": "Configurar un proveedor",
       "providerSelect": {
         "codex": "Cuenta de ChatGPT (Codex)",
         "openai": "OpenAI (tu clave de API)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "En el Coach se aplica la profundidad de pensamiento de los ajustes del Coach."
       },
-      "providerCardDescription": "El proveedor al que HealthLog pregunta primero, con su clave y su modelo.",
+      "providerCardDescription": "Configura la clave y el modelo de cada proveedor; el orden de abajo decide a cuál pregunta HealthLog primero.",
       "runtimeTitle": "Comprobar y actualizar",
       "usage": {
         "title": "Uso de la IA",
@@ -6440,6 +6440,14 @@
         "followsDefault": "Sigues el valor predeterminado del servidor ({level}).",
         "useDefault": "Usar el valor predeterminado del servidor ({level})",
         "saveError": "No se pudo guardar el nivel. Inténtalo de nuevo."
+      },
+      "removeKey": {
+        "label": "Quitar clave de API",
+        "title": "¿Quitar la clave de API guardada?",
+        "body": "HealthLog borra la clave guardada y no puede recuperarla. Vuelve a introducirla para seguir usándola.",
+        "confirm": "Quitar clave de API",
+        "done": "Clave de API quitada.",
+        "failed": "No se pudo quitar la clave de API."
       }
     },
     "dashboard": {
@@ -6619,7 +6627,8 @@
       "nocode": "Fitbit no devolvió un código de autorización. Inténtalo de nuevo y permite el acceso en el diálogo de Fitbit.",
       "nocreds": "Fitbit no está configurado. Añade tus credenciales OAuth de Fitbit arriba e inténtalo de nuevo.",
       "token": "El intercambio de token con Fitbit falló. Inicia la conexión de nuevo.",
-      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo."
+      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo.",
+      "retired": "Google desactivó la API web de Fitbit, así que ya no se puede crear una nueva conexión de Fitbit. Conecta Google Health, que lee los mismos dispositivos."
     },
     "integrations": {
       "withings": {
@@ -6851,7 +6860,7 @@
       "errorRateLimit": "Ha alcanzado el límite de exportaciones de esta hora.",
       "errorModuleDisabled": "La exportación del expediente está desactivada para esta cuenta.",
       "visitOffer": "El {when} hay una cita: {what}.",
-      "visitOfferApply": "Informe hasta esa fecha"
+      "visitOfferApplyWindow": "Usar este periodo"
     },
     "globalExcludedInjectionSitesLabel": "Sitios de inyección excluidos globalmente",
     "globalExcludedInjectionSitesHint": "Nunca se ofrecen y se rechazan al registrar una dosis, aunque un medicamento los prefiera.",
@@ -6909,7 +6918,9 @@
       "reselectReason": "Este enlace mostraba un alcance que nadie eligió, por eso se cerró. Crea uno nuevo y elige su contenido.",
       "reselectAction": "Crear un reemplazo",
       "createDetail": "El token se muestra una sola vez al crearlo. Guárdalo entonces; no se puede recuperar.",
-      "activeDescription": "Los enlaces que has compartido, cuándo caducan y cuántas veces se abrieron."
+      "activeDescription": "Los enlaces que has compartido, cuándo caducan y cuántas veces se abrieron.",
+      "revokedToast": "Enlace revocado.",
+      "revokeFailed": "No se pudo revocar el enlace."
     },
     "genderOther": "Otro",
     "nightscout": "Nightscout",
@@ -7096,7 +7107,9 @@
         "lastUsed": "Usada por última vez el {date}",
         "neverUsed": "Nunca usada",
         "added": "añadida el {date}",
-        "nameLabel": "Nombre de la llave de seguridad"
+        "nameLabel": "Nombre de la llave de seguridad",
+        "addedToast": "Llave de seguridad añadida.",
+        "removedToast": "Llave de seguridad eliminada."
       },
       "passkeyNudge": {
         "title": "Añade una clave de acceso para iniciar sesión más rápido",
@@ -7439,7 +7452,20 @@
       "homePlaceUnknown": "La instancia de Dawarich ya no conoce este lugar.",
       "notConnected": "Dawarich no está conectado.",
       "generic": "No ha funcionado. Inténtalo de nuevo."
-    }
+    },
+    "fitbitRetirement": {
+      "ending": "Google desactivará la API web de Fitbit el {date}. A partir de entonces, esta conexión dejará de sincronizar.",
+      "ended": "Google desactivó la API web de Fitbit el {date}. Esta conexión ya no sincroniza.",
+      "move": "Google Health lee los mismos dispositivos Fitbit y Pixel. Conéctalo abajo para que tus datos sigan llegando. Google te pedirá tu consentimiento otra vez, porque la conexión de Fitbit no se puede transferir. Todo lo ya importado se conserva.",
+      "toCard": "Ir a Google Health",
+      "guide": "Cómo conectar Google Health",
+      "badgeEnding": "Se desactiva pronto",
+      "badgeEnded": "Desactivado"
+    },
+    "passkeyAddedToast": "Passkey añadida.",
+    "passkeyRemovedToast": "Passkey eliminada.",
+    "integrationDisconnected": "{provider} desconectado.",
+    "integrationDisconnectFailed": "No se pudo desconectar {provider}."
   },
   "admin": {
     "title": "Administration",
@@ -9878,6 +9904,17 @@
       "reviewHint": "Revisa cada valor y guarda los que quieras conservar.",
       "foundCount": "{count} valores encontrados",
       "pagesCapped": "Solo se leyeron las primeras {read} de {total} páginas. Los valores de las páginas siguientes no están en esta lista.",
+      "stoppedBudget": "Tu presupuesto de IA de hoy se agotó a mitad del informe, así que las páginas restantes no se leyeron.",
+      "stoppedUnavailable": "La IA se desactivó mientras se leía el informe, así que las páginas restantes no se leyeron.",
+      "stoppedError": "El escaneo no pudo continuar por un error del servidor, así que las páginas restantes no se leyeron. Inténtalo de nuevo más tarde.",
+      "tooLarge": "Este texto es demasiado largo para un escaneo. Escanea el informe página por página.",
+      "truncated": "El proveedor de IA alcanzó su límite de salida antes del final del informe. Pueden faltar valores a partir de ese punto, así que compara la lista con el informe.",
+      "truncatedPages": "El proveedor de IA alcanzó su límite de salida en estas páginas: {pages}. Pueden faltar valores más abajo en ellas, así que compáralos con el informe.",
+      "unreadPages": "No se pudieron leer estas páginas y sus valores no están en esta lista: {pages}.",
+      "unreadParts": "No se pudo leer una parte del informe y sus valores no están en esta lista.",
+      "rowsCapped": "El informe contiene {found} valores. Un escaneo admite {kept}, así que solo se muestran los primeros {kept}.",
+      "outputLimit": "El proveedor de IA alcanzó su límite de salida antes de devolver un solo valor. Prueba con una foto de una sola página o con un modelo que permita respuestas más largas.",
+      "errorTooLong": "Acórtalo a {max} caracteres.",
       "confirmRow": "Incluir este valor",
       "analyteLabel": "Nombre de la prueba",
       "resultLabel": "Resultado",
@@ -10392,6 +10429,7 @@
     "vital": {
       "RESTING_HEART_RATE": "Frecuencia cardíaca en reposo",
       "HEART_RATE_VARIABILITY": "Variabilidad de la frecuencia cardíaca",
+      "HRV_RMSSD": "VFC (RMSSD)",
       "RECOVERY_SCORE": "Recovery",
       "OXYGEN_SATURATION": "Saturación de oxígeno",
       "BODY_TEMPERATURE": "Temperatura corporal",
@@ -11997,6 +12035,8 @@
       "logDose": "Registrar dosis",
       "reconnect": "Reconectar",
       "viewCheckups": "Ver revisiones",
+      "viewAppointment": "Ver cita",
+      "viewAppointments": "Ver citas",
       "checkinKeep": "Conservar",
       "checkinAdjust": "Ajustar",
       "checkinLetGo": "Dejarlo ir",
@@ -12721,6 +12761,13 @@
       "noMatchTitle": "Nada coincide con este filtro",
       "clearFilter": "Quitar filtro",
       "loadError": "No se pudieron cargar los procedimientos."
+    },
+    "preparation": {
+      "practitioner": "Desde tu última visita con {name} el {date}",
+      "specialty": "Desde tu última visita ({specialty}) el {date}",
+      "kind": "Desde tu última visita del mismo tipo ({kind}) el {date}",
+      "default": "Los últimos {days} días",
+      "defaultReason": "No hay ninguna visita anterior con la misma consulta, especialidad o tipo."
     }
   },
   "checkups": {
@@ -12970,7 +13017,6 @@
     "meanOfReadingsFew": "Media de {count} mediciones",
     "meanOfReadingsOther": "Media de {count} mediciones",
     "sinceLastVisit": {
-      "title": "Desde la última visita el {date}",
       "countOne": "1 entrada",
       "countFew": "{count} entradas",
       "countOther": "{count} entradas",

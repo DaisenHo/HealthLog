@@ -16,6 +16,7 @@ import type { Locale } from "@/lib/i18n/config";
 import { readBriefingGeneratedAt } from "@/lib/insights/briefing-generated-at";
 import { userDayKey } from "@/lib/tz/format";
 import {
+  ALL_SIGNAL_READING_TYPES,
   SIGNAL_READING_TYPE,
   briefingForToday,
 } from "@/lib/daily/briefing-today";
@@ -47,7 +48,7 @@ export async function readSignalLastSeen(
     const rows = await readLatestEver(
       prisma,
       userId,
-      Object.values(SIGNAL_READING_TYPE) as MeasurementType[],
+      ALL_SIGNAL_READING_TYPES as MeasurementType[],
     );
     const byType = new Map(
       rows.map((row) => [

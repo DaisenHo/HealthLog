@@ -450,6 +450,7 @@ export function EnvironmentSection() {
                   </span>
                   <ConfirmButton
                     slot="travel-remove"
+                    destructive
                     size="icon"
                     variant="ghost"
                     className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"

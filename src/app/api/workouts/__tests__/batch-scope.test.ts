@@ -246,8 +246,18 @@ describe("POST /api/workouts/batch — rate limit buckets", () => {
 describe("POST /api/workouts/batch — what a scoped caller writes", () => {
   it("attributes its rows to EXTERNAL", async () => {
     armToken([WORKOUTS_WRITE_SCOPE]);
+    // Two sessions of the day: EXTERNAL ranks on the workout ladder, so two
+    // rows of one session would land once.
     const res = await POST(
-      makeRequest({ workouts: [workout("s-1"), workout("s-2")] }),
+      makeRequest({
+        workouts: [
+          workout("s-1"),
+          workout("s-2", {
+            startedAt: "2026-09-20T18:00:00.000Z",
+            endedAt: "2026-09-20T18:45:00.000Z",
+          }),
+        ],
+      }),
     );
     expect(res.status).toBe(200);
     const rows = insertedRows();

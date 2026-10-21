@@ -26,14 +26,14 @@ metric (kg / km); the US default is imperial.
 Scope: `weight`, `oxygen_saturation`, `heartrate`, `respiratory_rate`. Verified
 against the dev.fitbit.com reference (response shapes quoted there).
 
-| Endpoint                                       | MeasurementType          | Unit        | Source field                                | Grain | Note                                                        |
-| ---------------------------------------------- | ------------------------ | ----------- | ------------------------------------------- | ----- | ----------------------------------------------------------- |
-| `/1/user/-/body/log/weight/date/{s}/{e}.json`  | `WEIGHT`                 | kg          | `weight[].weight`                           | log   | externalId anchors on `logId`. Picker ranks Withings above. |
-| `/1/user/-/body/log/fat/date/{s}/{e}.json`     | `BODY_FAT`               | %           | `fat[].fat`                                 | log   | externalId anchors on `logId`.                              |
-| `/1/user/-/spo2/date/{s}/{e}.json`             | `OXYGEN_SATURATION`      | %           | `[].value.avg` (bare array)                 | daily | day-keyed externalId.                                       |
-| `/1/user/-/hrv/date/{s}/{e}.json`              | `HEART_RATE_VARIABILITY` | ms          | `hrv[].value.dailyRmssd`                    | daily | RMSSD estimator → canonical HRV slot (not `HRV_RMSSD`).     |
-| `/1/user/-/activities/heart/date/{s}/{e}.json` | `RESTING_HEART_RATE`     | bpm         | `activities-heart[].value.restingHeartRate` | daily | rows with no resting HR for the day are skipped.            |
-| `/1/user/-/br/date/{s}/{e}.json`               | `RESPIRATORY_RATE`       | breaths/min | `br[].value.breathingRate`                  | daily |                                                             |
+| Endpoint                                       | MeasurementType      | Unit        | Source field                                | Grain | Note                                                                |
+| ---------------------------------------------- | -------------------- | ----------- | ------------------------------------------- | ----- | ------------------------------------------------------------------- |
+| `/1/user/-/body/log/weight/date/{s}/{e}.json`  | `WEIGHT`             | kg          | `weight[].weight`                           | log   | externalId anchors on `logId`. Picker ranks Withings above.         |
+| `/1/user/-/body/log/fat/date/{s}/{e}.json`     | `BODY_FAT`           | %           | `fat[].fat`                                 | log   | externalId anchors on `logId`.                                      |
+| `/1/user/-/spo2/date/{s}/{e}.json`             | `OXYGEN_SATURATION`  | %           | `[].value.avg` (bare array)                 | daily | day-keyed externalId.                                               |
+| `/1/user/-/hrv/date/{s}/{e}.json`              | `HRV_RMSSD`          | ms          | `hrv[].value.dailyRmssd`                    | daily | RMSSD estimator, kept apart from the SDNN `HEART_RATE_VARIABILITY`. |
+| `/1/user/-/activities/heart/date/{s}/{e}.json` | `RESTING_HEART_RATE` | bpm         | `activities-heart[].value.restingHeartRate` | daily | rows with no resting HR for the day are skipped.                    |
+| `/1/user/-/br/date/{s}/{e}.json`               | `RESPIRATORY_RATE`   | breaths/min | `br[].value.breathingRate`                  | daily |                                                                     |
 
 Each daily-summary value passes a finite + strictly-positive guard (a 0/NaN is a
 garbage/empty reading and is dropped). Each endpoint caps its own date range

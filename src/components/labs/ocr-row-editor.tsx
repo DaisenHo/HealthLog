@@ -24,6 +24,11 @@ import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/lib/i18n/context";
+import {
+  OCR_ANALYTE_MAX,
+  OCR_UNIT_MAX,
+  OCR_VALUE_TEXT_MAX,
+} from "@/lib/validations/labs-ocr";
 
 import { MarkerMatchField } from "./marker-match-field";
 import { chooseMarker, type OcrReviewRow } from "./ocr-review-types";
@@ -151,10 +156,15 @@ export function OcrRowEditor({
               value={row.analyte}
               onChange={(e) => onChange({ ...row, analyte: e.target.value })}
               aria-label={t("labs.ocr.analyteLabel")}
-              {...invalidProps("analyte")}
+              {...invalidProps(
+                errors?.analyteTooLong ? "analyteTooLong" : "analyte",
+              )}
               className="font-medium"
             />
             {fieldError("analyte", "labs.ocr.errorAnalyte")}
+            {fieldError("analyteTooLong", "labs.ocr.errorTooLong", {
+              max: String(OCR_ANALYTE_MAX),
+            })}
             {/* v1.43 — the marker this value goes to: the server's
                 match, or a choice between its suggestions and a new one. */}
             <MarkerMatchField
@@ -244,9 +254,14 @@ export function OcrRowEditor({
                   onChange={(e) =>
                     onChange({ ...row, valueText: e.target.value })
                   }
-                  {...invalidProps("valueText")}
+                  {...invalidProps(
+                    errors?.valueTextTooLong ? "valueTextTooLong" : "valueText",
+                  )}
                 />
                 {fieldError("valueText", "labs.ocr.errorResult")}
+                {fieldError("valueTextTooLong", "labs.ocr.errorTooLong", {
+                  max: String(OCR_VALUE_TEXT_MAX),
+                })}
               </div>
             ) : (
               <>
@@ -284,10 +299,17 @@ export function OcrRowEditor({
                     value={row.unit ?? ""}
                     onChange={(e) => onChange({ ...row, unit: e.target.value })}
                     {...invalidProps(
-                      errors?.unitMismatch ? "unitMismatch" : "unit",
+                      errors?.unitMismatch
+                        ? "unitMismatch"
+                        : errors?.unitTooLong
+                          ? "unitTooLong"
+                          : "unit",
                     )}
                   />
                   {fieldError("unit", "labs.ocr.errorUnit")}
+                  {fieldError("unitTooLong", "labs.ocr.errorTooLong", {
+                    max: String(OCR_UNIT_MAX),
+                  })}
                   {fieldError("unitMismatch", "labs.ocr.errorUnitMismatch", {
                     markerUnit: row.markerUnit ?? "",
                   })}

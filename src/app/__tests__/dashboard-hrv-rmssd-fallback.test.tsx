@@ -24,9 +24,9 @@ import type { DataSummary } from "@/lib/analytics/trends";
  * The dashboard HRV tile must accept either HRV type.
  *
  * HRV is stored under two measurement types that are not the same measure:
- * SDNN (`HEART_RATE_VARIABILITY`, Apple / Fitbit / Google Health) and nightly
- * RMSSD (`HRV_RMSSD`, Oura / Polar / WHOOP, and a bridge pushing a Garmin-style
- * feed). Every other HRV surface already unions them — `/insights/hrv` via
+ * SDNN (`HEART_RATE_VARIABILITY`, Apple Health / Health Connect) and nightly
+ * RMSSD (`HRV_RMSSD`, Oura / Polar / WHOOP / Fitbit / Google Health, and a
+ * bridge pushing a Garmin-style feed). Every other HRV surface already unions them — `/insights/hrv` via
  * `fallbackMeasurementType`, the Coach via `COACH_SOURCE_MEASUREMENT_TYPES.hrv`,
  * the MCP reads via `withHrvFallback` — and `sub-page-metric.ts` states that
  * listing both is what keeps "the tab, pill, and dashboard tile lit whichever
@@ -141,16 +141,16 @@ describe("pickHrvSummary", () => {
 });
 
 describe("the RMSSD fallback cannot leak recovery-module data", () => {
-  it("drops HRV_RMSSD from the snapshot summaries when recovery is off", () => {
+  it("lists HRV_RMSSD among the recovery-off summary types", () => {
     // The half of this fix that is easy to miss. `HRV_RMSSD` is recovery-owned
     // in `METRIC_STATUS_MODULE_OWNERS`, which governs the metric-status and
     // MCP reads — but the dashboard snapshot gates off `SUMMARY_TYPE_MODULE`,
     // a DIFFERENT map, and that one did not list it. Inert while the tile read
-    // SDNN alone; the moment the tile falls back to RMSSD it would show a
-    // recovery-off account a tile built from recovery-owned rows.
+    // SDNN alone. The one exception, the tile's fallback for an account with
+    // no SDNN, is made in `gateSummariesByModules` (tested below).
     expect(disabledSummaryTypes({ recovery: false })).toContain("HRV_RMSSD");
     // SDNN is a plain vital and stays ungated — turning recovery off must not
-    // take the ordinary HRV tile away from an Apple / Fitbit account.
+    // take the ordinary HRV tile away from an Apple Health account.
     expect(disabledSummaryTypes({ recovery: false })).not.toContain(
       "HEART_RATE_VARIABILITY",
     );
@@ -290,35 +290,74 @@ describe("the gate reaches every feed, not just the default one", () => {
     expect(on.summaries.HRV_RMSSD).toBeDefined();
     expect(summaries.HRV_RMSSD).toBeDefined();
   });
+
+  it("keeps the RMSSD fallback for an account with no SDNN", () => {
+    // A Fitbit or Google Health account files its nightly HRV as RMSSD since
+    // migration 0420. On this tile RMSSD stands in for SDNN, a plain vital
+    // that paints with Recovery off, so the fallback must not vanish for the
+    // estimator the device reports.
+    const summaries = {
+      HEART_RATE_VARIABILITY: summary(0, 0),
+      HRV_RMSSD: summary(30, 42),
+    };
+    const lastSeen = {
+      HRV_RMSSD: { lastSeenAt: "2026-09-02T00:00:00.000Z" },
+    };
+    const off = gateSummariesByModules(summaries, lastSeen, {
+      recovery: false,
+    });
+    expect(off.summaries.HRV_RMSSD).toBeDefined();
+    expect(off.lastSeenByType.HRV_RMSSD).toBeDefined();
+    expect(pickHrvSummary(off.summaries).type).toBe("HRV_RMSSD");
+    // Another recovery-owned series is still stripped.
+    const withResting = gateSummariesByModules(
+      { ...summaries, RESTING_HEART_RATE: summary(5, 58) },
+      lastSeen,
+      { recovery: false },
+    );
+    expect(
+      (withResting.summaries as Record<string, unknown>).RESTING_HEART_RATE,
+    ).toBeUndefined();
+  });
 });
 
 describe("a switch that cannot do anything is not offered", () => {
-  // The symptom one step on from the original bug: with recovery off, a
-  // ring / strap account's only HRV series is withheld, so the tile can
-  // never paint — and before this, the toggle was still offered, still
-  // turned on, and still explained nothing. Same experience as the defect
-  // this change exists to remove, so it does not get to survive here.
-  it("drops the HRV toggle for a ring account with recovery off", () => {
+  it("drops the HRV toggle for an account with recovery off and no HRV", () => {
     expect(
-      unavailableWidgetIds({ recovery: false }, { hasSdnn: false }),
+      unavailableWidgetIds(
+        { recovery: false },
+        { hasSdnn: false, hasRmssd: false },
+      ),
     ).toEqual(["hrv"]);
   });
 
-  it("keeps the toggle for an account that has SDNN", () => {
-    // SDNN is a plain vital that no module owns, so the tile still works
-    // with recovery off. Taking this row away would be a new bug.
+  it("keeps the toggle for an account that has either estimator", () => {
     expect(
-      unavailableWidgetIds({ recovery: false }, { hasSdnn: true }),
+      unavailableWidgetIds(
+        { recovery: false },
+        { hasSdnn: true, hasRmssd: false },
+      ),
+    ).toEqual([]);
+    expect(
+      unavailableWidgetIds(
+        { recovery: false },
+        { hasSdnn: false, hasRmssd: true },
+      ),
     ).toEqual([]);
   });
 
   it("keeps the toggle whenever recovery is on", () => {
     expect(
-      unavailableWidgetIds({ recovery: true }, { hasSdnn: false }),
+      unavailableWidgetIds(
+        { recovery: true },
+        { hasSdnn: false, hasRmssd: false },
+      ),
     ).toEqual([]);
     // Fail-open on an unresolved map, like the module gate beside it: only
     // an explicit `false` takes a row away.
-    expect(unavailableWidgetIds({}, { hasSdnn: false })).toEqual([]);
+    expect(
+      unavailableWidgetIds({}, { hasSdnn: false, hasRmssd: false }),
+    ).toEqual([]);
   });
 });
 

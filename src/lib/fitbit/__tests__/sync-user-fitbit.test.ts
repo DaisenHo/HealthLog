@@ -91,10 +91,12 @@ vi.mock("../sync-workout", () => ({
 }));
 
 import {
+  getValidToken,
   handleCollectionFetchError,
   noteHardFailure,
   upsertFitbitMeasurements,
 } from "../sync-core";
+import { isFitbitRetired } from "../retirement";
 import { syncUserFitbit } from "../sync";
 import { FitbitApiError } from "../response-classifier";
 import { prisma } from "@/lib/db";
@@ -451,5 +453,35 @@ describe("syncUserFitbit — backfill collapses rollup recompute to one pass", (
     expect(total).toBe(0);
     expect(syncUserMetrics).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
+  });
+});
+
+describe("after Google turned the Fitbit Web API off", () => {
+  it("syncs nothing and writes neither a success nor a failure", async () => {
+    vi.mocked(isFitbitRetired).mockReturnValue(true);
+    try {
+      await expect(syncUserFitbit("u1")).resolves.toEqual({
+        imported: 0,
+        failed: false,
+      });
+      expect(syncUserMetrics).not.toHaveBeenCalled();
+      expect(syncUserSleep).not.toHaveBeenCalled();
+      expect(recordSyncSuccess).not.toHaveBeenCalled();
+      expect(recordSyncFailure).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+    } finally {
+      vi.mocked(isFitbitRetired).mockReturnValue(false);
+    }
+  });
+
+  it("hands out no token and attempts no refresh", async () => {
+    vi.mocked(isFitbitRetired).mockReturnValue(true);
+    try {
+      await expect(getValidToken("u1")).resolves.toBeNull();
+      expect(findUnique).not.toHaveBeenCalled();
+      expect(recordSyncFailure).not.toHaveBeenCalled();
+    } finally {
+      vi.mocked(isFitbitRetired).mockReturnValue(false);
+    }
   });
 });

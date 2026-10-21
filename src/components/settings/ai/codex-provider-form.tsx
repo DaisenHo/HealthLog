@@ -210,6 +210,7 @@ export function CodexProviderForm({
       ) : isConnected ? (
         <ConfirmButton
           slot="settings-codex-disconnect"
+          destructive
           variant="outline"
           size="sm"
           className="text-destructive min-h-11 shrink-0 sm:min-h-9"

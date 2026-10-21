@@ -28,16 +28,30 @@ export function classifyStravaResponse(
 }
 
 export class StravaApiError extends IntegrationApiError {
+  /**
+   * On a 429: how long Strava's own headers say to wait before asking again
+   * (`stravaRateLimitRetryAfterSeconds`). Undefined on every other failure.
+   */
+  readonly retryAfterSeconds: number | undefined;
+
   constructor(opts: {
     verb: string;
     classification: IntegrationClassification;
     httpStatus: number | undefined;
     reason: string;
     upstreamError?: string;
+    retryAfterSeconds?: number;
   }) {
-    super({ vendor: "Strava", ...opts });
+    const { retryAfterSeconds, ...rest } = opts;
+    super({ vendor: "Strava", ...rest });
     this.name = "StravaApiError";
+    this.retryAfterSeconds = retryAfterSeconds;
   }
+}
+
+/** True for Strava's rate-limit refusal. */
+export function isStravaRateLimited(err: unknown): err is StravaApiError {
+  return err instanceof StravaApiError && err.httpStatus === 429;
 }
 
 /**

@@ -66,13 +66,37 @@ export const ALL_FENCE_MARKERS: readonly string[] = [
   USER_TEXT_FENCE_END,
 ];
 
-/** Strip every known fence marker out of `text`. */
+/**
+ * Passes `scrubFenceMarkers` makes before it stops removing and breaks the
+ * marker alphabet instead. Each pass undoes one level of nesting; real text
+ * never needs a second one.
+ */
+const SCRUB_PASSES = 8;
+
+/**
+ * Strip every known fence marker out of `text`, so the result contains none.
+ *
+ * One pass is not enough: removing a marker joins the text either side of
+ * it, and a marker split around another one re-forms
+ * (`<<<DOCUMENT_TEXT_E<<<DOCUMENT_TEXT_END>>>ND>>>` becomes
+ * `<<<DOCUMENT_TEXT_END>>>`, and so does the same split around any other
+ * marker). The removal repeats until a pass changes nothing, which is the
+ * proof that no marker is left. Content nested deeper than the passes is
+ * not text anyone wrote, so every run of three or more angle brackets the
+ * markers are built from is cut to two instead, after which no marker can
+ * exist or re-form.
+ */
 export function scrubFenceMarkers(text: string): string {
   let out = text;
-  for (const marker of ALL_FENCE_MARKERS) {
-    out = out.replaceAll(marker, "");
+  for (let pass = 0; pass < SCRUB_PASSES; pass += 1) {
+    let next = out;
+    for (const marker of ALL_FENCE_MARKERS) {
+      next = next.replaceAll(marker, "");
+    }
+    if (next === out) return out;
+    out = next;
   }
-  return out;
+  return out.replace(/<{3,}/g, "<<").replace(/>{3,}/g, ">>");
 }
 
 /**

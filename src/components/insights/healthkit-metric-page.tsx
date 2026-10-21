@@ -59,9 +59,9 @@ export interface HealthKitMetricPageProps {
   /**
    * v1.17.0 — optional secondary MeasurementType the page falls back to
    * when the primary type has no rows but the fallback does. Used by HRV:
-   * the primary `HEART_RATE_VARIABILITY` (SDNN, Apple / Fitbit) is empty
-   * for a ring / strap user whose nightly HRV is stored as `HRV_RMSSD`
-   * (Oura / Polar / WHOOP). When the swap is active the chart, stat strip,
+   * the primary `HEART_RATE_VARIABILITY` (SDNN, Apple Health / Health
+   * Connect) is empty for a ring / strap user whose nightly HRV is stored as
+   * `HRV_RMSSD` (Oura / Polar / WHOOP / Fitbit / Google Health). When the swap is active the chart, stat strip,
    * "all values" list, and diversity nudge key off the fallback type and
    * `fallbackMeasureLabel` names the measure so the two are never silently
    * merged. Omit it and every other page renders byte-identically.

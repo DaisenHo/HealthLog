@@ -69,37 +69,43 @@ export function NotificationContentCard({
     setMsg(null);
     setMsgType(null);
 
-    const res = await apiFetchRaw("/api/auth/me/notification-prefs", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        withBaseToken(
-          { content: { detail: next ? "detailed" : "generic" } },
-          readUpdatedAtToken(queryClient, queryKeys.authNotificationPrefs()),
+    try {
+      // A request that never reaches the server (offline, a dropped
+      // connection) is a failed save like any other, not a stuck one: it
+      // falls through to the error branch, and `finally` lowers the flag.
+      const res = await apiFetchRaw("/api/auth/me/notification-prefs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          withBaseToken(
+            { content: { detail: next ? "detailed" : "generic" } },
+            readUpdatedAtToken(queryClient, queryKeys.authNotificationPrefs()),
+          ),
         ),
-      ),
-    });
+      }).catch(() => null);
 
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.authNotificationPrefs(),
-    });
-    setOptimistic(null);
-    if (res.ok) {
-      setMsg(
-        next
-          ? t("notifications.content.detailedToast")
-          : t("notifications.content.genericToast"),
-      );
-      setMsgType("success");
-    } else if (res.status === 409) {
-      setMsg(t("common.conflictReloaded"));
-      setMsgType("error");
-    } else {
-      setMsg(t("notifications.content.saveError"));
-      setMsgType("error");
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.authNotificationPrefs(),
+      });
+      setOptimistic(null);
+      if (res?.ok) {
+        setMsg(
+          next
+            ? t("notifications.content.detailedToast")
+            : t("notifications.content.genericToast"),
+        );
+        setMsgType("success");
+      } else if (res?.status === 409) {
+        setMsg(t("common.conflictReloaded"));
+        setMsgType("error");
+      } else {
+        setMsg(t("notifications.content.saveError"));
+        setMsgType("error");
+      }
+      scheduleClear();
+    } finally {
+      setSaving(false);
     }
-    scheduleClear();
-    setSaving(false);
   }
 
   return (

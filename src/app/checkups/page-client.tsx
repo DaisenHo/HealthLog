@@ -15,6 +15,7 @@ import { VisitsSection } from "@/components/encounters/visits-section";
 import { ProceduresSection } from "@/components/encounters/procedures-section";
 import { BodySitesSection } from "@/components/body-sites/body-sites-section";
 import type { BodySiteSide } from "@/hooks/use-body-sites";
+import { parseCheckupsView } from "@/lib/encounters/visit-links";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
 
@@ -66,16 +67,28 @@ export default function CheckupsPageClient() {
     linkedSideParam === "BOTH"
       ? linkedSideParam
       : null;
-  const [view, setView] = useState(
-    linkedVisit ? "visits" : linkedSite ? "body-sites" : "vorsorge",
+  // A link to one tab (`?view=visits`, from a line naming several
+  // appointments). Built by `src/lib/encounters/visit-links.ts`, never by hand.
+  const linkedView = parseCheckupsView(searchParams?.get("view"));
+  const [view, setView] = useState<string>(
+    linkedVisit
+      ? "visits"
+      : linkedSite
+        ? "body-sites"
+        : (linkedView ?? "vorsorge"),
   );
   // A link to a visit can arrive while the page is already open (the search
   // opens one from wherever the person is): it moves to the visits tab then
-  // too, rather than only on the first render.
+  // too, rather than only on the first render. A link to a tab does the same.
   const [observedVisit, setObservedVisit] = useState(linkedVisit);
   if (linkedVisit !== observedVisit) {
     setObservedVisit(linkedVisit);
     if (linkedVisit) setView("visits");
+  }
+  const [observedView, setObservedView] = useState(linkedView);
+  if (linkedView !== observedView) {
+    setObservedView(linkedView);
+    if (linkedView && !linkedVisit) setView(linkedView);
   }
 
   const refresh = useCallback(

@@ -3,6 +3,7 @@
  * and the iOS client hits `/api/user/profile` PATCH — both funnel through
  * `applyProfileUpdate` so we don't fork the validation/audit path.
  */
+import { optionalDisplayNameSchema } from "@/lib/validations/display-name";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { profileSchema } from "@/lib/validations/auth";
@@ -23,7 +24,8 @@ import {
 } from "@/lib/auth/existing-factor-proof";
 
 const extendedProfileSchema = profileSchema.extend({
-  displayName: z.string().min(1).max(80).nullable().optional(),
+  // Trimmed first; "" (or only spaces) clears the name to null below.
+  displayName: optionalDisplayNameSchema.nullable().optional(),
   locale: z
     .enum(["de", "en"], {
       error: "Locale must be de or en.",

@@ -25,7 +25,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import type { Locale } from "@/lib/i18n/config";
 import { userDayKey } from "@/lib/tz/format";
-import { SIGNAL_READING_TYPE } from "@/lib/daily/briefing-today";
+import { ALL_SIGNAL_READING_TYPES } from "@/lib/daily/briefing-today";
 import { enqueueTodayBriefingWarm } from "@/lib/jobs/insight-pregenerate-shared";
 
 /** A claim outlives the longest local day (a 25 h DST day) with margin. */
@@ -63,7 +63,7 @@ export function todayWarmReasons(input: TodayWarmInput): string[] {
   ) {
     reasons.push("day");
   }
-  for (const type of new Set(Object.values(SIGNAL_READING_TYPE))) {
+  for (const type of ALL_SIGNAL_READING_TYPES) {
     const at = input.lastSeenAt(type);
     if (at === null) continue;
     const atMs = Date.parse(at);

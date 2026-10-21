@@ -234,6 +234,16 @@ export type DeviceTypePriority = z.infer<typeof deviceTypePrioritySchema>;
  *     pulse-ox, Thermo). Apple Health is second-hand (HealthKit
  *     receives the same reading via Withings' Health Mate iOS app).
  */
+// v1.43.11 — the sources that had no place on any ladder. A source a ladder
+// does not name ranks 90, below everything it does, so a typed weight from a
+// Telegram reminder lost its day to a WHOOP strap's estimate, and a Health
+// Connect day lost to every other source. Health Connect is the Android
+// counterpart of the HealthKit relay and sits right after APPLE_HEALTH on
+// the ladders for what it imports; the readings a person enters or bridges
+// themselves (EXTERNAL: their own hardware's uploader, MCP: an assistant
+// writing on their word, TELEGRAM: a reply to a reminder) sit right after
+// MANUAL, in the alphabetical order they already broke ties in. Relative to
+// each other the existing sources keep their order.
 export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
   // v1.12.0 — Fitbit/Pixel rides below Apple Health for cumulative metrics:
   // HealthKit still aggregates the broadest device set, and a Fitbit-only
@@ -253,6 +263,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
   // still survives.
   steps: [
     "APPLE_HEALTH",
+    "HEALTH_CONNECT",
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
@@ -260,24 +271,35 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "POLAR",
     "STRAVA",
     "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
   ],
   activeEnergy: [
     "APPLE_HEALTH",
+    "HEALTH_CONNECT",
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
     "OURA",
     "POLAR",
     "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
   ],
   walkingRunningDistance: [
     "APPLE_HEALTH",
+    "HEALTH_CONNECT",
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
     "OURA",
     "POLAR",
     "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
   ],
   flightsClimbed: [
     "APPLE_HEALTH",
@@ -285,6 +307,9 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "FITBIT",
     "GOOGLE_HEALTH",
     "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
   ],
   // v1.11.0 — WHOOP leads the recovery-input ladders (sleep / HRV / RHR):
   // a worn-all-night strap has higher-resolution overnight sampling than
@@ -319,18 +344,31 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
+    "HEALTH_CONNECT",
     "WITHINGS",
   ],
   // A real scale beats a strap's body-measurement estimate for weight.
   weight: [
     "WITHINGS",
     "APPLE_HEALTH",
+    "HEALTH_CONNECT",
     "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
   ],
-  bloodPressure: ["WITHINGS", "APPLE_HEALTH", "MANUAL"],
+  bloodPressure: [
+    "WITHINGS",
+    "APPLE_HEALTH",
+    "HEALTH_CONNECT",
+    "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
+  ],
   // v1.17.0 — continuous optical-HR wearables (Fitbit / Polar / Oura) rank
   // above a hand-typed MANUAL pulse; the device-source order matches the
   // rhr / hrv ladders (FITBIT > OURA > POLAR). Withings BPM cuff + the
@@ -343,12 +381,29 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "OURA",
     "POLAR",
     "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
   ],
-  bodyFat: ["WITHINGS", "APPLE_HEALTH", "MANUAL", "FITBIT", "GOOGLE_HEALTH"],
+  bodyFat: [
+    "WITHINGS",
+    "APPLE_HEALTH",
+    "HEALTH_CONNECT",
+    "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
+    "FITBIT",
+    "GOOGLE_HEALTH",
+  ],
   bodyTemperature: [
     "WITHINGS",
     "APPLE_HEALTH",
+    "HEALTH_CONNECT",
     "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
     "FITBIT",
     "GOOGLE_HEALTH",
   ],
@@ -363,15 +418,23 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
+    "HEALTH_CONNECT",
     "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
   ],
   vo2Max: [
     "WITHINGS",
     "APPLE_HEALTH",
+    "HEALTH_CONNECT",
     "FITBIT",
     "GOOGLE_HEALTH",
     "OURA",
     "MANUAL",
+    "EXTERNAL",
+    "MCP",
+    "TELEGRAM",
   ],
   // v1.11.0 — new WHOOP-overlapping keys. ScanWatch dermal reading is the
   // primary skin-temperature sensor; WHOOP's strap is second, Fitbit third,
@@ -386,6 +449,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
+    "HEALTH_CONNECT",
     "WITHINGS",
   ],
   // v1.11.0 — native-vs-derived recovery. WHOOP's device-native Recovery
@@ -404,8 +468,18 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
   // on now. Mirrors the recovery ladder's native-above-computed ordering.
   sleepDebt: ["WHOOP", "OURA", "POLAR", "COMPUTED"],
   // v1.42 (#1110) — the straps and rings that measure RMSSD overnight lead;
-  // the HealthKit relay of a third-party reading is the fallback.
-  hrvRmssd: ["WHOOP", "OURA", "POLAR", "APPLE_HEALTH"],
+  // the HealthKit relay of a third-party reading is the fallback. Fitbit and
+  // Google Health report RMSSD too and take the places they hold on the SDNN
+  // ladder they used to be filed under.
+  hrvRmssd: [
+    "WHOOP",
+    "FITBIT",
+    "GOOGLE_HEALTH",
+    "OURA",
+    "POLAR",
+    "APPLE_HEALTH",
+    "HEALTH_CONNECT",
+  ],
 };
 
 /**

@@ -5,6 +5,7 @@
  * Schemas come from `src/lib/validations/*` where shared with the
  * runtime request parsing, so the wire contract stays single-source.
  */
+import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { aiUsageState } from "./ai-usage";
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
@@ -544,7 +545,14 @@ export const profileUpdateRequest = z
       .describe(
         "Stored gender. Null or an empty string clears it; an omitted field is left untouched.",
       ),
-    displayName: z.string().min(1).max(80).nullable().optional(),
+    displayName: z
+      .string()
+      .max(DISPLAY_NAME_MAX_LENGTH)
+      .nullable()
+      .optional()
+      .describe(
+        "Trimmed before its bound is checked. Null, an empty string or only spaces clears it; an omitted field is left untouched.",
+      ),
     locale: z.enum(["de", "en"]).nullable().optional(),
     timezone: z.string().min(1).max(64).optional(),
     timeFormat: z

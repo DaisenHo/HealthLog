@@ -164,9 +164,9 @@ export const HRV_LABEL_KEY: Record<HrvSummaryType, string> = {
  * Which HRV series backs the dashboard tile.
  *
  * HRV is stored under two types and they are not the same measure: Apple
- * Health / Fitbit / Google Health write SDNN as `HEART_RATE_VARIABILITY`,
- * while Oura / Polar / WHOOP — and a Garmin-style feed pushed in through a
- * bridge — write nightly RMSSD as `HRV_RMSSD`. Every other HRV surface
+ * Health and Health Connect write SDNN as `HEART_RATE_VARIABILITY`, while
+ * Oura / Polar / WHOOP / Fitbit / Google Health — and a Garmin-style feed
+ * pushed in through a bridge — write nightly RMSSD as `HRV_RMSSD`. Every other HRV surface
  * already unions the two: `/insights/hrv` passes `fallbackMeasurementType`
  * (`app/insights/hrv/page.tsx`), the Coach resolves both
  * (`COACH_SOURCE_MEASUREMENT_TYPES.hrv`), and the MCP reads swap through

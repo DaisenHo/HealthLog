@@ -662,6 +662,12 @@ export const DISCOVERY_BEHAVIOURS = [
 export const DISCOVERY_OUTCOMES = [
   "SLEEP_DURATION",
   "HEART_RATE_VARIABILITY",
+  // The nightly RMSSD series (WHOOP, Oura, Polar, Fitbit, Google Health) as
+  // its own outcome. It is not merged into the SDNN channel: the estimators
+  // differ in scale, so one series of both would correlate the switch between
+  // devices rather than the body. Neither HRV channel is a behaviour, so the
+  // two never pair with each other.
+  "HRV_RMSSD",
   "RESTING_HEART_RATE",
   "WEIGHT",
   // v1.22 — blood pressure as an OUTCOME (it was behaviour-only). This makes

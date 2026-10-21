@@ -73,6 +73,7 @@ import {
   queryWords,
   type SearchCandidate,
 } from "@/lib/search/match";
+import { visitPath } from "@/lib/encounters/visit-links";
 
 // ── Bounds ───────────────────────────────────────────────────────────
 
@@ -227,7 +228,7 @@ export function recordUrl(
   const rid = encodeURIComponent(id);
   switch (kind) {
     case "visit":
-      return `${origin}/checkups?visit=${rid}`;
+      return `${origin}${visitPath(id)}`;
     case "condition":
       return `${origin}/illness/${rid}`;
     case "document":

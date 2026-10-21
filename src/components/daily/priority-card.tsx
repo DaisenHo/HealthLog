@@ -36,6 +36,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
 import { ProseBlocks } from "@/components/insights/prose-blocks";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { VISITS_PATH } from "@/lib/encounters/visit-links";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import {
@@ -205,7 +206,7 @@ export function PriorityCard({
                 <ActionLink
                   key={action.intent}
                   href={action.href}
-                  label={t(action.labelKey)}
+                  label={t(actionLabelKey(item, action))}
                 />
               ) : onAction ? (
                 <ActionButton
@@ -225,6 +226,24 @@ export function PriorityCard({
 }
 
 /** A navigation action. Always offered — reading is never delegated away. */
+/**
+ * The label key a web card shows for an action.
+ *
+ * The server's `labelKey`, except on an appointment: that item still carries
+ * the check-up item's label on the wire ("View check-ups"), because the
+ * shipped iOS app resolves the label and routes the intent it already knows.
+ * Its `href` already opens the visit, so the web names what it opens.
+ */
+export function actionLabelKey(
+  item: Pick<PriorityItem, "kind">,
+  action: Pick<PriorityItemAction, "labelKey" | "href">,
+): string {
+  if (item.kind !== "upcoming_visit" || !action.href) return action.labelKey;
+  return action.href === VISITS_PATH
+    ? "daily.action.viewAppointments"
+    : "daily.action.viewAppointment";
+}
+
 function ActionLink({ href, label }: { href: string; label: string }) {
   return (
     <Link

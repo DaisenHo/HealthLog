@@ -118,6 +118,7 @@ export const ADVERSE_DIRECTION: Partial<
   BLOOD_PRESSURE_SYS: "up",
   BLOOD_PRESSURE_DIA: "up",
   HEART_RATE_VARIABILITY: "down",
+  HRV_RMSSD: "down",
   RECOVERY_SCORE: "down",
   OXYGEN_SATURATION: "down",
 };
@@ -130,6 +131,9 @@ export const ADVERSE_DIRECTION: Partial<
 export const ILLNESS_SCAN_TYPES: MeasurementType[] = [
   "RESTING_HEART_RATE",
   "HEART_RATE_VARIABILITY",
+  // RMSSD, scanned on its own baseline: a nightly strap or ring reading drops
+  // during illness the same way SDNN does.
+  "HRV_RMSSD",
   "RECOVERY_SCORE",
   "OXYGEN_SATURATION",
   "BODY_TEMPERATURE",

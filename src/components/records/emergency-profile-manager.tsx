@@ -31,13 +31,52 @@ import {
   type EmergencyProfileDto,
 } from "@/lib/validations/emergency-profile";
 
-interface Draft {
+export interface Draft {
   bloodType: string;
   organDonor: string;
   advanceDirective: string;
   contacts: string;
   implants: string;
   note: string;
+}
+
+/**
+ * The select value that stands for "not recorded". Radix refuses an empty
+ * string as an item value, so the cleared state needs a sentinel of its own;
+ * the draft keeps "" and only the select sees this.
+ */
+const NOT_RECORDED = "__none__";
+
+type EnumKey = "bloodType" | "organDonor" | "advanceDirective";
+const ENUM_KEYS: readonly EnumKey[] = [
+  "bloodType",
+  "organDonor",
+  "advanceDirective",
+];
+
+/**
+ * The PATCH body for a save. A select rides only when it changed, so a save
+ * leaves a column it did not touch alone; a changed select that is now empty
+ * rides as `null`, which is what clears it. The free-text fields always ride,
+ * an emptied one clearing its column server-side.
+ *
+ * An empty select used to be omitted always, and the select had no empty
+ * option to begin with: a blood type, once chosen, could be changed to
+ * another one but never taken back to "not recorded".
+ */
+export function emergencyPatchBody(
+  draft: Draft,
+  stored: EmergencyProfileDto,
+): Record<string, string | null> {
+  const body: Record<string, string | null> = {};
+  for (const key of ENUM_KEYS) {
+    const next = draft[key] || null;
+    if (next !== (stored[key] ?? null)) body[key] = next;
+  }
+  body.contacts = draft.contacts;
+  body.implants = draft.implants;
+  body.note = draft.note;
+  return body;
 }
 
 function draftFromDto(dto: EmergencyProfileDto): Draft {
@@ -66,19 +105,10 @@ export function EmergencyProfileManager() {
   const save = useMutation({
     mutationKey: queryKeys.emergencyProfile(),
     mutationFn: (input: Draft) =>
-      apiPatch<EmergencyProfileDto>("/api/anamnesis/emergency", {
-        // A select left at "" is "not recorded" and is omitted so a partial
-        // save leaves the column untouched; the free-text fields always ride,
-        // with an emptied field clearing its column server-side.
-        ...(input.bloodType ? { bloodType: input.bloodType } : {}),
-        ...(input.organDonor ? { organDonor: input.organDonor } : {}),
-        ...(input.advanceDirective
-          ? { advanceDirective: input.advanceDirective }
-          : {}),
-        contacts: input.contacts,
-        implants: input.implants,
-        note: input.note,
-      }),
+      apiPatch<EmergencyProfileDto>(
+        "/api/anamnesis/emergency",
+        emergencyPatchBody(input, query.data!),
+      ),
     onSuccess: (data) => {
       setDraft(draftFromDto(data));
       queryClient.setQueryData(queryKeys.emergencyProfile(), data);
@@ -110,7 +140,7 @@ export function EmergencyProfileManager() {
     setDraft((prev) => ({ ...(prev ?? draftFromDto(query.data!)), ...patch }));
 
   const enumField = (
-    key: "bloodType" | "organDonor" | "advanceDirective",
+    key: EnumKey,
     values: readonly string[],
     valuePrefix: string,
   ) => (
@@ -119,14 +149,21 @@ export function EmergencyProfileManager() {
         {t(`records.emergency.${key}`)}
       </Label>
       <Select
-        value={current?.[key] ?? ""}
+        value={current?.[key] || NOT_RECORDED}
         disabled={disabled}
-        onValueChange={(next) => set({ [key]: next } as Partial<Draft>)}
+        onValueChange={(next) =>
+          set({ [key]: next === NOT_RECORDED ? "" : next } as Partial<Draft>)
+        }
       >
         <SelectTrigger id={`emergency-${key}`} className="w-full">
           <SelectValue placeholder={t("records.emergency.notRecorded")} />
         </SelectTrigger>
         <SelectContent>
+          {/* The way back to "not recorded", as every optional select in the
+              records offers one. */}
+          <SelectItem value={NOT_RECORDED}>
+            {t("records.emergency.notRecorded")}
+          </SelectItem>
           {values.map((option) => (
             <SelectItem key={option} value={option}>
               {t(`records.emergency.${valuePrefix}.${option}`)}

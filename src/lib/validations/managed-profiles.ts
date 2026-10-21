@@ -10,6 +10,7 @@
  * refused rather than ignored — and the client types name exactly these fields
  * for the same reason (`src/lib/queries/use-managed-profiles.ts`).
  */
+import { DISPLAY_NAME_MAX_LENGTH } from "@/lib/validations/display-name";
 import { z } from "zod/v4";
 
 import { isValidTimezone } from "@/lib/tz/format";
@@ -30,7 +31,7 @@ const managedProfileGenderSchema = z.enum(["MALE", "FEMALE", "OTHER"]);
 
 /** The fields both bodies below share, with their bounds stated once. */
 const managedProfileFields = {
-  displayName: z.string().trim().min(1).max(80),
+  displayName: z.string().trim().min(1).max(DISPLAY_NAME_MAX_LENGTH),
   dateOfBirth: z.iso.date().nullable(),
   locale: z.enum(["de", "en", "es", "fr", "it", "pl", "ko", "nl"]),
   timezone: z

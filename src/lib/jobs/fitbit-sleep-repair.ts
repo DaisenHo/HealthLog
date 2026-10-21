@@ -45,6 +45,7 @@ import {
   runWithFitbitHardFailLedger,
 } from "@/lib/fitbit/sync-core";
 import { syncUserSleep } from "@/lib/fitbit/sync-sleep";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 export const FITBIT_SLEEP_REPAIR_QUEUE = "fitbit-sleep-repair";
 
@@ -82,6 +83,16 @@ export interface FitbitSleepRepairPayload {
 export async function runFitbitSleepRepairForUser(
   userId: string,
 ): Promise<{ imported: number; removed: number }> {
+  // Nothing left to re-read once the Web API is gone; no stamp either.
+  if (isFitbitRetired()) {
+    annotate({
+      action: {
+        name: "fitbit.sleepRepair.skipped_retired",
+        details: { imported: 0, removed: 0 },
+      },
+    });
+    return { imported: 0, removed: 0 };
+  }
   if (await isReauthRequired(userId, "fitbit")) {
     annotate({
       action: {
@@ -155,7 +166,7 @@ export async function enqueueBootTimeFitbitSleepRepair(
   error: string | null;
 }> {
   const boss = getGlobalBoss();
-  if (!boss) {
+  if (!boss || isFitbitRetired()) {
     return { enqueued: 0, skipped: 0, error: null };
   }
 

@@ -176,6 +176,7 @@ export function AuditCPanel({
                   className="text-destructive size-11 shrink-0 sm:size-9"
                   icon={<Trash2 className="size-4" aria-hidden />}
                   slot={`audit-c-remove-${entry.id}`}
+                  destructive
                 />
               </li>
             ))}
@@ -214,6 +215,7 @@ export function AuditCPanel({
             className="text-destructive size-11 shrink-0 sm:size-9"
             icon={<Trash2 className="size-4" aria-hidden />}
             slot="audit-c-legacy-remove"
+            destructive
           />
         </div>
       ) : null}

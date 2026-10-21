@@ -9,7 +9,12 @@
  * sleep UUID (v2 recovery carries `sleep_id`, not a stable recovery id) so the
  * externalId is stable across re-scores.
  */
-import { fetchRecoveries, fetchRecoveryByCycleId, mapRecovery } from "./client";
+import {
+  fetchRecoveries,
+  fetchRecoveryByCycleId,
+  fetchSleepById,
+  mapRecovery,
+} from "./client";
 import {
   getValidToken,
   incrementalStart,
@@ -71,24 +76,32 @@ export async function syncUserRecovery(
 }
 
 /**
- * Webhook-driven targeted refresh: resolve ONE recovery by its cycle id and
- * upsert its readings, instead of re-walking the whole collection. WHOOP v2
- * reads a recovery through its cycle (`/v2/cycle/{cycleId}/recovery`), and the
- * recovery webhook carries the cycle id. An unscored / since-deleted record
- * yields nothing. Does NOT advance the resource cursor — a single-id refresh
- * proves nothing about records between the cursor and now, so the cron/overlap
- * path stays responsible for moving the cursor.
+ * Webhook-driven targeted refresh: resolve ONE recovery and upsert its
+ * readings, instead of re-walking the whole collection. The v2 recovery
+ * webhook carries the id of the associated SLEEP (a UUID), but WHOOP reads a
+ * recovery only through its cycle (`/v2/cycle/{cycleId}/recovery`), so the
+ * sleep is read first for its `cycle_id`. Passing the sleep UUID as a cycle id
+ * answered 404 on every recovery webhook and booked each one as a sync
+ * failure. An unscored / since-deleted record yields nothing. Does NOT advance
+ * the resource cursor — a single-id refresh proves nothing about records
+ * between the cursor and now, so the cron/overlap path stays responsible for
+ * moving the cursor.
  */
 export async function syncWhoopRecoveryById(
   userId: string,
-  cycleId: string,
+  sleepId: string,
 ): Promise<number> {
   const tokenInfo = await getValidToken(userId);
   if (!tokenInfo) return 0;
 
   let record: Awaited<ReturnType<typeof fetchRecoveryByCycleId>>;
   try {
-    record = await fetchRecoveryByCycleId(tokenInfo.accessToken, cycleId);
+    const sleep = await fetchSleepById(tokenInfo.accessToken, sleepId);
+    if (sleep.cycle_id == null) return 0;
+    record = await fetchRecoveryByCycleId(
+      tokenInfo.accessToken,
+      String(sleep.cycle_id),
+    );
   } catch (err) {
     return handleCollectionFetchError("recovery", userId, err);
   }
