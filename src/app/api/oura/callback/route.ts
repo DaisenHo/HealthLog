@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
+import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
@@ -17,6 +18,11 @@ import { ouraCollectionsMissingFromGrant } from "@/lib/oura/scope";
 import { markReconnected } from "@/lib/integrations/status";
 import { OURA_SYNC_QUEUE } from "@/lib/jobs/integration-poll-queues";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
+import {
+  OURA_BACKFILL_QUEUE,
+  type OuraBackfillPayload,
+} from "@/lib/jobs/oura-backfill";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -80,11 +86,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const evt = getEvent();
   if (evt) evt.setAuth({ user_id: userId, auth_method: "session" });
 
+  // The browser finishing the flow must be the record's own, or, for a
+  // managed profile, a guardian's with a live MANAGE grant on it.
   const sessionData = await getSession();
-  if (sessionData && sessionData.user.id !== userId) {
-    annotate({ meta: { reason: "cross_user" } });
+  const actorCheck = await verifyCallbackActor(
+    userId,
+    sessionData?.user.id ?? null,
+  );
+  if (!actorCheck.ok) {
+    annotate({ meta: { reason: actorCheck.reason } });
     return ERR("cross_user");
   }
+  const guardianUserId = actorCheck.guardianUserId;
 
   if (!code) return ERR("nocode");
 
@@ -104,12 +117,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
       fallbackUrl: SETTINGS_URL(),
       stateCookie: oauthStateCookieName("oura"),
     },
-    () => completeCallback(userId, code, iss),
+    () => completeCallback(userId, guardianUserId, code, iss),
   );
 });
 
 async function completeCallback(
   userId: string,
+  guardianUserId: string | null,
   code: string,
   iss: string | null,
 ): Promise<NextResponse> {
@@ -134,10 +148,17 @@ async function completeCallback(
         ouraRefreshTokenEncrypted: encrypt(tokens.refresh_token),
         ouraScopeDenied:
           missing && missing.length > 0 ? missing : Prisma.DbNull,
+        // Open the history backfill again: a first connect has none yet,
+        // and a reconnect may grant what the old grant refused. What was
+        // already walked stays in the progress note and is not read again.
+        ouraBackfillCompletedAt: null,
       },
     });
 
-    await auditLog("oura.connect", { userId });
+    await auditLog("oura.connect", {
+      userId,
+      actorUserId: guardianUserId,
+    });
     await markReconnected(userId, "oura");
 
     // Start the first sync now instead of leaving the user staring at an empty
@@ -152,6 +173,21 @@ async function completeCallback(
         .send(OURA_SYNC_QUEUE, { userId })
         .catch((err) =>
           getEvent()?.addWarning(`oura-sync connect enqueue failed: ${err}`),
+        );
+      const backfill: OuraBackfillPayload = {
+        userId,
+        enqueuedAt: new Date().toISOString(),
+      };
+      await boss
+        .send(
+          OURA_BACKFILL_QUEUE,
+          backfill,
+          integrationBackfillSourceOptions(`oura-backfill|${userId}`),
+        )
+        .catch((err) =>
+          getEvent()?.addWarning(
+            `oura-backfill connect enqueue failed: ${err}`,
+          ),
         );
     }
 

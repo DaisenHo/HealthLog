@@ -1,10 +1,8 @@
-import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { auditLog } from "@/lib/auth/audit";
+import { disconnectOAuth } from "@/lib/integrations/oauth-kit/disconnect";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { markDisconnected } from "@/lib/integrations/status";
 
 /**
  * v1.17.0 — disconnect Polar for the current user.
@@ -24,24 +22,9 @@ export const POST = apiHandler(async () => {
     });
   }
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { polarAccessTokenEncrypted: true },
-  });
-  if (!dbUser?.polarAccessTokenEncrypted) {
+  if ((await disconnectOAuth("polar", user.id)) === "not_connected") {
     return apiError("No Polar connection", 404);
   }
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      polarAccessTokenEncrypted: null,
-      polarUserIdEncrypted: null,
-    },
-  });
-
-  await auditLog("polar.disconnect", { userId: user.id });
-  await markDisconnected(user.id, "polar");
 
   return apiSuccess({ disconnected: true });
 });

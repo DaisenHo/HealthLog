@@ -56,6 +56,7 @@ import {
   noteGoogleHealthWalkPage,
 } from "./backfill-bounds";
 import { walkPages } from "@/lib/integrations/page-walk";
+import { retryAfterMsOf } from "@/lib/integrations/oauth-kit/retry-after";
 
 export * from "./mappers";
 
@@ -1026,12 +1027,8 @@ export function googleHealthRetryDelayMs(
   json: unknown,
   now: number = Date.now(),
 ): number | undefined {
-  const header = res.headers.get("retry-after")?.trim();
-  if (header) {
-    if (/^\d+$/.test(header)) return Number.parseInt(header, 10) * 1000;
-    const at = Date.parse(header);
-    if (Number.isFinite(at)) return Math.max(0, at - now);
-  }
+  const fromHeader = retryAfterMsOf(res, now);
+  if (fromHeader !== undefined) return fromHeader;
   const details = (json as { error?: { details?: unknown } } | null)?.error
     ?.details;
   if (Array.isArray(details)) {

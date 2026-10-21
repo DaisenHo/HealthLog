@@ -270,22 +270,32 @@ model User {
   // v1.17.0 — Oura OAuth credentials (F4, per-user, encrypted at app level).
   // Mirrors the WHOOP credential columns; OAuth access/refresh tokens stored
   // encrypted.
-  ouraAccessTokenEncrypted  String? @map("oura_access_token_encrypted")
-  ouraRefreshTokenEncrypted String? @map("oura_refresh_token_encrypted")
+  ouraAccessTokenEncrypted  String?   @map("oura_access_token_encrypted")
+  ouraRefreshTokenEncrypted String?   @map("oura_refresh_token_encrypted")
   // v1.17.1 — Oura BYO-app client credentials (W1c, per-user, encrypted at app
   // level). Mirrors the WHOOP/Fitbit `clientId`/`clientSecret` columns 1:1 so a
   // self-hoster pastes their own Oura Cloud app's client id/secret into Settings
   // before the OAuth connect flow runs. Stored encrypted as a string via
   // `src/lib/crypto.ts`, matching every other `*Encrypted` column.
-  ouraClientIdEncrypted     String? @map("oura_client_id_encrypted")
-  ouraClientSecretEncrypted String? @map("oura_client_secret_encrypted")
+  ouraClientIdEncrypted     String?   @map("oura_client_id_encrypted")
+  ouraClientSecretEncrypted String?   @map("oura_client_secret_encrypted")
   /// v1.42.3 — Oura collections the current grant does not cover, as a JSON
   /// string array of collection names (`spo2`, `vo2max`, `cardio_age`,
   /// `resilience`). Written by the sync when a collection answers 401/403 while
   /// its siblings succeed with the same token, which is a scope the grant never
   /// carried, not a dead token. The Oura card reads it to ask for one
   /// reconnect. Cleared on connect, disconnect and credential removal.
-  ouraScopeDenied           Json?   @map("oura_scope_denied")
+  ouraScopeDenied           Json?     @map("oura_scope_denied")
+  /// v1.44 — how far the Oura history backfill has got: per collection, the
+  /// day its next window ends on, and whether it is done or refused for a
+  /// scope; plus where the account's history starts once learned. Written
+  /// after every window so a slice resumes where the last one stopped (see
+  /// `src/lib/oura/backfill-progress.ts`); kept after completion so a
+  /// reconnect reads only what the old grant refused.
+  ouraBackfillProgress      Json?     @map("oura_backfill_progress")
+  /// v1.44 — the Oura history backfill finished (self-converging discovery
+  /// predicate `oura_backfill_completed_at IS NULL`). Cleared on connect.
+  ouraBackfillCompletedAt   DateTime? @map("oura_backfill_completed_at")
 
   // v1.28.x — Strava OAuth credentials (per-user BYO-app, encrypted at app
   // level). Strava caps every newly-created API app at single-player mode

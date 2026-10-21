@@ -106,6 +106,8 @@ const BACKFILL_STAMPS: Record<string, string> = {
     "marks the connection's one-shot as done; not a listed record",
   "src/lib/jobs/strava-backfill.ts > user":
     "stamps the account's backfill-completed marker",
+  "src/lib/jobs/oura-backfill.ts > user":
+    "writes the account's backfill progress note and completed marker",
   "src/lib/jobs/document-content-index-backfill.ts > documentContentIndex":
     "the index row is rebuilt content; its updatedAt is the rebuild time",
   "src/lib/jobs/lab-biomarker-backfill.ts > biomarker":

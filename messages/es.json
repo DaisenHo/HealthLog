@@ -5416,8 +5416,15 @@
       "unavailableTitle": "No disponible en este registro compartido",
       "unavailableDescription": "Esta sección de Ajustes no está disponible intencionadamente mientras consultas el registro de otra persona.",
       "integrationStatusDescription": "Estado de conexión de este registro gestionado.",
-      "integrationStatusDetail": "Un perfil gestionado muestra sus servicios conectados solo como estado. Conectar, volver a conectar, sincronizar y desconectar no está disponible para quienes lo gestionan.",
-      "integrationStatusDocs": "Cómo funciona compartir"
+      "integrationStatusDetail": "Los servicios que conectes aquí envían sus datos al registro de {name}, no al tuyo. Si el perfil no tiene una app propia del proveedor, usa la tuya.",
+      "integrationStatusDocs": "Cómo funciona compartir",
+      "integrationConnectsFor": "Conecta para {name}",
+      "integrationConnectFor": "Conectar para {name}",
+      "integrationDisconnect": "Desconectar",
+      "integrationDisconnectTitle": "¿Desconectar {provider} de {name}?",
+      "integrationDisconnectBody": "Dejarán de llegar datos nuevos. Todo lo ya importado se queda en el registro de {name}.",
+      "integrationNoClientApp": "Ni {name} ni tu propia cuenta tienen todavía una app de {provider}. Configura una primero en tus propias integraciones.",
+      "integrationConnectFailed": "No se pudo empezar a conectar {provider}."
     },
     "sections": {
       "account": {
@@ -6675,7 +6682,9 @@
           "items": {
             "vo2max": "VO2 máx.",
             "cardio_age": "edad cardiovascular",
-            "resilience": "resiliencia"
+            "resilience": "resiliencia",
+            "workout": "entrenamientos",
+            "heartrate": "frecuencia cardiaca"
           }
         }
       }

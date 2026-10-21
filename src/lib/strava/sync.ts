@@ -44,16 +44,12 @@ import {
   fetchActivities,
   fetchActivityById,
   mapActivity,
-  refreshAccessToken,
   summaryHasHeartRate,
   type StravaDetailedActivity,
   type StravaWorkoutRow,
 } from "./client";
-import {
-  getStravaClientCredentials,
-  getStravaConnection,
-  storeStravaTokens,
-} from "./credentials";
+import { getStravaConnection } from "./credentials";
+import { refreshStravaAfterRefusal } from "./oauth-descriptor";
 import {
   StravaApiError,
   classifyStravaError,
@@ -173,13 +169,8 @@ async function runStravaSync(
 
   async function refreshOnce(): Promise<boolean> {
     if (refreshDone) return false;
-    const creds = await getStravaClientCredentials(userId);
-    if (!creds) return false;
-    const rotated = await refreshAccessToken(conn!.refreshToken, creds);
-    const usable = await storeStravaTokens(
+    const usable = await refreshStravaAfterRefusal(
       userId,
-      rotated.access_token,
-      rotated.refresh_token,
       conn!.refreshTokenCiphertext,
     );
     if (!usable) return false;

@@ -130,6 +130,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "oura-sync": cohortSync("Oura"),
   "strava-sync": cohortSync("Strava"),
   "strava-backfill": forwarder,
+  "oura-backfill": forwarder,
 
   // ── Status and insights ────────────────────────────────────────────
   "insights-general-status": {

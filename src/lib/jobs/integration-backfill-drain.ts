@@ -22,6 +22,7 @@ import { runGoogleHealthBackfillForUser } from "@/lib/jobs/google-health-backfil
 import { runGoogleHealthSleepRepairForUser } from "@/lib/jobs/google-health-sleep-repair";
 import { runFitbitSleepRepairForUser } from "@/lib/jobs/fitbit-sleep-repair";
 import { runStravaBackfillForUser } from "@/lib/jobs/strava-backfill";
+import { runOuraBackfillForUser } from "@/lib/jobs/oura-backfill";
 import { runSleepTimelineBackfillForUser } from "@/lib/jobs/sleep-timeline-backfill";
 import { runLabBiomarkerBackfillForUser } from "@/lib/jobs/lab-biomarker-backfill";
 import {
@@ -141,6 +142,20 @@ async function runAdmitted(
       workerLog(
         "info",
         `[strava-backfill] user=${userId} imported=${imported}${continued ? " continued" : ""}`,
+      );
+      return;
+    }
+    case "oura-backfill": {
+      const { imported, continued } = await runOuraBackfillForUser(
+        userId,
+        shouldStop,
+        data.slice ?? 0,
+      );
+      totals.imported += imported;
+      if (continued) totals.continued += 1;
+      workerLog(
+        "info",
+        `[oura-backfill] user=${userId} imported=${imported}${continued ? " continued" : ""}`,
       );
       return;
     }

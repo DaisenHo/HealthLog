@@ -115,6 +115,14 @@ describe("S1 — the direct session-resolution set is frozen", () => {
       "consent decision on a route outside apiHandler",
     // Provider OAuth callbacks. The browser arrives as a top-level
     // navigation, so the code is bound to the session user and redirected.
+    // v1.44 — Withings and Google Health join: a navigation cannot carry the
+    // record-session header a record resolver needs, and the session user may
+    // be a guardian finishing a managed profile's connect, which
+    // `verifyCallbackActor` checks against a live MANAGE grant.
+    "app/api/google-health/callback/route.ts":
+      "binds the OAuth code to the session user",
+    "app/api/withings/callback/route.ts":
+      "binds the OAuth code to the session user",
     "app/api/oura/callback/route.ts":
       "binds the OAuth code to the session user",
     "app/api/polar/callback/route.ts":

@@ -51,6 +51,12 @@ import {
   type StravaBackfillPayload,
 } from "@/lib/jobs/strava-backfill";
 import {
+  OURA_BACKFILL_QUEUE,
+  OURA_BACKFILL_CONCURRENCY,
+  enqueueBootTimeOuraBackfill,
+  type OuraBackfillPayload,
+} from "@/lib/jobs/oura-backfill";
+import {
   SLEEP_TIMELINE_BACKFILL_QUEUE,
   SLEEP_TIMELINE_BACKFILL_CONCURRENCY,
   enqueueBootTimeSleepTimelineBackfill,
@@ -325,6 +331,8 @@ const allQueues = [
   // v1.17.0 — Polar + Oura OAuth poll sync.
   POLAR_SYNC_QUEUE,
   OURA_SYNC_QUEUE,
+  // v1.44 — Oura history backfill, sliced through the shared lane.
+  OURA_BACKFILL_QUEUE,
   // v1.28.x — Strava OAuth poll sync + self-converging boot backfill.
   STRAVA_SYNC_QUEUE,
   STRAVA_BACKFILL_QUEUE,
@@ -451,6 +459,11 @@ const queuePolicies: QueuePolicyTable = {
       "Per-connection full-history backfill; boot-discovery driven and self-converging.",
   },
   [STRAVA_BACKFILL_QUEUE]: {
+    policy: "exclusive",
+    reason:
+      "Per-connection full-history backfill; boot-discovery driven and self-converging.",
+  },
+  [OURA_BACKFILL_QUEUE]: {
     policy: "exclusive",
     reason:
       "Per-connection full-history backfill; boot-discovery driven and self-converging.",
@@ -787,6 +800,23 @@ export async function registerIntegrationSyncQueues(
       return jobDone({ jobs: jobs.length });
     },
   );
+  // v1.44 — Oura history backfill. The source queue keeps the per-account
+  // singleton and forwards admitted work to the shared drain, where it runs
+  // in resumable slices.
+  await createAndWork<OuraBackfillPayload>(
+    boss,
+    OURA_BACKFILL_QUEUE,
+    { localConcurrency: OURA_BACKFILL_CONCURRENCY },
+    async (jobs) => {
+      for (const job of jobs) {
+        await enqueueIntegrationBackfillAdmission(boss, {
+          kind: "oura-backfill",
+          data: job.data,
+        });
+      }
+      return jobDone({ jobs: jobs.length });
+    },
+  );
   return allQueues;
 }
 
@@ -939,6 +969,29 @@ export async function enqueueIntegrationSyncBootDiscovery(): Promise<void> {
     workerLog(
       "error",
       "[strava-backfill] boot discovery threw an unexpected error",
+      err,
+    );
+  }
+
+  // v1.44 — Oura history backfill. Finds every Oura connection not yet
+  // backfilled (and every account still holding the retired
+  // equivalent-distance rows) and enqueues one sliced backfill per account.
+  try {
+    const { enqueued, skipped, error } = await enqueueBootTimeOuraBackfill(
+      bootStaggerSecondsFor("oura-backfill"),
+    );
+    if (error) {
+      workerLog("error", `[oura-backfill] boot discovery failed: ${error}`);
+    } else {
+      workerLog(
+        "info",
+        `[oura-backfill] boot discovery: enqueued=${enqueued} skipped=${skipped}`,
+      );
+    }
+  } catch (err) {
+    workerLog(
+      "error",
+      "[oura-backfill] boot discovery threw an unexpected error",
       err,
     );
   }

@@ -1,9 +1,7 @@
-import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { auditLog } from "@/lib/auth/audit";
+import { disconnectOAuth } from "@/lib/integrations/oauth-kit/disconnect";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
-import { markDisconnected } from "@/lib/integrations/status";
 
 /**
  * Disconnect the Google Health integration for the current user (v1.26.0).
@@ -20,23 +18,9 @@ export const POST = apiHandler(async () => {
   const { user } = await requireAuth();
   annotate({ action: { name: "google_health.disconnect" } });
 
-  const connection = await prisma.googleHealthConnection.findUnique({
-    where: { userId: user.id },
-  });
-
-  if (!connection) {
+  if ((await disconnectOAuth("google-health", user.id)) === "not_connected") {
     return apiError("No Google Health connection", 404);
   }
-
-  await prisma.googleHealthConnection.delete({
-    where: { userId: user.id },
-  });
-
-  await auditLog("google_health.disconnect", {
-    userId: user.id,
-  });
-
-  await markDisconnected(user.id, "google-health");
 
   return apiSuccess({ disconnected: true });
 });

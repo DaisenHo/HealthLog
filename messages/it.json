@@ -5416,8 +5416,15 @@
       "unavailableTitle": "Non disponibile in questo record condiviso",
       "unavailableDescription": "Questa area delle Impostazioni non è disponibile intenzionalmente mentre visualizzi il record di un’altra persona.",
       "integrationStatusDescription": "Stato di connessione per questo record gestito.",
-      "integrationStatusDetail": "Un profilo gestito mostra i servizi collegati solo come stato. Chi lo gestisce non può collegare, ricollegare, sincronizzare o scollegare.",
-      "integrationStatusDocs": "Come funziona la condivisione"
+      "integrationStatusDetail": "I servizi che colleghi qui inviano i dati al profilo di {name}, non al tuo. Se il profilo non ha un'app propria del fornitore, usa la tua.",
+      "integrationStatusDocs": "Come funziona la condivisione",
+      "integrationConnectsFor": "Collega per {name}",
+      "integrationConnectFor": "Collega per {name}",
+      "integrationDisconnect": "Scollega",
+      "integrationDisconnectTitle": "Scollegare {provider} da {name}?",
+      "integrationDisconnectBody": "I nuovi dati smettono di arrivare. Quanto già importato resta nel profilo di {name}.",
+      "integrationNoClientApp": "Né {name} né il tuo account hanno ancora un'app {provider}. Configurane prima una nelle tue integrazioni.",
+      "integrationConnectFailed": "Impossibile avviare il collegamento a {provider}."
     },
     "sections": {
       "account": {
@@ -6675,7 +6682,9 @@
           "items": {
             "vo2max": "VO2 max",
             "cardio_age": "età cardiovascolare",
-            "resilience": "resilienza"
+            "resilience": "resilienza",
+            "workout": "allenamenti",
+            "heartrate": "frequenza cardiaca"
           }
         }
       }

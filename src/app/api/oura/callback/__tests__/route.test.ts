@@ -24,6 +24,15 @@ vi.mock("@/lib/oauth/callback-claim", () => ({
   duplicateOAuthCallback: async () => null,
 }));
 
+vi.mock("@/lib/integrations/oauth-kit/connect-target", () => ({
+  // The guardian arm is covered in its own test; here the record's own
+  // browser (or none) may finish, any other session may not.
+  verifyCallbackActor: async (record: string, session: string | null) =>
+    session === null || session === record
+      ? { ok: true, guardianUserId: null }
+      : { ok: false, reason: "cross_user" },
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
@@ -166,7 +175,10 @@ describe("GET /api/oura/callback", () => {
     const data = userUpdate.mock.calls[0]![0].data;
     expect(data.ouraAccessTokenEncrypted).toBe("enc:at");
     expect(data.ouraRefreshTokenEncrypted).toBe("enc:rt");
-    expect(auditLog).toHaveBeenCalledWith("oura.connect", { userId: "u1" });
+    expect(auditLog).toHaveBeenCalledWith("oura.connect", {
+      userId: "u1",
+      actorUserId: null,
+    });
     expect(res.headers.get("location")).toContain("oura=connected");
   });
 });
@@ -206,12 +218,17 @@ describe("GET /api/oura/callback — issuer", () => {
  * card for up to an hour.
  */
 describe("GET /api/oura/callback — connect-time first sync", () => {
-  it("enqueues exactly one targeted oura-sync job for the connecting user", async () => {
+  it("enqueues one targeted oura-sync job and the history backfill for the connecting user", async () => {
     const res = await GET(makeReq({ code: "c", state: "S", cookie: "S" }));
 
     expect(res.headers.get("location")).toContain("oura=connected");
-    expect(bossSend).toHaveBeenCalledTimes(1);
+    expect(bossSend).toHaveBeenCalledTimes(2);
     expect(bossSend).toHaveBeenCalledWith("oura-sync", { userId: "u1" });
+    expect(bossSend).toHaveBeenCalledWith(
+      "oura-backfill",
+      expect.objectContaining({ userId: "u1" }),
+      expect.objectContaining({ singletonKey: "oura-backfill|u1" }),
+    );
   });
 
   it("still connects when no boss instance is available", async () => {

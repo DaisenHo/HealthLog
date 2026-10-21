@@ -18,7 +18,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
-import { encrypt, decrypt } from "@/lib/crypto";
 import { annotate, getEvent } from "@/lib/logging/context";
 import type { GoogleHealthCollectionKey } from "./collection-keys";
 import {
@@ -52,11 +51,14 @@ import {
   noteGoogleHealthMapped,
   noteGoogleHealthOutcomeFailure,
   noteGoogleHealthWritten,
-  refreshAccessToken,
   type GoogleHealthResumePoint,
   type GoogleHealthTokenSource,
 } from "./client";
-import { getUserGoogleHealthCredentials } from "./credentials";
+import {
+  GOOGLE_HEALTH_TOKEN_REFRESH_BUFFER_MS,
+  googleHealthTokenDescriptor,
+} from "./oauth-descriptor";
+import { obtainAccessToken } from "@/lib/integrations/oauth-kit/token";
 import {
   GoogleHealthApiError,
   classifyGoogleHealthError,
@@ -69,9 +71,6 @@ import {
  * `"fitbit"` key so the two coexisting providers keep independent status rows.
  */
 export const GOOGLE_HEALTH_INTEGRATION_KEY = "google-health";
-
-/** Refresh the access token this many ms before `tokenExpiresAt`. */
-const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
 /**
  * Overlap window for the incremental sync, in ms. Google re-rolls daily
@@ -142,104 +141,72 @@ export async function getValidToken(
 ): Promise<GoogleHealthTokenInfo | null> {
   const connection = await prisma.googleHealthConnection.findUnique({
     where: { userId },
+    select: { id: true, googleUserId: true },
   });
   if (!connection) return null;
 
-  const accessToken = decrypt(connection.accessToken);
-  const refreshToken = decrypt(connection.refreshToken);
-
-  if (
-    opts.forceRefresh === true ||
-    connection.tokenExpiresAt.getTime() - TOKEN_REFRESH_BUFFER_MS < Date.now()
-  ) {
-    try {
-      const creds = await getUserGoogleHealthCredentials(userId);
-      if (!creds) {
-        getEvent()?.addWarning(
-          `No Google Health credentials found for user ${userId} during token refresh`,
-        );
-        await recordSyncFailure({
-          userId,
-          integration: GOOGLE_HEALTH_INTEGRATION_KEY,
-          kind: "reauth_required",
-          message: "Google Health credentials missing — token refresh skipped",
-          errorCode: "credentials_missing",
-        });
-        // A dead token means every resource "succeeds" with 0 rows — without a
-        // ledger entry the cycle would read as clean, stamp `markSynced`, and
-        // `recordSyncSuccess` would flip a parked connection back to connected
-        // (an hourly invalid-refresh hammer with an advancing watermark). Fail
-        // the cycle's verdict so the park holds.
-        noteHardFailure(GOOGLE_HEALTH_TOKEN_HARD_FAIL);
-        return null;
-      }
-
-      const newTokens = await refreshAccessToken(refreshToken, creds);
-      const expiresAt = new Date(Date.now() + newTokens.expires_in * 1000);
-
-      // Google does NOT rotate refresh tokens: a routine refresh returns a new
-      // access token but usually omits `refresh_token`. Persist the new access
-      // token + expiry and only overwrite the stored refresh token when the
-      // response actually carries a fresh one — otherwise keep the existing one.
-      await prisma.googleHealthConnection.update({
-        where: { id: connection.id },
-        data: {
-          accessToken: encrypt(newTokens.access_token),
-          tokenExpiresAt: expiresAt,
-          ...(newTokens.refresh_token
-            ? { refreshToken: encrypt(newTokens.refresh_token) }
-            : {}),
-        },
-      });
-
+  try {
+    const result = await obtainAccessToken(
+      googleHealthTokenDescriptor,
+      userId,
+      { force: opts.forceRefresh === true },
+    );
+    if (result.kind === "token") {
       return {
-        accessToken: newTokens.access_token,
-        expiresAt,
-        connection: {
-          id: connection.id,
-          googleUserId: connection.googleUserId,
-        },
+        accessToken: result.accessToken,
+        // Google always stores an expiry; the fallback only satisfies the type.
+        expiresAt: result.expiresAt ?? new Date(),
+        connection,
       };
-    } catch (err) {
-      getEvent()?.addWarning(
-        `Google Health token refresh failed for user ${userId}: ${err}`,
-      );
-      // A revoked / expired refresh token (`invalid_grant` / 401 — the 7-day
-      // Testing-mode refresh expiry, or a user-revoked grant) is a SOFT
-      // disconnect: flag `needsReauth` on the connection so the card surfaces a
-      // "reconnect" CTA rather than a hard error. The callback clears it on a
-      // fresh consent. A transient refresh failure (network blip, 5xx) leaves
-      // the flag untouched so we don't nag the user to reconnect needlessly.
-      if (isGoogleHealthReauthRequired(err)) {
-        await prisma.googleHealthConnection
-          .update({
-            where: { id: connection.id },
-            data: { needsReauth: true },
-          })
-          .catch((e) =>
-            getEvent()?.addWarning(
-              `google-health: needsReauth flag write failed for ${userId}: ${e}`,
-            ),
-          );
-      }
-      await recordGoogleHealthSyncFailure(userId, err);
-      // Same verdict rule as the credentials-missing branch above: a refresh
-      // failure must fail the cycle, or the all-zeros run stamps success,
-      // un-parks `error_reauth`, and the hourly cohort retries the dead
-      // refresh token forever while `lastSyncedAt` advances past real data.
-      noteHardFailure(GOOGLE_HEALTH_TOKEN_HARD_FAIL);
-      return null;
     }
+    if (result.kind === "none") return null;
+    getEvent()?.addWarning(
+      `No Google Health credentials found for user ${userId} during token refresh`,
+    );
+    await recordSyncFailure({
+      userId,
+      integration: GOOGLE_HEALTH_INTEGRATION_KEY,
+      kind: "reauth_required",
+      message: "Google Health credentials missing — token refresh skipped",
+      errorCode: "credentials_missing",
+    });
+    // A dead token means every resource "succeeds" with 0 rows — without a
+    // ledger entry the cycle would read as clean, stamp `markSynced`, and
+    // `recordSyncSuccess` would flip a parked connection back to connected
+    // (an hourly invalid-refresh hammer with an advancing watermark). Fail
+    // the cycle's verdict so the park holds.
+    noteHardFailure(GOOGLE_HEALTH_TOKEN_HARD_FAIL);
+    return null;
+  } catch (err) {
+    getEvent()?.addWarning(
+      `Google Health token refresh failed for user ${userId}: ${err}`,
+    );
+    // A revoked / expired refresh token (`invalid_grant` / 401 — the 7-day
+    // Testing-mode refresh expiry, or a user-revoked grant) is a SOFT
+    // disconnect: flag `needsReauth` on the connection so the card surfaces a
+    // "reconnect" CTA rather than a hard error. The callback clears it on a
+    // fresh consent. A transient refresh failure (network blip, 5xx) leaves
+    // the flag untouched so we don't nag the user to reconnect needlessly.
+    if (isGoogleHealthReauthRequired(err)) {
+      await prisma.googleHealthConnection
+        .update({
+          where: { id: connection.id },
+          data: { needsReauth: true },
+        })
+        .catch((e) =>
+          getEvent()?.addWarning(
+            `google-health: needsReauth flag write failed for ${userId}: ${e}`,
+          ),
+        );
+    }
+    await recordGoogleHealthSyncFailure(userId, err);
+    // Same verdict rule as the credentials-missing branch above: a refresh
+    // failure must fail the cycle, or the all-zeros run stamps success,
+    // un-parks `error_reauth`, and the hourly cohort retries the dead
+    // refresh token forever while `lastSyncedAt` advances past real data.
+    noteHardFailure(GOOGLE_HEALTH_TOKEN_HARD_FAIL);
+    return null;
   }
-
-  return {
-    accessToken,
-    expiresAt: connection.tokenExpiresAt,
-    connection: {
-      id: connection.id,
-      googleUserId: connection.googleUserId,
-    },
-  };
 }
 
 /**
@@ -277,7 +244,8 @@ export function googleHealthTokenSource(
   return async ({ forceRefresh }) => {
     if (
       forceRefresh ||
-      current.expiresAt.getTime() - TOKEN_REFRESH_BUFFER_MS < Date.now()
+      current.expiresAt.getTime() - GOOGLE_HEALTH_TOKEN_REFRESH_BUFFER_MS <
+        Date.now()
     ) {
       const next = await getValidToken(userId, { forceRefresh });
       if (!next) throw new GoogleHealthTokenUnavailableError();

@@ -54,6 +54,8 @@ const WRITE_SITES: Record<string, string> = {
   "lib/whoop/webhook-handler.ts": TAIL,
   // Retiring the rows of Oura sleep periods the person rejected or deleted.
   "lib/oura/sync.ts": TAIL,
+  // Retiring the equivalent-distance rows earlier Oura syncs wrote.
+  "lib/oura/retire-distance.ts": TAIL,
   // Integration syncs: each collects the (type, day) pairs it touched and
   // runs both legs itself at the end of the sync.
   "lib/fitbit/sync-core.ts":
@@ -62,6 +64,8 @@ const WRITE_SITES: Record<string, string> = {
     "refolds the touched days and re-warms the touched types at the end of the upsert",
   "lib/nightscout/sync.ts":
     "refolds the touched days and re-warms the touched types at the end of the sync",
+  "lib/oura/sync-heart-rate.ts":
+    "collects the days each heart-rate page touched; refolds them and re-warms the type once per window",
   "lib/withings/sync.ts":
     "refolds the touched days and re-warms the touched types at the end of the sync",
   "lib/withings/sync-activity.ts":

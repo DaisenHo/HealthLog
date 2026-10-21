@@ -12,7 +12,6 @@
  */
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
-import { persistRotatedToken } from "@/lib/integrations/oauth-refresh";
 import { getStravaCredentials, type StravaCredentials } from "./client";
 
 /**
@@ -91,8 +90,8 @@ export interface StravaConnection {
   refreshToken: string;
   /**
    * The exact stored refresh-token ciphertext (NOT the decrypted value). The
-   * rotating-refresh compare-and-swap in `storeStravaTokens` matches on this so
-   * a concurrent sync that already rotated the token is not clobbered.
+   * refresh after a refusal (`refreshStravaAfterRefusal`) compares against it
+   * so a concurrent sync that already rotated the token is not clobbered.
    */
   refreshTokenCiphertext: string;
 }
@@ -115,47 +114,4 @@ export async function getStravaConnection(
     refreshToken: decrypt(user.stravaRefreshTokenEncrypted),
     refreshTokenCiphertext: user.stravaRefreshTokenEncrypted,
   };
-}
-
-/**
- * Persist a rotated Strava token pair with compare-and-swap on the stored
- * refresh ciphertext. Strava's tokens live on `User` and the refresh is
- * REACTIVE on a 401, so two overlapping syncs can race the same one-time-use
- * refresh token. The CAS guard writes only when the stored ciphertext still
- * equals the one this caller spent; on a lost race (0 rows) it re-reads and
- * returns the peer's freshly rotated access token.
- *
- * Returns the access token the caller should use for the current sync (its own
- * on a win, the peer's on a loss), or null if the connection vanished.
- */
-export async function storeStravaTokens(
-  userId: string,
-  accessToken: string,
-  refreshToken: string,
-  expectedRefreshCiphertext: string,
-): Promise<string | null> {
-  return persistRotatedToken(accessToken, {
-    conditionalUpdate: async () => {
-      const { count } = await prisma.user.updateMany({
-        where: {
-          id: userId,
-          stravaRefreshTokenEncrypted: expectedRefreshCiphertext,
-        },
-        data: {
-          stravaAccessTokenEncrypted: encrypt(accessToken),
-          stravaRefreshTokenEncrypted: encrypt(refreshToken),
-        },
-      });
-      return count;
-    },
-    readPeerAccessToken: async () => {
-      const fresh = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { stravaAccessTokenEncrypted: true },
-      });
-      return fresh?.stravaAccessTokenEncrypted
-        ? decrypt(fresh.stravaAccessTokenEncrypted)
-        : null;
-    },
-  });
 }
