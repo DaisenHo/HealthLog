@@ -275,6 +275,10 @@ export async function importLabsCsv(args: {
 }): Promise<RecordImportResult> {
   const { userId, tz, query } = args;
   const dryRun = query.dryRun;
+  // One zone for everything: the file's times are read in it, and the
+  // calendar day a reading is a duplicate on is cut in it too. Cutting the
+  // days in the account's zone while reading the file in another split one
+  // draw day in two, or folded two into one.
   const timezone = query.timezone ?? tz;
   const report = new RecordImportReport("labs", dryRun);
   const index: MarkerIndex = await loadMarkerIndex(prisma, userId);
@@ -365,7 +369,9 @@ export async function importLabsCsv(args: {
     }
 
     // 2. Duplicates against the record, one query for the chunk.
-    const days = planned.map((p) => labReadingDay(p.row.takenAt, tz)).sort();
+    const days = planned
+      .map((p) => labReadingDay(p.row.takenAt, timezone))
+      .sort();
     const existingKeys = new Set<string>();
     if (planned.length > 0) {
       const from = labReadingDaySearchRange(days[0]).gte;
@@ -396,10 +402,10 @@ export async function importLabsCsv(args: {
         },
       });
       for (const e of existing) {
-        for (const k of readingKeys(e, tz)) existingKeys.add(k);
+        for (const k of readingKeys(e, timezone)) existingKeys.add(k);
         // A reading filed under a marker also answers to its printed name.
         if (e.biomarkerId) {
-          for (const k of readingKeys({ ...e, biomarkerId: null }, tz))
+          for (const k of readingKeys({ ...e, biomarkerId: null }, timezone))
             existingKeys.add(k);
         }
       }
@@ -418,10 +424,10 @@ export async function importLabsCsv(args: {
         sourceUnit: row.unit,
       };
       const keys = [
-        ...readingKeys(probe, tz),
-        ...readingKeys({ ...probe, biomarkerId: null }, tz),
+        ...readingKeys(probe, timezone),
+        ...readingKeys({ ...probe, biomarkerId: null }, timezone),
         ...(marker
-          ? readingKeys({ ...probe, biomarkerId: marker.id }, tz)
+          ? readingKeys({ ...probe, biomarkerId: marker.id }, timezone)
           : []),
       ];
       if (keys.some((k) => existingKeys.has(k) || seen.has(k))) {
@@ -506,7 +512,7 @@ export async function importLabsCsv(args: {
       });
       for (const k of [
         ...keys,
-        ...readingKeys({ ...probe, biomarkerId: biomarker.id }, tz),
+        ...readingKeys({ ...probe, biomarkerId: biomarker.id }, timezone),
       ])
         seen.add(k);
       report.valid += 1;

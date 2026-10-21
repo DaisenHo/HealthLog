@@ -176,6 +176,33 @@ describe("lab CSV import", () => {
   });
 });
 
+describe("lab CSV import in a zone of the file's own", () => {
+  it("cuts the duplicate day in the zone the file is read in", async () => {
+    // Read in New York, these are draws on two days (1 and 2 March). In the
+    // account's Berlin they both fall on 2 March, which used to make the
+    // second a duplicate of the first.
+    const csv = [
+      "Analyt;Wert;Einheit;Datum",
+      "Zone marker;7;mg/dL;2025-03-01T22:30",
+      "Zone marker;7;mg/dL;2025-03-02T02:00",
+    ].join("\n");
+    const result = await importLabsCsv({
+      userId: USER,
+      tz: TZ,
+      stream: textToStream(csv),
+      maxBytes: 1_000_000,
+      query: labsCsvQuerySchema.parse({
+        analyte: "0",
+        value: "1",
+        unit: "2",
+        date: "3",
+        timezone: "America/New_York",
+      }),
+    });
+    expect(result).toMatchObject({ inserted: 2, duplicates: 0 });
+  });
+});
+
 describe("medication CSV import", () => {
   const MEDS = [
     "name,dose,times,as needed,start,end",
