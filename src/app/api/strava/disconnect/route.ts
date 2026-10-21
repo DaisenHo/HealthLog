@@ -1,15 +1,8 @@
-import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { auditLog } from "@/lib/auth/audit";
+import { disconnectOAuth } from "@/lib/integrations/oauth-kit/disconnect";
 import { apiSuccess, apiError } from "@/lib/api-response";
-import { annotate, getEvent } from "@/lib/logging/context";
+import { annotate } from "@/lib/logging/context";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { markDisconnected } from "@/lib/integrations/status";
-import { deauthorize } from "@/lib/strava/client";
-import {
-  getStravaConnection,
-  STRAVA_DISCONNECTED,
-} from "@/lib/strava/credentials";
 
 /**
  * v1.28.x — disconnect Strava for the current user.
@@ -30,26 +23,9 @@ export const POST = apiHandler(async () => {
     });
   }
 
-  const connection = await getStravaConnection(user.id);
-  if (!connection) {
+  if ((await disconnectOAuth("strava", user.id)) === "not_connected") {
     return apiError("No Strava connection", 404);
   }
-
-  // Best-effort revoke at Strava; a Strava-side outage must never block the
-  // local disconnect.
-  try {
-    await deauthorize(connection.accessToken);
-  } catch (err) {
-    getEvent()?.addWarning(`strava: deauthorize failed on disconnect: ${err}`);
-  }
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: STRAVA_DISCONNECTED,
-  });
-
-  await auditLog("strava.disconnect", { userId: user.id });
-  await markDisconnected(user.id, "strava");
 
   return apiSuccess({ disconnected: true });
 });

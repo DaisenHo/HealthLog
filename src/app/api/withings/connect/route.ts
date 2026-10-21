@@ -1,17 +1,12 @@
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { prisma } from "@/lib/db";
-import { annotate, getEvent } from "@/lib/logging/context";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { getAuthorizationUrl } from "@/lib/withings/client";
-import { getUserWithingsCredentials } from "@/lib/withings/credentials";
 import {
-  WITHINGS_OAUTH_STATE_COOKIE,
-  WITHINGS_OAUTH_STATE_TTL_MS,
-  mintWithingsOAuthStateNonce,
-} from "@/lib/withings/oauth-state";
+  setConnectStateCookie,
+  startOAuthConnect,
+} from "@/lib/integrations/oauth-kit/connect-start";
+import { annotate } from "@/lib/logging/context";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import { relativeRedirect } from "@/lib/http/relative-redirect";
-import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 
 /**
  * Redirects the user to Withings OAuth authorization page.
@@ -62,41 +57,22 @@ export const GET = apiHandler(async (req: NextRequest) => {
     );
   }
 
-  const creds = await getUserWithingsCredentials(user.id);
-  if (!creds) {
-    annotate({ action: { name: "withings.connect.no_credentials" } });
-    return relativeRedirect(
-      "/settings/integrations?withings=error&reason=nocreds",
-    );
-  }
-
-  const nonce = mintWithingsOAuthStateNonce();
-  try {
-    await prisma.withingsOAuthState.create({
-      data: {
-        nonce,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + WITHINGS_OAUTH_STATE_TTL_MS),
-      },
-    });
-  } catch (err) {
-    getEvent()?.setError(err);
+  const started = await startOAuthConnect("withings", user.id);
+  if (!started.ok) {
+    if (started.reason === "nocreds") {
+      annotate({ action: { name: "withings.connect.no_credentials" } });
+      return relativeRedirect(
+        "/settings/integrations?withings=error&reason=nocreds",
+      );
+    }
     annotate({ action: { name: "withings.connect.create_failed" } });
     return relativeRedirect(
       "/settings/integrations?withings=error&reason=connect",
     );
   }
 
-  const url = getAuthorizationUrl(nonce, creds);
-
-  const response = NextResponse.redirect(url);
-  response.cookies.set(WITHINGS_OAUTH_STATE_COOKIE, nonce, {
-    httpOnly: true,
-    secure: shouldEmitSecureCookie(),
-    sameSite: "lax",
-    maxAge: Math.floor(WITHINGS_OAUTH_STATE_TTL_MS / 1000),
-    path: "/",
-  });
-
-  return response;
+  return setConnectStateCookie(
+    NextResponse.redirect(started.authorizationUrl),
+    started.cookie,
+  );
 });

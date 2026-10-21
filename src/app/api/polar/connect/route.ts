@@ -1,14 +1,10 @@
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { annotate } from "@/lib/logging/context";
-import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { getAuthorizationUrl } from "@/lib/polar/client";
-import { getPolarClientCredentials } from "@/lib/polar/credentials";
 import {
-  OAUTH_STATE_TTL_MS,
-  mintSignedState,
-  oauthStateCookieName,
-} from "@/lib/oauth/signed-state";
+  setConnectStateCookie,
+  startOAuthConnect,
+} from "@/lib/integrations/oauth-kit/connect-start";
+import { annotate } from "@/lib/logging/context";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 
 /**
@@ -48,8 +44,8 @@ export const GET = apiHandler(async () => {
     );
   }
 
-  const creds = await getPolarClientCredentials(user.id);
-  if (!creds) {
+  const started = await startOAuthConnect("polar", user.id);
+  if (!started.ok) {
     annotate({ action: { name: "polar.connect.no_credentials" } });
     return NextResponse.redirect(
       new URL(
@@ -59,16 +55,8 @@ export const GET = apiHandler(async () => {
     );
   }
 
-  const state = mintSignedState("polar", user.id);
-  const url = getAuthorizationUrl(state, creds);
-
-  const response = NextResponse.redirect(url);
-  response.cookies.set(oauthStateCookieName("polar"), state, {
-    httpOnly: true,
-    secure: shouldEmitSecureCookie(),
-    sameSite: "lax",
-    maxAge: Math.floor(OAUTH_STATE_TTL_MS / 1000),
-    path: "/",
-  });
-  return response;
+  return setConnectStateCookie(
+    NextResponse.redirect(started.authorizationUrl),
+    started.cookie,
+  );
 });
