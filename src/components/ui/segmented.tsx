@@ -1,10 +1,17 @@
 "use client";
 
 /**
- * The segmented control: a short row of mutually exclusive choices on one
- * track (zoom level, chronicle grouping, cards or table, recent or all,
- * Paperless-ngx or Papra). One look everywhere: a muted track, the chosen
- * segment raised on the background colour, never coloured.
+ * The segmented control: a short row of mutually exclusive choices (zoom
+ * level, chronicle grouping, cards or table, recent or all,
+ * Paperless-ngx or Papra). One look everywhere, the one the dashboard chart
+ * tabs always had: no track, the chosen segment filled in the primary colour,
+ * the others plain until hovered. A muted track with a raised segment was
+ * tried and read as heavier than the card around it.
+ *
+ * Two sizes: `md` (default) for a choice that is the content of its area (a
+ * view switch, a form sheet, a detail page's sections), `sm` for a range row
+ * in a chart header, where the segments sit beside the chart's title and
+ * must not outweigh it.
  *
  * Two semantics, one chrome:
  *
@@ -19,8 +26,9 @@
  *   setter that saves a preference is not called twice.
  *
  * Touch: every segment is at least 44 px on a coarse pointer and 36 px under
- * a mouse, the same floor `Button` carries. The four controls this replaced
- * sat at 36, 36, 44 and 44.
+ * a mouse, the same floor `Button` carries; a `sm` range row keeps 44 px
+ * under a mouse too, as the chart tabs always had. The four controls this
+ * replaced sat at 36, 36, 44 and 44.
  *
  * An option with an `icon` and `iconOnly` on the control renders the icon and
  * names the segment through `aria-label` and `title`.
@@ -59,6 +67,8 @@ export interface SegmentedProps<T extends string> {
   iconOnly?: boolean;
   /** Spread the segments over the full width. */
   stretch?: boolean;
+  /** `sm` for a range row in a chart header; see the module comment. */
+  size?: "sm" | "md";
   disabled?: boolean;
   className?: string;
   /**
@@ -78,6 +88,7 @@ export function Segmented<T extends string>({
   mode = "radio",
   iconOnly = false,
   stretch = false,
+  size = "md",
   disabled = false,
   className,
   wrapOption,
@@ -100,7 +111,7 @@ export function Segmented<T extends string>({
       aria-disabled={disabled || undefined}
       data-slot={slot}
       className={cn(
-        "bg-muted inline-flex shrink-0 items-center gap-0.5 rounded-lg p-0.5",
+        "inline-flex shrink-0 items-center gap-1",
         stretch && "flex w-full",
         className,
       )}
@@ -135,14 +146,19 @@ export function Segmented<T extends string>({
               onChange(option.value);
             }}
             className={cn(
-              "focus-visible:ring-ring/50 inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none",
+              "focus-visible:ring-ring/50 inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none",
+              size === "sm" ? "text-xs" : "text-sm",
               iconOnly
                 ? "size-9 pointer-coarse:size-11"
-                : "min-h-9 px-3 pointer-coarse:min-h-11",
+                : size === "sm"
+                  ? "min-h-11 px-2 sm:px-3 pointer-coarse:min-w-11"
+                  : "min-h-9 px-3 pointer-coarse:min-h-11",
               stretch && "flex-1",
               checked
-                ? "bg-background text-foreground shadow-sm"
-                : "text-foreground/75 hover:text-foreground dark:text-tab-inactive dark:hover:text-foreground",
+                ? // A faded fill reads ~2:1 in light mode; disabled swaps to
+                  // the token pair `Button` uses instead of the opacity.
+                  "bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-primary-disabled disabled:text-primary-disabled-foreground disabled:opacity-100"
+                : "text-foreground hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
             )}
           >
             {Icon ? (

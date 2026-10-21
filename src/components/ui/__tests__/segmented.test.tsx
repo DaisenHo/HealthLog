@@ -61,6 +61,35 @@ describe("<Segmented>", () => {
     expect(out).toContain("min-h-9");
   });
 
+  it("fills the chosen segment in the primary colour, on no track", () => {
+    const out = html();
+    const segments = out.match(/<button[^>]*>/g) ?? [];
+    expect(segments).toHaveLength(2);
+    const chosen = segments.filter((b) => b.includes('aria-checked="true"'));
+    expect(chosen).toHaveLength(1);
+    expect(chosen[0]).toContain("bg-primary text-primary-foreground");
+    const other = segments.find((b) => b.includes('aria-checked="false"'));
+    expect(other).not.toContain("bg-primary");
+    const group = out.match(/<div[^>]*role="radiogroup"[^>]*>/)?.[0];
+    expect(group).not.toContain("bg-muted");
+  });
+
+  it("sets a chart header's range row in the small type", () => {
+    expect(html()).toContain("text-sm");
+    const small = html({ size: "sm" });
+    expect(small).toContain("text-xs");
+    expect(small).not.toContain("text-sm");
+    expect(small.match(/min-h-11/g)?.length).toBe(2);
+  });
+
+  it("keeps a disabled chosen segment on the readable token pair", () => {
+    const chosen = html({ disabled: true })
+      .match(/<button[^>]*>/g)
+      ?.find((b) => b.includes('aria-checked="true"'));
+    expect(chosen).toContain("disabled:bg-primary-disabled");
+    expect(chosen).toContain("disabled:opacity-100");
+  });
+
   it("renders pressed buttons in toggle mode", () => {
     const out = html({ mode: "toggle" });
     expect(out).toContain('role="group"');

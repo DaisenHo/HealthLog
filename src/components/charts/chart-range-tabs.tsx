@@ -51,6 +51,7 @@ export function ChartRangeTabs({
   const { t } = useTranslations();
   return (
     <Segmented
+      size="sm"
       mode="toggle"
       label={t("charts.rangeLabel")}
       optionSlot={() => "chart-range-tab"}
