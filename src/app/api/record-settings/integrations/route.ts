@@ -30,9 +30,11 @@ const MANAGED_INTEGRATIONS: readonly IntegrationKey[] = [
 ];
 
 /**
- * A managed profile may disclose whether its existing integrations are
- * connected, but this endpoint deliberately has no control or credential
- * projection. OAuth and provider state cannot safely carry a record selector.
+ * Whether a managed profile's integrations are connected and how each is
+ * doing. No credential projection. A guardian connects and disconnects the
+ * profile's OAuth providers through `./[provider]/connect` and
+ * `./[provider]/disconnect`, whose state names the profile itself rather than
+ * carrying a record selector.
  */
 export const GET = apiHandler(async () => {
   const context = await requireGuardianAuth();

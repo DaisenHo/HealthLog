@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
+import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
@@ -80,11 +81,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const evt = getEvent();
   if (evt) evt.setAuth({ user_id: userId, auth_method: "session" });
 
+  // The browser finishing the flow must be the record's own, or, for a
+  // managed profile, a guardian's with a live MANAGE grant on it.
   const sessionData = await getSession();
-  if (sessionData && sessionData.user.id !== userId) {
-    annotate({ meta: { reason: "cross_user" } });
+  const actorCheck = await verifyCallbackActor(
+    userId,
+    sessionData?.user.id ?? null,
+  );
+  if (!actorCheck.ok) {
+    annotate({ meta: { reason: actorCheck.reason } });
     return ERR("cross_user");
   }
+  const guardianUserId = actorCheck.guardianUserId;
 
   if (!code) return ERR("nocode");
 
@@ -104,12 +112,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
       fallbackUrl: SETTINGS_URL(),
       stateCookie: oauthStateCookieName("oura"),
     },
-    () => completeCallback(userId, code, iss),
+    () => completeCallback(userId, guardianUserId, code, iss),
   );
 });
 
 async function completeCallback(
   userId: string,
+  guardianUserId: string | null,
   code: string,
   iss: string | null,
 ): Promise<NextResponse> {
@@ -137,7 +146,10 @@ async function completeCallback(
       },
     });
 
-    await auditLog("oura.connect", { userId });
+    await auditLog("oura.connect", {
+      userId,
+      actorUserId: guardianUserId,
+    });
     await markReconnected(userId, "oura");
 
     // Start the first sync now instead of leaving the user staring at an empty

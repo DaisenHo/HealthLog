@@ -1,17 +1,32 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Droplet, ExternalLink, Plug } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Droplet, ExternalLink, Link2, Plug, Unplug } from "lucide-react";
 
-import { IntegrationCard } from "@/components/settings/integrations/integration-card";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import {
+  IntegrationCard,
+  type IntegrationMenuAction,
+} from "@/components/settings/integrations/integration-card";
+import { Button } from "@/components/ui/button";
 import { OAUTH_INTEGRATIONS } from "@/components/settings/integrations/oauth-integration-card";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { apiGet } from "@/lib/api/api-fetch";
+import { ApiError, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
-import { queryKeys } from "@/lib/query-keys";
+import {
+  isManagedOAuthProvider,
+  type ManagedOAuthProvider,
+} from "@/lib/integrations/oauth-kit/managed-provider";
+import { loadDocument } from "@/lib/navigation/load-document";
+import {
+  aiInputDependentKeys,
+  invalidateKeys,
+  queryKeys,
+} from "@/lib/query-keys";
 import { assertRecordSettingsResponseForRecord } from "@/lib/record-settings/response";
 
 type ManagedIntegrationKey = keyof typeof INTEGRATION_DISPLAY_NAMES;
@@ -49,15 +64,18 @@ function iconFor(key: ManagedIntegrationKey) {
  * The managed record's connections, on the same card every integration in
  * Settings renders, from the same server-resolved `health`.
  *
- * Read-only by construction: a guardian cannot connect, reconnect, resume,
- * sync, test or disconnect a managed record's provider, because an OAuth flow
- * cannot safely carry a record selector. So the cards carry no menu and no
- * button, and one sentence above them says why, with the page that explains
- * the boundary.
+ * A guardian connects and disconnects the record's OAuth providers here. The
+ * connect starts with a fetch (`POST /api/record-settings/integrations/
+ * <provider>/connect`, which carries the record-session headers a navigation
+ * cannot) and then sends the browser to the provider; tokens and data land on
+ * the managed record. Every card says whose record it connects for. Syncing,
+ * testing and provider credentials stay out: the record syncs on its own
+ * schedule once connected.
  */
 export function ManagedIntegrationStatus() {
   const { t } = useTranslations();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const activeRecord = user?.accountAccess?.active ?? null;
   const recordId = activeRecord?.accountId ?? null;
   const statusQuery = useQuery({
@@ -70,6 +88,57 @@ export function ManagedIntegrationStatus() {
       return response;
     },
     enabled: activeRecord?.recordKind === "managed" && recordId !== null,
+  });
+
+  const recordName = activeRecord?.displayName ?? "";
+
+  const invalidateStatus = () =>
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.recordSettingsIntegrations(recordId ?? ""),
+    });
+
+  const connect = useMutation({
+    mutationFn: async (provider: ManagedOAuthProvider) =>
+      apiPost<{ authorizationUrl: string }>(
+        `/api/record-settings/integrations/${provider}/connect`,
+      ),
+    onSuccess: (started) => loadDocument(started.authorizationUrl),
+    onError: (failure, provider) =>
+      showErrorToast(
+        failure instanceof ApiError && failure.status === 409
+          ? t("settings.sharedRecord.integrationNoClientApp", {
+              name: recordName,
+              provider: INTEGRATION_DISPLAY_NAMES[provider],
+            })
+          : t("settings.sharedRecord.integrationConnectFailed", {
+              provider: INTEGRATION_DISPLAY_NAMES[provider],
+            }),
+        { cause: failure },
+      ),
+  });
+
+  const disconnect = useMutation({
+    mutationFn: async (provider: ManagedOAuthProvider) =>
+      apiPost(`/api/record-settings/integrations/${provider}/disconnect`),
+    onSuccess: (_result, provider) => {
+      void invalidateStatus();
+      // A record-settings write; the capability answer reads the record's
+      // connections, so it is evicted with the rest of the AI inputs.
+      void invalidateKeys(queryClient, aiInputDependentKeys);
+      toastWrittenOutcome(
+        "success",
+        t("settings.integrationDisconnected", {
+          provider: INTEGRATION_DISPLAY_NAMES[provider],
+        }),
+      );
+    },
+    onError: (failure, provider) =>
+      showErrorToast(
+        t("settings.integrationDisconnectFailed", {
+          provider: INTEGRATION_DISPLAY_NAMES[provider],
+        }),
+        { cause: failure },
+      ),
   });
 
   if (statusQuery.isError) {
@@ -88,6 +157,68 @@ export function ManagedIntegrationStatus() {
       (integration) => ({ integration, health: null }),
     );
 
+  /** What a guardian can do with one OAuth provider of the record. */
+  function managedControls(provider: ManagedOAuthProvider) {
+    const providerName = INTEGRATION_DISPLAY_NAMES[provider];
+    const pending =
+      (connect.isPending && connect.variables === provider) ||
+      (disconnect.isPending && disconnect.variables === provider);
+    const forRecord = (
+      <p
+        className="text-muted-foreground text-xs"
+        data-slot="managed-integration-for"
+      >
+        {t("settings.sharedRecord.integrationConnectsFor", {
+          name: recordName,
+        })}
+      </p>
+    );
+    const menu: IntegrationMenuAction[] = [
+      {
+        id: "disconnect",
+        label: t("settings.sharedRecord.integrationDisconnect"),
+        icon: Unplug,
+        destructive: true,
+        disabled: pending,
+        onSelect: () => disconnect.mutate(provider),
+        confirm: {
+          title: t("settings.sharedRecord.integrationDisconnectTitle", {
+            provider: providerName,
+            name: recordName,
+          }),
+          body: t("settings.sharedRecord.integrationDisconnectBody", {
+            name: recordName,
+          }),
+          confirmLabel: t("settings.sharedRecord.integrationDisconnect"),
+        },
+      },
+    ];
+    return {
+      children: forRecord,
+      menu,
+      primary: {
+        onReconnect: () => connect.mutate(provider),
+        pending,
+      },
+      connectAction: (
+        <Button
+          type="button"
+          size="sm"
+          className="min-h-11 sm:min-h-9"
+          onClick={() => connect.mutate(provider)}
+          disabled={pending}
+          aria-busy={pending || undefined}
+          data-testid={`managed-integration-${provider}-connect`}
+        >
+          <Link2 className="size-3.5" aria-hidden="true" />
+          {t("settings.sharedRecord.integrationConnectFor", {
+            name: recordName,
+          })}
+        </Button>
+      ),
+    };
+  }
+
   return (
     <section
       className="space-y-4"
@@ -103,8 +234,10 @@ export function ManagedIntegrationStatus() {
         title={t("settings.sections.integrations.title")}
         subtitle={t("settings.sharedRecord.integrationStatusDescription")}
       />
-      <p className="text-sm" data-slot="managed-integration-read-only">
-        {t("settings.sharedRecord.integrationStatusDetail")}{" "}
+      <p className="text-sm" data-slot="managed-integration-target">
+        {t("settings.sharedRecord.integrationStatusDetail", {
+          name: recordName,
+        })}{" "}
         <a
           href={SHARING_DOCS_HREF}
           target="_blank"
@@ -129,6 +262,9 @@ export function ManagedIntegrationStatus() {
               connected={entry.health !== null}
               health={entry.health}
               testId={`managed-integration-${entry.integration}`}
+              {...(isManagedOAuthProvider(entry.integration)
+                ? managedControls(entry.integration)
+                : {})}
             />
           </li>
         ))}

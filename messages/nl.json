@@ -5406,8 +5406,15 @@
       "unavailableTitle": "Niet beschikbaar in dit gedeelde dossier",
       "unavailableDescription": "Dit deel van Instellingen is bewust niet beschikbaar terwijl je het dossier van iemand anders bekijkt.",
       "integrationStatusDescription": "Koppelingsstatus voor dit beheerde dossier.",
-      "integrationStatusDetail": "Een beheerd profiel toont de gekoppelde diensten alleen als status. Koppelen, opnieuw koppelen, synchroniseren en ontkoppelen zijn niet beschikbaar voor verzorgers.",
-      "integrationStatusDocs": "Hoe delen werkt"
+      "integrationStatusDetail": "Diensten die je hier koppelt, sturen hun gegevens naar het dossier van {name}, niet naar het jouwe. Zonder eigen app bij de aanbieder gebruikt het profiel de jouwe.",
+      "integrationStatusDocs": "Hoe delen werkt",
+      "integrationConnectsFor": "Koppelt voor {name}",
+      "integrationConnectFor": "Koppelen voor {name}",
+      "integrationDisconnect": "Ontkoppelen",
+      "integrationDisconnectTitle": "{provider} ontkoppelen van {name}?",
+      "integrationDisconnectBody": "Er komen geen nieuwe gegevens meer binnen. Wat al geïmporteerd is, blijft in het dossier van {name}.",
+      "integrationNoClientApp": "Noch {name} noch je eigen account heeft al een {provider}-app. Stel er eerst een in bij je eigen integraties.",
+      "integrationConnectFailed": "Koppelen met {provider} kon niet starten."
     },
     "sections": {
       "account": {

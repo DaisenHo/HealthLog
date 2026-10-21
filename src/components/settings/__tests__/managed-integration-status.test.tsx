@@ -1,5 +1,6 @@
 /**
- * A managed record's connections on the shared integration card, read-only.
+ * A managed record's connections on the shared integration card: a guardian
+ * connects and disconnects the record's OAuth providers, the rest is status.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -32,6 +33,8 @@ vi.mock("@tanstack/react-query", () => ({
     isError: false,
     refetch: vi.fn(),
   }),
+  useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
@@ -77,7 +80,7 @@ describe("<ManagedIntegrationStatus>", () => {
     loading = false;
   });
 
-  it("renders one shared card per provider from health, with no control on any", () => {
+  it("renders one shared card per provider from health, with controls on the OAuth ones", () => {
     payload = withHealth({
       oura: healthFixture({
         state: "action_required",
@@ -100,20 +103,37 @@ describe("<ManagedIntegrationStatus>", () => {
     expect(html).toMatch(
       /data-testid="managed-integration-oura"[\s\S]*?data-slot="integration-health-badge"[^>]*data-state="action_required"/,
     );
-    // Read-only even where the state asks for an action.
-    expect(html).not.toContain('data-slot="integration-primary-action"');
-    expect(html).not.toContain('data-slot="integration-menu-trigger"');
+    // The reconnect a broken grant asks for, on the card that asks for it.
+    expect(html).toContain('data-testid="oura-reconnect-button"');
+    // A connected OAuth card carries the disconnect menu, and every OAuth card
+    // says whose record it connects for.
+    expect(html).toContain('data-testid="withings-menu"');
+    expect(html.match(/Connects for Managed record/g)).toHaveLength(6);
+    // Each unconnected OAuth provider offers one connect for the record;
+    // Fitbit (retired) and Nightscout (no OAuth) stay status only.
+    for (const key of ["whoop", "polar", "google-health", "strava"]) {
+      expect(html).toContain(
+        `data-testid="managed-integration-${key}-connect"`,
+      );
+    }
+    expect(html).not.toContain(
+      'data-testid="managed-integration-fitbit-connect"',
+    );
+    expect(html).not.toContain(
+      'data-testid="managed-integration-nightscout-connect"',
+    );
+    expect(html.match(/>Connect for Managed record</g)).toHaveLength(4);
     // The legacy `state: "connected"` on every row does not make a card
     // connected; only `health` does.
     expect(html.match(/>Not connected\.</g)).toHaveLength(6);
   });
 
-  it("says once why nothing here can be changed, and links the explanation", () => {
+  it("says once where connected data goes, and links the explanation", () => {
     payload = withHealth({});
     const html = render();
-    expect(html).toContain('data-slot="managed-integration-read-only"');
+    expect(html).toContain('data-slot="managed-integration-target"');
     expect(html).toContain(
-      "A managed profile shows its connected services as a status only.",
+      "Services you connect here send their data to Managed record&#x27;s record, not to yours.",
     );
     expect(html).toContain(
       'href="https://docs.healthlog.dev/self-hosting/account-sharing#records-with-no-login"',

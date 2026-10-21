@@ -31,12 +31,18 @@ vi.mock("@/lib/oauth/callback-claim", async (importOriginal) => ({
   duplicateOAuthCallback: async () => null,
 }));
 
+vi.mock("@/lib/integrations/oauth-kit/connect-target", () => ({
+  // The guardian arm is covered in its own test; here the record's own
+  // browser (or none) may finish, any other session may not.
+  verifyCallbackActor: async (record: string, session: string | null) =>
+    session === null || session === record
+      ? { ok: true, guardianUserId: null }
+      : { ok: false, reason: "cross_user" },
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
-  requireAuth: vi.fn(async () => ({
-    user: { id: "user-1" },
-    session: { id: "sess-1" },
-  })),
+  AUTH_ERROR_CODES: { missing: "auth.missing" },
   HttpError: class HttpError extends Error {
     constructor(
       public status: number,
@@ -45,6 +51,13 @@ vi.mock("@/lib/api-handler", () => ({
       super(message);
     }
   },
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  getSession: vi.fn(async () => ({
+    user: { id: "user-1" },
+    session: { id: "sess-1" },
+  })),
 }));
 
 vi.mock("@/lib/db", () => {

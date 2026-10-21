@@ -5406,8 +5406,15 @@
       "unavailableTitle": "Unavailable in this shared record",
       "unavailableDescription": "This Settings area is intentionally unavailable while viewing another person's record.",
       "integrationStatusDescription": "Connection status for this managed record.",
-      "integrationStatusDetail": "A managed profile shows its connected services as a status only. Connecting, reconnecting, syncing and disconnecting are not available to guardians.",
-      "integrationStatusDocs": "How sharing works"
+      "integrationStatusDetail": "Services you connect here send their data to {name}'s record, not to yours. Without a provider app of its own, the profile uses yours.",
+      "integrationStatusDocs": "How sharing works",
+      "integrationConnectsFor": "Connects for {name}",
+      "integrationConnectFor": "Connect for {name}",
+      "integrationDisconnect": "Disconnect",
+      "integrationDisconnectTitle": "Disconnect {provider} from {name}?",
+      "integrationDisconnectBody": "New data stops arriving. Everything already imported stays in {name}'s record.",
+      "integrationNoClientApp": "Neither {name} nor your own account has a {provider} app yet. Set one up under your own integrations first.",
+      "integrationConnectFailed": "Could not start connecting {provider}."
     },
     "sections": {
       "account": {

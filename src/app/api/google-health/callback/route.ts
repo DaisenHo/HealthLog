@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, AUTH_ERROR_CODES, HttpError } from "@/lib/api-handler";
+import { getSession } from "@/lib/auth/session";
+import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
@@ -57,7 +59,15 @@ const ERR = (reason: string) =>
   );
 
 export const GET = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  // The person in the browser, read off the session itself rather than
+  // through a record resolver: a provider redirect is a navigation, it cannot
+  // carry the record-session header, and the record is the one the state row
+  // names, checked against this person below. A session is still required.
+  const sessionData = await getSession();
+  if (!sessionData) {
+    throw new HttpError(401, "Not authenticated", AUTH_ERROR_CODES.missing);
+  }
+  const actor = sessionData.user;
   annotate({ action: { name: "google_health.callback" } });
 
   const { searchParams } = new URL(request.url);
@@ -125,8 +135,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
       annotate({ meta: { reason: "expired" } });
       return ERR("expired");
     }
-    if (consumed.userId !== user.id) {
-      annotate({ meta: { reason: "cross_user" } });
+    // The record the connect started for; a guardian may finish it for a
+    // managed profile it holds a live MANAGE grant on.
+    const recordUserId = consumed.userId;
+    const actorCheck = await verifyCallbackActor(recordUserId, actor.id);
+    if (!actorCheck.ok) {
+      annotate({ meta: { reason: actorCheck.reason } });
       return ERR("cross_user");
     }
     if (!consumed.codeVerifier) {
@@ -139,7 +153,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     }
 
     try {
-      const creds = await getUserGoogleHealthCredentials(user.id);
+      const creds = await getUserGoogleHealthCredentials(recordUserId);
       if (!creds) {
         return ERR("nocreds");
       }
@@ -154,7 +168,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // so the user re-consents rather than landing a dead connection.
       if (!tokens.refresh_token) {
         getEvent()?.addWarning(
-          `google-health callback: token response carried no refresh_token for user ${user.id}`,
+          `google-health callback: token response carried no refresh_token for user ${recordUserId}`,
         );
         annotate({ meta: { reason: "no_refresh_token" } });
         return ERR("no_refresh_token");
@@ -166,7 +180,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       const scope = tokens.scope ?? getGoogleHealthScopeString();
 
       await prisma.googleHealthConnection.upsert({
-        where: { userId: user.id },
+        where: { userId: recordUserId },
         update: {
           googleUserId,
           accessToken: encrypt(tokens.access_token),
@@ -182,7 +196,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           backfillProgress: Prisma.DbNull,
         },
         create: {
-          userId: user.id,
+          userId: recordUserId,
           googleUserId,
           accessToken: encrypt(tokens.access_token),
           refreshToken: encrypt(tokens.refresh_token),
@@ -193,14 +207,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
       });
 
       await auditLog("google_health.connect", {
-        userId: user.id,
+        userId: recordUserId,
+        actorUserId: actorCheck.guardianUserId,
         details: { googleUserId },
       });
 
       // Re-completing OAuth clears any prior reauth-required state on the status
       // ledger too (the `needsReauth` column above is the connection-local flag;
       // this resets the integration-status streak).
-      await markReconnected(user.id, "google-health");
+      await markReconnected(recordUserId, "google-health");
 
       // Enqueue the self-converging history backfill. Best-effort: the boot-time
       // discovery query (`backfillCompletedAt IS NULL`) is the safety net, so a
@@ -209,7 +224,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       if (boss) {
         await boss
           .send(GOOGLE_HEALTH_BACKFILL_QUEUE, {
-            userId: user.id,
+            userId: recordUserId,
             enqueuedAt: new Date().toISOString(),
           })
           .catch((err) =>

@@ -5406,8 +5406,15 @@
       "unavailableTitle": "Niedostępne w tym udostępnionym rekordzie",
       "unavailableDescription": "Ten obszar Ustawień jest celowo niedostępny podczas przeglądania rekordu innej osoby.",
       "integrationStatusDescription": "Stan połączenia dla tego zarządzanego rekordu.",
-      "integrationStatusDetail": "Profil zarządzany pokazuje połączone usługi tylko jako stan. Opiekunowie nie mogą łączyć, ponownie łączyć, synchronizować ani rozłączać.",
-      "integrationStatusDocs": "Jak działa udostępnianie"
+      "integrationStatusDetail": "Usługi połączone tutaj wysyłają dane do profilu {name}, a nie do Twojego. Jeśli profil nie ma własnej aplikacji u dostawcy, używa Twojej.",
+      "integrationStatusDocs": "Jak działa udostępnianie",
+      "integrationConnectsFor": "Łączy dla: {name}",
+      "integrationConnectFor": "Połącz dla: {name}",
+      "integrationDisconnect": "Rozłącz",
+      "integrationDisconnectTitle": "Rozłączyć {provider} od profilu {name}?",
+      "integrationDisconnectBody": "Nowe dane przestaną napływać. Wszystko, co już zaimportowano, zostaje w profilu {name}.",
+      "integrationNoClientApp": "Ani {name}, ani Twoje konto nie ma jeszcze aplikacji {provider}. Najpierw skonfiguruj ją we własnych integracjach.",
+      "integrationConnectFailed": "Nie udało się rozpocząć łączenia z {provider}."
     },
     "sections": {
       "account": {

@@ -5406,8 +5406,15 @@
       "unavailableTitle": "In diesem geteilten Datensatz nicht verfügbar",
       "unavailableDescription": "Dieser Einstellungsbereich ist beim Anzeigen des Datensatzes einer anderen Person bewusst nicht verfügbar.",
       "integrationStatusDescription": "Verbindungsstatus für diesen verwalteten Datensatz.",
-      "integrationStatusDetail": "Ein betreutes Profil zeigt seine verbundenen Dienste nur als Status. Verbinden, neu verbinden, synchronisieren und trennen ist für Betreuende nicht möglich.",
-      "integrationStatusDocs": "So funktioniert das Teilen"
+      "integrationStatusDetail": "Dienste, die du hier verbindest, schicken ihre Daten in das Profil von {name}, nicht in deins. Ohne eigene Anbieter-App nutzt das Profil deine.",
+      "integrationStatusDocs": "So funktioniert das Teilen",
+      "integrationConnectsFor": "Verbindet für {name}",
+      "integrationConnectFor": "Für {name} verbinden",
+      "integrationDisconnect": "Trennen",
+      "integrationDisconnectTitle": "{provider} von {name} trennen?",
+      "integrationDisconnectBody": "Neue Daten kommen dann nicht mehr an. Was schon importiert ist, bleibt im Profil von {name}.",
+      "integrationNoClientApp": "Weder {name} noch dein eigenes Konto hat bisher eine {provider}-App. Richte zuerst bei deinen eigenen Integrationen eine ein.",
+      "integrationConnectFailed": "{provider} konnte nicht verbunden werden."
     },
     "sections": {
       "account": {

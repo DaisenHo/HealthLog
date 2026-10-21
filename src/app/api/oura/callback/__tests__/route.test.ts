@@ -24,6 +24,15 @@ vi.mock("@/lib/oauth/callback-claim", () => ({
   duplicateOAuthCallback: async () => null,
 }));
 
+vi.mock("@/lib/integrations/oauth-kit/connect-target", () => ({
+  // The guardian arm is covered in its own test; here the record's own
+  // browser (or none) may finish, any other session may not.
+  verifyCallbackActor: async (record: string, session: string | null) =>
+    session === null || session === record
+      ? { ok: true, guardianUserId: null }
+      : { ok: false, reason: "cross_user" },
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
@@ -166,7 +175,10 @@ describe("GET /api/oura/callback", () => {
     const data = userUpdate.mock.calls[0]![0].data;
     expect(data.ouraAccessTokenEncrypted).toBe("enc:at");
     expect(data.ouraRefreshTokenEncrypted).toBe("enc:rt");
-    expect(auditLog).toHaveBeenCalledWith("oura.connect", { userId: "u1" });
+    expect(auditLog).toHaveBeenCalledWith("oura.connect", {
+      userId: "u1",
+      actorUserId: null,
+    });
     expect(res.headers.get("location")).toContain("oura=connected");
   });
 });

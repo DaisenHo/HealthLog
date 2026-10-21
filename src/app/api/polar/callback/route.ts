@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
+import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
@@ -70,11 +71,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (evt) evt.setAuth({ user_id: userId, auth_method: "session" });
 
   // Optional session cross-check when a web session is present.
+  // The browser finishing the flow must be the record's own, or, for a
+  // managed profile, a guardian's with a live MANAGE grant on it.
   const sessionData = await getSession();
-  if (sessionData && sessionData.user.id !== userId) {
-    annotate({ meta: { reason: "cross_user" } });
+  const actorCheck = await verifyCallbackActor(
+    userId,
+    sessionData?.user.id ?? null,
+  );
+  if (!actorCheck.ok) {
+    annotate({ meta: { reason: actorCheck.reason } });
     return ERR("cross_user");
   }
+  const guardianUserId = actorCheck.guardianUserId;
 
   if (!code) return ERR("nocode");
 
@@ -90,12 +98,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
       ).toString(),
       stateCookie: oauthStateCookieName("polar"),
     },
-    () => completeCallback(userId, code),
+    () => completeCallback(userId, guardianUserId, code),
   );
 });
 
 async function completeCallback(
   userId: string,
+  guardianUserId: string | null,
   code: string,
 ): Promise<NextResponse> {
   try {
@@ -126,7 +135,10 @@ async function completeCallback(
       },
     });
 
-    await auditLog("polar.connect", { userId });
+    await auditLog("polar.connect", {
+      userId,
+      actorUserId: guardianUserId,
+    });
     await markReconnected(userId, "polar");
 
     // Start the first sync now instead of leaving the user staring at an empty

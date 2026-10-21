@@ -2044,6 +2044,10 @@ const GUARDIAN_ROUTES: Record<string, string> = {
     "Verified integration connection status for the managed record, without any provider control surface.",
   "app/api/record-settings/[family]/route.ts":
     "The closed, field-specific managed-record configuration DTOs; identity and credentials remain excluded.",
+  "app/api/record-settings/integrations/[provider]/connect/route.ts":
+    "Starts an OAuth connect for the managed record a guardian administers. It returns the consent URL and the state names the managed record; the callback re-checks the browser's live MANAGE grant before any token lands. Refused on an adult record by the marker, at every grant level.",
+  "app/api/record-settings/integrations/[provider]/disconnect/route.ts":
+    "Disconnects a provider from the managed record a guardian administers, through the same disconnect the owner runs. Imported data stays. Refused on an adult record by the marker, at every grant level.",
 };
 
 /**
@@ -2164,8 +2168,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * v1.43 -- AUDIT-C's create and soft delete join the record list and the
  * manage literal under `profile`, the level allergies are written at.
  * 262 -> 266.
+ *
+ * v1.44 -- a guardian connects and disconnects a managed profile's OAuth
+ * providers: two guardian-only entries. 266 -> 268.
  */
-const FROZEN_ENTRY_COUNT = 266;
+const FROZEN_ENTRY_COUNT = 268;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

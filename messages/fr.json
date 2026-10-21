@@ -5406,8 +5406,15 @@
       "unavailableTitle": "Indisponible dans ce dossier partagé",
       "unavailableDescription": "Cette section des réglages est volontairement indisponible lorsque vous consultez le dossier d’une autre personne.",
       "integrationStatusDescription": "État de connexion pour ce dossier géré.",
-      "integrationStatusDetail": "Un profil géré affiche ses services connectés uniquement sous forme d’état. Les personnes qui le gèrent ne peuvent ni connecter, ni reconnecter, ni synchroniser, ni déconnecter.",
-      "integrationStatusDocs": "Comment fonctionne le partage"
+      "integrationStatusDetail": "Les services que vous connectez ici envoient leurs données dans le dossier de {name}, pas dans le vôtre. Sans application propre chez le fournisseur, le profil utilise la vôtre.",
+      "integrationStatusDocs": "Comment fonctionne le partage",
+      "integrationConnectsFor": "Connecte pour {name}",
+      "integrationConnectFor": "Connecter pour {name}",
+      "integrationDisconnect": "Déconnecter",
+      "integrationDisconnectTitle": "Déconnecter {provider} de {name} ?",
+      "integrationDisconnectBody": "Les nouvelles données n’arriveront plus. Tout ce qui a déjà été importé reste dans le dossier de {name}.",
+      "integrationNoClientApp": "Ni {name} ni votre propre compte n’ont encore d’application {provider}. Configurez-en d’abord une dans vos propres intégrations.",
+      "integrationConnectFailed": "Impossible de lancer la connexion à {provider}."
     },
     "sections": {
       "account": {

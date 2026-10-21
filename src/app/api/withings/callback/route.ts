@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db";
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, AUTH_ERROR_CODES, HttpError } from "@/lib/api-handler";
+import { getSession } from "@/lib/auth/session";
+import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
@@ -52,7 +54,15 @@ import { timingSafeEqual } from "node:crypto";
  * lands on `replay`.
  */
 export const GET = apiHandler(async (request: NextRequest) => {
-  const { user } = await requireAuth();
+  // The person in the browser, read off the session itself rather than
+  // through a record resolver: a provider redirect is a navigation, it cannot
+  // carry the record-session header, and the record is the one the state row
+  // names, checked against this person below. A session is still required.
+  const sessionData = await getSession();
+  if (!sessionData) {
+    throw new HttpError(401, "Not authenticated", AUTH_ERROR_CODES.missing);
+  }
+  const actor = sessionData.user;
   annotate({ action: { name: "withings.callback" } });
 
   const { searchParams } = new URL(request.url);
@@ -161,8 +171,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
         ),
       );
     }
-    if (consumed.userId !== user.id) {
-      annotate({ meta: { reason: "cross_user" } });
+    // The record the connect started for; a guardian may finish it for a
+    // managed profile it holds a live MANAGE grant on.
+    const recordUserId = consumed.userId;
+    const actorCheck = await verifyCallbackActor(recordUserId, actor.id);
+    if (!actorCheck.ok) {
+      annotate({ meta: { reason: actorCheck.reason } });
       return NextResponse.redirect(
         new URL(
           "/settings/integrations?withings=error&reason=cross_user",
@@ -181,7 +195,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     }
 
     try {
-      const creds = await getUserWithingsCredentials(user.id);
+      const creds = await getUserWithingsCredentials(recordUserId);
       if (!creds) {
         return NextResponse.redirect(
           new URL(
@@ -204,7 +218,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // entirely. Storing the requested set is therefore a safe
       // representation of what the connection holds.
       await prisma.withingsConnection.upsert({
-        where: { userId: user.id },
+        where: { userId: recordUserId },
         update: {
           withingsUserId: tokens.userid,
           accessToken: encrypt(tokens.access_token),
@@ -221,7 +235,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           sleepStageReads: Prisma.DbNull,
         },
         create: {
-          userId: user.id,
+          userId: recordUserId,
           withingsUserId: tokens.userid,
           accessToken: encrypt(tokens.access_token),
           refreshToken: encrypt(tokens.refresh_token),
@@ -233,18 +247,19 @@ export const GET = apiHandler(async (request: NextRequest) => {
       });
 
       // Reconcile every category from a clean state after connect/reconnect.
-      setupWebhook(user.id).catch(() =>
+      setupWebhook(recordUserId).catch(() =>
         getEvent()?.addWarning("Webhook setup failed"),
       );
 
       await auditLog("withings.connect", {
-        userId: user.id,
+        userId: recordUserId,
+        actorUserId: actorCheck.guardianUserId,
         details: { withingsUserId: tokens.userid },
       });
 
       // Re-completing OAuth clears any prior `error_reauth` state. We
       // don't write a fresh success-time — that's the next sync's job.
-      await markReconnected(user.id, "withings");
+      await markReconnected(recordUserId, "withings");
 
       const response = NextResponse.redirect(
         new URL(

@@ -673,6 +673,14 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["ConfirmDialog"],
   },
   {
+    file: "components/settings/managed-integration-status.tsx",
+    destroys:
+      "a managed profile's stored Withings, WHOOP, Google Health, Polar, Oura or Strava grant, disconnected by its guardian — reconnecting means authorising again",
+    triggers: ["components/settings/integrations/integration-card.tsx"],
+    recovery: "permanent",
+    confirm: ["ConfirmDialog"],
+  },
+  {
     file: "components/settings/integrations/nightscout-card.tsx",
     destroys:
       "the stored Nightscout address and token — reconnecting means typing them again",

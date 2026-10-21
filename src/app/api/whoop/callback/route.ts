@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
+import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
@@ -180,11 +181,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // Optional session cross-check: only when a web session cookie is present.
     // The native ticket path carries no session — the nonce cookie + atomic
     // single-use delete already bind the row to its originator.
+    // A guardian finishing a managed profile's connect needs a live MANAGE
+    // grant on it; a managed profile has no session of its own.
     const sessionData = await getSession();
-    if (sessionData && sessionData.user.id !== userId) {
-      annotate({ meta: { reason: "cross_user" } });
+    const actorCheck = await verifyCallbackActor(
+      userId,
+      sessionData?.user.id ?? null,
+    );
+    if (!actorCheck.ok) {
+      annotate({ meta: { reason: actorCheck.reason } });
       return outcomeRedirect(returnScheme, "error", "cross_user");
     }
+    const guardianUserId = actorCheck.guardianUserId;
 
     if (!code) {
       return outcomeRedirect(returnScheme, "error", "nocode");
@@ -237,7 +245,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
         throw err;
       }
 
-      await auditLog("whoop.connect", { userId });
+      await auditLog("whoop.connect", {
+        userId,
+        actorUserId: guardianUserId,
+      });
 
       // Re-completing OAuth clears any prior reauth-required state.
       await markReconnected(userId, "whoop");
