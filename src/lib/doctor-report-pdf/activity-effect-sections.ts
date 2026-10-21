@@ -213,7 +213,15 @@ export function buildMedicationEffectSection(
         `${slope.value} ${unit}/${t("doctorReport.medicationEffect.week")}\n(${slope.low} ${t("doctorReport.medicationEffect.to")} ${slope.high})`,
         `${e.days.before} / ${e.days.after}`,
       ]);
-      const extras: string[] = [];
+      // The fitted window reaches up to 90 days before the start and 180
+      // after it, so it can lie partly outside the report period: always
+      // say which days the figures rest on.
+      const extras: string[] = [
+        t("doctorReport.medicationEffect.window", {
+          from: dayLabel(fmtDate, e.window.from),
+          to: dayLabel(fmtDate, e.window.to),
+        }),
+      ];
       if (e.days.excludedLowAdherence > 0) {
         extras.push(
           t("doctorReport.medicationEffect.excludedAdherence", {
@@ -250,9 +258,7 @@ export function buildMedicationEffectSection(
           }),
         );
       }
-      if (extras.length > 0) {
-        notes.push(`${med.medicationName}, ${label}: ${extras.join("; ")}.`);
-      }
+      notes.push(`${med.medicationName}, ${label}: ${extras.join("; ")}.`);
     }
   }
   if (rows.length === 0) return state;

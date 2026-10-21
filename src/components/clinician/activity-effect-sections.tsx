@@ -163,6 +163,14 @@ export function MedicationEffectSection({
                   unit,
                 })}
               </p>
+              {e.window ? (
+                <p className="text-muted-foreground text-xs">
+                  {t("doctorReport.medicationEffect.windowLine", {
+                    from: fmtDay(e.window.from),
+                    to: fmtDay(e.window.to),
+                  })}
+                </p>
+              ) : null}
               <p className="text-muted-foreground text-xs">
                 {t("doctorReport.medicationEffect.days", {
                   before: e.days.before,

@@ -432,7 +432,9 @@
       "endDoseChange": "il periodo termina il {date}, prima della prima variazione di dose",
       "days": "{before} giorni prima, {after} giorni dopo l'inizio, {excluded} giorni esclusi",
       "method": "Regressione segmentata sui valori giornalieri da 90 giorni prima a non oltre 180 giorni dopo l'inizio, con intervalli di Newey-West. Sono esclusi i giorni dopo l'inizio in cui è stato assunto meno dell'80 % delle dosi dei 14 giorni precedenti. Descrive un'associazione nel tempo, non un effetto dimostrato del farmaco.",
-      "autocorrelation": "forte dipendenza dal giorno precedente, quindi gli intervalli possono restare troppo stretti"
+      "autocorrelation": "forte dipendenza dal giorno precedente, quindi gli intervalli possono restare troppo stretti",
+      "window": "analizzato dal {from} al {to}, può andare oltre il periodo del report",
+      "windowLine": "Analizzato dal {from} al {to}. Questo intervallo può andare oltre il periodo del report."
     }
   },
   "errorBoundary": {

@@ -432,7 +432,9 @@
       "endDoseChange": "periode eindigt op {date}, vóór de eerste dosiswijziging",
       "days": "{before} dagen voor, {after} dagen na de start, {excluded} dagen weggelaten",
       "method": "Gesegmenteerde regressie op de dagwaarden van 90 dagen vóór tot hoogstens 180 dagen na de start, met Newey-West-intervallen. Dagen na de start waarop minder dan 80% van de doses van de 14 dagen ervoor is ingenomen, zijn weggelaten. Beschrijft een samenhang in de tijd, geen bewezen effect van het medicijn.",
-      "autocorrelation": "sterke afhankelijkheid van de vorige dag, dus de bereiken kunnen nog te smal zijn"
+      "autocorrelation": "sterke afhankelijkheid van de vorige dag, dus de bereiken kunnen nog te smal zijn",
+      "window": "geanalyseerd van {from} tot {to}, dit kan buiten de rapportperiode vallen",
+      "windowLine": "Geanalyseerd van {from} tot {to}. Deze periode kan buiten de rapportperiode vallen."
     }
   },
   "errorBoundary": {

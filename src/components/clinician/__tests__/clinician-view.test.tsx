@@ -200,6 +200,43 @@ describe("<ClinicianView>", () => {
       ],
     });
     const leaves = ["MEDICATION_EFFECT", "BLOOD_PRESSURE_SYS"] as const;
+    const est = {
+      estimate: -5,
+      ciLow: -7,
+      ciHigh: -3,
+      standardError: 1,
+      includesZero: false,
+    };
+    const fitted = makeReport({
+      medicationEffects: [
+        {
+          ...report.medicationEffects![0],
+          targets: [
+            {
+              type: "BLOOD_PRESSURE_SYS",
+              effect: {
+                ...report.medicationEffects![0].targets[0].effect,
+                present: true,
+                reason: undefined,
+                levelChange: est,
+                slopeChangePerWeek: est,
+                preSlopePerWeek: est,
+                window: {
+                  from: "2025-10-07",
+                  to: "2026-01-20",
+                  endReason: "today",
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(
+      render(fitted, {
+        selection: selectionFromLeaves([...leaves, "MEDICATION_LIST"]),
+      }),
+    ).toContain("This window can reach beyond the report period.");
     expect(
       render(report, {
         selection: selectionFromLeaves([...leaves, "MEDICATION_LIST"]),

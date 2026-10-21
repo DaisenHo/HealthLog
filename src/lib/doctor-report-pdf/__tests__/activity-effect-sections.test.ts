@@ -217,6 +217,11 @@ describe("doctor report v1.44 sections", () => {
     expect(text).toContain("-0.3 mmHg/week");
     expect(text).toContain("84 / 61");
     expect(text).toContain("5 days after the start left out");
+    // The fitted window (Dec to Apr) reaches outside the Feb to May report
+    // period; the report says which days the figures rest on.
+    expect(text).toMatch(
+      /analysed \S+ to \S+, which can reach beyond the report period/,
+    );
     expect(text).toContain("Other drug started on");
     expect(text).toContain("not a proven effect");
     expect(text).not.toContain("carry-over");

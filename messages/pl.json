@@ -432,7 +432,9 @@
       "endDoseChange": "okres kończy się {date}, przed pierwszą zmianą dawki",
       "days": "{before} dni przed, {after} dni po rozpoczęciu, pominięto {excluded} dni",
       "method": "Regresja segmentowa na wartościach dziennych od 90 dni przed do najwyżej 180 dni po rozpoczęciu, przedziały Neweya-Westa. Pominięto dni po rozpoczęciu, w których w ciągu poprzednich 14 dni przyjęto mniej niż 80% dawek. Opisuje związek w czasie, a nie udowodnione działanie leku.",
-      "autocorrelation": "silna zależność od poprzedniego dnia, więc zakresy mogą nadal być zbyt wąskie"
+      "autocorrelation": "silna zależność od poprzedniego dnia, więc zakresy mogą nadal być zbyt wąskie",
+      "window": "analizowano od {from} do {to}, może to wykraczać poza okres raportu",
+      "windowLine": "Analizowano od {from} do {to}. Ten okres może wykraczać poza okres raportu."
     }
   },
   "errorBoundary": {

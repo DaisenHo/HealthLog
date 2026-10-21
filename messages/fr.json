@@ -432,7 +432,9 @@
       "endDoseChange": "la période s'arrête le {date}, avant le premier changement de dose",
       "days": "{before} jours avant, {after} jours après le démarrage, {excluded} jours écartés",
       "method": "Régression segmentée sur les valeurs quotidiennes, de 90 jours avant à 180 jours au plus après le démarrage, intervalles de Newey-West. Les jours après le démarrage où moins de 80 % des doses des 14 jours précédents ont été prises sont écartés. Décrit une association dans le temps, pas un effet démontré du médicament.",
-      "autocorrelation": "forte dépendance à la veille, les plages peuvent donc rester trop étroites"
+      "autocorrelation": "forte dépendance à la veille, les plages peuvent donc rester trop étroites",
+      "window": "analysé du {from} au {to}, ce qui peut dépasser la période du rapport",
+      "windowLine": "Analysé du {from} au {to}. Cette fenêtre peut dépasser la période du rapport."
     }
   },
   "errorBoundary": {
