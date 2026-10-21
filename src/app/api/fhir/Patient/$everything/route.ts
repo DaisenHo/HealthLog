@@ -69,7 +69,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return operationOutcome(429, "throttled", "Rate limit exceeded");
   }
 
-  const { count, offset } = parsePaging(request.nextUrl.searchParams);
+  const paging = parsePaging(request.nextUrl.searchParams);
+  if ("error" in paging) {
+    return operationOutcome(400, "invalid", paging.error);
+  }
+  const { count, offset } = paging;
   const { data, identity, germanAtc, records } = await loadFhirContext(user.id);
 
   const document = buildFhirDocumentBundle(

@@ -92,20 +92,32 @@ export const DEFAULT_COUNT = 50;
 export const MAX_COUNT = 200;
 
 /**
+ * Ceiling on `_offset`. No record pages that far (the largest search, the
+ * Observation time series, is bounded by the readings in a date range), and
+ * an unbounded offset reached the database as a skip it cannot represent and
+ * answered 500.
+ */
+export const MAX_OFFSET = 100_000;
+
+/**
  * Parsed + clamped paging parameters. `count` is bounded to `[1, MAX_COUNT]`;
  * `offset` floors at 0. A non-numeric / negative input collapses to the
  * default rather than erroring — FHIR search is forgiving on paging params.
+ * An offset above {@link MAX_OFFSET} is the one refusal: the caller answers
+ * it with a 400 `invalid` OperationOutcome.
  */
-export function parsePaging(searchParams: URLSearchParams): {
-  count: number;
-  offset: number;
-} {
+export function parsePaging(
+  searchParams: URLSearchParams,
+): { count: number; offset: number } | { error: string } {
   const rawCount = Number(searchParams.get("_count"));
   const count =
     Number.isFinite(rawCount) && rawCount > 0
       ? Math.min(Math.floor(rawCount), MAX_COUNT)
       : DEFAULT_COUNT;
   const rawOffset = Number(searchParams.get("_offset"));
+  if (rawOffset > MAX_OFFSET) {
+    return { error: `_offset must be at most ${MAX_OFFSET}` };
+  }
   const offset =
     Number.isFinite(rawOffset) && rawOffset > 0 ? Math.floor(rawOffset) : 0;
   return { count, offset };

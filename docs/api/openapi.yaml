@@ -1274,7 +1274,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
       responses:
         "200":
           description: searchset Bundle (application/fhir+json).
@@ -1310,7 +1312,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
         - in: query
           name: date
           schema:
@@ -1345,7 +1349,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
       responses:
         "200":
           description: searchset Bundle (application/fhir+json).
@@ -1372,7 +1378,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
       responses:
         "200":
           description: searchset Bundle (application/fhir+json).
@@ -1400,7 +1408,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
       responses:
         "200":
           description: searchset Bundle (application/fhir+json).
@@ -1595,7 +1605,9 @@ paths:
         - in: query
           name: _offset
           schema:
+            description: At most 100000; a larger offset is a 400 OperationOutcome.
             type: number
+          description: At most 100000; a larger offset is a 400 OperationOutcome.
       responses:
         "200":
           description: searchset Bundle (application/fhir+json).
