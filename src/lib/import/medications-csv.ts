@@ -284,48 +284,52 @@ export async function importMedicationsCsv(args: {
       const data = parsed.data;
       // Field by field, with the create route's invariants for the shapes an
       // import produces: a daily schedule (FREQ=DAILY, times dual-written), an
-      // opening course for a dated window, no schedule for as-needed.
-      const medication = await prisma.medication.create({
-        data: {
-          userId,
-          name: data.name,
-          dose: data.dose,
-          asNeeded: data.asNeeded ?? false,
-          notificationsEnabled: data.notificationsEnabled ?? false,
-          ...(course
-            ? {
-                startsOn: course.startsOn,
-                endsOn: course.endsOn,
-                courses: {
-                  create: {
-                    userId,
-                    startsOn: course.startsOn,
-                    endsOn: course.endsOn,
+      // opening course for a dated window, no schedule for as-needed. The
+      // category is written in the same transaction: a crash between the two
+      // left a medication without one, and the retry skips it as a duplicate.
+      await prisma.$transaction(async (tx) => {
+        const medication = await tx.medication.create({
+          data: {
+            userId,
+            name: data.name,
+            dose: data.dose,
+            asNeeded: data.asNeeded ?? false,
+            notificationsEnabled: data.notificationsEnabled ?? false,
+            ...(course
+              ? {
+                  startsOn: course.startsOn,
+                  endsOn: course.endsOn,
+                  courses: {
+                    create: {
+                      userId,
+                      startsOn: course.startsOn,
+                      endsOn: course.endsOn,
+                    },
                   },
-                },
-              }
-            : {}),
-          schedules: {
-            create: (data.schedules ?? []).map((s) => ({
-              windowStart: s.windowStart,
-              windowEnd: s.windowEnd,
-              label: null,
-              dose: null,
-              daysOfWeek: serializeScheduleRecurrence({
-                daysOfWeek: [],
-                intervalWeeks: 1,
-              }),
-              timesOfDay:
-                s.timesOfDay && s.timesOfDay.length > 0
-                  ? s.timesOfDay
-                  : [s.windowStart],
-              rrule: "FREQ=DAILY",
-            })),
+                }
+              : {}),
+            schedules: {
+              create: (data.schedules ?? []).map((s) => ({
+                windowStart: s.windowStart,
+                windowEnd: s.windowEnd,
+                label: null,
+                dose: null,
+                daysOfWeek: serializeScheduleRecurrence({
+                  daysOfWeek: [],
+                  intervalWeeks: 1,
+                }),
+                timesOfDay:
+                  s.timesOfDay && s.timesOfDay.length > 0
+                    ? s.timesOfDay
+                    : [s.windowStart],
+                rrule: "FREQ=DAILY",
+              })),
+            },
           },
-        },
-        select: { id: true },
+          select: { id: true },
+        });
+        await setMedicationCategory(medication.id, undefined, tx);
       });
-      await setMedicationCategory(medication.id, undefined);
       written += 1;
       args.onWritten?.(1);
     }

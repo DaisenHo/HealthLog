@@ -39,7 +39,12 @@ vi.mock("next/headers", () => ({
 import { GET as observationGet } from "../Observation/route";
 import { getSession } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { loadFhirContext, MAX_COUNT } from "@/lib/fhir/rest";
+import {
+  loadFhirContext,
+  MAX_COUNT,
+  MAX_OFFSET,
+  searchsetResponse,
+} from "@/lib/fhir/rest";
 import { requireModuleEnabled, isModuleEnabled } from "@/lib/modules/gate";
 import { observationsFromReportData } from "@/lib/fhir/resources";
 
@@ -147,9 +152,9 @@ describe("GET /api/fhir/Observation — searchset", () => {
     expect(bundle.entry[0].resource.id).toBe("obs-3");
   });
 
-  it("refuses an offset past the ceiling with a 400 OperationOutcome", async () => {
+  it("refuses only an offset a number cannot carry exactly", async () => {
     vi.mocked(observationsFromReportData).mockReturnValue([obs(1)] as never);
-    for (const offset of ["100001", "1e20", "Infinity"]) {
+    for (const offset of ["9007199254740992", "1e20", "Infinity"]) {
       const res = await observationGet(req(`?_offset=${offset}`));
       expect(res.status).toBe(400);
       const outcome = (await res.json()) as {
@@ -159,9 +164,35 @@ describe("GET /api/fhir/Observation — searchset", () => {
       expect(outcome.resourceType).toBe("OperationOutcome");
       expect(outcome.issue[0].code).toBe("invalid");
     }
-    // The ceiling itself still pages (an empty page past the end).
-    const atCeiling = await observationGet(req("?_offset=100000"));
-    expect(atCeiling.status).toBe(200);
+    // A long series pages past a hundred thousand rows, and the ceiling
+    // itself still pages (an empty page past the end).
+    for (const offset of ["100001", "250000", String(MAX_OFFSET)]) {
+      const res = await observationGet(req(`?_offset=${offset}`));
+      expect(res.status).toBe(200);
+    }
+  });
+
+  it("keeps emitting next links deep into a long series, never past the ceiling", () => {
+    const url = new URL("http://localhost/api/fhir/Observation");
+    const deep = searchsetResponse(url, [], 300_000, 50, 150_000);
+    const nextOf = async (res: Response) =>
+      (
+        (await res.json()) as { link: Array<{ relation: string; url: string }> }
+      ).link.find((l) => l.relation === "next");
+    return Promise.all([
+      nextOf(deep).then((next) => {
+        expect(next?.url).toContain("_offset=150050");
+      }),
+      nextOf(
+        searchsetResponse(
+          url,
+          [],
+          Number.POSITIVE_INFINITY,
+          50,
+          MAX_OFFSET - 10,
+        ),
+      ).then((next) => expect(next).toBeUndefined()),
+    ]);
   });
 
   it("enforces the fhir:read scope (Bearer narrow token without it 403s)", async () => {

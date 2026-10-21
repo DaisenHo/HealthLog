@@ -28,9 +28,13 @@
  *      call or a variable derived from one.
  *   3. Assert the result is a subset of the rotation registry.
  *
- * Known limit, stated so it is not mistaken for coverage: a payload assembled
- * somewhere other than the call site (`data: updates` where `updates` is built
- * field by field) resolves to nothing here. Those columns are covered by the
+ * A payload passed as an array the same file fills with `.push({…})`
+ * (`createMany({ data: toWrite })`, the shape a chunked writer takes) is
+ * followed into those pushed literals.
+ *
+ * Known limit, stated so it is not mistaken for coverage: any other payload
+ * assembled somewhere other than the call site (`data: updates` where
+ * `updates` is built field by field) resolves to nothing here. Those columns are covered by the
  * name scan in the sibling guard; the two signals are deliberately
  * independent, and a column has to escape BOTH to go unregistered. The scan
  * asserts a non-zero, anchored match count, so a matcher that quietly stops
@@ -398,6 +402,19 @@ function scanCiphertextWrites(): Map<string, Set<string>> {
       depth = 0,
     ): void => {
       if (depth > 4) return;
+      // `data: rows` where the file fills `rows` with `rows.push({…})`: walk
+      // each pushed literal as part of the payload.
+      const ident = /^\s*(\w+)\s*$/.exec(value)?.[1];
+      if (ident) {
+        for (const push of src.matchAll(
+          new RegExp(`(?<![.\\w])${ident}\\s*\\.\\s*push\\s*\\(`, "g"),
+        )) {
+          const open = push.index! + push[0].length - 1;
+          const inner = src.slice(open + 1, balanced(src, open));
+          descend(model, inner, open + 1, depth + 1);
+        }
+        return;
+      }
       for (const [obj, objOffset] of payloadObjects(value)) {
         for (const [field, expr, exprOffset] of objectPairs(obj)) {
           const at = base + objOffset + exprOffset;
@@ -493,6 +510,17 @@ describe("ciphertext columns derived from the code", () => {
         `${anchor} is written with ciphertext but the scan did not see it`,
       ).toContain(anchor);
     }
+  });
+
+  it("follows a payload array filled by push into the write that sends it", () => {
+    // The lab CSV import builds its rows into an array and writes each chunk
+    // with one `createMany({ data: toWrite })`.
+    expect(
+      [...(written.get("LabResult.noteEncrypted") ?? [])].some((at) =>
+        at.startsWith("src/lib/import/labs-csv.ts:"),
+      ),
+      "the chunked lab CSV write of LabResult.noteEncrypted was not seen",
+    ).toBe(true);
   });
 
   it("registers every column the code writes ciphertext into", () => {

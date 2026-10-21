@@ -28,6 +28,8 @@ vi.mock("@/lib/db", () => ({
     },
     // v1.44 — the first page carries the training load.
     strainTrimpCache: { findMany: vi.fn(async () => []) },
+    measurementRollup: { findMany: vi.fn(async () => []) },
+    $queryRaw: vi.fn(async () => []),
   },
 }));
 

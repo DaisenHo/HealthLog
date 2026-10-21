@@ -380,7 +380,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .number()
             .optional()
             .describe(
-              "At most 100000; a larger offset is a 400 OperationOutcome.",
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
             ),
         }),
       },
@@ -410,7 +410,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .number()
             .optional()
             .describe(
-              "At most 100000; a larger offset is a 400 OperationOutcome.",
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
             ),
           date: z.string().optional(),
           code: z.string().optional(),
@@ -442,7 +442,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .number()
             .optional()
             .describe(
-              "At most 100000; a larger offset is a 400 OperationOutcome.",
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
             ),
         }),
       },
@@ -472,7 +472,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .number()
             .optional()
             .describe(
-              "At most 100000; a larger offset is a 400 OperationOutcome.",
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
             ),
         }),
       },
@@ -502,7 +502,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .number()
             .optional()
             .describe(
-              "At most 100000; a larger offset is a 400 OperationOutcome.",
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
             ),
         }),
       },
@@ -682,7 +682,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .number()
             .optional()
             .describe(
-              "At most 100000; a larger offset is a 400 OperationOutcome.",
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
             ),
         }),
       },

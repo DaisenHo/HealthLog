@@ -92,19 +92,21 @@ export const DEFAULT_COUNT = 50;
 export const MAX_COUNT = 200;
 
 /**
- * Ceiling on `_offset`. No record pages that far (the largest search, the
- * Observation time series, is bounded by the readings in a date range), and
- * an unbounded offset reached the database as a skip it cannot represent and
- * answered 500.
+ * Ceiling on `_offset`: the largest integer a JavaScript number holds
+ * exactly. It is no paging limit (the Observation time series of a heart-rate
+ * history pages well past a hundred thousand rows, and every page's `next`
+ * link must keep working); it refuses only an offset that cannot be passed
+ * on faithfully. Above it `Math.floor` returns a float such as `1e20`, which
+ * the database cannot read as a `bigint` `OFFSET` and which answered 500.
  */
-export const MAX_OFFSET = 100_000;
+export const MAX_OFFSET = Number.MAX_SAFE_INTEGER;
 
 /**
  * Parsed + clamped paging parameters. `count` is bounded to `[1, MAX_COUNT]`;
  * `offset` floors at 0. A non-numeric / negative input collapses to the
  * default rather than erroring — FHIR search is forgiving on paging params.
- * An offset above {@link MAX_OFFSET} is the one refusal: the caller answers
- * it with a 400 `invalid` OperationOutcome.
+ * An offset above {@link MAX_OFFSET} (including `Infinity`) is the one
+ * refusal: the caller answers it with a 400 `invalid` OperationOutcome.
  */
 export function parsePaging(
   searchParams: URLSearchParams,
@@ -127,6 +129,7 @@ export function parsePaging(
  * Build the absolute self link, and a next link when more rows remain. The
  * URL is rebuilt from the request URL with the paging params normalised, so
  * the echoed link always carries the clamped `_count` and concrete `_offset`.
+ * A next link never carries an offset {@link parsePaging} would refuse.
  */
 function pagingLinks(
   requestUrl: URL,
@@ -140,7 +143,7 @@ function pagingLinks(
   const links: FhirBundleLink[] = [{ relation: "self", url: self.toString() }];
 
   const nextOffset = offset + count;
-  if (nextOffset < total) {
+  if (nextOffset < total && nextOffset <= MAX_OFFSET) {
     const next = new URL(requestUrl.toString());
     next.searchParams.set("_count", String(count));
     next.searchParams.set("_offset", String(nextOffset));

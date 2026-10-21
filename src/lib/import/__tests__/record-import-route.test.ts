@@ -47,7 +47,11 @@ const DONE = {
   failed: 0,
 } as unknown as RecordImportResult;
 
-beforeEach(() => auditLog.mockReset());
+// A block body: a function returned from `beforeEach` runs as its teardown,
+// and `mockReset()` returns the mock itself.
+beforeEach(() => {
+  auditLog.mockReset();
+});
 
 describe("handleRecordImport audit", () => {
   it("audits a finished import as complete", async () => {
@@ -86,6 +90,47 @@ describe("handleRecordImport audit", () => {
       partial: true,
       written: 200,
     });
+  });
+
+  it("never lets a failing audit write replace the answer or the error", async () => {
+    auditLog.mockImplementation(async () => {
+      throw new Error("audit table unavailable");
+    });
+    const ok = await handleRecordImport(request(), {
+      kind: "labs",
+      module: "labs",
+      schema,
+      run: async ({ onWritten }) => {
+        onWritten(400);
+        return DONE;
+      },
+    });
+    expect(ok.status).toBe(200);
+    // A cut-off import still surfaces its own error.
+    await expect(
+      handleRecordImport(request(), {
+        kind: "labs",
+        module: "labs",
+        schema,
+        run: async ({ onWritten }) => {
+          onWritten(200);
+          throw new Error("client went away");
+        },
+      }),
+    ).rejects.toThrow("client went away");
+    // And the size cap still answers 413.
+    const { CsvTooLargeError } = await import("@/lib/import/csv-stream");
+    const tooLarge = await handleRecordImport(request(), {
+      kind: "labs",
+      module: "labs",
+      schema,
+      run: async ({ onWritten }) => {
+        onWritten(200);
+        throw new CsvTooLargeError(16);
+      },
+    });
+    expect(tooLarge.status).toBe(413);
+    expect(auditLog).toHaveBeenCalledTimes(3);
   });
 
   it("writes no audit row for a dry run or an abort that wrote nothing", async () => {

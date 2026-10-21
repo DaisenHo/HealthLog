@@ -126,26 +126,33 @@ export async function handleRecordImport<
   } finally {
     // The audit row is written whatever happened: an import cut off part way
     // (the client went away, a proxy timed out, the cap was hit after some
-    // chunks) has already written rows, and the trail says how many.
+    // chunks) has already written rows, and the trail says how many. A
+    // failing audit write is noted on the wide event and never replaces the
+    // import's own answer or error: a throw from `finally` would discard
+    // both, and the rows are written either way.
     if (
       !query.dryRun &&
       ((result !== null && result.rows > 0) || written > 0)
     ) {
-      await auditLog(action, {
-        userId: user.id,
-        ipAddress: getClientIp(request),
-        details:
-          result !== null
-            ? {
-                rows: result.rows,
-                inserted: result.inserted,
-                duplicates: result.duplicates,
-                failed: result.failed,
-                partial: false,
-                written,
-              }
-            : { partial: true, written },
-      });
+      try {
+        await auditLog(action, {
+          userId: user.id,
+          ipAddress: getClientIp(request),
+          details:
+            result !== null
+              ? {
+                  rows: result.rows,
+                  inserted: result.inserted,
+                  duplicates: result.duplicates,
+                  failed: result.failed,
+                  partial: false,
+                  written,
+                }
+              : { partial: true, written },
+        });
+      } catch {
+        annotate({ meta: { import_audit_failed: true } });
+      }
     }
   }
   if (result.rows === 0) {

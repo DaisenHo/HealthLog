@@ -3903,7 +3903,8 @@
         "form": "Vorm",
         "explainer": "Fitheid is je trainingsprikkel uit de hartslag, gemiddeld over ongeveer zes weken, vermoeidheid over ongeveer een week, en vorm is het verschil. De getallen zijn te vergelijken met je eigen verleden, niet met andere mensen of andere apps.",
         "warmingUp": "Op basis van {days} dagen tot nu toe: tot zes weken gedekt zijn, valt de fitheid lager uit dan ze is.",
-        "coverage": "{rated} van de laatste {days} dagen hebben hartslaggegevens. Dagen zonder worden weggelaten in plaats van als rustdag te tellen."
+        "coverage": "{rated} van de laatste {days} dagen konden worden beoordeeld. Een dag zonder activiteitsgegevens, of met een training die niet kon worden beoordeeld, wordt weggelaten in plaats van als rustdag te tellen.",
+        "asOf": "Stand van {date}, de laatste dag die kon worden beoordeeld."
       }
     },
     "bloodGlucose": {
@@ -10198,6 +10199,7 @@
           "low": "Als deze rechte lijn zo doorliep, zou ze rond {date} de ondergrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling."
         },
         "beyond_horizon": "In dit tempo blijft de lijn langer dan {years} jaar binnen je referentiebereik, de periode die je waarden beslaan.",
+        "beyond_horizon_capped": "In dit tempo blijft de lijn langer dan {years} jaar binnen je referentiebereik, zo ver kijkt de doortrekking vooruit.",
         "no_exit": "De lijn loopt weg van de grenzen van je referentiebereik.",
         "already_outside": "De lijn ligt al buiten je referentiebereik.",
         "no_clear_trend": "Over deze waarden is de verandering niet duidelijk te onderscheiden van geen verandering, dus er wordt niets doorgetrokken.",

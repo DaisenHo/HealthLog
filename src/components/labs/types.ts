@@ -126,6 +126,7 @@ export type BiomarkerTrendDto =
       fittedNow: number;
       asOf: string;
       horizonYears: number;
+      horizonCapped: boolean;
       projection:
         | "exits"
         | "beyond_horizon"

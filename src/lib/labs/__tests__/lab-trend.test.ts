@@ -139,7 +139,20 @@ describe("computeLabTrend", () => {
     ]);
     expect(
       computeLabTrend(short, { low: 70, high: 125 }, atYears(1)),
-    ).toMatchObject({ projection: "beyond_horizon", horizonYears: 1 });
+    ).toMatchObject({
+      projection: "beyond_horizon",
+      horizonYears: 1,
+      horizonCapped: false,
+    });
+    // Over four years of readings the horizon is the three-year cap.
+    const long = readings([
+      [0, 100],
+      [2, 101],
+      [4, 102],
+    ]);
+    expect(
+      computeLabTrend(long, { low: 70, high: 200 }, atYears(4)),
+    ).toMatchObject({ horizonYears: 3, horizonCapped: true });
     // The same line with a top of 118 meets it 0.8 years out: projected.
     expect(
       computeLabTrend(short, { low: 70, high: 118 }, atYears(1)),

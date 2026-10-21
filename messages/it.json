@@ -3903,7 +3903,8 @@
         "form": "Freschezza",
         "explainer": "La forma di base è il tuo impulso di allenamento dalla frequenza cardiaca mediato su circa sei settimane, l'affaticamento su circa una settimana, e la freschezza è la differenza. I numeri si confrontano con il tuo passato, non con altre persone o altre app.",
         "warmingUp": "Su {days} giorni finora: finché non sono coperte sei settimane, la forma di base risulta più bassa di quanto sia.",
-        "coverage": "{rated} degli ultimi {days} giorni hanno dati di frequenza cardiaca. I giorni senza vengono esclusi invece di contare come riposo."
+        "coverage": "{rated} degli ultimi {days} giorni sono stati valutati. Un giorno senza dati di attività, o con un allenamento che non è stato possibile valutare, viene escluso invece di contare come riposo.",
+        "asOf": "Al {date}, l'ultimo giorno che è stato possibile valutare."
       }
     },
     "bloodGlucose": {
@@ -10198,6 +10199,7 @@
           "low": "Se questa retta proseguisse, raggiungerebbe il limite inferiore del tuo intervallo di riferimento verso il {date}. È una proiezione, non una previsione."
         },
         "beyond_horizon": "A questo ritmo la retta resta nel tuo intervallo di riferimento per più di {years} anni, il periodo coperto dai tuoi valori.",
+        "beyond_horizon_capped": "A questo ritmo la retta resta nel tuo intervallo di riferimento per più di {years} anni, fin dove arriva la proiezione.",
         "no_exit": "La retta si allontana dai limiti del tuo intervallo di riferimento.",
         "already_outside": "La retta è già fuori dal tuo intervallo di riferimento.",
         "no_clear_trend": "Su questi valori la variazione non si distingue chiaramente dall'assenza di variazione, quindi non si proietta nulla.",

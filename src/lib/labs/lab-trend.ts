@@ -83,6 +83,11 @@ export interface LabTrendOk {
    * or the readings' span when shorter.
    */
   horizonYears: number;
+  /**
+   * True when `horizonYears` is the three-year cap, false when the readings'
+   * shorter span set it.
+   */
+  horizonCapped: boolean;
   projection: LabTrendProjection;
   /** Set only for `exits`: the day the line meets `exitBound`. */
   exitDate: string | null;
@@ -162,10 +167,9 @@ export function computeLabTrend(
   const tAsOf = stale ? tLast : now.getTime();
   const xNow = (tAsOf - t0) / DAY_MS / YEAR_DAYS;
   const fittedNow = fit.intercept + fit.slope * xNow;
-  const horizonYears = Math.min(
-    LAB_PROJECTION_HORIZON_YEARS,
-    (tLast - t0) / DAY_MS / YEAR_DAYS,
-  );
+  const spanYears = (tLast - t0) / DAY_MS / YEAR_DAYS;
+  const horizonCapped = spanYears >= LAB_PROJECTION_HORIZON_YEARS;
+  const horizonYears = Math.min(LAB_PROJECTION_HORIZON_YEARS, spanYears);
 
   let projection: LabTrendProjection;
   let exitDate: string | null = null;
@@ -207,6 +211,7 @@ export function computeLabTrend(
     fittedNow: round(fittedNow, 4),
     asOf: dayOf(tAsOf),
     horizonYears: round(horizonYears, 2),
+    horizonCapped,
     projection,
     exitDate,
     exitBound,

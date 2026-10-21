@@ -44,7 +44,19 @@ describe("<TrainingLoadCard>", () => {
   it("says how many recent days were rated when some were not", () => {
     const html = render({ ...OK, recentRatedDays: 25, recentDays: 42 });
     expect(html).toContain('data-slot="training-load-coverage"');
-    expect(html).toContain("25 of the last 42 days have heart-rate data");
+    expect(html).toContain("25 of the last 42 days could be rated");
+  });
+
+  it("names the last rated day when it lies behind the series end", () => {
+    const series = [
+      { day: "2026-10-19", ctl: 54, atl: 61, tsb: -7, rated: false },
+      { day: "2026-10-20", ctl: 54, atl: 61, tsb: -7, rated: false },
+    ];
+    const stale = render({ ...OK, asOf: "2026-09-02", series });
+    expect(stale).toContain('data-slot="training-load-as-of"');
+    expect(stale).toMatch(/As of 0?9\/0?2|As of 02\/09|As of Sep/);
+    const fresh = render({ ...OK, asOf: "2026-10-19", series });
+    expect(fresh).not.toContain('data-slot="training-load-as-of"');
   });
 
   it("signs a positive form and drops the warm-up note once covered", () => {

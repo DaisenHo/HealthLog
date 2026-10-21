@@ -3903,7 +3903,8 @@
         "form": "Form",
         "explainer": "Fitness ist dein Trainingsimpuls aus der Herzfrequenz, gemittelt über etwa sechs Wochen, Ermüdung über etwa eine Woche, und Form ist der Unterschied. Die Zahlen lassen sich mit deinen eigenen früheren vergleichen, nicht mit anderen Menschen oder Apps.",
         "warmingUp": "Auf Basis von bisher {days} Tagen: Bis sechs Wochen abgedeckt sind, fällt die Fitness niedriger aus, als sie ist.",
-        "coverage": "{rated} der letzten {days} Tage haben Herzfrequenzdaten. Tage ohne sie bleiben außen vor, statt als Ruhetag zu zählen."
+        "coverage": "{rated} der letzten {days} Tage ließen sich bewerten. Ein Tag ohne Aktivitätsdaten oder mit einem Training, das sich nicht auswerten ließ, bleibt außen vor, statt als Ruhetag zu zählen.",
+        "asOf": "Stand {date}, der letzte Tag, der sich bewerten ließ."
       }
     },
     "bloodGlucose": {
@@ -10198,6 +10199,7 @@
           "low": "Liefe diese Gerade so weiter, erreichte sie um den {date} das untere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage."
         },
         "beyond_horizon": "In diesem Tempo bleibt die Gerade länger als {years} Jahre in deinem Referenzbereich, so weit reichen deine Werte zurück.",
+        "beyond_horizon_capped": "In diesem Tempo bleibt die Gerade länger als {years} Jahre in deinem Referenzbereich, so weit schaut die Fortschreibung voraus.",
         "no_exit": "Die Gerade läuft von den Grenzen deines Referenzbereichs weg.",
         "already_outside": "Die Gerade liegt bereits außerhalb deines Referenzbereichs.",
         "no_clear_trend": "Über diese Werte ist die Veränderung nicht klar von keiner Veränderung zu unterscheiden, deshalb wird nichts fortgeschrieben.",

@@ -160,10 +160,6 @@ const TS_READERS: Record<string, Entry> = {
   "lib/insights/narrative/period-narrative.ts": {
     exempt: "means of day-keyed series, already one value per day",
   },
-  "lib/mcp/rich-reads.ts": {
-    exempt:
-      "changepoints over rollup bucket means, which weigh pulse days once (readCanonicalRollupBuckets)",
-  },
   "lib/medications/efficacy/build-efficacy.ts": {
     exempt: "means of the day-mean series (readDayMeanSeries)",
   },

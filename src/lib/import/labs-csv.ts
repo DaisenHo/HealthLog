@@ -378,6 +378,18 @@ export async function importLabsCsv(args: {
     }
 
     // 2. Duplicates against the record, one query for the chunk.
+    //
+    // The day is cut in the zone the file is read in. Only a reading with a
+    // wall-clock time depends on it: a date alone is stored at the noon-UTC
+    // anchor and a time with an offset is one instant, and both land on the
+    // same day in every zone. A wall-clock time read in another zone on a
+    // retry is a different instant, and near midnight a different day, so it
+    // can be written twice. Matching on the exact instant would not catch it
+    // (the instant moved with the zone), and widening the match by the zone
+    // difference would also swallow a genuine reading of the same value on
+    // the neighbouring day. The zone the earlier import read the file in is
+    // not stored, so the record cannot tell those two apart; the day in the
+    // current zone is the one rule that never drops a real reading.
     const days = planned
       .map((p) => labReadingDay(p.row.takenAt, timezone))
       .sort();
