@@ -72,6 +72,11 @@ import {
   upsertScoreRow,
 } from "@/lib/insights/score-row";
 import { shiftDateKey } from "@/lib/tz/format";
+import {
+  pickCanonicalWorkoutRows,
+  workoutDuplicateSlotKey,
+  type WorkoutPickerRow,
+} from "@/lib/measurements/pick-canonical-workout-rows";
 
 /** The per-day idempotency-key prefix for a stored Strain score row. */
 export const STRAIN_SCORE_EXTERNAL_ID_PREFIX = "strain:";
@@ -413,12 +418,28 @@ export async function computeStrainScore(
   });
   const dayActiveEnergy = energyRows.reduce((s, r) => s + r.value, 0);
 
-  // The day's workouts + their HR series.
-  const workouts = await prisma.workout.findMany({
-    where: { userId, startedAt: { gte: dayStart, lt: dayEnd } },
-    select: { id: true, samples: { select: { samples: true } } },
-    take: 100,
-  });
+  // The day's workouts + their HR series, with the session identity the
+  // cross-source picker needs: one run recorded by the watch and synced again
+  // through a second service is one training impulse, not two.
+  const [workouts, account] = await Promise.all([
+    prisma.workout.findMany({
+      where: { userId, startedAt: { gte: dayStart, lt: dayEnd } },
+      orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        source: true,
+        sportType: true,
+        startedAt: true,
+        durationSec: true,
+        samples: { select: { samples: true } },
+      },
+      take: 100,
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { sourcePriorityJson: true },
+    }),
+  ]);
 
   const hrMax = profile.ageYears != null ? tanakaHrMax(profile.ageYears) : null;
   const canTrimp = hrMax != null && hrRest != null && hrMax > hrRest;
@@ -426,15 +447,24 @@ export async function computeStrainScore(
   let dayTrimp = 0;
   let workoutsWithSeries = 0;
   if (canTrimp) {
-    for (const w of workouts) {
+    const trimpOf = (w: (typeof workouts)[number]): number => {
       const raw = w.samples?.samples;
-      if (!Array.isArray(raw)) continue;
-      const series = raw as unknown as HrSample[];
-      const trimp = banisterTrimp(series, hrRest!, hrMax!, profile.sex);
-      if (trimp > 0) {
-        dayTrimp += trimp;
-        workoutsWithSeries += 1;
-      }
+      if (!Array.isArray(raw)) return 0;
+      return banisterTrimp(
+        raw as unknown as HrSample[],
+        hrRest!,
+        hrMax!,
+        profile.sex,
+      );
+    };
+    const sessions = canonicalWorkoutTrimps(
+      workouts,
+      account?.sourcePriorityJson ?? null,
+      trimpOf,
+    );
+    for (const trimp of sessions) {
+      dayTrimp += trimp;
+      workoutsWithSeries += 1;
     }
   }
 
@@ -497,6 +527,52 @@ export async function computeStrainScore(
     trainingDays: ref.trainingDays,
     refPersonalToPersist: ref.refPersonalToPersist,
   };
+}
+
+/**
+ * One training impulse per workout SESSION, not per stored row.
+ *
+ * The same session can be stored more than once: the watch writes it to Apple
+ * Health and a second service (Strava, WHOOP, a ring) syncs it again, or
+ * HealthKit re-sends it under a new identifier. The workout list collapses
+ * those through `pickCanonicalWorkoutRows`; summing every row here counted the
+ * session twice in the day's TRIMP while the list showed it once.
+ *
+ * The picker chooses the row by source order, which says nothing about heart
+ * rate: the winning row can be one without a series while its dropped twin
+ * carries one. So the impulse of a slot is the sum over its picked rows, and
+ * only when that is zero the largest impulse among the slot's dropped rows.
+ * Returns the positive impulses, one per session. Pure; exported for tests.
+ */
+export function canonicalWorkoutTrimps<
+  T extends WorkoutPickerRow & { id: string },
+>(
+  rows: readonly T[],
+  priorityJson: unknown,
+  trimpOf: (row: T) => number,
+): number[] {
+  // By id: the picker may hand back a copy of a row (it fills a missing heart
+  // rate from a WHOOP twin).
+  const picked = new Set(
+    pickCanonicalWorkoutRows(rows, priorityJson).map((row) => row.id),
+  );
+  const slots = new Map<string, { picked: number; dropped: number }>();
+  for (const row of rows) {
+    const key = workoutDuplicateSlotKey(row);
+    const slot = slots.get(key) ?? { picked: 0, dropped: 0 };
+    const trimp = trimpOf(row);
+    if (trimp > 0) {
+      if (picked.has(row.id)) slot.picked += trimp;
+      else slot.dropped = Math.max(slot.dropped, trimp);
+    }
+    slots.set(key, slot);
+  }
+  const out: number[] = [];
+  for (const slot of slots.values()) {
+    const trimp = slot.picked > 0 ? slot.picked : slot.dropped;
+    if (trimp > 0) out.push(trimp);
+  }
+  return out;
 }
 
 /**
