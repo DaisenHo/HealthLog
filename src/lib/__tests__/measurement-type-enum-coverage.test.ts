@@ -112,10 +112,18 @@ const EXPECTED_TYPES = [
   // both server-derived from a completed assessment, higher = better) ──
   "WHO5_SCORE",
   "SCI_SCORE",
+  // ── v1.44 — Apple Health activity rings, mindfulness, State of Mind and
+  // AFib burden ──
+  "EXERCISE_MINUTES",
+  "STAND_MINUTES",
+  "STAND_HOURS",
+  "MINDFUL_MINUTES",
+  "STATE_OF_MIND_VALENCE",
+  "AFIB_BURDEN",
 ] as const;
 
 describe("measurementTypeEnum coverage", () => {
-  it("exposes the 75 canonical measurement types", () => {
+  it("exposes the 83 canonical measurement types", () => {
     expect([...measurementTypeEnum.options].sort()).toEqual(
       [...EXPECTED_TYPES].sort(),
     );

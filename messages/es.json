@@ -911,6 +911,12 @@
     "unitRating": "nivel",
     "typeWho5Score": "Puntuación WHO-5",
     "typeSciScore": "Puntuación SCI",
+    "typeExerciseMinutes": "Minutos de ejercicio",
+    "typeStandMinutes": "Minutos de pie",
+    "typeStandHours": "Horas de pie",
+    "typeMindfulMinutes": "Minutos de atención plena",
+    "typeStateOfMindValence": "Estado de ánimo",
+    "typeAfibBurden": "Carga de FA",
     "durationReadAs": "Se lee como {duration}",
     "durationHoursMinutes": "{hours} h {minutes} min",
     "durationHoursOnly": "{hours} h",
@@ -3565,6 +3571,7 @@
       "falls": "caídas",
       "years": "años",
       "breathingEvents": "eventos",
+      "standHours": "horas",
       "respiratoryRate": "respiraciones/min"
     },
     "sleep": {
@@ -7154,6 +7161,12 @@
         "security": "Actividad de la cuenta y de seguridad (sesiones, registro de inicio de sesión)",
         "profile": "Tu perfil, tus antecedentes médicos y los datos del historial de salud",
         "modules": "Registros de cada módulo: {list}"
+      },
+      "workoutRoutes": {
+        "title": "Rutas de entrenamiento",
+        "description": "Guardar el recorrido GPS de los entrenamientos nuevos de la app de iPhone y de la exportación de Apple Salud.",
+        "detail": "Desactivado por defecto. Una ruta muestra dónde vives, trabajas y entrenas, así que solo se guarda cuando lo activas. Los entrenamientos se guardan siempre y ninguna función de IA lee nunca una ruta. Al desactivarlo dejan de guardarse rutas nuevas; las ya guardadas se quedan hasta que borres el entrenamiento.",
+        "loadError": "No se pudo cargar el ajuste de rutas."
       },
       "retention": {
         "title": "Retención",

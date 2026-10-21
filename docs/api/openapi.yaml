@@ -4315,6 +4315,12 @@ paths:
               - WAIST_TO_HEIGHT
               - WHO5_SCORE
               - SCI_SCORE
+              - EXERCISE_MINUTES
+              - STAND_MINUTES
+              - STAND_HOURS
+              - MINDFUL_MINUTES
+              - STATE_OF_MIND_VALENCE
+              - AFIB_BURDEN
         - in: query
           name: from
           schema:
@@ -9446,6 +9452,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PatchLabsLocalOcrEnvelope"
+        "401": *a1
+        "413":
+          description: Request body exceeds 1024 bytes. Nothing was written.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/auth/me/workout-routes:
+    get:
+      tags:
+        - Auth
+      summary: Read the workout-route opt-in
+      description: Whether the GPS track of a workout is kept. Off by default. While it is off, `POST /api/workouts/batch` and
+        the Apple Health export import keep every workout but drop its `route`; the per-entry status is the same as with
+        the route stored. No AI path ever reads a stored track.
+      responses:
+        "200":
+          description: The current flag.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetWorkoutRoutesEnvelope"
+        "401": *a1
+        "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Auth
+      summary: Set the workout-route opt-in
+      description: Hard-set, idempotent, audit-logged. Rate-limited 60 / min per user; body capped at 1 KB. Turning it off
+        stops new tracks; tracks already stored stay until their workout is deleted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkoutRoutesPatchRequest"
+      responses:
+        "200":
+          description: The resolved next flag.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatchWorkoutRoutesEnvelope"
         "401": *a1
         "413":
           description: Request body exceeds 1024 bytes. Nothing was written.
@@ -25948,7 +26000,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 95
+              maxItems: 101
               type: array
               items:
                 type: string
@@ -26008,7 +26060,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 95
+              maxItems: 101
               type: array
               items:
                 type: string
@@ -26843,6 +26895,12 @@ components:
             - WAIST_TO_HEIGHT
             - WHO5_SCORE
             - SCI_SCORE
+            - EXERCISE_MINUTES
+            - STAND_MINUTES
+            - STAND_HOURS
+            - MINDFUL_MINUTES
+            - STATE_OF_MIND_VALENCE
+            - AFIB_BURDEN
         value:
           type: number
         measuredAt:
@@ -28524,6 +28582,12 @@ components:
             - WAIST_TO_HEIGHT
             - WHO5_SCORE
             - SCI_SCORE
+            - EXERCISE_MINUTES
+            - STAND_MINUTES
+            - STAND_HOURS
+            - MINDFUL_MINUTES
+            - STATE_OF_MIND_VALENCE
+            - AFIB_BURDEN
         biomarkerId:
           type: string
           minLength: 1
@@ -29023,7 +29087,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 95
+          maxItems: 101
           type: array
           items:
             type: string
@@ -29358,6 +29422,14 @@ components:
         - labsLocalOcrEnabled
       description: Turn browser-side OCR on or off for lab-report scanning. When on, a text-only provider can still read a
         paper report because the image is transcribed on the device and only the TEXT is sent.
+    WorkoutRoutesPatchRequest:
+      type: object
+      properties:
+        storeWorkoutRoutes:
+          type: boolean
+      required:
+        - storeWorkoutRoutes
+      description: Keep or stop keeping the GPS track of new workouts. Off by default.
     UseCentralCodexPatchRequest:
       type: object
       properties:
@@ -30186,6 +30258,12 @@ components:
         - WAIST_TO_HEIGHT
         - WHO5_SCORE
         - SCI_SCORE
+        - EXERCISE_MINUTES
+        - STAND_MINUTES
+        - STAND_HOURS
+        - MINDFUL_MINUTES
+        - STATE_OF_MIND_VALENCE
+        - AFIB_BURDEN
       description: DB-stored measurement category. v1.4.23 added 7 Apple Health values (HRV, resting HR, active energy,
         flights, walking/running distance, VO2 max, body temperature).
     InsightsSettingsPutRequest:
@@ -38851,6 +38929,8 @@ components:
                   type: boolean
                 labsLocalOcrEnabled:
                   type: boolean
+                storeWorkoutRoutes:
+                  type: boolean
                 onboardingCompletedAt:
                   anyOf:
                     - type: string
@@ -38961,6 +39041,12 @@ components:
                   - WAIST_TO_HEIGHT
                   - WHO5_SCORE
                   - SCI_SCORE
+                  - EXERCISE_MINUTES
+                  - STAND_MINUTES
+                  - STAND_HOURS
+                  - MINDFUL_MINUTES
+                  - STATE_OF_MIND_VALENCE
+                  - AFIB_BURDEN
               value:
                 type: number
               valueMin:
@@ -39701,6 +39787,12 @@ components:
                             - WAIST_TO_HEIGHT
                             - WHO5_SCORE
                             - SCI_SCORE
+                            - EXERCISE_MINUTES
+                            - STAND_MINUTES
+                            - STAND_HOURS
+                            - MINDFUL_MINUTES
+                            - STATE_OF_MIND_VALENCE
+                            - AFIB_BURDEN
                         - type: "null"
                     biomarkerName:
                       anyOf:
@@ -42176,6 +42268,12 @@ components:
                   - WAIST_TO_HEIGHT
                   - WHO5_SCORE
                   - SCI_SCORE
+                  - EXERCISE_MINUTES
+                  - STAND_MINUTES
+                  - STAND_HOURS
+                  - MINDFUL_MINUTES
+                  - STATE_OF_MIND_VALENCE
+                  - AFIB_BURDEN
               dateKey:
                 type: string
                 pattern: ^\d{4}-\d{2}-\d{2}$
@@ -43354,6 +43452,12 @@ components:
                       - WAIST_TO_HEIGHT
                       - WHO5_SCORE
                       - SCI_SCORE
+                      - EXERCISE_MINUTES
+                      - STAND_MINUTES
+                      - STAND_HOURS
+                      - MINDFUL_MINUTES
+                      - STATE_OF_MIND_VALENCE
+                      - AFIB_BURDEN
                   - type: "null"
               intervalDays:
                 anyOf:
@@ -43566,6 +43670,12 @@ components:
                   - WAIST_TO_HEIGHT
                   - WHO5_SCORE
                   - SCI_SCORE
+                  - EXERCISE_MINUTES
+                  - STAND_MINUTES
+                  - STAND_HOURS
+                  - MINDFUL_MINUTES
+                  - STATE_OF_MIND_VALENCE
+                  - AFIB_BURDEN
               metricSlot:
                 type:
                   - string
@@ -55922,6 +56032,48 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/LabsLocalOcrResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GetWorkoutRoutesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkoutRoutesResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    WorkoutRoutesResponse:
+      type: object
+      properties:
+        storeWorkoutRoutes:
+          type: boolean
+      required:
+        - storeWorkoutRoutes
+      additionalProperties: false
+    PatchWorkoutRoutesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/WorkoutRoutesResponse"
         error:
           type: "null"
         meta:

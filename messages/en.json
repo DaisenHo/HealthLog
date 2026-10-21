@@ -911,6 +911,12 @@
     "unitRating": "rating",
     "typeWho5Score": "WHO-5 score",
     "typeSciScore": "SCI score",
+    "typeExerciseMinutes": "Exercise minutes",
+    "typeStandMinutes": "Standing minutes",
+    "typeStandHours": "Stand hours",
+    "typeMindfulMinutes": "Mindful minutes",
+    "typeStateOfMindValence": "State of mind",
+    "typeAfibBurden": "AFib burden",
     "durationReadAs": "Read as {duration}",
     "durationHoursMinutes": "{hours} h {minutes} min",
     "durationHoursOnly": "{hours} h",
@@ -3565,6 +3571,7 @@
       "falls": "falls",
       "years": "years",
       "breathingEvents": "events",
+      "standHours": "hours",
       "respiratoryRate": "breaths/min"
     },
     "sleep": {
@@ -7154,6 +7161,12 @@
         "security": "Account and security activity (sessions, sign-in log)",
         "profile": "Your profile, medical history and health-record details",
         "modules": "Records of each module: {list}"
+      },
+      "workoutRoutes": {
+        "title": "Workout routes",
+        "description": "Keep the GPS track of new workouts from the iPhone app and the Apple Health export.",
+        "detail": "Off by default. A route shows where you live, work and train, so it is only kept once you turn this on. Workouts are kept either way, and no AI feature ever reads a route. Turning it off stops new routes; routes already kept stay until you delete the workout.",
+        "loadError": "The route setting could not be loaded."
       },
       "retention": {
         "title": "Retention",

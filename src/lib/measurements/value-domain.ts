@@ -48,6 +48,7 @@ export const INTEGER_VALUED_MEASUREMENT_TYPES: ReadonlySet<string> = new Set([
   "ACTIVITY_STEPS",
   "FLIGHTS_CLIMBED",
   "FALL_COUNT",
+  "STAND_HOURS",
   "BREATHING_DISTURBANCES",
   "SLEEP_DISTURBANCE_COUNT",
   // Category events — the row carries a fixed `value = 1` (one fired event).

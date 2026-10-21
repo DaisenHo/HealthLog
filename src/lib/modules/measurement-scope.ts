@@ -122,7 +122,8 @@ const METRIC_STATUS_MODULE_OWNERS: Partial<Record<MeasurementType, ModuleKey>> =
  *   - Core clinical figures every account carries: weight, pulse, blood
  *     pressure, BMI, body temperature.
  *   - Body composition: fat / lean / muscle / bone / water / visceral.
- *   - Activity volume: steps, distance, flights, active energy. Owned by no
+ *   - Activity volume: steps, distance, flights, active energy, and the
+ *     exercise and stand rings. Owned by no
  *     module — `workouts` gates workout SESSIONS, not ambient movement.
  *   - Gait and mobility, incl. the fall / walk-test / stair metrics.
  *   - Cardio-vascular readings with no module home: SpO2, respiratory rate,
@@ -162,6 +163,11 @@ export const UNSCOPED_REVIEWED_TYPES: ReadonlySet<MeasurementType> =
     "FLIGHTS_CLIMBED",
     "ACTIVE_ENERGY_BURNED",
     "ENERGY_EXPENDITURE_KJ",
+    // v1.44 — the exercise and stand rings are ambient movement like steps,
+    // not workout sessions.
+    "EXERCISE_MINUTES",
+    "STAND_MINUTES",
+    "STAND_HOURS",
     // Gait / mobility.
     "WALKING_SPEED",
     "WALKING_STEADINESS",

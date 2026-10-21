@@ -219,6 +219,17 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   // Waist circumference + waist-to-height are anthropometric → body cluster.
   ["WAIST_CIRCUMFERENCE", "body"],
   ["WAIST_TO_HEIGHT", "body"],
+  // ── v1.44 — Apple Health activity rings, mindfulness, mood, AFib ──
+  // The exercise and stand rings, and mindful minutes (time given to a
+  // practice, the same day-total shape), sit with the activity cluster.
+  ["EXERCISE_MINUTES", "activity"],
+  ["STAND_MINUTES", "activity"],
+  ["STAND_HOURS", "activity"],
+  ["MINDFUL_MINUTES", "activity"],
+  // The State of Mind valence is a self-report, like the WHO-5 total.
+  ["STATE_OF_MIND_VALENCE", "scores"],
+  // AFib burden joins the rhythm notifications on the cardiovascular surface.
+  ["AFIB_BURDEN", "cardiovascular"],
 ]);
 
 /**

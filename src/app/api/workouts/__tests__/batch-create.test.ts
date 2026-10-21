@@ -203,8 +203,11 @@ beforeEach(() => {
   // v1.4.43 — default to no per-user source-priority override so
   // the write-time picker walks the canonical default ladder. Tests
   // that exercise a custom ladder override this in-line.
+  // The route opt-in is on here so the route cases below exercise the
+  // write; the off case sets it explicitly.
   vi.mocked(prisma.user.findUnique).mockResolvedValue({
     sourcePriorityJson: null,
+    storeWorkoutRoutes: true,
   } as never);
 });
 
@@ -507,6 +510,55 @@ describe("POST /api/workouts/batch — per-entry status envelope", () => {
   });
 });
 
+describe("POST /api/workouts/batch — workout-route opt-in", () => {
+  const withRoute = () =>
+    validWorkout("uuid-with-route", {
+      route: {
+        geometry: {
+          type: "LineString",
+          coordinates: [
+            [11.077, 49.452],
+            [11.078, 49.453],
+          ],
+        },
+      },
+    });
+
+  it("keeps the workout and drops the track while the opt-in is off", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      sourcePriorityJson: null,
+      storeWorkoutRoutes: false,
+    } as never);
+    vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 1 });
+    mockInsertReturning([
+      { id: "wkt-off", source: "APPLE_HEALTH", externalId: "uuid-with-route" },
+    ]);
+
+    const res = await POST(makeRequest({ workouts: [withRoute()] }));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { entries: Array<{ status: string }> };
+    };
+    // Same per-entry status as a stored track: the client needs no branch.
+    expect(body.data.entries[0]?.status).toBe("inserted");
+    expect(prisma.workoutRoute.createMany).not.toHaveBeenCalled();
+  });
+
+  it("drops the track when the account row carries no opt-in at all", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      sourcePriorityJson: null,
+    } as never);
+    vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 1 });
+    mockInsertReturning([
+      { id: "wkt-none", source: "APPLE_HEALTH", externalId: "uuid-with-route" },
+    ]);
+
+    const res = await POST(makeRequest({ workouts: [withRoute()] }));
+    expect(res.status).toBe(200);
+    expect(prisma.workoutRoute.createMany).not.toHaveBeenCalled();
+  });
+});
+
 describe("POST /api/workouts/batch — nested route attachment", () => {
   it("creates a WorkoutRoute row for a workout that ships a route", async () => {
     vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 1 });
@@ -700,7 +752,7 @@ describe("POST /api/workouts/batch — user source-priority (v1.4.43 W9)", () =>
     expect(sourcePriorityReads).toHaveLength(1);
     expect(prisma.user.findUnique).toHaveBeenCalledWith({
       where: { id: "user-1" },
-      select: { sourcePriorityJson: true },
+      select: { sourcePriorityJson: true, storeWorkoutRoutes: true },
     });
   });
 

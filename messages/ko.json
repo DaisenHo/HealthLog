@@ -911,6 +911,12 @@
     "unitRating": "단계",
     "typeWho5Score": "WHO-5 점수",
     "typeSciScore": "SCI 점수",
+    "typeExerciseMinutes": "운동 시간(분)",
+    "typeStandMinutes": "서 있기 시간(분)",
+    "typeStandHours": "일어서기 시간",
+    "typeMindfulMinutes": "마음 챙기기 시간(분)",
+    "typeStateOfMindValence": "마음 상태",
+    "typeAfibBurden": "심방세동 부담",
     "durationReadAs": "{duration}(으)로 읽었어요",
     "durationHoursMinutes": "{hours}시간 {minutes}분",
     "durationHoursOnly": "{hours}시간",
@@ -3565,6 +3571,7 @@
       "falls": "회",
       "years": "세",
       "breathingEvents": "회",
+      "standHours": "시간",
       "respiratoryRate": "회/분"
     },
     "sleep": {
@@ -7154,6 +7161,12 @@
         "security": "계정·보안 활동 (세션, 로그인 기록)",
         "profile": "프로필, 병력, 건강 기록 정보",
         "modules": "모듈별 기록: {list}"
+      },
+      "workoutRoutes": {
+        "title": "운동 경로",
+        "description": "iPhone 앱과 Apple 건강 내보내기에서 새 운동의 GPS 경로를 저장합니다.",
+        "detail": "기본값은 꺼짐입니다. 경로는 사는 곳, 일하는 곳, 운동하는 곳을 보여 주므로 이 설정을 켠 뒤에만 저장됩니다. 운동 기록은 항상 저장되며, 어떤 AI 기능도 경로를 읽지 않습니다. 끄면 새 경로 저장이 멈추고, 이미 저장된 경로는 운동을 삭제할 때까지 남습니다.",
+        "loadError": "경로 설정을 불러오지 못했습니다."
       },
       "retention": {
         "title": "보관 기간",

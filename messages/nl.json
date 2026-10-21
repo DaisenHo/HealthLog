@@ -911,6 +911,12 @@
     "unitRating": "beoordeling",
     "typeWho5Score": "WHO-5-score",
     "typeSciScore": "SCI-score",
+    "typeExerciseMinutes": "Trainingsminuten",
+    "typeStandMinutes": "Staminuten",
+    "typeStandHours": "Stauren",
+    "typeMindfulMinutes": "Mindfulnessminuten",
+    "typeStateOfMindValence": "Gemoedstoestand",
+    "typeAfibBurden": "AF-belasting",
     "durationReadAs": "Gelezen als {duration}",
     "durationHoursMinutes": "{hours} u {minutes} min",
     "durationHoursOnly": "{hours} u",
@@ -3565,6 +3571,7 @@
       "falls": "valpartijen",
       "years": "jaar",
       "breathingEvents": "gebeurtenissen",
+      "standHours": "uur",
       "respiratoryRate": "ademhalingen/min"
     },
     "sleep": {
@@ -7154,6 +7161,12 @@
         "security": "Account- en beveiligingsactiviteit (sessies, inloglogboek)",
         "profile": "Je profiel, medische voorgeschiedenis en dossiergegevens",
         "modules": "Gegevens van elke module: {list}"
+      },
+      "workoutRoutes": {
+        "title": "Trainingsroutes",
+        "description": "Het GPS-spoor van nieuwe trainingen uit de iPhone-app en de Apple Gezondheid-export bewaren.",
+        "detail": "Standaard uit. Een route laat zien waar je woont, werkt en traint, dus hij wordt pas bewaard als je dit aanzet. Trainingen worden altijd bewaard en geen enkele AI-functie leest ooit een route. Uitzetten stopt nieuwe routes; al bewaarde routes blijven tot je de training verwijdert.",
+        "loadError": "De route-instelling kon niet worden geladen."
       },
       "retention": {
         "title": "Bewaartermijn",

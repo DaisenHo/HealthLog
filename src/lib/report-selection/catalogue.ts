@@ -119,6 +119,7 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   IRREGULAR_RHYTHM_NOTIFICATION: "cardio",
   HIGH_HEART_RATE_EVENT: "cardio",
   LOW_HEART_RATE_EVENT: "cardio",
+  AFIB_BURDEN: "cardio",
 
   // ── body ──
   WEIGHT: "body",
@@ -161,6 +162,9 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   STRAIN_SCORE: "activity",
   DAY_STRAIN: "activity",
   WORKOUT_STRAIN: "activity",
+  EXERCISE_MINUTES: "activity",
+  STAND_MINUTES: "activity",
+  STAND_HOURS: "activity",
 
   // ── mobility & gait ──
   WALKING_SPEED: "mobility",
@@ -185,6 +189,11 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   BLOOD_GLUCOSE: "glucose",
 
   // ── fenced ──
+  // Mindful minutes and the State of Mind valence are mental-health
+  // self-care and self-report: fenced like the screening totals, so they
+  // reach a report only when the person picks them.
+  MINDFUL_MINUTES: "sensitive",
+  STATE_OF_MIND_VALENCE: "sensitive",
   PHQ9_SCORE: "sensitive",
   GAD7_SCORE: "sensitive",
   WHO5_SCORE: "sensitive",
@@ -264,6 +273,9 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   // Activity / movement series and the training-load scores.
   ACTIVITY_STEPS: "workouts",
   ACTIVE_ENERGY_BURNED: "workouts",
+  EXERCISE_MINUTES: "workouts",
+  STAND_MINUTES: "workouts",
+  STAND_HOURS: "workouts",
   ENERGY_EXPENDITURE_KJ: "workouts",
   FLIGHTS_CLIMBED: "workouts",
   WALKING_RUNNING_DISTANCE: "workouts",
@@ -309,6 +321,10 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   GAD7_SCORE: "mentalHealth",
   WHO5_SCORE: "mentalHealth",
   SCI_SCORE: "mentalHealth",
+  // The State of Mind valence and mindful minutes ride the mood module: a
+  // person who turned mood tracking off does not see them on a report.
+  STATE_OF_MIND_VALENCE: "mood",
+  MINDFUL_MINUTES: "mood",
   // Structured sections with an owning module.
   LAB_RESULTS: "labs",
   MOOD: "mood",

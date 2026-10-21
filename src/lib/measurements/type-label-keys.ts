@@ -103,6 +103,13 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<MeasurementType, string> = {
   // ── v1.27.9 — screening scores ──
   WHO5_SCORE: "measurements.typeWho5Score",
   SCI_SCORE: "measurements.typeSciScore",
+  // ── v1.44 — activity rings, mindfulness, State of Mind, AFib burden ──
+  EXERCISE_MINUTES: "measurements.typeExerciseMinutes",
+  STAND_MINUTES: "measurements.typeStandMinutes",
+  STAND_HOURS: "measurements.typeStandHours",
+  MINDFUL_MINUTES: "measurements.typeMindfulMinutes",
+  STATE_OF_MIND_VALENCE: "measurements.typeStateOfMindValence",
+  AFIB_BURDEN: "measurements.typeAfibBurden",
   GRIP_STRENGTH: "measurements.typeGripStrength",
   PAIN_NRS: "measurements.typePainNrs",
   WAIST_CIRCUMFERENCE: "measurements.typeWaistCircumference",

@@ -637,8 +637,17 @@ describe("hashSampleKey", () => {
     expect(a).not.toBe(b);
   });
 });
-const cumulativeMappings = Object.values(APPLE_HEALTH_TYPE_MAP).filter(
+const allCumulativeMappings = Object.values(APPLE_HEALTH_TYPE_MAP).filter(
   (mapping) => CUMULATIVE_HK_TYPES.has(mapping.measurementType),
+);
+/**
+ * The cumulative quantities, whose `<Record>` carries its reading in
+ * `value`. The two cumulative category types (stand hours, mindful
+ * sessions) read theirs from a symbolic value or the dates and have their
+ * own cases below.
+ */
+const cumulativeMappings = allCumulativeMappings.filter((mapping) =>
+  mapping.hkIdentifier.startsWith("HKQuantityTypeIdentifier"),
 );
 
 function cumulativeExportXml(
@@ -678,11 +687,60 @@ async function importCumulativeFixture(xml: string) {
 }
 
 describe("streamParseExportXml — cumulative source-day estimates", () => {
-  it("covers exactly the six cumulative HealthKit measurement types", () => {
-    expect(CUMULATIVE_HK_TYPES.size).toBe(6);
+  it("covers exactly the ten cumulative HealthKit measurement types", () => {
+    expect(CUMULATIVE_HK_TYPES.size).toBe(10);
     expect(
-      new Set(cumulativeMappings.map((mapping) => mapping.measurementType)),
+      new Set(allCumulativeMappings.map((mapping) => mapping.measurementType)),
     ).toEqual(CUMULATIVE_HK_TYPES);
+    expect(allCumulativeMappings.length - cumulativeMappings.length).toBe(2);
+  });
+
+  it("counts stood hours and never stores an idle one", async () => {
+    const hour = (
+      h: number,
+      value: string,
+    ) => `  <Record type="HKCategoryTypeIdentifierAppleStandHour"
+          startDate="2026-05-14 ${String(h).padStart(2, "0")}:00:00 +0200"
+          endDate="2026-05-14 ${String(h).padStart(2, "0")}:59:59 +0200"
+          value="${value}" sourceName="Watch" sourceVersion="1.0"/>`;
+    const { prisma, result } =
+      await importCumulativeFixture(`<?xml version="1.0"?>
+<HealthData locale="en_US">
+${hour(8, "HKCategoryValueAppleStandHourStood")}
+${hour(9, "HKCategoryValueAppleStandHourIdle")}
+${hour(10, "HKCategoryValueAppleStandHourStood")}
+${hour(11, "HKCategoryValueAppleStandHourStood")}
+</HealthData>`);
+    expect(prisma._measurements).toHaveLength(1);
+    expect(prisma._measurements[0]).toMatchObject({
+      type: "STAND_HOURS",
+      value: 3,
+      unit: "hours",
+    });
+    expect(
+      result.deferred["HKCategoryTypeIdentifierAppleStandHour::idle"],
+    ).toBe(1);
+    expect(
+      result.unknown["HKCategoryTypeIdentifierAppleStandHour::unparseable"],
+    ).toBeUndefined();
+  });
+
+  it("takes mindful minutes from the session's own dates", async () => {
+    const { prisma } = await importCumulativeFixture(`<?xml version="1.0"?>
+<HealthData locale="en_US">
+  <Record type="HKCategoryTypeIdentifierMindfulSession"
+          startDate="2026-05-14 07:00:00 +0200" endDate="2026-05-14 07:10:00 +0200"
+          sourceName="Breathe" sourceVersion="1.0"/>
+  <Record type="HKCategoryTypeIdentifierMindfulSession"
+          startDate="2026-05-14 21:00:00 +0200" endDate="2026-05-14 21:15:00 +0200"
+          value="HKCategoryValueNotApplicable" sourceName="Breathe" sourceVersion="1.0"/>
+</HealthData>`);
+    expect(prisma._measurements).toHaveLength(1);
+    expect(prisma._measurements[0]).toMatchObject({
+      type: "MINDFUL_MINUTES",
+      value: 25,
+      unit: "minutes",
+    });
   });
 
   it("stores 8,526 rather than source-blind 15,608 for overlapping iPhone and Zepp steps", async () => {

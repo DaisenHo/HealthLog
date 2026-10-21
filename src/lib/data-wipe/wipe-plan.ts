@@ -427,6 +427,7 @@ export const USER_RESET = {
   coachLastSeenAt: null,
   documentsAutoAiRead: false,
   labsLocalOcrEnabled: false,
+  storeWorkoutRoutes: false,
   codexAccessTokenEncrypted: null,
   codexRefreshTokenEncrypted: null,
   codexTokenExpiresAt: null,

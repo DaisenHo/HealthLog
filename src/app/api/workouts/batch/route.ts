@@ -66,6 +66,7 @@ import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { apiHandler, isScopedCredential, requireAuth } from "@/lib/api-handler";
+import { routeClimbM } from "@/lib/workouts/route-climb";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
@@ -259,10 +260,15 @@ async function postBatch(request: NextRequest): Promise<Response> {
   // time before the read-time picker ever ran. One indexed
   // findUnique per batch — well under the cost of letting the
   // duplicate persist and carrying it forward on every read.
+  // The same read carries the route opt-in: a GPS track is kept only when
+  // the person turned `storeWorkoutRoutes` on. While it is off the workout
+  // is stored and the track dropped, with the same per-entry status, so a
+  // client cannot tell the two apart and needs no new branch.
   const userPriority = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { sourcePriorityJson: true },
+    select: { sourcePriorityJson: true, storeWorkoutRoutes: true },
   });
+  const keepRoutes = userPriority?.storeWorkoutRoutes === true;
 
   // Content-Length pre-flight. The body cap exists to bound the
   // request-pipeline cost BEFORE Node has to read the full payload —
@@ -440,12 +446,13 @@ async function postBatch(request: NextRequest): Promise<Response> {
       0,
       Math.round((w.endedAt.getTime() - w.startedAt.getTime()) / 1000),
     );
-    const route = w.route
-      ? {
-          geometry: w.route.geometry as unknown,
-          sampleTimestamps: (w.route.sampleTimestamps ?? null) as unknown,
-        }
-      : null;
+    const route =
+      w.route && keepRoutes
+        ? {
+            geometry: w.route.geometry as unknown,
+            sampleTimestamps: (w.route.sampleTimestamps ?? null) as unknown,
+          }
+        : null;
     const samples = w.samples
       ? {
           samples: w.samples as unknown,
@@ -464,7 +471,9 @@ async function postBatch(request: NextRequest): Promise<Response> {
       maxHeartRate: w.maxHeartRate ?? null,
       minHeartRate: w.minHeartRate ?? null,
       stepCount: w.stepCount ?? null,
-      elevationM: w.elevationM ?? null,
+      // A kept track fills the climb when the source sent none, so the figure
+      // lives on the workout row and no reader has to open the track for it.
+      elevationM: w.elevationM ?? (route ? routeClimbM(route.geometry) : null),
       pauseDurationSec: w.pauseDurationSec ?? null,
       // `EXTERNAL` under a scoped credential, and nothing else: the guard
       // above refused any body that named a source, so nothing asserted is
@@ -908,6 +917,10 @@ async function postBatch(request: NextRequest): Promise<Response> {
       enriched: enrichedCount,
       updated: updatedCount,
       skipped: skipped.length,
+      // Tracks the body carried but the opt-in told us not to keep.
+      routes_dropped: keepRoutes
+        ? 0
+        : workouts.filter((w) => w.route != null).length,
     },
   });
 

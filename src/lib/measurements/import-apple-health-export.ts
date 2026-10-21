@@ -227,6 +227,8 @@ interface PreparedWorkout {
   externalId: string;
   externalSourceVersion: string | null;
   metadata: Prisma.JsonValue | null;
+  /** The `<FileReference path>` of the workout's GPS track, when it has one. */
+  routePath?: string;
 }
 
 type CumulativeSourceSubtotals = Map<string, number>;
@@ -331,13 +333,49 @@ export function hashCumulativeSourceIdentity(
  * Returns `null` for unparseable values so the caller can skip the
  * row rather than poisoning the batch.
  */
+/** Apple's symbolic `HKCategoryValueAppleStandHour` values in `export.xml`. */
+const STAND_HOUR_STOOD = "HKCategoryValueAppleStandHourStood";
+const STAND_HOUR_IDLE = "HKCategoryValueAppleStandHourIdle";
+
+/** An idle stand hour: skipped on purpose, never a row and never "unparseable". */
+export function isIdleStandHour(
+  hkIdentifier: string,
+  rawValue: string | undefined,
+): boolean {
+  return (
+    hkIdentifier === "HKCategoryTypeIdentifierAppleStandHour" &&
+    rawValue === STAND_HOUR_IDLE
+  );
+}
+
+function minutesBetween(startDate: string, endDate: string): number | null {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null;
+  }
+  return Math.max(0, (end.getTime() - start.getTime()) / 60_000);
+}
+
 export function parseRecordValue(
   hkIdentifier: string,
   rawValue: string | undefined,
   startDate: string,
   endDate: string,
 ): { value: number; sleepStage?: number } | null {
+  // Mindful sessions carry no quantity (Apple writes no `value`, or the
+  // not-applicable sentinel): the reading is the session length, minutes
+  // from the record's own dates, the same contract as sleep.
+  if (hkIdentifier === "HKCategoryTypeIdentifierMindfulSession") {
+    const minutes = minutesBetween(startDate, endDate);
+    return minutes === null ? null : { value: minutes };
+  }
   if (rawValue === undefined) return null;
+  // A stood hour is one; an idle hour is dropped by the caller before it
+  // gets here (`isIdleStandHour`), so it never becomes a row.
+  if (hkIdentifier === "HKCategoryTypeIdentifierAppleStandHour") {
+    return rawValue === STAND_HOUR_STOOD ? { value: 1 } : null;
+  }
   if (hkIdentifier === "HKCategoryTypeIdentifierSleepAnalysis") {
     const stage = SLEEP_STAGE_NAME_TO_CODEPOINT[rawValue];
     if (stage === undefined) return null;
@@ -410,6 +448,14 @@ export interface StreamParseInput {
    * `WORKOUT_FLUSH_BATCH`.
    */
   workoutBatchSize?: number;
+  /**
+   * Called once per workout whose `<WorkoutRoute>` references a GPX file,
+   * with the workout's `externalId` and the path Apple wrote. Only passed
+   * when the account keeps workout routes (`storeWorkoutRoutes`); without it
+   * the reference is not even read. The track is attached after the XML
+   * pass, from the archive (`src/lib/apple-health/route-import.ts`).
+   */
+  onWorkoutRoute?: (ref: { externalId: string; path: string }) => void;
 }
 
 /**
@@ -432,6 +478,7 @@ export async function streamParseExportXml(
     prisma,
     onProgress,
     onExportDate,
+    onWorkoutRoute,
     spotBatchSize = SPOT_FLUSH_BATCH,
     workoutBatchSize = WORKOUT_FLUSH_BATCH,
   } = input;
@@ -1210,6 +1257,13 @@ export async function streamParseExportXml(
         return;
       }
 
+      if (isIdleStandHour(hkType, attrs.value)) {
+        // An hour without standing is the absence of a stood hour. Counted
+        // so the import summary still shows the archive carried it.
+        deferred[`${hkType}::idle`] = (deferred[`${hkType}::idle`] ?? 0) + 1;
+        return;
+      }
+
       const parsedValue = parseRecordValue(
         hkType,
         attrs.value,
@@ -1450,6 +1504,17 @@ export async function streamParseExportXml(
     }
 
     if (
+      name === "FileReference" &&
+      onWorkoutRoute &&
+      currentWorkout &&
+      typeof attrs.path === "string" &&
+      attrs.path.toLowerCase().endsWith(".gpx")
+    ) {
+      currentWorkout.routePath = attrs.path;
+      return;
+    }
+
+    if (
       name === "Me" ||
       name === "ActivitySummary" ||
       name === "WorkoutEvent" ||
@@ -1486,6 +1551,12 @@ export async function streamParseExportXml(
       }
     }
     if (tagName === "Workout" && currentWorkout) {
+      if (currentWorkout.routePath && onWorkoutRoute) {
+        onWorkoutRoute({
+          externalId: currentWorkout.externalId,
+          path: currentWorkout.routePath,
+        });
+      }
       workoutBatch.push(currentWorkout);
       currentWorkout = null;
     }

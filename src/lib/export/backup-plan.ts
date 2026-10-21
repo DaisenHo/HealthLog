@@ -1038,6 +1038,7 @@ export const USER_COLUMN_BACKUP_CLASS = {
   coachPrefsJson: "SETTING",
   documentsAutoAiRead: "SETTING",
   labsLocalOcrEnabled: "SETTING",
+  storeWorkoutRoutes: "SETTING",
   // Where the person is in the app's introductions. Without these a restored
   // account is sent through setup and the tour again, and asked to accept the
   // disclaimer it already accepted (a newer disclaimer still asks, because the

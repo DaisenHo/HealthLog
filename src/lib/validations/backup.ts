@@ -2175,6 +2175,7 @@ const accountSettingsBackupSchema = z
     coachPrefsJson: z.unknown().optional(),
     documentsAutoAiRead: z.boolean().optional(),
     labsLocalOcrEnabled: z.boolean().optional(),
+    storeWorkoutRoutes: z.boolean().optional(),
     onboardingCompletedAt: isoDateTime.nullable().optional(),
     onboardingTourCompleted: z.boolean().optional(),
     onboardingTourProgressJson: z.unknown().optional(),

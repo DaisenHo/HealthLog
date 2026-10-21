@@ -333,6 +333,11 @@ const INTEGER_DISPLAY_TYPES: ReadonlySet<string> = new Set([
   // grain for these day-cumulative counts.
   "ACTIVE_ENERGY_BURNED",
   "TIME_IN_DAYLIGHT",
+  // v1.44 — the minute rings, mindful minutes and stood hours.
+  "EXERCISE_MINUTES",
+  "STAND_MINUTES",
+  "STAND_HOURS",
+  "MINDFUL_MINUTES",
 ]);
 
 /**

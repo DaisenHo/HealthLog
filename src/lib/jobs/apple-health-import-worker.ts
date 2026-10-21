@@ -34,6 +34,11 @@ import { streamAppleHealthEcgMembers } from "@/lib/apple-health/archive-stream";
 import { parseAppleHealthEcgCsv } from "@/lib/apple-health/ecg-csv";
 import { importAppleHealthEcg } from "@/lib/apple-health/ecg-import";
 import { extractExportXml } from "@/lib/import/unzip-export-xml";
+import { annotate } from "@/lib/logging/context";
+import {
+  importAppleHealthWorkoutRoutes,
+  type WorkoutRouteReference,
+} from "@/lib/apple-health/route-import";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { invalidateStatusInsightsForTypes } from "@/lib/insights/status-invalidation";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
@@ -428,8 +433,11 @@ export async function handleAppleHealthImport(
     // user has no preference set.
     const userRow = await prisma.user.findUnique({
       where: { id: userId },
-      select: { timezone: true },
+      select: { timezone: true, storeWorkoutRoutes: true },
     });
+    // GPS tracks are read from the archive only when the person keeps them.
+    const keepRoutes = userRow?.storeWorkoutRoutes === true;
+    const routeReferences: WorkoutRouteReference[] = [];
     const userTimezone =
       userRow?.timezone && userRow.timezone.length > 0
         ? userRow.timezone
@@ -471,6 +479,9 @@ export async function handleAppleHealthImport(
         userId,
         userTimezone,
         prisma,
+        ...(keepRoutes
+          ? { onWorkoutRoute: (ref) => void routeReferences.push(ref) }
+          : {}),
         onProgress: async (snapshot) => {
           // The phase label here is what the polling endpoint surfaces;
           // map "parsing" / "upserting" through verbatim.
@@ -534,6 +545,31 @@ export async function handleAppleHealthImport(
     } catch {
       const completed = ecg.imported + ecg.updated + ecg.skipped + ecg.failed;
       ecg.failed += Math.max(0, ecg.discovered - completed);
+    }
+
+    // Workout GPS tracks, on opt-in only. Fail-soft like the ECGs: the
+    // workouts are committed, a track that cannot be read is only counted.
+    // Read one member at a time from the archive; nothing about a track
+    // reaches the result but the count.
+    if (routeReferences.length > 0) {
+      const routes = await importAppleHealthWorkoutRoutes({
+        archivePath: uploadPath,
+        userId,
+        references: routeReferences,
+        prisma,
+      });
+      result.workouts.routesAttached = routes.attached;
+      annotate({
+        action: { name: "apple_health.import.workout_routes" },
+        meta: {
+          referenced: routeReferences.length,
+          discovered: routes.discovered,
+          attached: routes.attached,
+          skipped: routes.skipped,
+          failed: routes.failed,
+        },
+      });
+      routeReferences.length = 0;
     }
 
     // Done. Persist the terminal envelope.

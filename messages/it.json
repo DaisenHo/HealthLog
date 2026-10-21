@@ -911,6 +911,12 @@
     "unitRating": "livello",
     "typeWho5Score": "Punteggio WHO-5",
     "typeSciScore": "Punteggio SCI",
+    "typeExerciseMinutes": "Minuti di esercizio",
+    "typeStandMinutes": "Minuti in piedi",
+    "typeStandHours": "Ore in piedi",
+    "typeMindfulMinutes": "Minuti di consapevolezza",
+    "typeStateOfMindValence": "Stato d’animo",
+    "typeAfibBurden": "Carico di FA",
     "durationReadAs": "Letto come {duration}",
     "durationHoursMinutes": "{hours} h {minutes} min",
     "durationHoursOnly": "{hours} h",
@@ -3565,6 +3571,7 @@
       "falls": "cadute",
       "years": "anni",
       "breathingEvents": "eventi",
+      "standHours": "ore",
       "respiratoryRate": "respiri/min"
     },
     "sleep": {
@@ -7154,6 +7161,12 @@
         "security": "Attività dell'account e di sicurezza (sessioni, registro degli accessi)",
         "profile": "Il tuo profilo, l'anamnesi e i dati della cartella sanitaria",
         "modules": "Dati di ogni modulo: {list}"
+      },
+      "workoutRoutes": {
+        "title": "Percorsi degli allenamenti",
+        "description": "Conserva il tracciato GPS dei nuovi allenamenti dall’app per iPhone e dall’esportazione di Apple Salute.",
+        "detail": "Disattivato di default. Un percorso mostra dove vivi, lavori e ti alleni, quindi viene conservato solo dopo averlo attivato. Gli allenamenti vengono conservati comunque e nessuna funzione IA legge mai un percorso. Disattivandolo si fermano i nuovi percorsi; quelli già conservati restano finché non elimini l’allenamento.",
+        "loadError": "Impossibile caricare l’impostazione dei percorsi."
       },
       "retention": {
         "title": "Conservazione",

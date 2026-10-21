@@ -22,4 +22,9 @@ export const workoutKeys = {
     sportType?: string;
   }) => ["workouts", "recent", opts] as const,
   workoutDetail: (id: string) => ["workouts", id] as const,
+  /**
+   * v1.44 — the workout-route opt-in. Its own root, so invalidating the
+   * workout caches after a sync never refetches the setting.
+   */
+  workoutRoutesPref: () => ["workout-routes-pref"] as const,
 };

@@ -53,9 +53,9 @@ function resolves(key: string): boolean {
 
 describe("report selection catalogue", () => {
   it("carries every measurement type and every structured leaf", () => {
-    expect(MEASUREMENT_LEAF_IDS).toHaveLength(77);
+    expect(MEASUREMENT_LEAF_IDS).toHaveLength(83);
     expect(STRUCTURED_LEAF_IDS).toHaveLength(18);
-    expect(ALL_LEAF_IDS).toHaveLength(95);
+    expect(ALL_LEAF_IDS).toHaveLength(101);
   });
 
   it("resolves a label for every leaf", () => {
@@ -145,13 +145,17 @@ describe("template purity", () => {
     expect(unknown).toEqual([]);
   });
 
-  it("fences exactly the eight leaves the design names", () => {
+  it("fences exactly the ten leaves the design names", () => {
     expect([...SENSITIVE_LEAF_IDS].sort()).toEqual(
       [
         "ANAMNESIS",
         "CYCLE",
         "FAMILY_HISTORY",
         "GAD7_SCORE",
+        // v1.44 — mindful minutes and the State of Mind valence are
+        // mental-health self-care and self-report.
+        "MINDFUL_MINUTES",
+        "STATE_OF_MIND_VALENCE",
         "MOOD",
         "PHQ9_SCORE",
         "SCI_SCORE",

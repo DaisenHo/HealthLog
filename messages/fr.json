@@ -911,6 +911,12 @@
     "unitRating": "niveau",
     "typeWho5Score": "Score WHO-5",
     "typeSciScore": "Score SCI",
+    "typeExerciseMinutes": "Minutes d’exercice",
+    "typeStandMinutes": "Minutes debout",
+    "typeStandHours": "Heures debout",
+    "typeMindfulMinutes": "Minutes de pleine conscience",
+    "typeStateOfMindValence": "État d’esprit",
+    "typeAfibBurden": "Charge de FA",
     "durationReadAs": "Compris comme {duration}",
     "durationHoursMinutes": "{hours} h {minutes} min",
     "durationHoursOnly": "{hours} h",
@@ -3565,6 +3571,7 @@
       "falls": "chutes",
       "years": "ans",
       "breathingEvents": "événements",
+      "standHours": "heures",
       "respiratoryRate": "respirations/min"
     },
     "sleep": {
@@ -7154,6 +7161,12 @@
         "security": "Activité du compte et de sécurité (sessions, journal de connexion)",
         "profile": "Votre profil, vos antécédents médicaux et les informations du dossier de santé",
         "modules": "Données de chaque module : {list}"
+      },
+      "workoutRoutes": {
+        "title": "Parcours d’entraînement",
+        "description": "Conserver le tracé GPS des nouveaux entraînements de l’app iPhone et de l’export Apple Santé.",
+        "detail": "Désactivé par défaut. Un parcours montre où vous habitez, travaillez et vous entraînez : il n’est donc conservé qu’une fois l’option activée. Les entraînements sont conservés dans tous les cas, et aucune fonction d’IA ne lit jamais un parcours. Désactiver l’option arrête les nouveaux parcours ; ceux déjà conservés restent jusqu’à la suppression de l’entraînement.",
+        "loadError": "Impossible de charger le réglage des parcours."
       },
       "retention": {
         "title": "Conservation",
