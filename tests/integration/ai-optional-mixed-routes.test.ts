@@ -23,6 +23,7 @@ import {
   type StateName,
 } from "./ai-optional-fixtures";
 import { getPrismaClient } from "./setup";
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -94,10 +95,12 @@ async function seed(recordId: string): Promise<void> {
     where: { id: recordId },
     data: {
       // Generated now: only text written today is served as today's read.
-      insightsCachedText: JSON.stringify({
-        ...BRIEFING,
-        briefingGeneratedAt: new Date().toISOString(),
-      }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({
+          ...BRIEFING,
+          briefingGeneratedAt: new Date().toISOString(),
+        }),
+      ),
       insightsCachedAt: new Date(),
       insightsCachedLocale: "en",
     },

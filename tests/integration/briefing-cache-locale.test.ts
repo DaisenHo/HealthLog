@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -67,10 +68,12 @@ async function seedUserWithCachedBriefing(cachedLocale: string | null) {
       locale: "de",
       insightsCachedAt: new Date(),
       // Generated now: only text written today is served as today's read.
-      insightsCachedText: JSON.stringify({
-        dailyBriefing: BRIEFING,
-        briefingGeneratedAt: new Date().toISOString(),
-      }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({
+          dailyBriefing: BRIEFING,
+          briefingGeneratedAt: new Date().toISOString(),
+        }),
+      ),
       insightsCachedLocale: cachedLocale,
       // The briefing is shown only while its AI capability is available, so
       // the account has its own provider (presence only) and a receipt.

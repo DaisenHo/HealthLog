@@ -108,7 +108,7 @@ function mockUser(overrides: Record<string, unknown> = {}) {
   findUnique.mockResolvedValue({
     insightsPrivacyMode: "aggregated",
     insightsCachedAt: null,
-    insightsCachedText: null,
+    insightsCachedTextEncrypted: null,
     insightsExcludeMetrics: [],
     insightsSnapshotHash: null,
     insightsBriefingRerollDate: null,
@@ -165,7 +165,7 @@ describe("comprehensive timeout honouring", () => {
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });
 
     expect(outcome.status).toBe("failed");
-    // No cache row written → the prior `insightsCachedText` (last good) survives.
+    // No cache row written → the prior `insightsCachedTextEncrypted` (last good) survives.
     expect(userUpdate).not.toHaveBeenCalled();
     // A dated failure marker is recorded so the read path can surface a hint.
     expect(recordBriefingFailure).toHaveBeenCalledWith(

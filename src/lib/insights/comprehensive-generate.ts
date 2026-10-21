@@ -1279,7 +1279,7 @@ export async function generateComprehensiveInsight(
     });
     // v1.25 — record a dated failure marker so the read path can surface a
     // discreet "couldn't refresh" hint alongside the preserved last-good
-    // briefing. No cache row is written here, so `insightsCachedText` (the
+    // briefing. No cache row is written here, so `insightsCachedTextEncrypted` (the
     // last good payload) stays intact and the surface never blanks.
     void recordBriefingFailure({
       userId,

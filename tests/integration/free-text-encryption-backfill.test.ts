@@ -30,6 +30,7 @@ import {
   runFreeTextEncryptionBackfillForUser,
 } from "@/lib/jobs/free-text-encryption-backfill";
 import {
+  INSIGHTS_CACHE_SELECT,
   insightsCacheWrite,
   openInsightsCachedText,
 } from "@/lib/insights/cached-text-cipher";
@@ -498,73 +499,31 @@ describe("free-text encryption backfill (real Postgres)", () => {
     expect(second.sent).toEqual([]);
   });
 
-  it("seals the cached insights payload, keeps updatedAt, and converges", async () => {
+  it("has no readable insights cache left after migration 0430", async () => {
     const prisma = getPrismaClient();
-    await Promise.all([seedUser("ic-a"), seedUser("ic-b"), seedUser("ic-c")]);
-    const payload = JSON.stringify({
-      dailyBriefing: { paragraph: "Pressure eased this week." },
-    });
-    // ic-a: written by the previous release, in the clear.
+    const columns = await prisma.$queryRaw<{ column_name: string }[]>`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name LIKE 'insights_cached_text%'
+      ORDER BY column_name`;
+    expect(columns.map((c) => c.column_name)).toEqual([
+      "insights_cached_text_encrypted",
+    ]);
+    const indexes = await prisma.$queryRaw<{ indexname: string }[]>`
+      SELECT indexname FROM pg_indexes
+      WHERE indexname = 'users_insights_cached_text_backfill_idx'`;
+    expect(indexes).toEqual([]);
+
+    // The sealed column still round-trips through the one module.
+    await seedUser("ic-a");
     await prisma.user.update({
       where: { id: "ic-a" },
-      data: { insightsCachedText: payload },
-    });
-    // ic-b: written the current way.
-    await prisma.user.update({
-      where: { id: "ic-b" },
       data: insightsCacheWrite("current"),
     });
-    const before = await prisma.user.findUniqueOrThrow({
+    const row = await prisma.user.findUniqueOrThrow({
       where: { id: "ic-a" },
-      select: { updatedAt: true },
+      select: INSIGHTS_CACHE_SELECT,
     });
-
-    const { boss, sent } = makeCapturingBoss();
-    setGlobalBoss(boss as never);
-    const discovered = await enqueueBootTimeFreeTextEncryptionBackfill();
-    expect(discovered.error).toBeNull();
-    expect(sent.map((s) => s.userId)).toEqual(["ic-a"]);
-
-    const summary = await runFreeTextEncryptionBackfillForUser("ic-a");
-    expect(summary.insightsCachesMigrated).toBe(1);
-
-    const rowA = await prisma.user.findUniqueOrThrow({
-      where: { id: "ic-a" },
-      select: {
-        insightsCachedText: true,
-        insightsCachedTextEncrypted: true,
-        updatedAt: true,
-      },
-    });
-    expect(rowA.insightsCachedText).toBeNull();
-    expect(rowA.insightsCachedTextEncrypted).not.toBeNull();
-    expect(openInsightsCachedText(rowA)).toBe(payload);
-    expect(rowA.updatedAt).toEqual(before.updatedAt);
-
-    const rowB = await prisma.user.findUniqueOrThrow({
-      where: { id: "ic-b" },
-      select: { insightsCachedText: true, insightsCachedTextEncrypted: true },
-    });
-    expect(openInsightsCachedText(rowB)).toBe("current");
-
-    const again = await runFreeTextEncryptionBackfillForUser("ic-a");
-    expect(again.insightsCachesMigrated).toBe(0);
-    const second = makeCapturingBoss();
-    setGlobalBoss(second.boss as never);
-    await enqueueBootTimeFreeTextEncryptionBackfill();
-    expect(second.sent).toEqual([]);
-  });
-
-  it("has the partial index migration 0411 adds", async () => {
-    const indexes = await getPrismaClient().$queryRaw<
-      { indexname: string; indexdef: string }[]
-    >`
-      SELECT indexname, indexdef FROM pg_indexes
-      WHERE indexname = 'users_insights_cached_text_backfill_idx'`;
-    expect(indexes).toHaveLength(1);
-    expect(indexes[0].indexdef).toContain(
-      "WHERE (insights_cached_text IS NOT NULL)",
-    );
+    expect(openInsightsCachedText(row)).toBe("current");
   });
 
   it("has the partial indexes migration 0361 adds", async () => {

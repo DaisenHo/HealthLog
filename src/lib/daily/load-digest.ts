@@ -6,7 +6,7 @@
  * briefing lift) rides `readDashboardSnapshotCached` — the SAME SWR cell the
  * dashboard already serves, so the digest never re-runs the snapshot builder
  * within its TTL and never reaches an AI provider (the briefing is lifted
- * read-only from `User.insightsCachedText`). Two light deterministic reads add
+ * read-only from `User.insightsCachedTextEncrypted`). Two light deterministic reads add
  * the rail's non-snapshot inputs: broken integrations and overdue Vorsorge
  * reminders. Module gating is inherited from the snapshot (already
  * module-gated at the build layer) plus the resolved module map the item

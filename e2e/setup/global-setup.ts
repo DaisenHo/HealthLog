@@ -802,7 +802,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
          codex_connected_at = NULL,
          codex_connection_status = 'disconnected',
          insights_cached_at = NULL,
-         insights_cached_text = NULL,
+         insights_cached_text_encrypted = NULL,
          onboarding_completed_at = EXCLUDED.onboarding_completed_at,
          onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
          module_preferences_json = EXCLUDED.module_preferences_json,

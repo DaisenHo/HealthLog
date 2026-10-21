@@ -288,7 +288,7 @@ describe("POST /api/insights/generate — chain fallback", () => {
     const prisma = getPrismaClient();
     await prisma.user.update({
       where: { username: "chain-user" },
-      data: { insightsCachedAt: null, insightsCachedText: null },
+      data: { insightsCachedAt: null, insightsCachedTextEncrypted: null },
     });
 
     // Second call: cache should reorder so Anthropic is the first

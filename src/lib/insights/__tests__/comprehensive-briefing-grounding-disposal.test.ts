@@ -92,7 +92,10 @@ vi.mock("@/lib/cache/invalidate", () => ({
 }));
 
 import { generateComprehensiveInsight } from "../comprehensive-generate";
-import { openInsightsCachedText } from "@/lib/insights/cached-text-cipher";
+import {
+  openInsightsCachedText,
+  sealInsightsCachedText,
+} from "@/lib/insights/cached-text-cipher";
 
 // The cached payload is sealed at rest, so its writes need a key.
 vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
@@ -148,7 +151,7 @@ function cachedUser(over: Record<string, unknown> = {}) {
   return {
     insightsPrivacyMode: "aggregated",
     insightsCachedAt: null,
-    insightsCachedText: null,
+    insightsCachedTextEncrypted: null,
     insightsExcludeMetrics: [],
     // Never equal to the freshly computed hash, so a full generation runs.
     insightsSnapshotHash: null,
@@ -189,7 +192,7 @@ describe("briefing grounding — disposal", () => {
     findUnique.mockResolvedValue(
       cachedUser({
         insightsCachedAt: new Date("2026-07-15T03:00:00.000Z"),
-        insightsCachedText: PREVIOUS_PAYLOAD,
+        insightsCachedTextEncrypted: sealInsightsCachedText(PREVIOUS_PAYLOAD),
       }),
     );
     // Both passes carry the same fabricated figure: a content failure.

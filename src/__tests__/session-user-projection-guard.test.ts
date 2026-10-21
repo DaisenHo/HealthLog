@@ -127,7 +127,7 @@ describe("SESSION_USER_SELECT leaves out bytes and secrets", () => {
 
   it("selects no credential, secret or large cached text", () => {
     const secretShaped =
-      /Encrypted$|^passwordHash$|^totpSecret|^totpLastStep$|^telegramBotToken$|^insightsCachedText$|^environmentAqHistoryJson$/;
+      /Encrypted$|^passwordHash$|^totpSecret|^totpLastStep$|^telegramBotToken$|^environmentAqHistoryJson$/;
     const secrets = columns
       .map((c) => c.name)
       .filter((name) => secretShaped.test(name));

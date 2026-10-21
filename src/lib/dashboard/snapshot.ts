@@ -27,7 +27,7 @@
  *     inside the same fast window.
  *
  * No LLM is reachable from this builder. The briefing is lifted
- * read-only from `User.insightsCachedText`; a cache miss / stale row
+ * read-only from `User.insightsCachedTextEncrypted`; a cache miss / stale row
  * yields `briefingState: "preparing"` (with the last good briefing
  * delivered under `briefingStale: true` when one exists) and the
  * `insight-pregenerate` cron refills it — or `"no-provider"` when no
@@ -943,7 +943,7 @@ export function applyBriefingCapability(
 }
 
 /**
- * Read-only briefing lift. Parses `User.insightsCachedText`, validates
+ * Read-only briefing lift. Parses `User.insightsCachedTextEncrypted`, validates
  * the `dailyBriefing` block, and reports a four-state. NEVER calls the
  * provider chain — `hasProvider` is a credential-PRESENCE thunk (two
  * narrow reads, no decrypt, no network) evaluated only on the

@@ -136,13 +136,6 @@ model User {
   useCentralCodex             Boolean   @default(false) @map("use_central_codex")
   insightsPrivacyMode         String    @default("aggregated") @map("insights_privacy_mode") // "aggregated" | "raw"
   insightsCachedAt            DateTime? @map("insights_cached_at")
-  /// @internal: legacy plaintext cache of the AI insights payload, read only
-  /// as a fallback for rows the free-text encryption backfill has not reached
-  /// yet (v1.43.7). Every write since then goes to `insightsCachedTextEncrypted`
-  /// and leaves this NULL; the backfill seals and nulls it on the old rows.
-  /// DROP this column in a later release, once the backfill reports zero
-  /// remaining rows on every instance.
-  insightsCachedText          String?   @map("insights_cached_text")
   /// v1.43.7 — the cached AI insights payload (briefing, per-domain readings,
   /// recommendations; JSON), AES-256-GCM binary layout under
   /// `INSIGHTS_CACHED_TEXT_AAD`. Read and written only through
@@ -6701,7 +6694,7 @@ model HostMetric {
 // (no prompt-tuning flow yet — that ratchet is v1.4.17).
 //
 // Privacy: server-side fills providerType + promptVersion from the
-// user's most recent cached payload (User.insightsCachedText) so the
+// user's most recent cached payload (User.insightsCachedTextEncrypted) so the
 // client can't tamper with the attribution.
 //
 // `(userId, recommendationId, recommendationText)` is the dedup key.

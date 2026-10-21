@@ -33,6 +33,7 @@ import { NextRequest } from "next/server";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables, switchSessionTo } from "./setup";
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -292,7 +293,9 @@ frontDoorRead("GET /api/daily/digest", {
     await getPrismaClient().user.update({
       where: { id: userId },
       data: {
-        insightsCachedText: cachedBriefing(marker),
+        insightsCachedTextEncrypted: sealInsightsCachedText(
+          cachedBriefing(marker),
+        ),
         insightsCachedAt: new Date(),
         ...ownProvider(),
       },
