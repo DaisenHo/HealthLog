@@ -12,7 +12,11 @@
 -- from that one daily-HRV mapper per provider (their externalIds end in
 -- `:hrv`), so source and type identify them. Tombstones move too, so the sync
 -- feed and a restore see the same type. A row whose RMSSD twin already exists
--- under the `(user, type, source, externalId)` key stays where it is.
+-- under either unique identity, `(user, type, source, externalId)` or
+-- `(user, type, measuredAt, source, sleepStage)`, cannot move without
+-- breaking that key and aborting the block; it is tombstoned instead, since
+-- the twin holds the night. The second identity matters for a row with no
+-- externalId, or a different one, on the same night as an RMSSD row.
 --
 -- Derived state that would otherwise keep the old filing:
 --   - the FITBIT / GOOGLE_HEALTH `HEART_RATE_VARIABILITY` rollup buckets are
@@ -38,6 +42,44 @@
 
 DO $migration$
 BEGIN
+  -- An RMSSD tombstone on the night of a live legacy row with no live RMSSD
+  -- twin would make that row look twinned and lose the night. It holds
+  -- nothing, so it goes and the live row moves into its place.
+  DELETE FROM "measurements" dead
+  WHERE dead."type" = 'HRV_RMSSD'
+    AND dead."source" IN ('FITBIT', 'GOOGLE_HEALTH')
+    AND dead."deleted_at" IS NOT NULL
+    AND EXISTS (
+      SELECT 1
+      FROM "measurements" m
+      WHERE m."user_id" = dead."user_id"
+        AND m."type" = 'HEART_RATE_VARIABILITY'
+        AND m."source" = dead."source"
+        AND m."deleted_at" IS NULL
+        AND (
+          m."external_id" = dead."external_id"
+          OR (
+            m."measured_at" = dead."measured_at"
+            AND m."sleep_stage" IS NOT DISTINCT FROM dead."sleep_stage"
+          )
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "measurements" live
+          WHERE live."user_id" = m."user_id"
+            AND live."type" = 'HRV_RMSSD'
+            AND live."source" = m."source"
+            AND live."deleted_at" IS NULL
+            AND (
+              live."external_id" = m."external_id"
+              OR (
+                live."measured_at" = m."measured_at"
+                AND live."sleep_stage" IS NOT DISTINCT FROM m."sleep_stage"
+              )
+            )
+        )
+    );
+
   WITH moved AS (
     UPDATE "measurements" m
     SET "type" = 'HRV_RMSSD',
@@ -51,13 +93,31 @@ BEGIN
         WHERE twin."user_id" = m."user_id"
           AND twin."type" = 'HRV_RMSSD'
           AND twin."source" = m."source"
-          AND twin."external_id" = m."external_id"
+          AND (
+            twin."external_id" = m."external_id"
+            OR (
+              twin."measured_at" = m."measured_at"
+              AND twin."sleep_stage" IS NOT DISTINCT FROM m."sleep_stage"
+            )
+          )
       )
     RETURNING m."user_id"
   )
   DELETE FROM "measurement_rollups" r
   WHERE r."type" = 'HRV_RMSSD'
     AND r."user_id" IN (SELECT DISTINCT "user_id" FROM moved);
+
+  -- What did not move had an RMSSD twin under one of the two identities.
+  -- The twin holds the night; the row left behind would keep an RMSSD value
+  -- in the SDNN series, so it becomes a tombstone (the sync feed then tells
+  -- every client to drop it).
+  UPDATE "measurements"
+  SET "deleted_at" = CURRENT_TIMESTAMP,
+      "updated_at" = CURRENT_TIMESTAMP,
+      "sync_version" = "sync_version" + 1
+  WHERE "type" = 'HEART_RATE_VARIABILITY'
+    AND "source" IN ('FITBIT', 'GOOGLE_HEALTH')
+    AND "deleted_at" IS NULL;
 
   DELETE FROM "measurement_rollups"
   WHERE "type" = 'HEART_RATE_VARIABILITY'

@@ -94,6 +94,19 @@ describe("restoring a backup written before migration 0420", () => {
         row("HRV_RMSSD", "FITBIT", "2026-09-03", 44),
         // A real SDNN reading stays where it is.
         row("HEART_RATE_VARIABILITY", "APPLE_HEALTH", "2026-09-01", 52),
+        // No externalId: twinned with a live RMSSD row only by night.
+        {
+          ...row("HEART_RATE_VARIABILITY", "GOOGLE_HEALTH", "2026-09-04", 77),
+          externalId: null,
+        },
+        row("HRV_RMSSD", "GOOGLE_HEALTH", "2026-09-04", 36),
+        // Twinned only with a tombstone: the live row wins the night.
+        row("HEART_RATE_VARIABILITY", "FITBIT", "2026-09-05", 45),
+        {
+          ...row("HRV_RMSSD", "FITBIT", "2026-09-05", 1),
+          // Recent, so the tombstone horizon does not drop it first.
+          deletedAt: new Date(Date.now() - 86_400_000),
+        },
       ],
     });
     const legacyBest = await prisma.measurement.findFirstOrThrow({
@@ -137,7 +150,7 @@ describe("restoring a backup written before migration 0420", () => {
     expect(response.status).toBe(200);
 
     const restored = await prisma.measurement.findMany({
-      where: { userId: owner.id },
+      where: { userId: owner.id, deletedAt: null },
       select: { type: true, source: true, value: true },
       orderBy: [{ source: "asc" }, { measuredAt: "asc" }],
     });
@@ -145,8 +158,16 @@ describe("restoring a backup written before migration 0420", () => {
       { type: "HEART_RATE_VARIABILITY", source: "APPLE_HEALTH", value: 52 },
       { type: "HRV_RMSSD", source: "FITBIT", value: 41 },
       { type: "HRV_RMSSD", source: "FITBIT", value: 44 },
+      { type: "HRV_RMSSD", source: "FITBIT", value: 45 },
       { type: "HRV_RMSSD", source: "GOOGLE_HEALTH", value: 38 },
+      { type: "HRV_RMSSD", source: "GOOGLE_HEALTH", value: 36 },
     ]);
+    // The tombstone that shared the live row's night is the one left out.
+    expect(
+      await prisma.measurement.count({
+        where: { userId: owner.id, deletedAt: { not: null } },
+      }),
+    ).toBe(0);
     // The SDNN best an RMSSD reading set does not come back.
     expect(
       await prisma.personalRecord.count({ where: { userId: owner.id } }),

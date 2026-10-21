@@ -465,25 +465,58 @@ export async function restoreBackup(
   // providers report a nightly RMSSD, which their mappers had written as the
   // SDNN series. A file written before that release still carries those rows
   // as `HEART_RATE_VARIABILITY`, and restoring it verbatim would undo the
-  // migration for the account. The restore applies the same move, and skips a
-  // legacy row whose RMSSD twin the file also holds (the migration leaves that
-  // row behind; a restore must not write it under either type, since writing
-  // it as RMSSD would collide with the twin on the unique key and writing it
-  // as SDNN would put RMSSD back into the SDNN series). The twins are gathered
-  // on the first read, under both unique identities of a measurement.
-  const rmssdTwinKeys = new Set<string>();
+  // migration for the account. The restore applies the migration's rule:
+  //
+  //   - a legacy row moves to RMSSD, unless a LIVE RMSSD row of its source
+  //     holds the same night under either unique identity (external id, or
+  //     measured-at and sleep stage). Then the twin holds the night and the
+  //     legacy row is not written under either type: as RMSSD it would break
+  //     the unique key, as SDNN it would put RMSSD back into the SDNN series;
+  //   - a legacy row whose only twin is a tombstone wins: the tombstone is the
+  //     row left out, since it shares the key and holds nothing;
+  //   - a legacy tombstone with any RMSSD twin is left out.
+  //
+  // The keys are gathered on the first read.
+  const rmssdLiveKeys = new Set<string>();
+  const rmssdAnyKeys = new Set<string>();
+  const legacyLiveKeys = new Set<string>();
   const noteRmssdTwin = (row: BackupMeasurement) => {
+    if (isLegacyRmssdRow(row)) {
+      if (row.deletedAt == null) {
+        for (const key of rmssdTwinKeysOf(row)) legacyLiveKeys.add(key);
+      }
+      return;
+    }
     if (
       row.type === "HRV_RMSSD" &&
       row.source !== undefined &&
       LEGACY_RMSSD_SOURCES.has(row.source)
     ) {
-      for (const key of rmssdTwinKeysOf(row)) rmssdTwinKeys.add(key);
+      for (const key of rmssdTwinKeysOf(row)) {
+        rmssdAnyKeys.add(key);
+        if (row.deletedAt == null) rmssdLiveKeys.add(key);
+      }
     }
   };
-  const isShadowedLegacyRmssd = (row: BackupMeasurement) =>
-    isLegacyRmssdRow(row) &&
-    rmssdTwinKeysOf(row).some((key) => rmssdTwinKeys.has(key));
+  const anyKeyIn = (row: BackupMeasurement, keys: ReadonlySet<string>) =>
+    rmssdTwinKeysOf(row).some((key) => keys.has(key));
+  const isShadowedLegacyRmssd = (row: BackupMeasurement): boolean => {
+    if (isLegacyRmssdRow(row)) {
+      return anyKeyIn(
+        row,
+        row.deletedAt == null ? rmssdLiveKeys : rmssdAnyKeys,
+      );
+    }
+    // An RMSSD tombstone on the night a live legacy row is about to take.
+    return (
+      row.type === "HRV_RMSSD" &&
+      row.deletedAt != null &&
+      row.source !== undefined &&
+      LEGACY_RMSSD_SOURCES.has(row.source) &&
+      anyKeyIn(row, legacyLiveKeys) &&
+      !anyKeyIn(row, rmssdLiveKeys)
+    );
+  };
   // Set inside the transaction when the restore takes the account's fold
   // repair marker away; the repair is queued once the transaction commits.
   let foldRepairReset = false;

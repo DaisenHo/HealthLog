@@ -268,3 +268,120 @@ describe("migration 0420", () => {
     expect(await rollups(USER)).toEqual(rollupsBefore);
   });
 });
+
+describe("migration 0420 with an RMSSD twin on the same night", () => {
+  const TWIN_USER = "hrv-rmssd-migration-twins";
+  const at = new Date(D0 + 2 * DAY_MS);
+
+  it("tombstones the SDNN row instead of breaking the measured-at key", async () => {
+    await prisma.user.create({
+      data: { id: TWIN_USER, username: TWIN_USER, timezone: "UTC" },
+    });
+    await prisma.measurement.createMany({
+      data: [
+        // No externalId: only the (user, type, measuredAt, source,
+        // sleepStage) identity can see the twin. Moving it would violate
+        // that key and abort the whole block at boot.
+        {
+          id: "twin-sdnn-null-ext",
+          userId: TWIN_USER,
+          type: "HEART_RATE_VARIABILITY",
+          source: "FITBIT",
+          unit: "ms",
+          value: 41,
+          measuredAt: at,
+          externalId: null,
+        },
+        {
+          id: "twin-rmssd",
+          userId: TWIN_USER,
+          type: "HRV_RMSSD",
+          source: "FITBIT",
+          unit: "ms",
+          value: 42,
+          measuredAt: at,
+          externalId: `${dayKey(2)}:hrv`,
+        },
+        // A different externalId on the same night of Google Health.
+        {
+          id: "twin-sdnn-other-ext",
+          userId: TWIN_USER,
+          type: "HEART_RATE_VARIABILITY",
+          source: "GOOGLE_HEALTH",
+          unit: "ms",
+          value: 50,
+          measuredAt: at,
+          externalId: "older-id:hrv",
+        },
+        {
+          id: "twin-rmssd-google",
+          userId: TWIN_USER,
+          type: "HRV_RMSSD",
+          source: "GOOGLE_HEALTH",
+          unit: "ms",
+          value: 51,
+          measuredAt: at,
+          externalId: `${dayKey(2)}:hrv`,
+        },
+      ],
+    });
+
+    await runMigration();
+
+    const after = await prisma.measurement.findMany({
+      where: { userId: TWIN_USER },
+      select: { id: true, type: true, value: true, deletedAt: true },
+      orderBy: { id: "asc" },
+    });
+    expect(
+      after.map((r) => [r.id, r.type, r.value, r.deletedAt !== null]),
+    ).toEqual([
+      ["twin-rmssd", "HRV_RMSSD", 42, false],
+      ["twin-rmssd-google", "HRV_RMSSD", 51, false],
+      ["twin-sdnn-null-ext", "HEART_RATE_VARIABILITY", 41, true],
+      ["twin-sdnn-other-ext", "HEART_RATE_VARIABILITY", 50, true],
+    ]);
+  });
+
+  it("moves a live row whose only twin is a tombstone, dropping the tombstone", async () => {
+    const user = "hrv-rmssd-migration-dead-twin";
+    await prisma.user.create({
+      data: { id: user, username: user, timezone: "UTC" },
+    });
+    await prisma.measurement.createMany({
+      data: [
+        {
+          id: "dead-twin-sdnn",
+          userId: user,
+          type: "HEART_RATE_VARIABILITY",
+          source: "FITBIT",
+          unit: "ms",
+          value: 47,
+          measuredAt: at,
+          externalId: null,
+        },
+        {
+          id: "dead-twin-rmssd",
+          userId: user,
+          type: "HRV_RMSSD",
+          source: "FITBIT",
+          unit: "ms",
+          value: 46,
+          measuredAt: at,
+          externalId: `${dayKey(2)}:hrv`,
+          deletedAt: new Date(),
+        },
+      ],
+    });
+
+    await runMigration();
+
+    const after = await prisma.measurement.findMany({
+      where: { userId: user },
+      select: { id: true, type: true, deletedAt: true },
+    });
+    expect(after).toEqual([
+      { id: "dead-twin-sdnn", type: "HRV_RMSSD", deletedAt: null },
+    ]);
+  });
+});
