@@ -255,6 +255,19 @@ export async function seedContractAccount(
         : {}),
     })),
   });
+  // A second source for the steps on the last week, so the provenance reads
+  // explain a pick between two sources and the comparison has a pair.
+  await prisma.measurement.createMany({
+    data: [1, 2, 3, 4, 5, 6, 7].map((n) => ({
+      userId: CONTRACT_USER_ID,
+      type: "ACTIVITY_STEPS" as const,
+      value: 6500 + ((n * 613) % 4000),
+      unit: "count",
+      measuredAt: daysAgo(n, 21),
+      source: "APPLE_HEALTH" as const,
+      externalId: `contract-steps-watch-${n}`,
+    })),
+  });
   const firstMeasurement = await prisma.measurement.findFirst({
     where: { userId: CONTRACT_USER_ID, type: "WEIGHT" },
     orderBy: { measuredAt: "desc" },
@@ -788,6 +801,22 @@ export async function seedContractAccount(
       "api/labs/[id]/links",
       { targetKind: "document", targetIds: [ids.document] },
       { id: ids.lab },
+    );
+  }
+  // A saved manual order for the labs list, so the layout read carries an
+  // order with an id in it.
+  if (ids.lab) {
+    await write(
+      "module-list-layout",
+      "PUT",
+      "api/settings/module-list-layout",
+      {
+        version: 1,
+        list: "labs",
+        view: "list",
+        order: [ids.lab],
+        sortDir: "manual",
+      },
     );
   }
   await write("procedure", "POST", "api/encounters", {
