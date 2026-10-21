@@ -77,7 +77,9 @@ test.describe("setup flow — a visit within a month, with labs", () => {
     await expect(checklist.locator("#getting-started-body")).toBeVisible();
     const visitRow = checklist.locator('li[data-item-id="visit"]');
     await expect(visitRow).toHaveAttribute("data-done", "false");
-    await expect(visitRow.locator('a[href="/checkups"]')).toBeVisible();
+    await expect(
+      visitRow.locator('a[href="/checkups?view=visits"]'),
+    ).toBeVisible();
 
     // Book the visit; the row reads the visits list's own body and flips.
     const booked = await page.request.post("/api/encounters", {
