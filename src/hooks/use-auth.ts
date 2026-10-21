@@ -158,6 +158,12 @@ export interface AuthUser {
    */
   disableCoach: boolean;
   /**
+   * The name the app addresses the account by (dashboard greeting, reports),
+   * null when none was given. Edited on the profile card. Optional in the
+   * type so a stale /me payload coerces to "no display name".
+   */
+  displayName?: string | null;
+  /**
    * v1.7.0 — optional patient-identity fields used by the health-record
    * export (PDF cover + FHIR Patient). All optional; `insuranceNumber`
    * is the German KVNR, decrypted server-side for the form prefill.

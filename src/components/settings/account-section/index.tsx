@@ -95,12 +95,16 @@ export function AccountSection() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<string>("");
   const [timezone, setTimezone] = useState<string>(DEFAULT_TIMEZONE);
+  // The name the app addresses the account by; set in the setup flow, and
+  // until now not editable anywhere after it.
+  const [displayName, setDisplayName] = useState("");
   // v1.7.0 — optional patient-identity fields for the health-record export.
   const [fullName, setFullName] = useState("");
   const [insurerName, setInsurerName] = useState("");
   const [insuranceNumber, setInsuranceNumber] = useState("");
   const [profileSeed, setProfileSeed] = useState({
     email: "",
+    displayName: "",
     height: EMPTY_HEIGHT_DRAFT,
     dateOfBirth: "",
     gender: "",
@@ -149,6 +153,7 @@ export function AccountSection() {
   if (user && user.id !== seededUserId) {
     const seed = {
       email: user.email ?? "",
+      displayName: user.displayName ?? "",
       height: heightAdapter.toDraft(user.heightCm),
       dateOfBirth: user.dateOfBirth
         ? dateOnlyKey(new Date(user.dateOfBirth))
@@ -161,6 +166,7 @@ export function AccountSection() {
     };
     setSeededUserId(user.id);
     setEmail(seed.email);
+    setDisplayName(seed.displayName);
     setHeight(seed.height);
     setDateOfBirth(seed.dateOfBirth);
     setGender(seed.gender);
@@ -192,6 +198,7 @@ export function AccountSection() {
     seed: profileSeed,
     value: {
       email,
+      displayName,
       height,
       dateOfBirth,
       gender,
@@ -256,6 +263,7 @@ export function AccountSection() {
     try {
       const savedProfile = {
         email: email.trim(),
+        displayName: displayName.trim(),
         height,
         dateOfBirth,
         gender,
@@ -275,6 +283,9 @@ export function AccountSection() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email: savedProfile.email || null,
+            // An emptied field clears the name; the greeting falls back to
+            // the username, as it does for an account that never set one.
+            displayName: savedProfile.displayName || null,
             ...(emailChanged && emailPassword
               ? { currentPassword: emailPassword }
               : {}),
@@ -332,6 +343,7 @@ export function AccountSection() {
           setSaveMsg({ key: "settings.profileSaved" });
           setSaveMsgType("success");
           setEmail(savedProfile.email);
+          setDisplayName(savedProfile.displayName);
           setFullName(savedProfile.fullName);
           setInsurerName(savedProfile.insurerName);
           setInsuranceNumber(savedProfile.insuranceNumber);
@@ -449,43 +461,79 @@ export function AccountSection() {
                 autoComplete="username"
               />
             </div>
+            {/* The name the greeting and the reports use. The setup flow
+                asks for it once; this is where it changes afterwards. */}
             <div className="space-y-2">
-              <Label htmlFor="email">{t("auth.email")}</Label>
+              <Label htmlFor="display-name">
+                {t("onboarding.baseline.displayNameLabel")}
+              </Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
+                id="display-name"
+                value={displayName}
                 onChange={(e) => {
-                  setEmail(e.target.value);
-                  clearFieldError("email");
+                  setDisplayName(e.target.value);
+                  clearFieldError("displayName");
                 }}
-                placeholder={t("auth.emailPlaceholder")}
-                maxLength={320}
-                autoComplete="email"
+                placeholder={t("onboarding.baseline.displayNamePlaceholder")}
+                maxLength={80}
+                autoComplete="nickname"
                 enterKeyHint="next"
-                aria-invalid={fieldErrors.email ? true : undefined}
-                aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                aria-invalid={fieldErrors.displayName ? true : undefined}
+                aria-describedby={
+                  fieldErrors.displayName
+                    ? "display-name-hint display-name-error"
+                    : "display-name-hint"
+                }
               />
-              <FieldError id="email-error" message={fieldErrors.email} />
-              {emailChanged && !emailNeedsFactor && (
-                <div className="space-y-2 pt-1">
-                  <Label htmlFor="email-current-password">
-                    {t("settings.emailChangePassword")}
-                  </Label>
-                  <Input
-                    id="email-current-password"
-                    type="password"
-                    value={emailPassword}
-                    onChange={(e) => {
-                      setEmailPassword(e.target.value);
-                      clearFieldError("email");
-                    }}
-                    autoComplete="current-password"
-                    maxLength={512}
-                  />
-                </div>
-              )}
+              <p
+                id="display-name-hint"
+                className="text-muted-foreground text-xs"
+              >
+                {t("onboarding.baseline.displayNameHint")}
+              </p>
+              <FieldError
+                id="display-name-error"
+                message={fieldErrors.displayName}
+              />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">{t("auth.email")}</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                clearFieldError("email");
+              }}
+              placeholder={t("auth.emailPlaceholder")}
+              maxLength={320}
+              autoComplete="email"
+              enterKeyHint="next"
+              aria-invalid={fieldErrors.email ? true : undefined}
+              aria-describedby={fieldErrors.email ? "email-error" : undefined}
+            />
+            <FieldError id="email-error" message={fieldErrors.email} />
+            {emailChanged && !emailNeedsFactor && (
+              <div className="space-y-2 pt-1">
+                <Label htmlFor="email-current-password">
+                  {t("settings.emailChangePassword")}
+                </Label>
+                <Input
+                  id="email-current-password"
+                  type="password"
+                  value={emailPassword}
+                  onChange={(e) => {
+                    setEmailPassword(e.target.value);
+                    clearFieldError("email");
+                  }}
+                  autoComplete="current-password"
+                  maxLength={512}
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
