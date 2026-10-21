@@ -1,5 +1,8 @@
 # Push a room's CO2, temperature and humidity to HealthLog every few minutes.
 #
+# Use it for one room. The readings carry no room name, so a second room would
+# land in the same series, and a push in the same minute is refused (409).
+#
 # Needs the `healthlog_room_climate` rest_command from
 # docs/integrations/home-assistant.md ("Room climate") and a measurement
 # ingest token. Every sensor is optional; a sensor that reports `unknown`,
@@ -12,6 +15,8 @@ blueprint:
     HealthLog through a measurement ingest token. HealthLog keeps each
     reading and shows the day's mean, low and high.
   domain: automation
+  homeassistant:
+    min_version: 2024.10.0
   source_url: https://github.com/MBombeck/HealthLog/blob/main/docs/integrations/blueprints/healthlog-room-climate.yaml
   input:
     co2_sensor:
@@ -40,14 +45,13 @@ blueprint:
           device_class: humidity
     interval_minutes:
       name: Interval
-      description: Minutes between pushes. 15 is plenty for a daily picture.
-      default: 15
+      description: >-
+        Minutes between pushes, on the hour and every interval after it.
+        15 is plenty for a daily picture.
+      default: "15"
       selector:
-        number:
-          min: 5
-          max: 60
-          step: 5
-          unit_of_measurement: min
+        select:
+          options: ["5", "10", "15", "20", "30", "60"]
 
 mode: single
 
@@ -77,17 +81,17 @@ variables:
     {% endfor %}
     {{ ns.items }}
 
-trigger:
-  - platform: time_pattern
+triggers:
+  - trigger: time_pattern
     minutes: "/5"
 
-condition:
+conditions:
   - condition: template
     value_template: >-
       {{ now().minute % (interval_minutes | int(15)) == 0
          and readings | count > 0 }}
 
-action:
-  - service: rest_command.healthlog_room_climate
+actions:
+  - action: rest_command.healthlog_room_climate
     data:
       readings: "{{ readings }}"

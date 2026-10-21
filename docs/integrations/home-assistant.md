@@ -109,20 +109,20 @@ a new weight:
 ```yaml
 automation:
   - alias: "Push weight to HealthLog"
-    trigger:
-      - platform: state
+    triggers:
+      - trigger: state
         entity_id: sensor.bathroom_scale_weight
-    condition:
+    conditions:
       - condition: template
         value_template: "{{ trigger.to_state.state not in ['unknown', 'unavailable'] }}"
-    action:
-      - service: rest_command.healthlog_measurement
+    actions:
+      - action: rest_command.healthlog_measurement
         data:
           type: WEIGHT
           value: "{{ trigger.to_state.state | float }}"
 ```
 
-The `condition` is not decoration. Home Assistant sensors publish `unknown` and
+The condition is not decoration. Home Assistant sensors publish `unknown` and
 `unavailable` as ordinary states, and forwarding one produces a 422 on every
 restart.
 
@@ -179,11 +179,17 @@ rest_command:
     payload: "{{ readings | to_json }}"
 ```
 
-Then import the blueprint, either from
+Track one room, the one you sleep in: that is the one worth reading next to
+your sleep. The readings carry no room name, so a second room would land in the
+same series and blur both, and two pushes in the same minute collide on a 409
+(see below).
+
+Then import the blueprint (Home Assistant 2024.10 or newer), either from
 [`docs/integrations/blueprints/healthlog-room-climate.yaml`](./blueprints/healthlog-room-climate.yaml)
 or by its raw GitHub URL under Settings → Automations & scenes → Blueprints →
-Import blueprint, and create one automation per room. It asks for the three
-sensors (each optional) and an interval. Every push:
+Import blueprint, and create one automation from it for that room. It asks for
+the three sensors (each optional) and an interval of 5, 10, 15, 20, 30 or 60
+minutes, counted from the full hour. Every push:
 
 - leaves out a sensor that reports `unknown`, `unavailable` or anything that is
   not a number, and skips the push when nothing is left;
@@ -197,8 +203,8 @@ single room without the blueprint:
 ```yaml
 automation:
   - alias: "Push bedroom climate to HealthLog"
-    trigger:
-      - platform: time_pattern
+    triggers:
+      - trigger: time_pattern
         minutes: "/15"
     variables:
       readings: >-
@@ -215,19 +221,16 @@ automation:
           {% endif %}
         {% endfor %}
         {{ ns.items }}
-    condition:
+    conditions:
       - condition: template
         value_template: "{{ readings | count > 0 }}"
-    action:
-      - service: rest_command.healthlog_room_climate
+    actions:
+      - action: rest_command.healthlog_room_climate
         data:
           readings: "{{ readings }}"
 ```
 
-One request takes up to five readings, so a room is one call. Several rooms
-are several automations: the readings carry no room name, and two rooms pushed
-in the same minute collide on the 409 above. If you track more than one room,
-pick the one you sleep in; that is the one worth reading next to your sleep.
+One request takes up to five readings, so the room is one call.
 
 ## Sending several readings at once
 
