@@ -1,5 +1,112 @@
 # Changelog
 
+## [1.44.0] — 2026-10-22
+
+### Added
+
+- **Import lab results and medications from a spreadsheet.** Settings >
+  Export & Import has a card that reads the head of a CSV file, suggests a
+  column for each field from its header, and lets you correct the
+  separator, decimal mark, date order and time zone. A check run lists
+  every refused row with its line and reason before anything is written,
+  and importing the same file again only finds duplicates. Templates for
+  both kinds download from the card. (#1215)
+- **An activity calendar** on the workouts page: a week or month of steps,
+  active minutes, workouts by sport and training load, each day measured
+  against your own usual range and each period against the ones before.
+  Weekly and monthly goals are optional. Today counts as in progress until
+  it is over.
+- **Fitness, fatigue and form** above the workout list, from the training
+  impulse HealthLog already stores. A day with activity data but no
+  training counts as rest; a day without any data is left out instead of
+  counted, and the card says how current the figures are.
+- **Where a value comes from.** Each metric page links to a view that lists
+  every source with readings for a day, its place in your source priority
+  and which one the charts use, with a side-by-side comparison of two
+  sources over 30, 90 or 365 days.
+- **Lab trends.** A marker with at least three readings over a year shows
+  its slope, and when the straight line would leave the reference range
+  within three years. A series whose newest reading is more than a year
+  old is shown without a projection.
+- **The change at a medication start**, as a level and a trend change with
+  intervals, next to the existing before and after comparison. Days with
+  missed doses, pauses and other medications that changed in the window are
+  accounted for, and the view says when the data are too thin.
+- **More in the doctor report:** sleep duration, HRV as SDNN and RMSSD,
+  daily steps, a workout summary per sport and the medication effect, each
+  only when its module is on. The medication effect is included only when
+  the medication list is shared too. The report names the window it
+  analysed.
+- **More correlations:** water, caffeine, micronutrients, alcohol days,
+  workout minutes, training impulse, activity ring minutes, State of Mind
+  and room climate against that night's sleep. State of Mind, mindful
+  minutes and alcohol days stay on the correlations page and are never
+  handed to the Coach or the narrative cards.
+- **Level shifts in thirteen vitals over 180 days** instead of five over 90.
+  Slow drifts and plateaus no longer count as a shift.
+- **Mental health screeners** show whether a change reaches the threshold
+  that counts as meaningful.
+- **Apple Health:** exercise, stand and mindful minutes, stand hours, State
+  of Mind and AFib burden. Workout GPS tracks are kept only when you turn
+  that on (Settings > Data & privacy); tracks already stored stay, and
+  accounts that already kept tracks start with it on.
+- **Oura:** workouts, intraday heart rate and a full history backfill that
+  resumes after a restart.
+- **Indoor climate** (CO2, temperature, humidity) through the measurement
+  API, with a Home Assistant blueprint.
+- **A guardian can connect a managed profile's integrations** (Withings,
+  WHOOP, Oura, Polar, Strava, Google Health), and each card says whose
+  record it connects for.
+- **FHIR:** Observations as a time series by `date` and `code`, with RMSSD
+  and workouts coded.
+
+### Changed
+
+- **Settings are sorted into nine groups:** Account, Tracking,
+  Arrangement, Notifications, Health profile, AI, Connections, Data and
+  System. Every old address still works and forwards to the new place. On
+  a phone one button names the current section and opens the list. Each
+  card saves the same way and asks once before anything destructive, and
+  German wording uses one word per thing.
+- **All OAuth integrations refresh their tokens the same way**, so a
+  refresh that races another one no longer signs you out of Strava, Google
+  Health or Withings. One provider account can be linked to only one
+  record.
+- **Imports from Apple Health insert large batches faster**, and the health
+  check answers "starting" while the background jobs come up, so a slow
+  boot no longer marks the container unhealthy.
+
+### Fixed
+
+- Oura no longer imports the equivalent walking distance as distance.
+- A workout synced from two sources counts once in strain, the briefing
+  and the day view.
+- The Coach's provider and model switch is back, and notification channel
+  switches act on the first tap again.
+- Jobs queued during start-up wait for the queue instead of being dropped.
+
+### Upgrade notes
+
+- **1536 MB is the supported memory floor for the app container.** This is
+  the existing default of `APP_MEMORY_LIMIT`; if you lowered it, raise it
+  back. Below the floor the app still starts, but the boot log, the
+  support report and Admin > System status say so. Plan for 3 GB of RAM on
+  the host.
+- Migrations 0424, 0430 to 0434, 0440 to 0442 and 0470 run on start. They
+  add columns and settings, turn the GPS track setting on for accounts
+  that already have tracks, and drop a cached copy of the AI insights
+  text, which is rebuilt on the next run. Workouts with a track but no
+  elevation get their climb filled in by a background pass after the
+  first start.
+- If you use Fitbit, connect Google Health before 30 October 2026, when
+  Google turns the old Fitbit API off.
+
+### Thanks
+
+Thanks to @Cnote43 for the case for a spreadsheet import of twenty years of
+lab results (#1215), and to @alondin and @haritowa for staying with the
+Oura connection until it held (#1204).
+
 ## [1.43.11] — 2026-10-21
 
 ### Fixed
