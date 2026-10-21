@@ -82,6 +82,9 @@ const WITHINGS_MEASURE_URL = "https://wbsapi.withings.net/v2/measure";
  */
 const ACTIVITY_BACKFILL_DAYS = 30;
 
+/** `brand` of a Getactivity day that came from outside Withings. */
+const WITHINGS_EXTERNAL_BRAND = 18;
+
 /**
  * Withings `getactivity` response shape — one entry per calendar day.
  * Only the fields we consume are typed; the response carries 15+ more
@@ -95,6 +98,13 @@ export interface WithingsActivityEntry {
   steps?: number;
   distance?: number; // metres
   calories?: number; // active kcal (NOT totalcalories)
+  /**
+   * Where the day came from: 1 for a Withings device or the Health Mate
+   * app's own tracker, 18 for "an external way" (Getactivity: "Value is 1
+   * for Withings and 18 for external"), i.e. data another app wrote into
+   * Health Mate, such as an Apple Health or Google Fit day.
+   */
+  brand?: number;
   // The fields below are not ingested today (see file header):
   elevation?: number;
   totalcalories?: number;
@@ -357,8 +367,18 @@ export async function syncUserActivity(
     externalId: string;
   }
   const collected: PlannedRow[] = [];
+  let external = 0;
   for (const entry of entries) {
     if (!entry.date) continue;
+    // A day Health Mate holds from another app is that app's data, which
+    // reaches HealthLog from its own integration (Apple Health, Health
+    // Connect, Google Health). Imported under WITHINGS it was a second copy
+    // under the wrong name, and on a day that copy was the only Withings row
+    // it could outrank a native source further down the ladder.
+    if (entry.brand === WITHINGS_EXTERNAL_BRAND) {
+      external++;
+      continue;
+    }
     // Local noon of the date in the user's zone: the instant reads the same
     // calendar day there. Noon UTC read as the next day from UTC+13 on
     // (Auckland in summer, Tonga, Samoa), so every daily total landed a day
@@ -378,6 +398,12 @@ export async function syncUserActivity(
         externalId: `withings:activity:${userId}:${entry.date}:${field}`,
       });
     }
+  }
+
+  if (external > 0) {
+    getEvent()?.addWarning(
+      `withings activity: skipped ${external} day(s) Health Mate holds from another app`,
+    );
   }
 
   // A daily-activity total the app's own band calls impossible (a step count
