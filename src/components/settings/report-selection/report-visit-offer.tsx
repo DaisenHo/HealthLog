@@ -28,9 +28,13 @@ import { encounterKindText } from "@/components/encounters/encounter-labels";
 import { preparationText } from "@/components/encounters/preparation-text";
 import { Button } from "@/components/ui/button";
 import { useEncounters, type Encounter } from "@/hooks/use-encounters";
-import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import {
+  useDisplayTimezone,
+  useFormatters,
+  useTranslations,
+} from "@/lib/i18n/context";
 import type { EncounterKind } from "@/generated/prisma/client";
-import { detectBrowserTimezone, userDayKey } from "@/lib/tz/format";
+import { userDayKey } from "@/lib/tz/format";
 
 /**
  * How far ahead a booked visit is treated as the reason for this report.
@@ -40,11 +44,6 @@ import { detectBrowserTimezone, userDayKey } from "@/lib/tz/format";
  */
 export const REPORT_VISIT_HORIZON_DAYS = 14;
 
-/** The local `yyyy-MM-dd` a `DateField` takes, in the reader's own day. */
-function localDay(iso: string): string {
-  return userDayKey(new Date(iso), detectBrowserTimezone());
-}
-
 /** The report window an appointment offers, as `yyyy-MM-dd` days. */
 export interface VisitReportWindow {
   /** The server's start of the window before the visit; null if it has none. */
@@ -53,11 +52,20 @@ export interface VisitReportWindow {
   to: string;
 }
 
-/** What pressing the offer for `visit` applies. */
-export function visitReportWindow(visit: Encounter): VisitReportWindow {
+/**
+ * What pressing the offer for `visit` applies. Both ends are days of the
+ * record's own calendar (`timeZone`, the profile zone): the server cuts
+ * `preparation.from` there, and the appointment's day has to be cut in the
+ * same zone, or a browser in another zone moved the end a day against the
+ * start for a late-evening or early-morning visit.
+ */
+export function visitReportWindow(
+  visit: Encounter,
+  timeZone: string,
+): VisitReportWindow {
   return {
     from: visit.preparation?.from ?? null,
-    to: localDay(visit.occurredAt),
+    to: userDayKey(new Date(visit.occurredAt), timeZone),
   };
 }
 
@@ -69,6 +77,7 @@ export function ReportVisitOffer({
 }) {
   const { t } = useTranslations();
   const format = useFormatters();
+  const timeZone = useDisplayTimezone();
   const [dismissed, setDismissed] = useState(false);
   const visits = useEncounters();
 
@@ -131,7 +140,7 @@ export function ReportVisitOffer({
         size="sm"
         className="ml-auto min-h-11 sm:ml-0 sm:min-h-9"
         data-slot="report-visit-offer-apply"
-        onClick={() => onUseVisitWindow(visitReportWindow(next))}
+        onClick={() => onUseVisitWindow(visitReportWindow(next, timeZone))}
       >
         {t("settings.healthRecord.visitOfferApplyWindow")}
       </Button>

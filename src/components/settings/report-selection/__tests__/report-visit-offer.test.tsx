@@ -155,10 +155,26 @@ describe("<ReportVisitOffer>", () => {
         occurredAt: at.toISOString(),
         preparation: { from: "2026-03-02", basis: "default", since: null },
       }),
+      "Europe/Berlin",
     );
     expect(window.from).toBe("2026-03-02");
     expect(window.to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     // Without a window from the server, only the end moves.
-    expect(visitReportWindow(visit({ id: "plain" })).from).toBeNull();
+    expect(
+      visitReportWindow(visit({ id: "plain" }), "Europe/Berlin").from,
+    ).toBeNull();
+  });
+
+  it("cuts the appointment's day on the record's calendar, like the start", () => {
+    // 04:30 on the 12th in Berlin is still the evening of the 11th in New
+    // York. The start comes from the server on the record's calendar; the
+    // end is cut in the zone it is handed, never the browser's own.
+    const early = visit({
+      id: "early",
+      occurredAt: "2026-11-12T03:30:00.000Z",
+      preparation: { from: "2026-08-12", basis: "default", since: null },
+    });
+    expect(visitReportWindow(early, "Europe/Berlin").to).toBe("2026-11-12");
+    expect(visitReportWindow(early, "America/New_York").to).toBe("2026-11-11");
   });
 });
