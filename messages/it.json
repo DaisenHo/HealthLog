@@ -10207,10 +10207,11 @@
           "high": "Se questa retta proseguisse, raggiungerebbe il limite superiore del tuo intervallo di riferimento verso il {date}. È una proiezione, non una previsione.",
           "low": "Se questa retta proseguisse, raggiungerebbe il limite inferiore del tuo intervallo di riferimento verso il {date}. È una proiezione, non una previsione."
         },
-        "beyond_horizon": "A questo ritmo la retta resta nel tuo intervallo di riferimento per almeno altri tre anni.",
+        "beyond_horizon": "A questo ritmo la retta resta nel tuo intervallo di riferimento per più di {years} anni, il periodo coperto dai tuoi valori.",
         "no_exit": "La retta si allontana dai limiti del tuo intervallo di riferimento.",
         "already_outside": "La retta è già fuori dal tuo intervallo di riferimento.",
-        "no_clear_trend": "Su questi valori la variazione non si distingue chiaramente dall'assenza di variazione, quindi non si proietta nulla."
+        "no_clear_trend": "Su questi valori la variazione non si distingue chiaramente dall'assenza di variazione, quindi non si proietta nulla.",
+        "stale": "Il valore più recente è del {date}, più di un anno fa. La retta è mostrata a quella data, senza proiezione."
       },
       "interval": "Intervallo al 95 % della variazione annua: da {lo} a {hi} {unit}."
     }

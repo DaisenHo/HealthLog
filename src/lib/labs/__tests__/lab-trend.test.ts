@@ -128,4 +128,50 @@ describe("computeLabTrend", () => {
       computeLabTrend(falling, { low: 90, high: 140 }, atYears(2)),
     ).toMatchObject({ projection: "exits", exitBound: "low" });
   });
+
+  it("never carries the line further ahead than the readings reach back", () => {
+    // 10 a year over one year (span 1.0); band top 125 sits 1.5 years past
+    // the last reading. Inside the three-year cap, outside the one-year span.
+    const short = readings([
+      [0, 100],
+      [0.5, 105],
+      [1, 110],
+    ]);
+    expect(
+      computeLabTrend(short, { low: 70, high: 125 }, atYears(1)),
+    ).toMatchObject({ projection: "beyond_horizon", horizonYears: 1 });
+    // The same line with a top of 118 meets it 0.8 years out: projected.
+    expect(
+      computeLabTrend(short, { low: 70, high: 118 }, atYears(1)),
+    ).toMatchObject({ projection: "exits", exitBound: "high" });
+  });
+
+  it("reports a stale series as of its last reading, without a projection", () => {
+    const line = readings([
+      [0, 100],
+      [1, 110],
+      [2, 120],
+    ]);
+    // Last reading two years before "now": evaluated on that day.
+    const stale = computeLabTrend(line, { low: 70, high: 125 }, atYears(4));
+    expect(stale).toMatchObject({
+      status: "ok",
+      projection: "stale",
+      exitDate: null,
+      exitBound: null,
+      fittedNow: 120,
+      slopePerYear: 10,
+    });
+    if (stale.status !== "ok") throw new Error("expected ok");
+    expect(stale.asOf).toBe(stale.lastAt);
+    // Carried to today the line would read 140, above the band: a stale
+    // series never says "already outside".
+    expect(
+      computeLabTrend(line, { low: 70, high: 115 }, atYears(4)),
+    ).toMatchObject({ projection: "stale" });
+    // Eleven months after the last reading it is still current.
+    expect(
+      computeLabTrend(line, { low: 70, high: 200 }, atYears(2.9)),
+    ).toMatchObject({ projection: "beyond_horizon" });
+  });
 });

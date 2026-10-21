@@ -74,7 +74,9 @@ export const GET = apiHandler(
           deletedAt: null,
           value: { not: null },
         },
-        orderBy: { takenAt: "asc" },
+        // Newest first, so a capped read keeps the recent end of the series
+        // (the staleness check reads the newest reading); the fit sorts.
+        orderBy: { takenAt: "desc" },
         take: LAB_TREND_READ_CAP,
         select: { takenAt: true, value: true },
       }),

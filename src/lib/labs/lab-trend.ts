@@ -13,7 +13,14 @@
  * The slope carries its 95 % confidence interval (Student t at n − 2 degrees
  * of freedom). A projection is offered only when that interval excludes zero,
  * the line is inside the band today and heads toward a bound it reaches
- * within {@link LAB_PROJECTION_HORIZON_YEARS} years. It is a straight-line
+ * within the horizon: {@link LAB_PROJECTION_HORIZON_YEARS} years, or the span
+ * the readings cover when that is shorter, so the line is never carried
+ * further ahead than the data reaches back.
+ *
+ * A marker whose newest reading is older than {@link LAB_TREND_STALE_DAYS}
+ * days gets no projection at all (`stale`): the line is evaluated on the day
+ * of that reading and reported as of then, with no exit date and no
+ * "already outside" verdict about a today the readings say nothing about. It is a straight-line
  * extrapolation, labelled as one wherever it is shown, never a forecast of
  * the body and never a risk statement: lab values plateau, respond to
  * treatment and carry assay noise a line does not know about. With three
@@ -29,6 +36,8 @@ import { dateOnlyKey } from "@/lib/tz/date-only";
 export const LAB_TREND_MIN_VALUES = 3;
 export const LAB_TREND_MIN_SPAN_DAYS = 365;
 export const LAB_PROJECTION_HORIZON_YEARS = 3;
+/** Newest reading older than this: the trend is reported as of that reading. */
+export const LAB_TREND_STALE_DAYS = 365;
 
 const DAY_MS = 86_400_000;
 const YEAR_DAYS = 365.25;
@@ -45,7 +54,12 @@ export type LabTrendProjection =
   /** The slope's interval includes zero: no projection is drawn. */
   | "no_clear_trend"
   /** The marker has no reference band to leave. */
-  | "no_band";
+  | "no_band"
+  /**
+   * The newest reading is older than {@link LAB_TREND_STALE_DAYS} days: the
+   * line is reported as of that reading (`asOf` = `lastAt`), not projected.
+   */
+  | "stale";
 
 export interface LabTrendOk {
   status: "ok";
@@ -62,7 +76,13 @@ export interface LabTrendOk {
   pValue: number;
   /** The line's value on `asOf`. */
   fittedNow: number;
+  /** Today, or the newest reading's day when the trend is `stale`. */
   asOf: string;
+  /**
+   * How far ahead a bound may be met and still count as `exits`: three years,
+   * or the readings' span when shorter.
+   */
+  horizonYears: number;
   projection: LabTrendProjection;
   /** Set only for `exits`: the day the line meets `exitBound`. */
   exitDate: string | null;
@@ -136,14 +156,23 @@ export function computeLabTrend(
         : 0
       : twoSidedPFromT(Math.abs(fit.slope / se), df);
 
-  const xNow = (now.getTime() - t0) / DAY_MS / YEAR_DAYS;
+  const tLast = points[n - 1].t;
+  const stale = now.getTime() - tLast > LAB_TREND_STALE_DAYS * DAY_MS;
+  // A stale series is read on its own last day, never carried to today.
+  const tAsOf = stale ? tLast : now.getTime();
+  const xNow = (tAsOf - t0) / DAY_MS / YEAR_DAYS;
   const fittedNow = fit.intercept + fit.slope * xNow;
+  const horizonYears = Math.min(
+    LAB_PROJECTION_HORIZON_YEARS,
+    (tLast - t0) / DAY_MS / YEAR_DAYS,
+  );
 
   let projection: LabTrendProjection;
   let exitDate: string | null = null;
   let exitBound: "low" | "high" | null = null;
   const hasBand = band.low != null || band.high != null;
-  if (!hasBand) projection = "no_band";
+  if (stale) projection = "stale";
+  else if (!hasBand) projection = "no_band";
   else if (!(lo > 0 || hi < 0)) projection = "no_clear_trend";
   else if (
     (band.low != null && fittedNow < band.low) ||
@@ -156,7 +185,7 @@ export function computeLabTrend(
     else {
       const xCross = (bound - fit.intercept) / fit.slope;
       const yearsAhead = xCross - xNow;
-      if (yearsAhead > LAB_PROJECTION_HORIZON_YEARS) {
+      if (yearsAhead > horizonYears) {
         projection = "beyond_horizon";
       } else {
         projection = "exits";
@@ -176,7 +205,8 @@ export function computeLabTrend(
     slopeCi95: [round(lo, 4), round(hi, 4)],
     pValue: round(pValue, 6),
     fittedNow: round(fittedNow, 4),
-    asOf: dayOf(now.getTime()),
+    asOf: dayOf(tAsOf),
+    horizonYears: round(horizonYears, 2),
     projection,
     exitDate,
     exitBound,

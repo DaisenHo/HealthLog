@@ -10207,10 +10207,11 @@
           "high": "Gdyby ta prosta biegła dalej, osiągnęłaby górną granicę twojego zakresu referencyjnego około {date}. To ekstrapolacja, nie prognoza.",
           "low": "Gdyby ta prosta biegła dalej, osiągnęłaby dolną granicę twojego zakresu referencyjnego około {date}. To ekstrapolacja, nie prognoza."
         },
-        "beyond_horizon": "W tym tempie prosta pozostaje w twoim zakresie referencyjnym jeszcze co najmniej trzy lata.",
+        "beyond_horizon": "W tym tempie prosta pozostaje w twoim zakresie referencyjnym dłużej niż {years} lat, czyli okres objęty twoimi wynikami.",
         "no_exit": "Prosta oddala się od granic twojego zakresu referencyjnego.",
         "already_outside": "Prosta jest już poza twoim zakresem referencyjnym.",
-        "no_clear_trend": "Na podstawie tych wyników zmiana nie różni się wyraźnie od braku zmiany, więc nie jest wyznaczana ekstrapolacja."
+        "no_clear_trend": "Na podstawie tych wyników zmiana nie różni się wyraźnie od braku zmiany, więc nie jest wyznaczana ekstrapolacja.",
+        "stale": "Najnowszy wynik pochodzi z {date}, sprzed ponad roku. Prosta jest pokazana na ten dzień, bez projekcji."
       },
       "interval": "95% przedział rocznej zmiany: od {lo} do {hi} {unit}."
     }

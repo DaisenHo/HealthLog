@@ -93,7 +93,16 @@ const labTrend = z
         .describe("95 % interval of the slope (Student t at n − 2 df)."),
       pValue: z.number(),
       fittedNow: z.number().describe("The line's value on `asOf`."),
-      asOf: z.string().describe("YYYY-MM-DD the line was evaluated on."),
+      asOf: z
+        .string()
+        .describe(
+          "YYYY-MM-DD the line was evaluated on: today, or `lastAt` when `projection` is `stale`.",
+        ),
+      horizonYears: z
+        .number()
+        .describe(
+          "How far ahead a bound may be met and still count as `exits`: three years, or the readings' span when shorter.",
+        ),
       projection: z.enum([
         "exits",
         "beyond_horizon",
@@ -101,6 +110,7 @@ const labTrend = z
         "already_outside",
         "no_clear_trend",
         "no_band",
+        "stale",
       ]),
       exitDate: z
         .string()
@@ -120,7 +130,7 @@ const labTrend = z
   .meta({
     id: "BiomarkerTrend",
     description:
-      "v1.44 — the least-squares line through every numeric reading of the marker (all stored in the marker's unit). Needs at least three readings spanning at least 365 days, else `insufficient`. `projection` places the line against the marker's band: `exits` (with `exitDate`) only when the slope's 95 % interval excludes zero, the line is inside the band today and reaches a bound within three years. Server-computed; clients render it as given.",
+      "v1.44 — the least-squares line through every numeric reading of the marker (all stored in the marker's unit). Needs at least three readings spanning at least 365 days, else `insufficient`. `projection` places the line against the marker's band: `exits` (with `exitDate`) only when the slope's 95 % interval excludes zero, the line is inside the band today and reaches a bound within `horizonYears` (three years, or the readings' span when shorter). `stale` when the newest reading is more than 365 days old: the line is then reported as of `lastAt`, with no projection. Server-computed; clients render it as given.",
   });
 
 const biomarkerDetail = biomarkerRow

@@ -10207,10 +10207,11 @@
           "high": "Liefe diese Gerade so weiter, erreichte sie um den {date} das obere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage.",
           "low": "Liefe diese Gerade so weiter, erreichte sie um den {date} das untere Ende deines Referenzbereichs. Das ist eine Fortschreibung, keine Vorhersage."
         },
-        "beyond_horizon": "In diesem Tempo bleibt die Gerade noch mindestens drei Jahre in deinem Referenzbereich.",
+        "beyond_horizon": "In diesem Tempo bleibt die Gerade länger als {years} Jahre in deinem Referenzbereich, so weit reichen deine Werte zurück.",
         "no_exit": "Die Gerade läuft von den Grenzen deines Referenzbereichs weg.",
         "already_outside": "Die Gerade liegt bereits außerhalb deines Referenzbereichs.",
-        "no_clear_trend": "Über diese Werte ist die Veränderung nicht klar von keiner Veränderung zu unterscheiden, deshalb wird nichts fortgeschrieben."
+        "no_clear_trend": "Über diese Werte ist die Veränderung nicht klar von keiner Veränderung zu unterscheiden, deshalb wird nichts fortgeschrieben.",
+        "stale": "Der neueste Wert ist vom {date}, also älter als ein Jahr. Die Gerade gilt für diesen Stand, ohne Projektion."
       },
       "interval": "95-%-Intervall der jährlichen Veränderung: {lo} bis {hi} {unit}."
     }

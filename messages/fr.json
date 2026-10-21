@@ -10207,10 +10207,11 @@
           "high": "Si cette droite se prolongeait, elle atteindrait la limite haute de ta plage de référence vers le {date}. C'est une projection, pas une prévision.",
           "low": "Si cette droite se prolongeait, elle atteindrait la limite basse de ta plage de référence vers le {date}. C'est une projection, pas une prévision."
         },
-        "beyond_horizon": "À ce rythme, la droite reste dans ta plage de référence pendant au moins trois ans encore.",
+        "beyond_horizon": "À ce rythme, la droite reste dans ta plage de référence plus de {years} ans, la durée couverte par tes valeurs.",
         "no_exit": "La droite s'éloigne des limites de ta plage de référence.",
         "already_outside": "La droite est déjà hors de ta plage de référence.",
-        "no_clear_trend": "Sur ces valeurs, la variation ne se distingue pas clairement d'une absence de variation, donc aucune projection n'est tracée."
+        "no_clear_trend": "Sur ces valeurs, la variation ne se distingue pas clairement d'une absence de variation, donc aucune projection n'est tracée.",
+        "stale": "La valeur la plus récente date du {date}, il y a plus d’un an. La droite est montrée à cette date, sans projection."
       },
       "interval": "Intervalle à 95 % de la variation annuelle : de {lo} à {hi} {unit}."
     }

@@ -10207,10 +10207,11 @@
           "high": "Si esta línea recta continuara, llegaría al límite superior de tu rango de referencia hacia el {date}. Es una proyección, no un pronóstico.",
           "low": "Si esta línea recta continuara, llegaría al límite inferior de tu rango de referencia hacia el {date}. Es una proyección, no un pronóstico."
         },
-        "beyond_horizon": "A este ritmo, la línea se mantiene dentro de tu rango de referencia al menos tres años más.",
+        "beyond_horizon": "A este ritmo, la línea se mantiene dentro de tu rango de referencia más de {years} años, el periodo que cubren tus valores.",
         "no_exit": "La línea se aleja de los límites de tu rango de referencia.",
         "already_outside": "La línea ya está fuera de tu rango de referencia.",
-        "no_clear_trend": "En estos valores, el cambio no se distingue con claridad de la ausencia de cambio, así que no se proyecta nada."
+        "no_clear_trend": "En estos valores, el cambio no se distingue con claridad de la ausencia de cambio, así que no se proyecta nada.",
+        "stale": "El valor más reciente es del {date}, hace más de un año. La línea se muestra a esa fecha, sin proyección."
       },
       "interval": "Intervalo del 95 % del cambio anual: de {lo} a {hi} {unit}."
     }

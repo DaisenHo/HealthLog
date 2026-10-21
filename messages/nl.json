@@ -10207,10 +10207,11 @@
           "high": "Als deze rechte lijn zo doorliep, zou ze rond {date} de bovengrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling.",
           "low": "Als deze rechte lijn zo doorliep, zou ze rond {date} de ondergrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling."
         },
-        "beyond_horizon": "In dit tempo blijft de lijn nog minstens drie jaar binnen je referentiebereik.",
+        "beyond_horizon": "In dit tempo blijft de lijn langer dan {years} jaar binnen je referentiebereik, de periode die je waarden beslaan.",
         "no_exit": "De lijn loopt weg van de grenzen van je referentiebereik.",
         "already_outside": "De lijn ligt al buiten je referentiebereik.",
-        "no_clear_trend": "Over deze waarden is de verandering niet duidelijk te onderscheiden van geen verandering, dus er wordt niets doorgetrokken."
+        "no_clear_trend": "Over deze waarden is de verandering niet duidelijk te onderscheiden van geen verandering, dus er wordt niets doorgetrokken.",
+        "stale": "De nieuwste waarde is van {date}, meer dan een jaar geleden. De lijn staat op die datum, zonder projectie."
       },
       "interval": "95%-interval van de jaarlijkse verandering: {lo} tot {hi} {unit}."
     }

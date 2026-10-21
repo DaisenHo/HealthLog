@@ -74758,7 +74758,11 @@ components:
               description: The line's value on `asOf`.
             asOf:
               type: string
-              description: YYYY-MM-DD the line was evaluated on.
+              description: "YYYY-MM-DD the line was evaluated on: today, or `lastAt` when `projection` is `stale`."
+            horizonYears:
+              type: number
+              description: "How far ahead a bound may be met and still count as `exits`: three years, or the readings' span when
+                shorter."
             projection:
               type: string
               enum:
@@ -74768,6 +74772,7 @@ components:
                 - already_outside
                 - no_clear_trend
                 - no_band
+                - stale
             exitDate:
               description: "Only for `exits`: the day the straight line meets `exitBound`. A projection, never a forecast."
               type:
@@ -74791,6 +74796,7 @@ components:
             - pValue
             - fittedNow
             - asOf
+            - horizonYears
             - projection
             - exitDate
             - exitBound
@@ -74822,8 +74828,9 @@ components:
       description: "v1.44 — the least-squares line through every numeric reading of the marker (all stored in the marker's
         unit). Needs at least three readings spanning at least 365 days, else `insufficient`. `projection` places the
         line against the marker's band: `exits` (with `exitDate`) only when the slope's 95 % interval excludes zero, the
-        line is inside the band today and reaches a bound within three years. Server-computed; clients render it as
-        given."
+        line is inside the band today and reaches a bound within `horizonYears` (three years, or the readings' span when
+        shorter). `stale` when the newest reading is more than 365 days old: the line is then reported as of `lastAt`,
+        with no projection. Server-computed; clients render it as given."
     UpdateBiomarkerResponse:
       type: object
       properties:

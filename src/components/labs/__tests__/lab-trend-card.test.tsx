@@ -20,6 +20,7 @@ const OK: BiomarkerTrendDto = {
   pValue: 0.02,
   fittedNow: 130,
   asOf: "2026-10-21",
+  horizonYears: 3,
   projection: "exits",
   exitDate: "2027-11-02",
   exitBound: "high",
@@ -70,5 +71,26 @@ describe("<LabTrendCard>", () => {
       }),
     ).toBe("");
     expect(render(undefined)).toBe("");
+  });
+
+  it("words a stale trend as of its newest reading, and a span-bound horizon", () => {
+    const stale = render({
+      ...OK,
+      asOf: "2026-01-10",
+      projection: "stale",
+      exitDate: null,
+      exitBound: null,
+    });
+    expect(stale).toContain('data-projection="stale"');
+    expect(stale).toContain("more than a year ago");
+    expect(stale).not.toContain("forecast");
+    const beyond = render({
+      ...OK,
+      horizonYears: 1.5,
+      projection: "beyond_horizon",
+      exitDate: null,
+      exitBound: null,
+    });
+    expect(beyond).toContain("for more than 1.5 years");
   });
 });
