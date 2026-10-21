@@ -124,44 +124,52 @@ export function LowStockCard({
     // v1.32.22 — echo the base token so a concurrent notification-prefs
     // write (the iOS client, another web card) 409s instead of reverting a
     // sibling category through the server-side deep-merge.
-    const res = await apiFetchRaw("/api/auth/me/notification-prefs", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        withBaseToken(
-          body,
-          readUpdatedAtToken(queryClient, queryKeys.authNotificationPrefs()),
+    let saved = false;
+    try {
+      // A request that never reaches the server (offline, a dropped
+      // connection) is a failed save like any other, not a stuck one: it
+      // falls through to the error branch, and `finally` lowers the flag.
+      const res = await apiFetchRaw("/api/auth/me/notification-prefs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          withBaseToken(
+            body,
+            readUpdatedAtToken(queryClient, queryKeys.authNotificationPrefs()),
+          ),
         ),
-      ),
-    });
+      }).catch(() => null);
 
-    if (res.ok) {
-      setMsg(successMsg);
-      setMsgType("success");
-      await Promise.all([
-        queryClient.invalidateQueries({
+      saved = res?.ok === true;
+      if (res?.ok) {
+        setMsg(successMsg);
+        setMsgType("success");
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.authNotificationPrefs(),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.settingsReminderThresholds(),
+          }),
+        ]);
+      } else if (res?.status === 409) {
+        // The prefs advanced since they were loaded. Refetch (the active query
+        // reseeds a fresh token) and nudge — the caller reverts its optimistic
+        // value, so the card snaps back to server truth for a re-apply.
+        await queryClient.invalidateQueries({
           queryKey: queryKeys.authNotificationPrefs(),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.settingsReminderThresholds(),
-        }),
-      ]);
-    } else if (res.status === 409) {
-      // The prefs advanced since they were loaded. Refetch (the active query
-      // reseeds a fresh token) and nudge — the caller reverts its optimistic
-      // value, so the card snaps back to server truth for a re-apply.
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.authNotificationPrefs(),
-      });
-      setMsg(t("common.conflictReloaded"));
-      setMsgType("error");
-    } else {
-      setMsg(t("notifications.lowStock.saveError"));
-      setMsgType("error");
+        });
+        setMsg(t("common.conflictReloaded"));
+        setMsgType("error");
+      } else {
+        setMsg(t("notifications.lowStock.saveError"));
+        setMsgType("error");
+      }
+      scheduleClear();
+    } finally {
+      setSaving(false);
     }
-    scheduleClear();
-    setSaving(false);
-    return res.ok;
+    return saved;
   }
 
   async function persist(next: number | null, successMsg: string) {

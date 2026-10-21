@@ -99,38 +99,44 @@ export function MoodReminderCard({
       clearTimerRef.current = null;
     }
 
-    const res = await apiFetchRaw("/api/user/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ moodReminderEnabled: next }),
-    });
+    try {
+      // A request that never reaches the server (offline, a dropped
+      // connection) is a failed save like any other, not a stuck one: it
+      // falls through to the error branch, and `finally` lowers the flag.
+      const res = await apiFetchRaw("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moodReminderEnabled: next }),
+      }).catch(() => null);
 
-    if (res.ok) {
-      setMsg(
-        next
-          ? t("notifications.moodReminder.enabledToast")
-          : t("notifications.moodReminder.disabledToast"),
-      );
-      setMsgType("success");
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.userProfile(),
-        }),
-        // The /notifications matrix shows the reminder's channel switches
-        // from the server's `eventDefaults`, which follow this card.
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.notificationsPreferences(),
-        }),
-      ]);
-      setOptimistic(null);
-      scheduleClear();
-    } else {
-      setOptimistic(null);
-      setMsg(t("notifications.moodReminder.saveError"));
-      setMsgType("error");
-      scheduleClear();
+      if (res?.ok) {
+        setMsg(
+          next
+            ? t("notifications.moodReminder.enabledToast")
+            : t("notifications.moodReminder.disabledToast"),
+        );
+        setMsgType("success");
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.userProfile(),
+          }),
+          // The /notifications matrix shows the reminder's channel switches
+          // from the server's `eventDefaults`, which follow this card.
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.notificationsPreferences(),
+          }),
+        ]);
+        setOptimistic(null);
+        scheduleClear();
+      } else {
+        setOptimistic(null);
+        setMsg(t("notifications.moodReminder.saveError"));
+        setMsgType("error");
+        scheduleClear();
+      }
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   async function handleHourChange(next: number) {
@@ -146,43 +152,49 @@ export function MoodReminderCard({
     // v1.32.22 — echo the base token so a concurrent notification-prefs
     // write (the iOS client's `clientManaged` flag, another web card) 409s
     // instead of silently reverting a sibling category through the deep-merge.
-    const res = await apiFetchRaw("/api/auth/me/notification-prefs", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        withBaseToken(
-          { mood: { reminderHour: next } },
-          readUpdatedAtToken(queryClient, queryKeys.authNotificationPrefs()),
+    try {
+      // A request that never reaches the server (offline, a dropped
+      // connection) is a failed save like any other, not a stuck one: it
+      // falls through to the error branch, and `finally` lowers the flag.
+      const res = await apiFetchRaw("/api/auth/me/notification-prefs", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          withBaseToken(
+            { mood: { reminderHour: next } },
+            readUpdatedAtToken(queryClient, queryKeys.authNotificationPrefs()),
+          ),
         ),
-      ),
-    });
+      }).catch(() => null);
 
-    if (res.ok) {
-      setMsg(t("notifications.moodReminder.hourSavedToast"));
-      setMsgType("success");
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.authNotificationPrefs(),
-      });
-      setOptimisticHour(null);
-      scheduleClear();
-    } else if (res.status === 409) {
-      // The prefs advanced since they were loaded. Revert the optimistic hour
-      // and refetch (the active query reseeds a fresh token), then nudge — the
-      // change did not persist, so ask the user to re-apply it.
-      setOptimisticHour(null);
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.authNotificationPrefs(),
-      });
-      setMsg(t("common.conflictReloaded"));
-      setMsgType("error");
-      scheduleClear();
-    } else {
-      setOptimisticHour(null);
-      setMsg(t("notifications.moodReminder.saveError"));
-      setMsgType("error");
-      scheduleClear();
+      if (res?.ok) {
+        setMsg(t("notifications.moodReminder.hourSavedToast"));
+        setMsgType("success");
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.authNotificationPrefs(),
+        });
+        setOptimisticHour(null);
+        scheduleClear();
+      } else if (res?.status === 409) {
+        // The prefs advanced since they were loaded. Revert the optimistic hour
+        // and refetch (the active query reseeds a fresh token), then nudge — the
+        // change did not persist, so ask the user to re-apply it.
+        setOptimisticHour(null);
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.authNotificationPrefs(),
+        });
+        setMsg(t("common.conflictReloaded"));
+        setMsgType("error");
+        scheduleClear();
+      } else {
+        setOptimisticHour(null);
+        setMsg(t("notifications.moodReminder.saveError"));
+        setMsgType("error");
+        scheduleClear();
+      }
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   return (
