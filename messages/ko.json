@@ -6141,10 +6141,6 @@
       "access": {
         "title": "공유 접근",
         "subtitle": "내 건강 기록을 누가 열 수 있고, 내가 누구의 기록을 열 수 있는지예요."
-      },
-      "preview": {
-        "title": "미리 보기 기능",
-        "subtitle": "아직 완성되지 않은 기능을 써 보세요. 직접 켜기 전까지는 모두 꺼져 있습니다."
       }
     },
     "profile": "프로필",
@@ -7628,17 +7624,6 @@
     "passkeyRemovedToast": "패스키를 삭제했어요.",
     "integrationDisconnected": "{provider} 연결을 해제했어요.",
     "integrationDisconnectFailed": "{provider} 연결을 해제하지 못했어요.",
-    "preview": {
-      "topics": {
-        "title": "주제 (베타)",
-        "description": "준비되면 개별 지표 페이지 위에 개요 페이지가 있는 별도의 주제 항목을 추가해요.",
-        "detail": "인사이트 페이지, 메뉴, 링크는 지금 그대로 유지됩니다. 주제 페이지는 이후 업데이트에서 제공되며, 이 스위치로 표시 여부를 정합니다.",
-        "savedOn": "주제 미리 보기를 켰습니다.",
-        "savedOff": "주제 미리 보기를 껐습니다."
-      },
-      "loadError": "미리 보기 설정을 불러오지 못했습니다.",
-      "feedbackLink": "GitHub 토론에서 의견 남기기"
-    },
     "timezoneSaved": "시간대를 저장했습니다.",
     "moduleState": {
       "on": "켜짐",

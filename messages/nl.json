@@ -6141,10 +6141,6 @@
       "access": {
         "title": "Gedeelde toegang",
         "subtitle": "Wie je gezondheidsdossier kan openen, en wiens dossier jij kunt openen."
-      },
-      "preview": {
-        "title": "Previewfuncties",
-        "subtitle": "Probeer wat nog niet af is. Alles hier blijft uit tot je het aanzet."
       }
     },
     "profile": "Profiel",
@@ -7628,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey verwijderd.",
     "integrationDisconnected": "{provider} ontkoppeld.",
     "integrationDisconnectFailed": "{provider} kon niet worden ontkoppeld.",
-    "preview": {
-      "topics": {
-        "title": "Onderwerpen (bèta)",
-        "description": "Voegt een apart item Onderwerpen toe, met overzichtspagina’s boven de pagina’s per meting, zodra die klaar zijn.",
-        "detail": "Je inzichtpagina’s, navigatie en links blijven precies zoals ze zijn. De onderwerppagina’s komen met een latere update; deze schakelaar bepaalt of je ze ziet.",
-        "savedOn": "Preview van onderwerpen ingeschakeld.",
-        "savedOff": "Preview van onderwerpen uitgeschakeld."
-      },
-      "loadError": "Je preview-instellingen konden niet worden geladen.",
-      "feedbackLink": "Geef feedback in de GitHub-discussies"
-    },
     "timezoneSaved": "Tijdzone opgeslagen.",
     "moduleState": {
       "on": "Aan",

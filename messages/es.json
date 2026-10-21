@@ -6141,10 +6141,6 @@
       "access": {
         "title": "Acceso compartido",
         "subtitle": "Quién puede abrir tu historial de salud y cuál puedes abrir tú."
-      },
-      "preview": {
-        "title": "Funciones en vista previa",
-        "subtitle": "Prueba lo que aún no está terminado. Todo aquí sigue desactivado hasta que lo actives."
       }
     },
     "profile": "Perfil",
@@ -7628,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey eliminada.",
     "integrationDisconnected": "{provider} desconectado.",
     "integrationDisconnectFailed": "No se pudo desconectar {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Temas (beta)",
-        "description": "Añadirá una entrada aparte, Temas, con páginas de resumen por encima de las páginas de cada métrica cuando estén listas.",
-        "detail": "Tus páginas de análisis, la navegación y los enlaces se quedan exactamente como están. Las páginas de temas llegan en una actualización posterior; este interruptor decide si las ves.",
-        "savedOn": "Vista previa de Temas activada.",
-        "savedOff": "Vista previa de Temas desactivada."
-      },
-      "loadError": "No se pudieron cargar tus ajustes de vista previa.",
-      "feedbackLink": "Comparte tu opinión en las discusiones de GitHub"
-    },
     "timezoneSaved": "Zona horaria guardada.",
     "moduleState": {
       "on": "Activado",

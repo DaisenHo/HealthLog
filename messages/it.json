@@ -6141,10 +6141,6 @@
       "access": {
         "title": "Accesso condiviso",
         "subtitle": "Chi può aprire la tua cartella sanitaria e quale puoi aprire tu."
-      },
-      "preview": {
-        "title": "Funzioni in anteprima",
-        "subtitle": "Prova ciò che non è ancora finito. Qui tutto resta spento finché non lo attivi."
       }
     },
     "profile": "Profilo",
@@ -7628,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey rimossa.",
     "integrationDisconnected": "{provider} disconnesso.",
     "integrationDisconnectFailed": "Impossibile disconnettere {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Temi (beta)",
-        "description": "Aggiungerà una voce Temi separata, con pagine di panoramica sopra le pagine delle singole metriche, appena saranno pronte.",
-        "detail": "Le pagine delle analisi, la navigazione e i link restano esattamente come sono. Le pagine dei temi arrivano con un aggiornamento successivo; questo interruttore decide se le vedi.",
-        "savedOn": "Anteprima dei temi attivata.",
-        "savedOff": "Anteprima dei temi disattivata."
-      },
-      "loadError": "Impossibile caricare le impostazioni di anteprima.",
-      "feedbackLink": "Lascia un parere nelle discussioni su GitHub"
-    },
     "timezoneSaved": "Fuso orario salvato.",
     "moduleState": {
       "on": "Attivo",

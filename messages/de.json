@@ -6141,10 +6141,6 @@
       "access": {
         "title": "Geteilter Zugriff",
         "subtitle": "Wer deine Gesundheitsakte öffnen kann und wessen Akte du öffnen kannst."
-      },
-      "preview": {
-        "title": "Vorschau-Funktionen",
-        "subtitle": "Probier aus, was noch nicht fertig ist. Alles hier bleibt aus, bis du es einschaltest."
       }
     },
     "profile": "Profil",
@@ -7628,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey entfernt.",
     "integrationDisconnected": "{provider} getrennt.",
     "integrationDisconnectFailed": "{provider} konnte nicht getrennt werden.",
-    "preview": {
-      "topics": {
-        "title": "Themen (Beta)",
-        "description": "Fügt einen eigenen Eintrag Themen hinzu, sobald die Übersichtsseiten über den einzelnen Insights-Seiten fertig sind.",
-        "detail": "Deine Insights-Seiten, die Navigation und alle Links bleiben genau wie sie sind. Die Themenseiten kommen mit einem späteren Update; dieser Schalter legt fest, ob du sie siehst.",
-        "savedOn": "Themen-Vorschau eingeschaltet.",
-        "savedOff": "Themen-Vorschau ausgeschaltet."
-      },
-      "loadError": "Deine Vorschau-Einstellungen konnten nicht geladen werden.",
-      "feedbackLink": "Feedback in den GitHub-Diskussionen geben"
-    },
     "timezoneSaved": "Zeitzone gespeichert.",
     "moduleState": {
       "on": "An",

@@ -6141,10 +6141,6 @@
       "access": {
         "title": "Udostępniony dostęp",
         "subtitle": "Kto może otworzyć twoją kartę zdrowia i czyją kartę możesz otworzyć ty."
-      },
-      "preview": {
-        "title": "Funkcje w podglądzie",
-        "subtitle": "Wypróbuj to, co nie jest jeszcze gotowe. Wszystko tutaj pozostaje wyłączone, dopóki tego nie włączysz."
       }
     },
     "profile": "Profil",
@@ -7628,17 +7624,6 @@
     "passkeyRemovedToast": "Usunięto passkey.",
     "integrationDisconnected": "Rozłączono {provider}.",
     "integrationDisconnectFailed": "Nie udało się rozłączyć {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Tematy (beta)",
-        "description": "Doda osobną pozycję Tematy ze stronami przeglądowymi nad stronami poszczególnych pomiarów, gdy będą gotowe.",
-        "detail": "Strony analiz, nawigacja i linki pozostają dokładnie takie, jakie są. Strony tematów pojawią się w późniejszej aktualizacji; ten przełącznik decyduje, czy je zobaczysz.",
-        "savedOn": "Podgląd tematów włączony.",
-        "savedOff": "Podgląd tematów wyłączony."
-      },
-      "loadError": "Nie udało się wczytać ustawień podglądu.",
-      "feedbackLink": "Podziel się opinią w dyskusjach na GitHubie"
-    },
     "timezoneSaved": "Strefa czasowa zapisana.",
     "moduleState": {
       "on": "Włączone",

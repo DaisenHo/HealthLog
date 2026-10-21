@@ -6141,10 +6141,6 @@
       "access": {
         "title": "Accès partagé",
         "subtitle": "Qui peut ouvrir votre dossier de santé, et lequel vous pouvez ouvrir."
-      },
-      "preview": {
-        "title": "Fonctions en aperçu",
-        "subtitle": "Essayez ce qui n’est pas encore terminé. Tout reste désactivé ici tant que vous ne l’activez pas."
       }
     },
     "profile": "Profil",
@@ -7628,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey supprimée.",
     "integrationDisconnected": "{provider} déconnecté.",
     "integrationDisconnectFailed": "Impossible de déconnecter {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Thèmes (bêta)",
-        "description": "Ajoutera une entrée Thèmes distincte, avec des pages de synthèse au-dessus des pages par mesure, dès qu'elles seront prêtes.",
-        "detail": "Vos pages d’analyse, la navigation et les liens restent exactement tels quels. Les pages de thèmes arrivent dans une mise à jour ultérieure ; cet interrupteur décide si vous les voyez.",
-        "savedOn": "Aperçu des thèmes activé.",
-        "savedOff": "Aperçu des thèmes désactivé."
-      },
-      "loadError": "Impossible de charger vos réglages d’aperçu.",
-      "feedbackLink": "Donner votre avis dans les discussions GitHub"
-    },
     "timezoneSaved": "Fuseau horaire enregistré.",
     "moduleState": {
       "on": "Activé",

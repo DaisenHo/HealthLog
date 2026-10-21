@@ -6141,10 +6141,6 @@
       "access": {
         "title": "Shared access",
         "subtitle": "Who can open your health record, and whose you can open."
-      },
-      "preview": {
-        "title": "Preview features",
-        "subtitle": "Try what is not finished yet. Everything here stays off until you switch it on."
       }
     },
     "profile": "Profile",
@@ -7628,17 +7624,6 @@
     "passkeyRemovedToast": "Passkey removed.",
     "integrationDisconnected": "{provider} disconnected.",
     "integrationDisconnectFailed": "Could not disconnect {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Topics (beta)",
-        "description": "Will add a separate Topics entry with overview pages above the single-metric Insights pages once they are ready.",
-        "detail": "Your Insights pages, navigation and links stay exactly as they are. The topic pages arrive in a later update; this switch decides whether you see them.",
-        "savedOn": "Topics preview switched on.",
-        "savedOff": "Topics preview switched off."
-      },
-      "loadError": "Could not load your preview settings.",
-      "feedbackLink": "Share feedback in the GitHub discussions"
-    },
     "timezoneSaved": "Timezone saved.",
     "moduleState": {
       "on": "On",
