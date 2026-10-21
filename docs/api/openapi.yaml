@@ -26155,7 +26155,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 104
+              maxItems: 106
               type: array
               items:
                 type: string
@@ -26215,7 +26215,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 104
+              maxItems: 106
               type: array
               items:
                 type: string
@@ -29248,7 +29248,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 104
+          maxItems: 106
           type: array
           items:
             type: string

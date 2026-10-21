@@ -401,7 +401,38 @@
     "lifeSittingValue": "{hours}시간, 본인 응답",
     "lifeWork": "일",
     "lifeNightWork": "야간 근무",
-    "lifeExposures": "노출: {list}"
+    "lifeExposures": "노출: {list}",
+    "workouts": {
+      "title": "운동",
+      "summary": "총 {sessions}회, {hours}시간; 주당 평균 {perWeek}회, {minutesPerWeek}분.",
+      "colSport": "종목",
+      "colSessions": "횟수",
+      "colTime": "시간",
+      "colDistance": "거리",
+      "colEnergy": "에너지",
+      "colHeartRate": "평균 심박수",
+      "moreSports": "{count}개 종목이 합계에는 포함되지만 목록에는 없습니다."
+    },
+    "medicationEffect": {
+      "title": "약 시작 전후의 변화",
+      "colMedication": "약 / 측정값",
+      "colStart": "시작",
+      "colLevel": "수준 변화(95% CI)",
+      "colSlope": "추세 변화(95% CI)",
+      "colDays": "전 / 후 일수",
+      "to": "~",
+      "week": "주",
+      "reasonNoStart": "기록된 시작일 없음",
+      "reasonBefore": "시작 전 측정값이 너무 적음",
+      "reasonAfter": "시작 후 측정값이 너무 적음",
+      "reasonFit": "계산할 수 없음",
+      "excludedAdherence": "시작 후 {count}일 제외(복용률 {floor}% 미만)",
+      "excludedNotTaking": "{count}일 제외(일시 중지 또는 복용 기간 사이)",
+      "notTracked": "복용 미기록으로 놓친 용량에 따른 제외 없음",
+      "endDoseChange": "기간은 첫 용량 변경 전인 {date}에 끝남",
+      "days": "시작 전 {before}일, 시작 후 {after}일, 제외 {excluded}일",
+      "method": "시작 90일 전부터 최대 180일 후까지의 일별 값에 대한 분절 회귀, Newey-West 구간. 직전 14일 복용률이 80% 미만인 시작 후 날짜는 제외했습니다. 시간에 따른 연관성을 보여 줄 뿐, 약의 효과를 입증하지 않습니다."
+    }
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",
@@ -12314,7 +12345,10 @@
     "leafVisits": "진료",
     "leafSurgicalHistory": "수술 이력",
     "leafImmunizations": "예방접종",
-    "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)"
+    "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)",
+    "leafMedicationEffect": "각 약 시작 전후의 변화",
+    "leafWorkouts": "운동(종목별 요약)",
+    "leafHrvSdnn": "심박변이도 (SDNN)"
   },
   "recordSharing": {
     "banner": {

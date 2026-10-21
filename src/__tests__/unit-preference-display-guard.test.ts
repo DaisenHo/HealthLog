@@ -361,6 +361,16 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     reason:
       "SI by policy: the clinician artefacts keep mass in kg (glucose follows the owner)",
   },
+  "lib/doctor-report-pdf/activity-effect-sections.ts": {
+    lines: 2,
+    reason:
+      "SI by policy: the report's workout distance is in km, like every clinician artefact",
+  },
+  "components/clinician/activity-effect-sections.tsx": {
+    lines: 1,
+    reason:
+      "SI by policy: the clinician page's workout distance is in km, like the PDF",
+  },
   "components/insights/workout-detail/splits.tsx": {
     lines: 1,
     reason: "kilometre splits are cut server-side; their pace is per km",

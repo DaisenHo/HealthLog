@@ -65,6 +65,8 @@ import { loadDenseMeasurementBuckets } from "./dense-buckets";
 import { summariseDenseBuckets } from "./measurement-series";
 import { emptyGlucoseClinical } from "./glucose-panel";
 import { buildAdministrationLedger, buildGlp1Block } from "./medications";
+import { loadReportWorkouts } from "./workouts";
+import { loadReportMedicationEffects } from "./medication-effects";
 import { userDayKey, validTimezoneOr, DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
   loadAllergies,
@@ -92,6 +94,9 @@ const DENSE_REPORT_RAW_WINDOW_DAYS = 90;
 const DENSE_STAT_TYPES = [
   "PULSE",
   "HEART_RATE_VARIABILITY",
+  // RMSSD arrives per night from most rings and bands, but some write it per
+  // five-minute window; the row cap below keeps the sparse case raw.
+  "HRV_RMSSD",
   "OXYGEN_SATURATION",
 ] as const satisfies readonly MeasurementType[];
 
@@ -114,6 +119,7 @@ const MEDICATION_LEAVES = [
   "MEDICATION_LIST",
   "MEDICATION_ADMINISTRATIONS",
   "MEDICATION_COMPLIANCE",
+  "MEDICATION_EFFECT",
   "GLP1_THERAPY",
 ] as const;
 
@@ -644,6 +650,8 @@ export async function collectDoctorReportData(
 
   // Each remaining structured block: read only when its leaf was chosen.
   const [
+    workouts,
+    medicationEffects,
     cycle,
     labResults,
     illnessEpisodes,
@@ -655,6 +663,26 @@ export async function collectDoctorReportData(
     anamnesis,
     emergency,
   ] = await Promise.all([
+    gate.admits("WORKOUTS")
+      ? loadReportWorkouts({
+          userId,
+          start,
+          end,
+          days,
+          sourcePriorityJson: userProfile?.sourcePriorityJson ?? null,
+        })
+      : Promise.resolve(null),
+    // The effect around each listed medication's start. Its own leaf AND the
+    // target's measurement leaf must both admit it; the loader asks the gate.
+    gate.admits("MEDICATION_EFFECT")
+      ? loadReportMedicationEffects({
+          userId,
+          medicationIds: medications.map((m) => m.id),
+          admitsMeasurement: (type) => gate.admits(type),
+          timezone: reportTz,
+          end,
+        })
+      : Promise.resolve(null),
     gate.admits("CYCLE")
       ? buildCycleExportSummary(userId, userDayKey(end, reportTz))
       : Promise.resolve(null),
@@ -765,5 +793,7 @@ export async function collectDoctorReportData(
     familyHistory,
     anamnesis,
     emergency,
+    workouts,
+    medicationEffects,
   };
 }

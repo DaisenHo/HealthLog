@@ -401,7 +401,38 @@
     "lifeSittingValue": "{hours} ore, dichiarate",
     "lifeWork": "Lavoro",
     "lifeNightWork": "lavoro notturno",
-    "lifeExposures": "esposizioni: {list}"
+    "lifeExposures": "esposizioni: {list}",
+    "workouts": {
+      "title": "Allenamenti",
+      "summary": "{sessions} sessioni, {hours} h in totale; in media {perWeek} sessioni e {minutesPerWeek} minuti a settimana.",
+      "colSport": "Sport",
+      "colSessions": "Sessioni",
+      "colTime": "Durata",
+      "colDistance": "Distanza",
+      "colEnergy": "Energia",
+      "colHeartRate": "FC media",
+      "moreSports": "Altri {count} sport sono inclusi nei totali ma non elencati."
+    },
+    "medicationEffect": {
+      "title": "Variazione intorno all'inizio dei farmaci",
+      "colMedication": "Farmaco / misura",
+      "colStart": "Inizio",
+      "colLevel": "Variazione di livello (IC 95 %)",
+      "colSlope": "Variazione di tendenza (IC 95 %)",
+      "colDays": "Giorni prima / dopo",
+      "to": "a",
+      "week": "settimana",
+      "reasonNoStart": "Nessuna data di inizio registrata",
+      "reasonBefore": "Troppo pochi valori prima dell'inizio",
+      "reasonAfter": "Troppo pochi valori dall'inizio",
+      "reasonFit": "Non calcolabile",
+      "excludedAdherence": "{count} giorni dopo l'inizio esclusi (meno del {floor} % delle dosi assunte)",
+      "excludedNotTaking": "{count} giorni esclusi (in pausa o tra due cicli)",
+      "notTracked": "assunzione non registrata, quindi nessun giorno escluso per dosi saltate",
+      "endDoseChange": "il periodo termina il {date}, prima della prima variazione di dose",
+      "days": "{before} giorni prima, {after} giorni dopo l'inizio, {excluded} giorni esclusi",
+      "method": "Regressione segmentata sui valori giornalieri da 90 giorni prima a non oltre 180 giorni dopo l'inizio, con intervalli di Newey-West. Sono esclusi i giorni dopo l'inizio in cui è stato assunto meno dell'80 % delle dosi dei 14 giorni precedenti. Descrive un'associazione nel tempo, non un effetto dimostrato del farmaco."
+    }
   },
   "errorBoundary": {
     "title": "Qualcosa è andato storto",
@@ -12314,7 +12345,10 @@
     "leafVisits": "Visite mediche",
     "leafSurgicalHistory": "Anamnesi chirurgica",
     "leafImmunizations": "Vaccinazioni",
-    "leafEmergency": "Informazioni di emergenza (gruppo sanguigno, contatti, disposizioni)"
+    "leafEmergency": "Informazioni di emergenza (gruppo sanguigno, contatti, disposizioni)",
+    "leafMedicationEffect": "Variazione intorno all'inizio di ogni farmaco",
+    "leafWorkouts": "Allenamenti (riepilogo per sport)",
+    "leafHrvSdnn": "HRV (SDNN)"
   },
   "recordSharing": {
     "banner": {

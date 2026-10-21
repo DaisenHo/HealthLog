@@ -16,13 +16,21 @@ import { type ReportLeafId } from "./catalogue";
 /**
  * Identity and insurer (the cover page a practice files the document under),
  * the three classic vitals, weight and BMI, the glucose series and its panel,
- * labs, the drug list and adherence, allergies, past illness episodes, the
- * surgical history and the immunization record.
+ * labs, the drug list, adherence and the effect around each start, sleep,
+ * both heart-rate-variability statistics, daily steps and the workout summary,
+ * allergies, past illness episodes, the surgical history and the immunization
+ * record.
  *
- * Deliberately not in it: everything a wearable produces, gait and mobility,
- * environment exposure, the per-dose administration ledger (a clinician asks
- * for adherence, not for every logged dose), the GLP-1 block, and the whole
- * fenced tier.
+ * The wearable picks (v1.44) are the four a general visit reads: sleep
+ * duration, SDNN and RMSSD as two labelled rows, steps and the per-sport
+ * workout block. Each is one table row or one compact block, and each still
+ * rides its module: an account with sleep or workouts switched off gets none
+ * of it.
+ *
+ * Deliberately not in it: the rest of what a wearable produces, gait and
+ * mobility, environment exposure, the per-dose administration ledger (a
+ * clinician asks for adherence, not for every logged dose), the GLP-1 block,
+ * and the whole fenced tier.
  */
 export const STANDARD_TEMPLATE_LEAVES: readonly ReportLeafId[] = [
   "PATIENT_IDENTITY",
@@ -38,6 +46,12 @@ export const STANDARD_TEMPLATE_LEAVES: readonly ReportLeafId[] = [
   "LAB_RESULTS",
   "MEDICATION_LIST",
   "MEDICATION_COMPLIANCE",
+  "MEDICATION_EFFECT",
+  "SLEEP_DURATION",
+  "HEART_RATE_VARIABILITY",
+  "HRV_RMSSD",
+  "ACTIVITY_STEPS",
+  "WORKOUTS",
   "ALLERGIES",
   "ILLNESS_EPISODES",
   "SURGICAL_HISTORY",

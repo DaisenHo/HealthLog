@@ -257,6 +257,17 @@ function seed() {
       practitioner: { name: "Sample practice" },
     },
   ];
+  rows.workout = [
+    {
+      sportType: "running",
+      startedAt: new Date("2026-02-03T07:00:00.000Z"),
+      durationSec: 1800,
+      source: "MANUAL",
+      totalDistanceM: 5000,
+      totalEnergyKcal: 300,
+      avgHeartRate: 140,
+    },
+  ];
   rows.familyHistoryEntry = [
     { relationship: "MOTHER", condition: "Hypertension", ageAtOnset: 50 },
   ];

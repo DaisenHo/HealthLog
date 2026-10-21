@@ -401,7 +401,38 @@
     "lifeSittingValue": "{hours} uur, zelf opgegeven",
     "lifeWork": "Werk",
     "lifeNightWork": "nachtwerk",
-    "lifeExposures": "blootstellingen: {list}"
+    "lifeExposures": "blootstellingen: {list}",
+    "workouts": {
+      "title": "Trainingen",
+      "summary": "{sessions} trainingen, {hours} u in totaal; gemiddeld {perWeek} trainingen en {minutesPerWeek} minuten per week.",
+      "colSport": "Sport",
+      "colSessions": "Trainingen",
+      "colTime": "Duur",
+      "colDistance": "Afstand",
+      "colEnergy": "Energie",
+      "colHeartRate": "Gem. hartslag",
+      "moreSports": "{count} andere sporten tellen mee in de totalen, maar staan niet in de lijst."
+    },
+    "medicationEffect": {
+      "title": "Verandering rond de start van medicijnen",
+      "colMedication": "Medicijn / meetwaarde",
+      "colStart": "Start",
+      "colLevel": "Niveauverandering (95%-BI)",
+      "colSlope": "Trendverandering (95%-BI)",
+      "colDays": "Dagen voor / na",
+      "to": "tot",
+      "week": "week",
+      "reasonNoStart": "Geen startdatum vastgelegd",
+      "reasonBefore": "Te weinig waarden vóór de start",
+      "reasonAfter": "Te weinig waarden sinds de start",
+      "reasonFit": "Niet te berekenen",
+      "excludedAdherence": "{count} dagen na de start weggelaten (minder dan {floor}% van de doses ingenomen)",
+      "excludedNotTaking": "{count} dagen weggelaten (gepauzeerd of tussen kuren)",
+      "notTracked": "inname niet bijgehouden, dus geen dagen weggelaten om gemiste doses",
+      "endDoseChange": "periode eindigt op {date}, vóór de eerste dosiswijziging",
+      "days": "{before} dagen voor, {after} dagen na de start, {excluded} dagen weggelaten",
+      "method": "Gesegmenteerde regressie op de dagwaarden van 90 dagen vóór tot hoogstens 180 dagen na de start, met Newey-West-intervallen. Dagen na de start waarop minder dan 80% van de doses van de 14 dagen ervoor is ingenomen, zijn weggelaten. Beschrijft een samenhang in de tijd, geen bewezen effect van het medicijn."
+    }
   },
   "errorBoundary": {
     "title": "Er is iets misgegaan",
@@ -12314,7 +12345,10 @@
     "leafVisits": "Bezoeken",
     "leafSurgicalHistory": "Operatiegeschiedenis",
     "leafImmunizations": "Vaccinaties",
-    "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)"
+    "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)",
+    "leafMedicationEffect": "Verandering rond de start van elk medicijn",
+    "leafWorkouts": "Trainingen (overzicht per sport)",
+    "leafHrvSdnn": "HRV (SDNN)"
   },
   "recordSharing": {
     "banner": {

@@ -401,7 +401,38 @@
     "lifeSittingValue": "{hours} Stunden, Selbstauskunft",
     "lifeWork": "Arbeit",
     "lifeNightWork": "Nachtarbeit",
-    "lifeExposures": "Belastungen: {list}"
+    "lifeExposures": "Belastungen: {list}",
+    "workouts": {
+      "title": "Trainings",
+      "summary": "{sessions} Einheiten, insgesamt {hours} h; im Schnitt {perWeek} Einheiten und {minutesPerWeek} Minuten pro Woche.",
+      "colSport": "Sportart",
+      "colSessions": "Einheiten",
+      "colTime": "Dauer",
+      "colDistance": "Strecke",
+      "colEnergy": "Energie",
+      "colHeartRate": "Ø Herzfrequenz",
+      "moreSports": "{count} weitere Sportarten sind in den Summen enthalten, aber nicht einzeln aufgeführt."
+    },
+    "medicationEffect": {
+      "title": "Veränderung rund um den Start der Medikamente",
+      "colMedication": "Medikament / Messwert",
+      "colStart": "Start",
+      "colLevel": "Niveauänderung (95-%-KI)",
+      "colSlope": "Trendänderung (95-%-KI)",
+      "colDays": "Tage vor / nach",
+      "to": "bis",
+      "week": "Woche",
+      "reasonNoStart": "Kein Startdatum erfasst",
+      "reasonBefore": "Zu wenige Werte vor dem Start",
+      "reasonAfter": "Zu wenige Werte seit dem Start",
+      "reasonFit": "Nicht berechenbar",
+      "excludedAdherence": "{count} Tage nach dem Start ausgelassen (unter {floor} % der Dosen eingenommen)",
+      "excludedNotTaking": "{count} Tage ausgelassen (pausiert oder zwischen Einnahmezeiträumen)",
+      "notTracked": "Einnahme nicht erfasst, daher keine Tage wegen ausgelassener Dosen entfernt",
+      "endDoseChange": "Zeitraum endet am {date}, vor der ersten Dosisänderung",
+      "days": "{before} Tage vor, {after} Tage nach dem Start, {excluded} Tage ausgelassen",
+      "method": "Segmentierte Regression über die Tageswerte von 90 Tagen vor bis höchstens 180 Tagen nach dem Start, Intervalle nach Newey-West. Tage nach dem Start, an denen in den 14 Tagen davor weniger als 80 % der Dosen eingenommen wurden, sind ausgelassen. Beschreibt einen zeitlichen Zusammenhang, keine nachgewiesene Wirkung des Medikaments."
+    }
   },
   "errorBoundary": {
     "title": "Da ist etwas schiefgelaufen",
@@ -12314,7 +12345,10 @@
     "leafVisits": "Arztbesuche",
     "leafSurgicalHistory": "Operationen und Eingriffe",
     "leafImmunizations": "Impfungen",
-    "leafEmergency": "Notfalldaten (Blutgruppe, Kontakte, Verfügungen)"
+    "leafEmergency": "Notfalldaten (Blutgruppe, Kontakte, Verfügungen)",
+    "leafMedicationEffect": "Veränderung rund um den Start jedes Medikaments",
+    "leafWorkouts": "Trainings (Übersicht je Sportart)",
+    "leafHrvSdnn": "HRV (SDNN)"
   },
   "recordSharing": {
     "banner": {

@@ -13,7 +13,7 @@
  * is `STRUCTURED_LEAF_GROUP`, the other is HTML rendered by the real
  * `<ClinicianView>` over a real fixture. It proves four things per leaf.
  *
- *   1. `DISPOSITIONS` is `Record<StructuredLeafId, …>`, so a nineteenth
+ *   1. `DISPOSITIONS` is `Record<StructuredLeafId, …>`, so a new
  *      structured leaf cannot be added to the catalogue without deciding here
  *      whether it renders — and saying so — or `pnpm typecheck` fails. That is
  *      the lock, and it is the compiler's, not this suite's.
@@ -291,6 +291,69 @@ const DISPOSITIONS: Record<StructuredLeafId, Disposition> = {
     },
     marker: "Semaglutide",
   },
+  MEDICATION_EFFECT: {
+    kind: "rendered",
+    data: {
+      medicationEffects: [
+        {
+          medicationName: "Effect-marker drug",
+          startsOn: "2026-01-02",
+          targets: [
+            {
+              type: "BLOOD_PRESSURE_SYS",
+              effect: {
+                present: false,
+                reason: "insufficient_after",
+                level: 0.95,
+                window: null,
+                days: {
+                  before: 40,
+                  after: 3,
+                  excludedLowAdherence: 0,
+                  excludedNotTaking: 0,
+                },
+                adherence: {
+                  status: "tracked",
+                  floorPct: 80,
+                  lookbackDays: 14,
+                },
+                levelChange: null,
+                slopeChangePerWeek: null,
+                preSlopePerWeek: null,
+                fit: null,
+                confounders: [],
+              },
+            },
+          ],
+        },
+      ],
+    },
+    marker: "Effect-marker drug",
+  },
+  WORKOUTS: {
+    kind: "rendered",
+    data: {
+      workouts: {
+        sessions: 3,
+        totalDurationSec: 7200,
+        sessionsPerWeek: 0.7,
+        minutesPerWeek: 28,
+        sportCount: 1,
+        bySport: [
+          {
+            sportType: "rowing",
+            sessions: 3,
+            durationSec: 7200,
+            distanceM: 15000,
+            distanceSessions: 3,
+            energyKcal: null,
+            avgHeartRate: null,
+          },
+        ],
+      },
+    },
+    marker: "15.0 km",
+  },
   ALLERGIES: {
     kind: "rendered",
     data: {
@@ -444,7 +507,7 @@ describe("clinician view — every catalogue leaf has a renderer or a reason", (
   it("reads a plausible catalogue", () => {
     // Sanity floor: a degraded import would satisfy every loop below
     // vacuously, which is the failure mode a pair guard dies of.
-    expect(STRUCTURED_LEAF_IDS).toHaveLength(18);
+    expect(STRUCTURED_LEAF_IDS).toHaveLength(20);
     expect(Object.keys(DISPOSITIONS).sort()).toEqual(
       [...STRUCTURED_LEAF_IDS].sort(),
     );

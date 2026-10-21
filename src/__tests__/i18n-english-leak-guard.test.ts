@@ -98,6 +98,8 @@ const LEGIT_IDENTICAL = new Set<string>([
   "insights.derived.composite.READINESS.component.hrv",
   "labs.catalog.hs-crp",
   "measurements.typeHrvRmssd",
+  // The report's SDNN row, named the way the RMSSD row above is.
+  "reportSelection.leafHrvSdnn",
   "illness.vital.HRV_RMSSD",
   "settings.sections.sources.metrics.hrvRmssd",
   "measurements.typeVo2Max",

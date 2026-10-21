@@ -401,7 +401,38 @@
     "lifeSittingValue": "{hours} horas, declarado",
     "lifeWork": "Trabajo",
     "lifeNightWork": "trabajo nocturno",
-    "lifeExposures": "exposiciones: {list}"
+    "lifeExposures": "exposiciones: {list}",
+    "workouts": {
+      "title": "Entrenamientos",
+      "summary": "{sessions} sesiones, {hours} h en total; de media {perWeek} sesiones y {minutesPerWeek} minutos por semana.",
+      "colSport": "Deporte",
+      "colSessions": "Sesiones",
+      "colTime": "Tiempo",
+      "colDistance": "Distancia",
+      "colEnergy": "Energía",
+      "colHeartRate": "FC media",
+      "moreSports": "{count} deportes más se cuentan en los totales, pero no se enumeran."
+    },
+    "medicationEffect": {
+      "title": "Cambio en torno al inicio de cada medicamento",
+      "colMedication": "Medicamento / medida",
+      "colStart": "Inicio",
+      "colLevel": "Cambio de nivel (IC 95 %)",
+      "colSlope": "Cambio de tendencia (IC 95 %)",
+      "colDays": "Días antes / después",
+      "to": "a",
+      "week": "semana",
+      "reasonNoStart": "Sin fecha de inicio registrada",
+      "reasonBefore": "Muy pocos valores antes del inicio",
+      "reasonAfter": "Muy pocos valores desde el inicio",
+      "reasonFit": "No se pudo calcular",
+      "excludedAdherence": "{count} días después del inicio omitidos (menos del {floor} % de las dosis tomadas)",
+      "excludedNotTaking": "{count} días omitidos (en pausa o entre tandas)",
+      "notTracked": "toma no registrada, así que no se omitió ningún día por dosis olvidadas",
+      "endDoseChange": "el periodo termina el {date}, antes del primer cambio de dosis",
+      "days": "{before} días antes, {after} días después del inicio, {excluded} días omitidos",
+      "method": "Regresión segmentada sobre los valores diarios desde 90 días antes hasta como máximo 180 días después del inicio, con intervalos de Newey-West. Se omiten los días posteriores al inicio en los que se tomó menos del 80 % de las dosis de los 14 días anteriores. Describe una asociación en el tiempo, no un efecto demostrado del medicamento."
+    }
   },
   "errorBoundary": {
     "title": "Algo ha salido mal",
@@ -12314,7 +12345,10 @@
     "leafVisits": "Visitas médicas",
     "leafSurgicalHistory": "Antecedentes quirúrgicos",
     "leafImmunizations": "Vacunas",
-    "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)"
+    "leafEmergency": "Información de emergencia (grupo sanguíneo, contactos, voluntades)",
+    "leafMedicationEffect": "Cambio en torno al inicio de cada medicamento",
+    "leafWorkouts": "Entrenamientos (resumen por deporte)",
+    "leafHrvSdnn": "VFC (SDNN)"
   },
   "recordSharing": {
     "banner": {

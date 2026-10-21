@@ -401,7 +401,38 @@
     "lifeSittingValue": "{hours} godz., według deklaracji",
     "lifeWork": "Praca",
     "lifeNightWork": "praca w nocy",
-    "lifeExposures": "narażenia: {list}"
+    "lifeExposures": "narażenia: {list}",
+    "workouts": {
+      "title": "Treningi",
+      "summary": "{sessions} treningów, łącznie {hours} h; średnio {perWeek} treningu i {minutesPerWeek} minut tygodniowo.",
+      "colSport": "Dyscyplina",
+      "colSessions": "Treningi",
+      "colTime": "Czas",
+      "colDistance": "Dystans",
+      "colEnergy": "Energia",
+      "colHeartRate": "Średnie tętno",
+      "moreSports": "Kolejne dyscypliny ({count}) są wliczone do sum, ale nie wymienione."
+    },
+    "medicationEffect": {
+      "title": "Zmiana wokół rozpoczęcia leków",
+      "colMedication": "Lek / pomiar",
+      "colStart": "Początek",
+      "colLevel": "Zmiana poziomu (95% CI)",
+      "colSlope": "Zmiana trendu (95% CI)",
+      "colDays": "Dni przed / po",
+      "to": "do",
+      "week": "tydzień",
+      "reasonNoStart": "Brak zapisanej daty rozpoczęcia",
+      "reasonBefore": "Za mało pomiarów przed rozpoczęciem",
+      "reasonAfter": "Za mało pomiarów od rozpoczęcia",
+      "reasonFit": "Nie można obliczyć",
+      "excludedAdherence": "Pominięto {count} dni po rozpoczęciu (przyjęto mniej niż {floor}% dawek)",
+      "excludedNotTaking": "Pominięto {count} dni (lek wstrzymany lub przerwa między kuracjami)",
+      "notTracked": "przyjmowanie nie jest rejestrowane, więc nie pominięto dni z powodu opuszczonych dawek",
+      "endDoseChange": "okres kończy się {date}, przed pierwszą zmianą dawki",
+      "days": "{before} dni przed, {after} dni po rozpoczęciu, pominięto {excluded} dni",
+      "method": "Regresja segmentowa na wartościach dziennych od 90 dni przed do najwyżej 180 dni po rozpoczęciu, przedziały Neweya-Westa. Pominięto dni po rozpoczęciu, w których w ciągu poprzednich 14 dni przyjęto mniej niż 80% dawek. Opisuje związek w czasie, a nie udowodnione działanie leku."
+    }
   },
   "errorBoundary": {
     "title": "Coś poszło nie tak",
@@ -12314,7 +12345,10 @@
     "leafVisits": "Wizyty lekarskie",
     "leafSurgicalHistory": "Historia operacji",
     "leafImmunizations": "Szczepienia",
-    "leafEmergency": "Informacje na wypadek nagły (grupa krwi, kontakty, oświadczenia)"
+    "leafEmergency": "Informacje na wypadek nagły (grupa krwi, kontakty, oświadczenia)",
+    "leafMedicationEffect": "Zmiana wokół rozpoczęcia każdego leku",
+    "leafWorkouts": "Treningi (podsumowanie według dyscypliny)",
+    "leafHrvSdnn": "HRV (SDNN)"
   },
   "recordSharing": {
     "banner": {

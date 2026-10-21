@@ -401,7 +401,38 @@
     "lifeSittingValue": "{hours} hours, self-reported",
     "lifeWork": "Work",
     "lifeNightWork": "night work",
-    "lifeExposures": "exposures: {list}"
+    "lifeExposures": "exposures: {list}",
+    "workouts": {
+      "title": "Workouts",
+      "summary": "{sessions} sessions, {hours} h in total; on average {perWeek} sessions and {minutesPerWeek} minutes per week.",
+      "colSport": "Sport",
+      "colSessions": "Sessions",
+      "colTime": "Time",
+      "colDistance": "Distance",
+      "colEnergy": "Energy",
+      "colHeartRate": "Avg heart rate",
+      "moreSports": "{count} more sports are counted in the totals but not listed."
+    },
+    "medicationEffect": {
+      "title": "Change around each medication start",
+      "colMedication": "Medication / measure",
+      "colStart": "Start",
+      "colLevel": "Level change (95 % CI)",
+      "colSlope": "Trend change (95 % CI)",
+      "colDays": "Days before / after",
+      "to": "to",
+      "week": "week",
+      "reasonNoStart": "No start date recorded",
+      "reasonBefore": "Too few readings before the start",
+      "reasonAfter": "Too few readings since the start",
+      "reasonFit": "Could not be computed",
+      "excludedAdherence": "{count} days after the start left out (under {floor} % of doses taken)",
+      "excludedNotTaking": "{count} days left out (paused or between courses)",
+      "notTracked": "intake not tracked, so no days left out for missed doses",
+      "endDoseChange": "window ends {date}, before the first dose change",
+      "days": "{before} days before, {after} days after the start, {excluded} days left out",
+      "method": "Segmented regression on daily values from 90 days before to at most 180 days after the start, with Newey-West intervals. Days after the start on which fewer than 80 % of the doses of the preceding 14 days were taken are left out. Describes an association over time, not a proven effect of the medication."
+    }
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -12314,7 +12345,10 @@
     "leafVisits": "Visits",
     "leafSurgicalHistory": "Surgical history",
     "leafImmunizations": "Immunizations",
-    "leafEmergency": "Emergency information (blood type, contacts, directives)"
+    "leafEmergency": "Emergency information (blood type, contacts, directives)",
+    "leafMedicationEffect": "Change around each medication start",
+    "leafWorkouts": "Workouts (summary per sport)",
+    "leafHrvSdnn": "HRV (SDNN)"
   },
   "recordSharing": {
     "banner": {
