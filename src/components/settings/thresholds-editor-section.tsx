@@ -179,6 +179,7 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
             confirmLabel={t("thresholds.resetAllConfirm")}
             pending={resetMutation.isPending}
             onConfirm={() => resetMutation.mutate(null)}
+            destructive
           />
         </SettingsCardActions>
       ) : null}
@@ -371,6 +372,7 @@ function MetricRow({
               setOverrideMode(false);
               onReset();
             }}
+            destructive
           />
           {hasOverride && (
             <Badge variant="outline" className="text-xs">
@@ -445,6 +447,7 @@ function MetricRow({
                   confirmLabel={t("thresholds.resetConfirm")}
                   pending={busy}
                   onConfirm={onReset}
+                  destructive
                 />
               )}
             </div>

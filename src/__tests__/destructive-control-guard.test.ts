@@ -110,7 +110,7 @@ const REGISTRY: DestructiveEntry[] = [
     destroys:
       "every health record on the account, or the whole account including passkeys and audit history",
     recovery: "permanent",
-    confirm: ["AlertDialog"],
+    confirm: ["ConfirmDialog"],
   },
   {
     file: "components/settings/security-sessions-card.tsx",
@@ -129,13 +129,13 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/security-section/passkey-list-section.tsx",
     destroys: "a passkey — hard-deleted, the credential cannot be re-derived",
     recovery: "permanent",
-    confirm: ["AlertDialog"],
+    confirm: ["ConfirmButton"],
   },
   {
     file: "components/settings/security-section/security-keys-card.tsx",
     destroys: "a WebAuthn second factor",
     recovery: "permanent",
-    confirm: ["AlertDialog"],
+    confirm: ["ConfirmButton"],
   },
   {
     file: "components/settings/ai/remove-saved-key-button.tsx",
@@ -156,7 +156,7 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/api-section.tsx",
     destroys: "an API token — revoked, and the secret is never shown again",
     recovery: "permanent",
-    confirm: ["AlertDialog"],
+    confirm: ["ConfirmButton"],
   },
   {
     file: "components/settings/mcp-section.tsx",
@@ -168,7 +168,7 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/sharing-section.tsx",
     destroys: "a clinician share link — the URL stays dead once revoked",
     recovery: "permanent",
-    confirm: ["AlertDialog"],
+    confirm: ["ConfirmButton"],
   },
   {
     file: "components/settings/account-section/avatar-section.tsx",
@@ -214,7 +214,7 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/coach-memory-section.tsx",
     destroys: "every remembered Coach fact at once",
     recovery: "tombstoned-no-restore",
-    confirm: ["AlertDialog"],
+    confirm: ["ConfirmButton"],
   },
   {
     file: "components/insights/coach-panel/use-coach-facts.ts",

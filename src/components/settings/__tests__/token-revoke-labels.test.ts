@@ -26,10 +26,14 @@ function read(rel: string): string {
   return readFileSync(join(process.cwd(), rel), "utf8");
 }
 
-/** The body of every `<AlertDialogAction …>…</AlertDialogAction>` block. */
+/**
+ * Every confirm the source spells: an `<AlertDialogAction …>…</AlertDialogAction>`
+ * block, or a `<ConfirmButton … />` whose `confirmLabel` is the action label.
+ */
 function actions(source: string): string[] {
   return [
     ...source.matchAll(/<AlertDialogAction\b[\s\S]*?<\/AlertDialogAction>/g),
+    ...source.matchAll(/<ConfirmButton\b[\s\S]*?\/>/g),
   ].map((m) => m[0]);
 }
 
@@ -41,7 +45,9 @@ describe("token revoke labels", () => {
       );
       expect(revokes.length).toBeGreaterThan(0);
       for (const action of revokes) {
-        expect(action).toContain('t("settings.tokenRevokeAction")');
+        expect(action).toMatch(
+          /(confirmLabel=\{|>\s*\{)t\("settings\.tokenRevokeAction"\)/,
+        );
       }
     });
 

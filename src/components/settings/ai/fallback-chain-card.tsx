@@ -18,18 +18,8 @@ import {
   X,
 } from "lucide-react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -246,30 +236,17 @@ export function FallbackChainCard({
         </p>
       )}
       <SettingsCardActions>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button size="sm" variant="outline" className="min-h-11 sm:min-h-9">
-              <RotateCcw className="h-4 w-4" />
-              {t("settings.ai.providerChain.resetDefaults")}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {t("settings.ai.providerChain.resetConfirmTitle")}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {t("settings.ai.providerChain.resetConfirmBody")}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-              <AlertDialogAction onClick={resetToDefaults}>
-                {t("settings.ai.providerChain.resetDefaults")}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ConfirmButton
+          label={t("settings.ai.providerChain.resetDefaults")}
+          title={t("settings.ai.providerChain.resetConfirmTitle")}
+          body={t("settings.ai.providerChain.resetConfirmBody")}
+          confirmLabel={t("settings.ai.providerChain.resetDefaults")}
+          onConfirm={() => void resetToDefaults()}
+          size="sm"
+          className="min-h-11 sm:min-h-9"
+          icon={<RotateCcw className="h-4 w-4" />}
+          destructive
+        />
         <Button
           size="sm"
           className="min-h-11 sm:min-h-9"

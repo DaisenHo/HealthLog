@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -42,30 +45,6 @@ export function GlucoseUnitSelect({
   const { user } = useAuth();
 
   const [optimistic, setOptimistic] = useState<GlucoseUnit | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
-  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (clearTimerRef.current !== null) {
-        clearTimeout(clearTimerRef.current);
-        clearTimerRef.current = null;
-      }
-    };
-  }, []);
-
-  function scheduleClear() {
-    if (clearTimerRef.current !== null) {
-      clearTimeout(clearTimerRef.current);
-    }
-    clearTimerRef.current = setTimeout(() => {
-      clearTimerRef.current = null;
-      setMsg(null);
-      setMsgType(null);
-    }, 3000);
-  }
-
   const value: GlucoseUnit =
     optimistic ?? resolveGlucoseUnit(user?.glucoseUnit);
 
@@ -85,36 +64,24 @@ export function GlucoseUnitSelect({
       return next;
     },
     onSuccess: () => {
-      setMsg(t("settings.dashboard.glucoseUnit.saved"));
-      setMsgType("success");
+      toastWrittenOutcome("success", t("settings.dashboard.glucoseUnit.saved"));
       queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
       queryClient.invalidateQueries({
         queryKey: queryKeys.userGlucoseUnit(),
       });
       setOptimistic(null);
-      scheduleClear();
     },
     onError: (err) => {
       setOptimistic(null);
-      setMsg(
-        err instanceof Error
-          ? err.message
-          : t("settings.dashboard.glucoseUnit.saveError"),
-      );
-      setMsgType("error");
-      scheduleClear();
+      showErrorToast(t("settings.dashboard.glucoseUnit.saveError"), {
+        cause: err,
+      });
     },
   });
 
   function handleSelect(next: GlucoseUnit) {
     if (next === value || mutation.isPending || !isAuthenticated) return;
     setOptimistic(next);
-    setMsg(null);
-    setMsgType(null);
-    if (clearTimerRef.current !== null) {
-      clearTimeout(clearTimerRef.current);
-      clearTimerRef.current = null;
-    }
     mutation.mutate(next);
   }
 
@@ -134,16 +101,8 @@ export function GlucoseUnitSelect({
         <option value="mg/dL">mg/dL</option>
         <option value="mmol/L">mmol/L</option>
       </NativeSelect>
-      <p
-        role="status"
-        aria-live="polite"
-        className={
-          msgType === "error"
-            ? "text-destructive text-xs"
-            : "text-muted-foreground text-xs"
-        }
-      >
-        {msg ?? t("settings.dashboard.glucoseUnit.description")}
+      <p className="text-muted-foreground text-xs">
+        {t("settings.dashboard.glucoseUnit.description")}
       </p>
     </div>
   );

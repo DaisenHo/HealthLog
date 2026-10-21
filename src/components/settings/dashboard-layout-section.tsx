@@ -765,6 +765,7 @@ export function DashboardLayoutSection({ id }: { id: string }) {
           confirmLabel={t("dashboard.layoutResetConfirm")}
           pending={resetMutation.isPending}
           onConfirm={() => resetMutation.mutate()}
+          destructive
         />
         {dirty && (
           <>

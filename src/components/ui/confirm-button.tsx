@@ -52,6 +52,12 @@ interface ConfirmCopy {
   pending?: boolean;
   /** `data-slot` for tests and the design guards. */
   slot?: string;
+  /**
+   * `data-testid` for the trigger; the dialog's action carries
+   * `<testId>-confirm`. For call sites whose tests already address the
+   * control by test id.
+   */
+  testId?: string;
   /** A control that belongs with the question, such as an opt-out checkbox. */
   extra?: ReactNode;
   /**
@@ -59,6 +65,16 @@ interface ConfirmCopy {
    * data-list selection bar's confirm already does.
    */
   destructive?: boolean;
+  /**
+   * The confirm keeps the dialog open: the caller closes it once the act
+   * settled, and Cancel waits while `pending`. For an act whose in-flight
+   * state must stay on screen (an irreversible delete), where a dismissal
+   * mid-request would read as cancelled. Only meaningful on `ConfirmDialog`,
+   * whose caller owns `open`.
+   */
+  holdOpen?: boolean;
+  /** The confirm stays disabled, e.g. until a field in `extra` is valid. */
+  confirmDisabled?: boolean;
 }
 
 function ConfirmBody({
@@ -68,8 +84,11 @@ function ConfirmBody({
   onConfirm,
   pending = false,
   slot,
+  testId,
   extra,
   destructive = false,
+  holdOpen = false,
+  confirmDisabled = false,
 }: ConfirmCopy) {
   const { t } = useTranslations();
 
@@ -81,13 +100,23 @@ function ConfirmBody({
       </AlertDialogHeader>
       {extra}
       <AlertDialogFooter>
-        <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+        <AlertDialogCancel disabled={holdOpen && pending}>
+          {t("common.cancel")}
+        </AlertDialogCancel>
         <AlertDialogAction
           variant={destructive ? "destructive" : "default"}
           data-slot={slot ? `${slot}-confirm` : undefined}
-          disabled={pending}
+          data-testid={testId ? `${testId}-confirm` : undefined}
+          disabled={pending || confirmDisabled}
           aria-busy={pending || undefined}
-          onClick={onConfirm}
+          onClick={
+            holdOpen
+              ? (event) => {
+                  event.preventDefault();
+                  onConfirm();
+                }
+              : onConfirm
+          }
         >
           {pending && (
             <Loader2 className="mr-1 size-3.5 animate-spin motion-reduce:animate-none" />
@@ -113,6 +142,7 @@ export function ConfirmButton({
   icon,
   ariaLabel,
   slot,
+  testId,
   extra,
   destructive = false,
 }: ConfirmCopy & {
@@ -136,6 +166,7 @@ export function ConfirmButton({
           className={className}
           aria-label={ariaLabel}
           data-slot={slot}
+          data-testid={testId}
           disabled={disabled || pending}
         >
           {pending ? (
@@ -156,6 +187,7 @@ export function ConfirmButton({
         onConfirm={onConfirm}
         pending={pending}
         slot={slot}
+        testId={testId}
         extra={extra}
         destructive={destructive}
       />

@@ -13,11 +13,8 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { isEmailFormDirty } from "@/components/settings/channel-form-dirty";
-import {
-  optimisticallySetChannelEnabled,
-  persistChannelEnabled,
-  rollbackChannelEnabled,
-} from "@/components/settings/notification-channel-toggle";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
@@ -33,10 +30,9 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
   const [recipient, setRecipient] = useState("");
-  const [saveMsg, setSaveMsg] = useState<string | null>(null);
-  const [saveMsgType, setSaveMsgType] = useState<"success" | "error" | null>(
-    null,
-  );
+  // The enable switch is a draft field: it saves with the form's one Save.
+  const [enabled, setEnabled] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const { data: settings } = useQuery({
     queryKey: queryKeys.settingsEmail(),
@@ -47,16 +43,19 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   });
 
   // React-recommended sync-from-server pattern (no setState-in-effect).
-  const settingsKey = settings ? settings.recipient : null;
+  const settingsKey = settings
+    ? `${settings.recipient}|${settings.enabled}`
+    : null;
   const [seededKey, setSeededKey] = useState<string | null>(null);
   if (settingsKey !== null && settingsKey !== seededKey) {
     setSeededKey(settingsKey);
     setRecipient(settings!.recipient);
+    setEnabled(settings!.enabled);
   }
-  const dirty = isEmailFormDirty({ recipient }, settings);
+  const dirty = isEmailFormDirty({ recipient, enabled }, settings);
 
   const save = useMutation({
-    mutationFn: async (enabled: boolean) => {
+    mutationFn: async () => {
       const res = await apiFetchRaw("/api/settings/email", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -69,45 +68,12 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settingsEmail() });
-      setSaveMsg(t("settings.saved"));
-      setSaveMsgType("success");
+      setSaveError(null);
+      toastWrittenOutcome("success", t("settings.saved"));
     },
     onError: (err: Error) => {
-      setSaveMsg(err.message);
-      setSaveMsgType("error");
-    },
-  });
-
-  const toggleEnabled = useMutation<
-    void,
-    Error,
-    boolean,
-    EmailSettings | undefined
-  >({
-    mutationFn: (enabled) =>
-      persistChannelEnabled("/api/settings/email", enabled, t("common.error")),
-    onMutate: async (enabled) => {
-      const queryKey = queryKeys.settingsEmail();
-      await queryClient.cancelQueries({ queryKey });
-      setSaveMsg(null);
-      setSaveMsgType(null);
-      return optimisticallySetChannelEnabled<EmailSettings>(
-        queryClient,
-        queryKey,
-        enabled,
-      );
-    },
-    onSuccess: () => {
-      setSaveMsg(t("settings.saved"));
-      setSaveMsgType("success");
-    },
-    onError: (err, _enabled, previous) => {
-      rollbackChannelEnabled(queryClient, queryKeys.settingsEmail(), previous);
-      setSaveMsg(err.message);
-      setSaveMsgType("error");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settingsEmail() });
+      setSaveError(err.message);
+      showErrorToast(err.message, { cause: err });
     },
   });
 
@@ -128,16 +94,16 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           <Label htmlFor="email-toggle">{t("settings.emailEnable")}</Label>
           <Switch
             id="email-toggle"
-            checked={settings?.enabled ?? false}
-            onCheckedChange={(checked) => toggleEnabled.mutate(checked)}
-            disabled={save.isPending || toggleEnabled.isPending}
+            checked={enabled}
+            onCheckedChange={setEnabled}
+            disabled={save.isPending}
           />
         </div>
 
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            save.mutate(settings?.enabled ?? false);
+            save.mutate();
           }}
           className="space-y-4"
         >
@@ -156,12 +122,9 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
             />
           </div>
 
-          {saveMsg && (saveMsgType === "error" || !dirty) && (
-            <p
-              role="alert"
-              className={`text-sm ${saveMsgType === "success" ? "text-success" : "text-destructive"}`}
-            >
-              {saveMsg}
+          {saveError && (
+            <p role="alert" className="text-destructive text-sm">
+              {saveError}
             </p>
           )}
 
@@ -173,7 +136,7 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
             />
             <Button
               type="submit"
-              disabled={save.isPending || toggleEnabled.isPending}
+              disabled={save.isPending}
               className="min-h-11"
             >
               {save.isPending && (

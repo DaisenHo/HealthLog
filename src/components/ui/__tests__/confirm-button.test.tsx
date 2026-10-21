@@ -241,3 +241,35 @@ describe("<ConfirmDialog> — the trigger-less half", () => {
     expect(carriers.map(nameOf)).toEqual(["ConfirmBody"]);
   });
 });
+
+describe("ConfirmDialog with holdOpen — the request stays on screen", () => {
+  const onConfirm = vi.fn();
+  const body = walk(
+    ConfirmDialog({
+      open: true,
+      onOpenChange: () => {},
+      onConfirm,
+      pending: true,
+      holdOpen: true,
+      ...COPY,
+    }) as ReactElement,
+  ).find((el) => nameOf(el) === "ConfirmBody")!;
+  const rendered = walk(
+    (body.type as (p: unknown) => ReactElement)(body.props),
+  );
+
+  it("keeps the dialog open on confirm and still calls back", () => {
+    const action = rendered.find((el) => nameOf(el) === "AlertDialogAction")!;
+    const preventDefault = vi.fn();
+    (action.props as { onClick: (e: unknown) => void }).onClick({
+      preventDefault,
+    });
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it("holds Cancel while the request runs", () => {
+    const cancel = rendered.find((el) => nameOf(el) === "AlertDialogCancel")!;
+    expect((cancel.props as { disabled?: boolean }).disabled).toBe(true);
+  });
+});
