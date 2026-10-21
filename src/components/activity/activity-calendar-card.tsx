@@ -86,6 +86,18 @@ export function ActivityCalendarCard() {
   const query = useActivityCalendar(period, anchor);
   const data = query.data;
   const weekdays = useMemo(() => weekdayLabels(locale), [locale]);
+  // A calendar day key names the same date everywhere: read it in UTC, where
+  // its noon anchor sits, never in the viewer's zone.
+  const dayNameFormat = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        timeZone: "UTC",
+      }),
+    [locale],
+  );
 
   const ratedOptions = useMemo(() => {
     if (!data) return [] as RatedMetric[];
@@ -106,8 +118,8 @@ export function ActivityCalendarCard() {
           timeZone: "UTC",
         }).format(dateOfKey(data.start))
       : t("activityCalendar.weekRange", {
-          start: fmt.dateShort(dateOfKey(data.start)),
-          end: fmt.dateShort(dateOfKey(data.end)),
+          start: fmt.dateShortSmartCalendar(data.start),
+          end: fmt.dateShortSmartCalendar(data.end),
         })
     : "";
 
@@ -126,7 +138,7 @@ export function ActivityCalendarCard() {
   const levelText = (level: DayLevel) => t(`activityCalendar.level.${level}`);
 
   const dayLabel = (day: CalendarDay) => {
-    const parts = [fmt.dateWithWeekday(dateOfKey(day.date))];
+    const parts = [dayNameFormat.format(dateOfKey(day.date))];
     if (day.future) return parts.join(", ");
     if (day.steps !== null)
       parts.push(
