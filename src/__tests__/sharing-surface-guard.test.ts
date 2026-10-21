@@ -2191,8 +2191,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * v1.44 -- the module list layout and the preview-feature switch are the
  * person's own presentation and join the actor list. 268 -> 270.
  *
- * v1.44 -- the activity calendar read, the activity goals and the source
- * provenance reads join the list. 270 -> 273.
+ * v1.44 -- three readable routes join the record list: the activity calendar
+ * read and the two source provenance reads (one day, and two sources side by
+ * side). The activity goals route does not: setting or changing goals stays
+ * owner-only, and a delegate sees the goals only as the calendar reports them.
+ * 270 -> 273.
  */
 const FROZEN_ENTRY_COUNT = 273;
 
