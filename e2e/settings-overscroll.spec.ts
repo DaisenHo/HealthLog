@@ -33,7 +33,7 @@ const ROUTES = [
   // one-scroll-floor assertion below).
   "/settings/layout/insights",
   "/settings/layout/medications",
-  "/settings/layout/mood",
+  "/settings/modules/mood",
   "/settings/modules",
   "/settings/account",
   "/settings/notifications",

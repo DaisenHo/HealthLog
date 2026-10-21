@@ -6,7 +6,7 @@ import { STORAGE_STATE_PATH } from "./setup/global-setup";
  * Issue #490 — client-rendered timestamps follow the PROFILE timezone.
  *
  * `/api/auth/me` is mocked with an `Asia/Manila` profile; the sessions
- * card on /settings/privacy renders `lastActiveAt` through
+ * card on /settings/security renders `lastActiveAt` through
  * `useFormatters()`, which reads the localStorage timezone mirror that
  * `fetchMe` fills from the mocked payload. A fixed UTC instant must
  * therefore paint the MANILA wall clock (14:30), never the Berlin
@@ -75,7 +75,7 @@ test.describe("profile-timezone display (#490)", () => {
       }),
     );
 
-    await page.goto("/settings/privacy", { waitUntil: "domcontentloaded" });
+    await page.goto("/settings/security", { waitUntil: "domcontentloaded" });
 
     // The sessions card is collapsed by default — expand it first. The
     // toggle's onClick can be dropped if Playwright clicks before React has
