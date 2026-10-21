@@ -34,6 +34,11 @@ const {
       update: vi.fn(async () => ({})),
       updateMany: vi.fn(async () => ({ count: 1 })),
     },
+    // The token refresh runs in a transaction under an advisory lock.
+    $queryRaw: vi.fn(async () => []),
+    $transaction: vi.fn(async (run: (tx: unknown) => unknown) =>
+      run(prismaMock),
+    ),
   },
   getUserGoogleHealthCredentialsMock: vi.fn(async (): Promise<unknown> => null),
   refreshAccessTokenMock: vi.fn(),
