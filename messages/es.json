@@ -11075,7 +11075,16 @@
     "openDetail": "Ver detalles",
     "historyLoadError": "No se pudo cargar tu historial de evaluaciones",
     "historyLoadErrorHint": "Esto no significa que no tengas resultados: no se pudo obtener la lista. Vuelve a intentarlo.",
-    "privacyNote": "Tus respuestas se guardan cifradas y nunca llegan al Coach de IA."
+    "privacyNote": "Tus respuestas se guardan cifradas y nunca llegan al Coach de IA.",
+    "trend": {
+      "sincePrevious": "Desde tu revisión anterior del {date}: {change} puntos.",
+      "sinceFirst": "Desde tu primera revisión del {date}: {change} puntos.",
+      "verdict": {
+        "improved": "Alcanza el cambio de {threshold} puntos que los estudios consideran relevante, en la dirección favorable.",
+        "worsened": "Alcanza el cambio de {threshold} puntos que los estudios consideran relevante, en la dirección menos favorable.",
+        "within_threshold": "Es menor que el cambio de {threshold} puntos que los estudios consideran relevante."
+      }
+    }
   },
   "records": {
     "aiInclusion": {

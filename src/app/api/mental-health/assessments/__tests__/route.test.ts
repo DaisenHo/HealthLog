@@ -479,4 +479,50 @@ describe("GET /api/mental-health/assessments", () => {
       .calls[0][0] as { orderBy: unknown };
     expect(findArgs.orderBy).toEqual([{ takenAt: "desc" }, { id: "desc" }]);
   });
+
+  it("carries each screener's change against its meaningful-change threshold (v1.44)", async () => {
+    const at = (d: string) => new Date(`${d}T09:00:00.000Z`);
+    const history = [
+      {
+        id: "p2",
+        instrument: "PHQ9",
+        totalScore: 8,
+        takenAt: at("2026-06-01"),
+      },
+      {
+        id: "p1",
+        instrument: "PHQ9",
+        totalScore: 15,
+        takenAt: at("2026-02-01"),
+      },
+    ];
+    vi.mocked(prisma.mentalHealthAssessment.findMany)
+      .mockResolvedValueOnce([] as never)
+      .mockResolvedValueOnce(history as never);
+    const res = await (GET as unknown as (r: NextRequest) => Promise<Response>)(
+      new NextRequest(
+        new URL("http://localhost/api/mental-health/assessments?limit=1"),
+      ),
+    );
+    const body = await res.json();
+    expect(body.data.trends).toEqual([
+      expect.objectContaining({
+        instrument: "PHQ9",
+        n: 2,
+        threshold: 5,
+        changeFromPrevious: -7,
+        sincePrevious: "improved",
+      }),
+    ]);
+    // The trend read selects totals and dates only, never the answers.
+    const trendArgs = vi.mocked(prisma.mentalHealthAssessment.findMany).mock
+      .calls[1][0] as { select: Record<string, boolean>; where: unknown };
+    expect(Object.keys(trendArgs.select).sort()).toEqual([
+      "id",
+      "instrument",
+      "takenAt",
+      "totalScore",
+    ]);
+    expect(trendArgs.where).toMatchObject({ deletedAt: null });
+  });
 });

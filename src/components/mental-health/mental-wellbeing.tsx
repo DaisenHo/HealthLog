@@ -45,6 +45,7 @@ import { InstrumentCard } from "./instrument-card";
 import { InstrumentDetail } from "./instrument-detail";
 import type {
   AssessmentRow,
+  AssessmentTrendDto,
   CreateResponse,
   InstrumentId,
   Phase,
@@ -81,9 +82,10 @@ export function MentalWellbeing() {
   } = useQuery({
     queryKey: queryKeys.mentalHealthAssessments(),
     queryFn: () =>
-      apiGetList<{ assessments: AssessmentRow[] }>(
-        "/api/mental-health/assessments",
-      ),
+      apiGetList<{
+        assessments: AssessmentRow[];
+        trends?: AssessmentTrendDto[];
+      }>("/api/mental-health/assessments"),
   });
   const history = historyPage?.data;
 
@@ -229,6 +231,9 @@ export function MentalWellbeing() {
               <InstrumentDetail
                 instrument={detailInstrument}
                 rows={history?.assessments ?? []}
+                trend={history?.trends?.find(
+                  (trend) => trend.instrument === detailInstrument,
+                )}
                 onStart={() => begin(detailInstrument)}
               />
             )}

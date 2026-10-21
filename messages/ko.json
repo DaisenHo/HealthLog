@@ -11075,7 +11075,16 @@
     "openDetail": "자세히 보기",
     "historyLoadError": "검사 기록을 불러오지 못했어요",
     "historyLoadErrorHint": "결과가 없다는 뜻은 아니에요. 목록을 가져오지 못했을 뿐이에요. 다시 시도해 주세요.",
-    "privacyNote": "답변은 암호화되어 저장되고, AI 코치에게는 전달되지 않아요."
+    "privacyNote": "답변은 암호화되어 저장되고, AI 코치에게는 전달되지 않아요.",
+    "trend": {
+      "sincePrevious": "{date} 이전 체크인 이후: {change}점.",
+      "sinceFirst": "{date} 첫 체크인 이후: {change}점.",
+      "verdict": {
+        "improved": "연구에서 의미 있다고 보는 {threshold}점 변화에 도달했고, 좋아지는 방향입니다.",
+        "worsened": "연구에서 의미 있다고 보는 {threshold}점 변화에 도달했고, 덜 좋은 방향입니다.",
+        "within_threshold": "연구에서 의미 있다고 보는 {threshold}점 변화보다 작습니다."
+      }
+    }
   },
   "records": {
     "aiInclusion": {

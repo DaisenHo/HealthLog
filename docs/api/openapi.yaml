@@ -74922,6 +74922,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MentalHealthAssessment"
+        trends:
+          description: v1.44 — one per PHQ-9 / GAD-7 / WHO-5 with at least one administration. Absent on older servers.
+          type: array
+          items:
+            $ref: "#/components/schemas/MentalHealthAssessmentTrend"
       required:
         - assessments
       additionalProperties: false
@@ -74971,6 +74976,99 @@ components:
         diagnosis). `item9Flagged` is true when the PHQ-9 self-harm item was answered > 0 — the client MUST show crisis
         resources when it is. Raw per-item answers are intentionally absent from list rows; the by-id detail read
         returns them decrypted.
+    MentalHealthAssessmentTrend:
+      type: object
+      properties:
+        instrument:
+          type: string
+          enum:
+            - PHQ9
+            - GAD7
+            - WHO5
+        n:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        threshold:
+          type: number
+          description: "Meaningful-change threshold in reported points: PHQ-9 5, GAD-7 4, WHO-5 10 (0–100 scale)."
+        higherIsBetter:
+          type: boolean
+        first:
+          type: object
+          properties:
+            score:
+              type: number
+            takenAt:
+              type: string
+          required:
+            - score
+            - takenAt
+          additionalProperties: false
+        previous:
+          anyOf:
+            - type: object
+              properties:
+                score:
+                  type: number
+                takenAt:
+                  type: string
+              required:
+                - score
+                - takenAt
+              additionalProperties: false
+            - type: "null"
+        latest:
+          type: object
+          properties:
+            score:
+              type: number
+            takenAt:
+              type: string
+          required:
+            - score
+            - takenAt
+          additionalProperties: false
+        changeFromPrevious:
+          type:
+            - number
+            - "null"
+        changeFromFirst:
+          type:
+            - number
+            - "null"
+        sincePrevious:
+          anyOf:
+            - type: string
+              enum:
+                - improved
+                - worsened
+                - within_threshold
+            - type: "null"
+        sinceFirst:
+          anyOf:
+            - type: string
+              enum:
+                - improved
+                - worsened
+                - within_threshold
+            - type: "null"
+      required:
+        - instrument
+        - n
+        - threshold
+        - higherIsBetter
+        - first
+        - previous
+        - latest
+        - changeFromPrevious
+        - changeFromFirst
+        - sincePrevious
+        - sinceFirst
+      additionalProperties: false
+      description: v1.44 — the latest total against the previous and the first administration, classified against the
+        instrument's meaningful-change threshold in its own direction. A change below the threshold is
+        `within_threshold`. Server-computed over the whole history, not the page.
     CreateMentalHealthAssessmentEnvelope:
       type: object
       properties:

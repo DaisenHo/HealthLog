@@ -58,6 +58,16 @@ import type {
   MeasurementSource,
 } from "@/generated/prisma/client";
 import { apiListSuccess } from "@/lib/api/list-cap";
+import {
+  computeAssessmentTrends,
+  TREND_INSTRUMENTS,
+} from "@/lib/mental-health/assessment-trend";
+
+/**
+ * Upper bound on administrations the trends read; years of weekly check-ins
+ * across three instruments stay far below it. The cap falls on the oldest.
+ */
+const TREND_READ_CAP = 1500;
 import { listPage } from "@/lib/http/list-query";
 
 function shapeRow(row: {
@@ -149,11 +159,25 @@ export const GET = apiHandler(async (request: NextRequest) => {
       },
     }),
   );
+  // v1.44 — the change of each screener against its meaningful-change
+  // threshold, over the whole history rather than the page: totals and dates
+  // only, never an item answer.
+  const trendRows = await prisma.mentalHealthAssessment.findMany({
+    where: {
+      userId: user.id,
+      deletedAt: null,
+      instrument: { in: TREND_INSTRUMENTS },
+    },
+    orderBy: [{ takenAt: "desc" }, { id: "desc" }],
+    take: TREND_READ_CAP,
+    select: { id: true, instrument: true, totalScore: true, takenAt: true },
+  });
+  const trends = computeAssessmentTrends(trendRows);
   annotate({
     action: { name: "mental-health.list" },
-    meta: { count: rows.length },
+    meta: { count: rows.length, trends: trends.length },
   });
-  return apiListSuccess({ assessments: rows.map(shapeRow) }, cap);
+  return apiListSuccess({ assessments: rows.map(shapeRow), trends }, cap);
 });
 
 // `withIdempotency` lets a double-tap / retry re-send the same

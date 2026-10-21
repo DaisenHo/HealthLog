@@ -48,3 +48,18 @@ export interface CreateResponse {
   actionThreshold: number;
   crisis: CrisisSet | null;
 }
+
+/** v1.44 — `GET /api/mental-health/assessments` `trends[]` (`computeAssessmentTrends`). */
+export interface AssessmentTrendDto {
+  instrument: "PHQ9" | "GAD7" | "WHO5";
+  n: number;
+  threshold: number;
+  higherIsBetter: boolean;
+  first: { score: number; takenAt: string };
+  previous: { score: number; takenAt: string } | null;
+  latest: { score: number; takenAt: string };
+  changeFromPrevious: number | null;
+  changeFromFirst: number | null;
+  sincePrevious: "improved" | "worsened" | "within_threshold" | null;
+  sinceFirst: "improved" | "worsened" | "within_threshold" | null;
+}

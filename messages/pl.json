@@ -11075,7 +11075,16 @@
     "openDetail": "Pokaż szczegóły",
     "historyLoadError": "Nie udało się wczytać historii testów",
     "historyLoadErrorHint": "To nie znaczy, że nie masz wyników; nie udało się pobrać listy. Spróbuj ponownie.",
-    "privacyNote": "Twoje odpowiedzi są przechowywane w postaci zaszyfrowanej i nigdy nie trafiają do Coacha AI."
+    "privacyNote": "Twoje odpowiedzi są przechowywane w postaci zaszyfrowanej i nigdy nie trafiają do Coacha AI.",
+    "trend": {
+      "sincePrevious": "Od poprzedniego sprawdzenia {date}: {change} pkt.",
+      "sinceFirst": "Od pierwszego sprawdzenia {date}: {change} pkt.",
+      "verdict": {
+        "improved": "To osiąga zmianę o {threshold} pkt, którą badania uznają za istotną, w lepszym kierunku.",
+        "worsened": "To osiąga zmianę o {threshold} pkt, którą badania uznają za istotną, w mniej korzystnym kierunku.",
+        "within_threshold": "To mniej niż zmiana o {threshold} pkt, którą badania uznają za istotną."
+      }
+    }
   },
   "records": {
     "aiInclusion": {

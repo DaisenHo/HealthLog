@@ -11075,7 +11075,16 @@
     "openDetail": "Mostra dettagli",
     "historyLoadError": "Non è stato possibile caricare la cronologia dei test",
     "historyLoadErrorHint": "Questo non significa che non ci siano risultati: non è stato possibile recuperare l'elenco. Riprova.",
-    "privacyNote": "Le tue risposte sono salvate cifrate e non raggiungono mai il Coach IA."
+    "privacyNote": "Le tue risposte sono salvate cifrate e non raggiungono mai il Coach IA.",
+    "trend": {
+      "sincePrevious": "Dal tuo check-in precedente del {date}: {change} punti.",
+      "sinceFirst": "Dal tuo primo check-in del {date}: {change} punti.",
+      "verdict": {
+        "improved": "Raggiunge la variazione di {threshold} punti che gli studi considerano rilevante, nella direzione migliore.",
+        "worsened": "Raggiunge la variazione di {threshold} punti che gli studi considerano rilevante, nella direzione meno buona.",
+        "within_threshold": "È meno della variazione di {threshold} punti che gli studi considerano rilevante."
+      }
+    }
   },
   "records": {
     "aiInclusion": {
