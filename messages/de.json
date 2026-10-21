@@ -3264,12 +3264,9 @@
         "provider": "Antwortet mit",
         "modelManaged": "Das Modell für diesen Anbieter legst du in den KI-Einstellungen fest.",
         "noProvider": "Kein Anbieter verfügbar",
-        "saving": "Wird gespeichert…",
-        "saveFailed": "Die Änderung ließ sich nicht speichern.",
         "allSettings": "Alle KI-Einstellungen",
-        "providerNotActive": "{provider} konnte nicht übernehmen: Es fehlt eine funktionierende Anmeldung oder ein Schlüssel. Richte das in den KI-Einstellungen ein.",
         "operatorCodex": "ChatGPT (vom Betreiber bereitgestellt)",
-        "operatorManaged": "Diese Verbindung verwaltet der Betreiber deines Servers. Sobald einer deiner eigenen Anbieter eingerichtet ist, antwortet er zuerst."
+        "changeModel": "In Einstellungen > KI ändern"
       },
       "answer": {
         "scrollToBottom": "Zur neuesten Nachricht",
@@ -5289,12 +5286,17 @@
       "groups": {
         "account": "Konto",
         "yourData": "Deine Daten",
-        "display": "Anzeige",
         "healthProfile": "Gesundheitsprofil",
         "ai": "KI",
         "connectivity": "Konnektivität",
-        "system": "System"
-      }
+        "system": "System",
+        "tracking": "Tracking",
+        "arrangement": "Anordnung",
+        "notifications": "Benachrichtigungen",
+        "connections": "Verbindungen",
+        "data": "Daten"
+      },
+      "allSections": "Alle Bereiche"
     },
     "sharedRecord": {
       "managedSettings": {
@@ -5428,11 +5430,25 @@
         "remindersHeading": "Erinnerungen",
         "matrixLink": "Benachrichtigungen je Kanal",
         "channelsLink": "Zustellkanäle",
-        "displayHeading": "Auf dem Handy"
+        "displayHeading": "Auf dem Handy",
+        "elsewhere": {
+          "title": "Dort eingestellt, wo sie hingehören",
+          "description": "Diese Erinnerungen stellst du direkt bei dem ein, worum es geht.",
+          "doses": {
+            "title": "Medikamenten-Einnahmen",
+            "description": "Einnahmezeiten und Erinnerungen stellst du beim jeweiligen Medikament ein.",
+            "link": "Medikamente öffnen"
+          },
+          "cycle": {
+            "title": "Zyklus",
+            "description": "Perioden- und Fruchtbarkeits-Erinnerungen schaltest du je Kanal in der Benachrichtigungsübersicht.",
+            "link": "Benachrichtigungsübersicht öffnen"
+          }
+        }
       },
       "layout": {
-        "title": "Layout",
-        "backToHub": "Zurück zu Layout",
+        "title": "Anordnung",
+        "backToHub": "Zurück zu Anordnung",
         "dashboard": {
           "title": "Dashboard",
           "description": "Kachel-Layout und Reihenfolge."
@@ -5441,7 +5457,7 @@
           "title": "Insights",
           "description": "Reihenfolge der Übersicht und der Navigations-Pills."
         },
-        "subtitle": "Lege fest, was Dashboard, Auswertungen und Tracking-Module zeigen und in welcher Reihenfolge.",
+        "subtitle": "Lege Reihenfolge und Ansicht von Dashboard, Insights und Tracking-Listen fest.",
         "medications": {
           "title": "Medikamente",
           "description": "Listenansicht und manuelle Reihenfolge."
@@ -5457,10 +5473,6 @@
         "vorsorge": {
           "title": "Vorsorge",
           "description": "Listenansicht und Reihenfolge der Erinnerungen."
-        },
-        "mood": {
-          "title": "Stimmungs-Tags",
-          "description": "Gruppen, Tags und archivierte Tags der Stimmungs-Auswahl."
         },
         "documents": {
           "title": "Dokumente",
@@ -5852,7 +5864,28 @@
         },
         "manageIn": "In {section} verwalten",
         "operatorDisabled": "Serverweit deaktiviert",
-        "subtitle": "Lege fest, welche Tracking-Bereiche HealthLog überall anzeigt."
+        "subtitle": "Lege fest, welche Tracking-Bereiche HealthLog überall anzeigt.",
+        "backToHub": "Zurück zu Module",
+        "openModuleSettings": "Moduleinstellungen",
+        "pages": {
+          "medications": {
+            "title": "Medikamente",
+            "description": "Injektionsstellen, die die Rotation auslässt."
+          },
+          "mood": {
+            "title": "Stimmungs-Tags",
+            "description": "Gruppen, eigene Tags und archivierte Tags."
+          },
+          "labs": {
+            "title": "Labor",
+            "description": "Biomarker und Texterkennung auf dem Gerät für Laborberichte."
+          },
+          "arrangementTitle": "Reihenfolge und Ansicht",
+          "arrangementDescription": "Wie diese Liste sortiert und angezeigt wird, legst du unter Anordnung fest.",
+          "openArrangement": "In Anordnung öffnen",
+          "moduleSettingsTitle": "Moduleinstellungen",
+          "moduleSettingsDescription": "Alles außer Reihenfolge und Ansicht findest du auf der Seite des Moduls unter Module."
+        }
       },
       "gesundheitsakte": {
         "title": "Gesundheitsakte",
@@ -5995,6 +6028,10 @@
       "access": {
         "title": "Geteilter Zugriff",
         "subtitle": "Wer deine Gesundheitsakte öffnen kann und wessen Akte du öffnen kannst."
+      },
+      "preview": {
+        "title": "Vorschau-Funktionen",
+        "subtitle": "Probier aus, was noch nicht fertig ist. Alles hier bleibt aus, bis du es einschaltest."
       }
     },
     "profile": "Profil",
@@ -7006,21 +7043,19 @@
     },
     "integrationSetupGuide": "Einrichtungsanleitung",
     "coach": {
-      "activate": {
-        "title": "Coach aktivieren",
-        "description": "Zeigt den Coach-Button und das Coach-Panel.",
-        "toggleAria": "Coach-Button und Coach-Panel aktivieren",
-        "savedOn": "Coach ist aktiviert.",
-        "savedOff": "Coach ist ausgeblendet.",
-        "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen."
-      },
       "memory": {
         "edit": "Bearbeiten",
         "source": {
           "user": "von dir",
           "coach": "vom Coach"
         }
-      }
+      },
+      "state": {
+        "title": "Coach",
+        "description": "Ob der Coach-Button und das Coach-Panel erscheinen. Der Schalter liegt unter Module."
+      },
+      "nudgesMoved": "Stellst du mit deinen anderen Erinnerungen unter Benachrichtigungen ein.",
+      "openNudges": "In Benachrichtigungen öffnen"
     },
     "integrationRedirectGuide": {
       "intro": "Die Verbindung läuft über deine eigene {provider}-Entwickler-App. Die Einrichtung dauert etwa 5 Minuten:",
@@ -7163,12 +7198,6 @@
         "delivery": "Benachrichtigungsprotokoll: {days} Tage",
         "unavailable": "Aufbewahrungsdetails sind derzeit nicht verfügbar."
       },
-      "export": {
-        "title": "Meine Daten herunterladen",
-        "description": "Deine Datensätze als CSV oder JSON oder eine vollständige Akte für die Praxis.",
-        "openExport": "Export & Backup",
-        "openHealthRecord": "Gesundheitsakte"
-      },
       "delete": {
         "title": "Löschen oder zurücksetzen",
         "description": "Lösche dein Konto vollständig oder lösche deine Gesundheitsdaten und behalte das Konto.",
@@ -7184,7 +7213,6 @@
     "mcp": {
       "enableTitle": "Remote-MCP-Endpunkt",
       "enableDescription": "Erlaube einem MCP-fähigen Assistenten (Claude.ai, ChatGPT), deine Gesundheitsdaten über ein begrenztes Token zu lesen.",
-      "enableToggleLabel": "MCP-Endpunkt aktivieren",
       "endpointLabel": "Connector-URL",
       "connectDescription": "Füge diese URL in die Einrichtung des eigenen Connectors deines Assistenten ein und autorisiere dich mit dem Token unten oder melde dich bei Aufforderung an.",
       "tokensTitle": "Connector-Tokens",
@@ -7203,7 +7231,8 @@
       "connectionRevokeFailed": "Assistent konnte nicht getrennt werden.",
       "tokensDetail": "Das Token wird nur einmal angezeigt.",
       "connectionsDetail": "Das Widerrufen einer Verbindung beendet den Zugriff sofort, einschließlich der Möglichkeit zur Erneuerung.",
-      "tokenNamePlaceholder": "Name, z. B. Claude Desktop"
+      "tokenNamePlaceholder": "Name, z. B. Claude Desktop",
+      "offKeepsTokens": "Ausschalten pausiert den Endpunkt. Deine Tokens und Verbindungen bleiben und funktionieren wieder, sobald er an ist."
     },
     "strava": "Strava",
     "stravaDescription": "Verbinde dein Strava-Konto, um deine Aktivitäten in deinen Trainingsverlauf zu übernehmen.",
@@ -7465,7 +7494,25 @@
     "passkeyAddedToast": "Passkey hinzugefügt.",
     "passkeyRemovedToast": "Passkey entfernt.",
     "integrationDisconnected": "{provider} getrennt.",
-    "integrationDisconnectFailed": "{provider} konnte nicht getrennt werden."
+    "integrationDisconnectFailed": "{provider} konnte nicht getrennt werden.",
+    "preview": {
+      "topics": {
+        "title": "Themen (Beta)",
+        "description": "Fügt einen eigenen Eintrag Themen hinzu, mit Übersichtsseiten über den einzelnen Insights-Seiten.",
+        "detail": "Deine Insights-Seiten, die Navigation und alle Links bleiben genau wie sie sind. Die Themenseiten kommen mit einem späteren Update; dieser Schalter legt fest, ob du sie siehst.",
+        "savedOn": "Themen-Vorschau eingeschaltet.",
+        "savedOff": "Themen-Vorschau ausgeschaltet."
+      },
+      "loadError": "Deine Vorschau-Einstellungen konnten nicht geladen werden.",
+      "feedbackLink": "Feedback in den GitHub-Diskussionen geben"
+    },
+    "timezoneSaved": "Zeitzone gespeichert.",
+    "moduleState": {
+      "on": "An",
+      "off": "Aus",
+      "change": "In Module ändern"
+    },
+    "timezoneUseDevice": "Zeitzone dieses Geräts übernehmen ({zone})"
   },
   "admin": {
     "title": "Administration",
@@ -8855,6 +8902,10 @@
       "detailedToast": "Benachrichtigungen zeigen jetzt Gesundheitswerte.",
       "genericToast": "Benachrichtigungen zeigen keine Gesundheitswerte mehr.",
       "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen."
+    },
+    "checkupReminders": {
+      "title": "Vorsorge-Erinnerungen",
+      "description": "Schalte einzelne Vorsorge-Erinnerungen ein oder aus."
     }
   },
   "i18n": {
@@ -9631,8 +9682,6 @@
       "description": "Wert eintragen; die Erinnerung wird als erledigt markiert."
     },
     "manage": {
-      "title": "Erinnerungen verwalten",
-      "description": "Einzelne Erinnerungen aktivieren oder deaktivieren.",
       "empty": "Noch keine Erinnerungen zum Anpassen."
     },
     "dashboard": {

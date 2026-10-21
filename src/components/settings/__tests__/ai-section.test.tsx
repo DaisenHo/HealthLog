@@ -243,6 +243,6 @@ describe("<AiSection> — dropdown-driven UX (B2)", () => {
   it("no longer mounts the Coach cards (moved to the Coach section)", () => {
     activeProviderQuery = "codex";
     const html = render();
-    expect(html).not.toContain('data-testid="settings-disable-coach-card"');
+    expect(html).not.toContain('data-slot="settings-coach-state-card"');
   });
 });

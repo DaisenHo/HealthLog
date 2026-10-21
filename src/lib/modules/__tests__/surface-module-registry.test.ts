@@ -48,6 +48,7 @@ import { NAV_DESTINATIONS } from "@/components/layout/nav-model";
 import { CAPTURE_KIND_ORDER } from "@/components/layout/capture-picker";
 import { SETTINGS_SECTIONS } from "@/components/settings/settings-shell";
 import { LAYOUT_GROUP_IDS } from "@/components/settings/layout-groups";
+import { MODULE_SETTINGS_PAGE_IDS } from "@/components/settings/module-settings-page-ids";
 import {
   DASHBOARD_WIDGET_CATALOGUE_IDS,
   SCORE_RING_IDS,
@@ -156,6 +157,13 @@ describe("every surface id names a surface that exists", () => {
   it("settings-layout: a Layout group id", () => {
     const ids = new Set<string>(LAYOUT_GROUP_IDS);
     for (const id of localIds("settings-layout")) {
+      expect(ids.has(id), id).toBe(true);
+    }
+  });
+
+  it("settings-module: a module page under Settings > Modules", () => {
+    const ids = new Set<string>(MODULE_SETTINGS_PAGE_IDS);
+    for (const id of localIds("settings-module")) {
       expect(ids.has(id), id).toBe(true);
     }
   });

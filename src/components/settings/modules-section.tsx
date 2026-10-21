@@ -40,6 +40,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { MODULE_ICONS } from "@/components/settings/module-icons";
 import { ModuleToggleRow } from "@/components/settings/module-toggle-row";
+import { isModuleSettingsPageId } from "@/components/settings/module-settings-page-ids";
 import { TimelineReadinessSheet } from "@/components/timeline/readiness-sheet.lazy";
 import { useAuth } from "@/hooks/use-auth";
 import { useAiCapability } from "@/hooks/use-ai-capability";
@@ -117,6 +118,10 @@ export function ModulesSection() {
             // Delegated modules carry more than on/off at their canonical
             // surface (Coach cadence/memory; cycle goal/predictions/lengths),
             // so keep a small deep-link to it beside the live switch.
+            //
+            // v1.44 — a module with its own page under Modules (labs, mood,
+            // medications) links to it the same way: what the module needs
+            // beyond order and view lives there, not under Arrangement.
             const manageLink =
               delegate !== undefined && def.managedAt
                 ? {
@@ -125,7 +130,12 @@ export function ModulesSection() {
                       section: t(def.managedAt.labelKey),
                     }),
                   }
-                : undefined;
+                : isModuleSettingsPageId(key)
+                  ? {
+                      href: `/settings/modules/${key}`,
+                      label: t("settings.sections.modules.openModuleSettings"),
+                    }
+                  : undefined;
 
             return (
               <ModuleToggleRow

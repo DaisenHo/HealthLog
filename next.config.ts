@@ -196,9 +196,16 @@ const nextConfig: NextConfig = {
         destination: "/settings/layout/medications",
         permanent: true,
       },
+      // v1.44 — the mood page was tag management, which lives under
+      // Settings > Modules > Mood now; both older addresses go straight there.
       {
         source: "/settings/mood",
-        destination: "/settings/layout/mood",
+        destination: "/settings/modules/mood",
+        permanent: true,
+      },
+      {
+        source: "/settings/layout/mood",
+        destination: "/settings/modules/mood",
         permanent: true,
       },
       {

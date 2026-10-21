@@ -131,7 +131,6 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { SettingsSectionFrame } from "./section-frame-harness";
 import { MoodSection } from "../mood-section";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
@@ -142,9 +141,7 @@ function render(locale: "en" | "de" = "en"): string {
   // shared frame the route wraps the section in.
   return renderToStaticMarkup(
     <I18nProvider initialLocale={locale}>
-      <SettingsSectionFrame slug="mood">
-        <MoodSection />
-      </SettingsSectionFrame>
+      <MoodSection />
     </I18nProvider>,
   );
 }
@@ -159,7 +156,8 @@ describe("<MoodSection> — SSR smoke", () => {
     // v1.18.1 — the section blurb was dropped; the sr-only heading + the
     // card content carry the meaning.
     const html = render();
-    expect(html).toContain("settings-section-mood-title");
+    // v1.44 — the page lives under Settings > Modules > Mood; its heading
+    // comes from the route, not from a frame here.
     expect(html).not.toContain("settings.sections.");
     expect(html).not.toContain("mood.manage.");
   });

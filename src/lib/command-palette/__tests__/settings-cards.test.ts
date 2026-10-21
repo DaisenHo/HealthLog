@@ -7,6 +7,7 @@ import en from "../../../../messages/en.json";
 import {
   SETTINGS_CARDS,
   SETTINGS_LAYOUT_PAGES,
+  SETTINGS_MODULE_PAGES,
 } from "@/lib/command-palette/settings-cards";
 
 /**
@@ -63,7 +64,11 @@ describe("SETTINGS_CARDS", () => {
   );
 
   it("every title key resolves", () => {
-    const missing = [...SETTINGS_CARDS, ...SETTINGS_LAYOUT_PAGES]
+    const missing = [
+      ...SETTINGS_CARDS,
+      ...SETTINGS_LAYOUT_PAGES,
+      ...SETTINGS_MODULE_PAGES,
+    ]
       .map((c) => c.titleKey)
       .filter((key) => !hasKey(key));
     expect(missing).toEqual([]);

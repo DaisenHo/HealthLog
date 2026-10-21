@@ -11,6 +11,7 @@ import { join } from "node:path";
 const mockPathnameRef = { value: "/settings/account" };
 vi.mock("next/navigation", () => ({
   usePathname: () => mockPathnameRef.value,
+  useRouter: () => ({ replace: () => {}, push: () => {} }),
 }));
 
 // v1.18.0 — the shell module-gates per-submodule nav entries off
@@ -169,6 +170,8 @@ describe("SETTINGS_SECTION_SLUGS", () => {
       // v1.23 — "Data & Privacy" assembles the export / deletion / retention /
       // encryption / session / activity pieces into one pane, after `advanced`.
       "privacy",
+      // v1.44 — per-user preview opt-ins, in the System group before About.
+      "preview",
       "about",
     ]);
   });
@@ -193,23 +196,59 @@ describe("SETTINGS_SECTION_SLUGS", () => {
 });
 
 describe("<SettingsShell>", () => {
-  it("keeps meaningful non-interactive desktop groups while the mobile strip uses quiet separators", () => {
+  it("renders the nine groups as non-interactive sidebar headers, in order", () => {
     const html = renderShell({ active: "account" });
-    for (const label of [
+    const labels = [
       "Account",
-      "Your data",
-      "Display",
+      "Tracking",
+      "Arrangement",
+      "Notifications",
       "Health profile",
       "AI",
-      "Connectivity",
+      "Connections",
+      "Data",
       "System",
-    ]) {
-      expect(html).toContain(`>${label}</li>`);
+    ];
+    let cursor = -1;
+    for (const label of labels) {
+      const at = html.indexOf(`>${label}</li>`);
+      expect(at, label).toBeGreaterThan(cursor);
+      cursor = at;
     }
-    // Seven groups produce six quiet separators in the mobile strip.
-    expect(
-      html.match(/aria-hidden="true"/g)?.length ?? 0,
-    ).toBeGreaterThanOrEqual(6);
+  });
+
+  it("puts every section in the group the plan names", () => {
+    const groupOf = Object.fromEntries(
+      SETTINGS_SECTIONS.map((section) => [section.slug, section.group]),
+    );
+    expect(groupOf).toEqual({
+      account: "account",
+      security: "account",
+      access: "account",
+      modules: "tracking",
+      layout: "arrangement",
+      notifications: "notifications",
+      score: "healthProfile",
+      thresholds: "healthProfile",
+      anamnesis: "healthProfile",
+      environment: "healthProfile",
+      ai: "ai",
+      coach: "ai",
+      integrations: "connections",
+      sources: "connections",
+      api: "connections",
+      mcp: "connections",
+      export: "data",
+      gesundheitsakte: "data",
+      privacy: "data",
+      advanced: "data",
+      preview: "system",
+      about: "system",
+    });
+    // Every routable section has a nav entry, and nothing else does.
+    expect([...SETTINGS_SECTIONS.map((s) => s.slug)].sort()).toEqual(
+      [...SETTINGS_SECTION_SLUGS].sort(),
+    );
   });
 
   it("starts the sticky desktop sidebar on the heading row", () => {
@@ -230,19 +269,14 @@ describe("<SettingsShell>", () => {
     expect(source).not.toMatch(/<aside[\s\S]*?md:row-start-2/);
   });
 
-  it("renders every navigable section link — once for the mobile strip and once for the desktop sidebar", () => {
+  it("renders every navigable section link in the sidebar", () => {
     const html = renderShell({ active: "account" });
-    // Every slug — including `about`, which returned to the shell nav
-    // as the last entry after living dropdown-only since v1.4.33 IW7 —
-    // renders in both layouts.
+    // The phone's section sheet mounts its list only when opened, so the
+    // server markup carries each link once, in the desktop sidebar.
     const navigableSlugs = SETTINGS_SECTIONS.map((section) => section.slug);
     for (const slug of navigableSlugs) {
       const matches = html.match(new RegExp(`href="/settings/${slug}"`, "g"));
-      // Two renders — mobile strip + desktop sidebar — guarantee the link
-      // exists in both layouts. Tablet/desktop hide the strip with `md:`,
-      // but the markup is always present so it's keyboard-discoverable
-      // before media queries resolve.
-      expect(matches?.length ?? 0).toBe(2);
+      expect(matches?.length ?? 0).toBe(1);
     }
   });
 
@@ -259,9 +293,9 @@ describe("<SettingsShell>", () => {
 
   it('marks the active section with aria-current="page" (and only that one)', () => {
     const html = renderShell({ active: "notifications" });
-    // Both layouts emit the active link, so two `aria-current="page"`.
+    // The sidebar marks the active link; the phone sheet is closed.
     const occurrences = html.match(/aria-current="page"/g);
-    expect(occurrences?.length ?? 0).toBe(2);
+    expect(occurrences?.length ?? 0).toBe(1);
 
     // And the active link is on the notifications href. Attribute order
     // in React SSR is alphabetic, so `aria-current` precedes `href` —
@@ -269,26 +303,36 @@ describe("<SettingsShell>", () => {
     // future React renderer changes.
     const activeLinkRegex =
       /<a\b[^>]*\baria-current="page"[^>]*\bhref="\/settings\/notifications"|<a\b[^>]*\bhref="\/settings\/notifications"[^>]*\baria-current="page"/g;
-    expect(html.match(activeLinkRegex)?.length ?? 0).toBe(2);
+    expect(html.match(activeLinkRegex)?.length ?? 0).toBe(1);
   });
 
   it("derives the active slug from the current pathname when `active` is omitted", () => {
     const html = renderShell({ pathname: "/settings/api" });
     const activeLinkRegex =
       /<a\b[^>]*\baria-current="page"[^>]*\bhref="\/settings\/api"|<a\b[^>]*\bhref="\/settings\/api"[^>]*\baria-current="page"/g;
-    expect(html.match(activeLinkRegex)?.length ?? 0).toBe(2);
+    expect(html.match(activeLinkRegex)?.length ?? 0).toBe(1);
   });
 
-  it("highlights the Layout hub when on a Layout child editor (v1.17.1 F-2)", () => {
-    // On `/settings/dashboard` (a Layout child reached through the hub) the
-    // Layout nav entry must read active even though Dashboard has no nav
-    // entry of its own. Both layouts emit the active link → two matches.
-    for (const child of ["/settings/dashboard", "/settings/insights"]) {
+  it("highlights the Arrangement hub on a legacy child path and on its sub-pages", () => {
+    // `/settings/dashboard` (a redirected legacy child) and the sub-pages
+    // under `/settings/layout/<id>` both read as the Arrangement entry.
+    for (const child of [
+      "/settings/dashboard",
+      "/settings/insights",
+      "/settings/layout/labs",
+    ]) {
       const html = renderShell({ pathname: child });
       const layoutActive =
         /<a\b[^>]*\baria-current="page"[^>]*\bhref="\/settings\/layout"|<a\b[^>]*\bhref="\/settings\/layout"[^>]*\baria-current="page"/g;
-      expect(html.match(layoutActive)?.length ?? 0).toBe(2);
+      expect(html.match(layoutActive)?.length ?? 0).toBe(1);
     }
+  });
+
+  it("highlights Modules on a module's own settings page", () => {
+    const html = renderShell({ pathname: "/settings/modules/labs" });
+    const modulesActive =
+      /<a\b[^>]*\baria-current="page"[^>]*\bhref="\/settings\/modules"|<a\b[^>]*\bhref="\/settings\/modules"[^>]*\baria-current="page"/g;
+    expect(html.match(modulesActive)?.length ?? 0).toBe(1);
   });
 
   // v1.37.19 — the Layout children left `SETTINGS_SECTION_SLUGS`, so no
@@ -424,7 +468,7 @@ describe("<SettingsShell>", () => {
     const html = renderShell({ pathname: "/settings/totally-bogus" });
     const activeLinkRegex =
       /<a\b[^>]*\baria-current="page"[^>]*\bhref="\/settings\/account"|<a\b[^>]*\bhref="\/settings\/account"[^>]*\baria-current="page"/g;
-    expect(html.match(activeLinkRegex)?.length ?? 0).toBe(2);
+    expect(html.match(activeLinkRegex)?.length ?? 0).toBe(1);
   });
 
   it("resolves every section title via the i18n provider — English", () => {
@@ -440,7 +484,8 @@ describe("<SettingsShell>", () => {
     // "Layout": it arranges and picks what each module shows and holds no
     // theme, so "Appearance" promised a control it does not have.
     expect(html).toContain('href="/settings/layout"');
-    expect(html).toContain(">Layout</a>");
+    // v1.44 — the hub holds only order and view, and says so.
+    expect(html).toContain(">Arrangement</a>");
     // v1.25.3 — Channels folded into Notifications, so it is no longer a
     // left-side entry; Sources keeps its own.
     expect(html).not.toContain('href="/settings/channels"');
@@ -484,7 +529,7 @@ describe("<SettingsShell>", () => {
     // (route stays `/settings/layout`). v1.42 — "Layout" in German too;
     // "Darstellung" now names the account page's language-and-units card.
     expect(html).toContain('href="/settings/layout"');
-    expect(html).toContain(">Layout</a>");
+    expect(html).toContain(">Anordnung</a>");
     // v1.25.3 — Channels ("Kanäle") folded into Notifications; Sources keeps
     // its own left-side entry.
     expect(html).not.toContain('href="/settings/channels"');
@@ -512,17 +557,14 @@ describe("<SettingsShell>", () => {
     expect(html).not.toContain("settings.sections.");
   });
 
-  it("mobile section strip uses `no-scrollbar` so the swipe area doesn't paint a horizontal scrollbar", () => {
-    // The 10-section strip is wider than 393 CSS px, so without
-    // `no-scrollbar` Chromium/WebKit paints an always-on horizontal
-    // scrollbar at the top of every settings page. The class is
-    // defined in `globals.css` and combines `scrollbar-width: none`
-    // (Firefox) with `::-webkit-scrollbar { display: none }` (everyone
-    // else) — scroll behaviour is preserved.
-    const html = renderShell({ active: "account" });
-    const nav = html.match(/<nav\b[^>]*md:hidden[^>]*>/);
+  it("gives the phone one button naming the section, not a strip of every section", () => {
+    const html = renderShell({ active: "security" });
+    const nav = html.match(/<nav\b[^>]*md:hidden[^>]*>[\s\S]*?<\/nav>/);
     expect(nav).not.toBeNull();
-    expect(nav![0]).toMatch(/\bno-scrollbar\b/);
-    expect(nav![0]).toMatch(/\boverflow-x-auto\b/);
+    expect(nav![0]).toContain('data-slot="settings-mobile-nav-trigger"');
+    expect(nav![0]).toContain("Security");
+    expect(nav![0]).toContain("Account");
+    expect(nav![0]).not.toContain("overflow-x-auto");
+    expect(nav![0]).not.toContain('href="/settings/');
   });
 });

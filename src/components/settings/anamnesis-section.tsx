@@ -41,6 +41,7 @@ import { EmergencyProfileManager } from "@/components/records/emergency-profile-
 import { FamilyHistoryManager } from "@/components/records/family-history-manager";
 import { AiProfileInclusionManager } from "@/components/records/ai-profile-inclusion-manager";
 import { LifeCircumstancesManager } from "@/components/records/life-circumstances-manager";
+import { ScreeningHintsCard } from "@/components/records/screening-hints-card";
 
 export function AnamnesisSection() {
   const { t } = useTranslations();
@@ -111,6 +112,11 @@ export function AnamnesisSection() {
         />
         <LifeCircumstancesManager />
       </SettingsCard>
+
+      {/* v1.43 (#614) — screening hints from the life circumstances, with
+          their source. v1.44 — beside the circumstances they come from
+          (they sat on the checkups arrangement page before). */}
+      <ScreeningHintsCard />
 
       <SettingsCard>
         <SettingsCardHeader

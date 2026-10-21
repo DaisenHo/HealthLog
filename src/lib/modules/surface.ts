@@ -46,6 +46,7 @@ import type { ModuleKey } from "@/lib/modules/registry";
  *  - `derived`: a derived score, by its `DerivedMetricId`.
  *  - `settings`: a Settings section, by its slug.
  *  - `settings-layout`: a Settings, Layout group, by its id.
+ *  - `settings-module`: a module's own Settings page under Modules, by its id.
  *  - `correlation`: a correlation-discovery channel, by its channel key.
  *  - `score-ring`: a dashboard hero score ring, by its `ScoreRingId`.
  *  - `day-section`: a section of the day view, by its `DaySectionKey`. The
@@ -66,6 +67,7 @@ export const SURFACE_KINDS = [
   "derived",
   "settings",
   "settings-layout",
+  "settings-module",
   "correlation",
   "score-ring",
   "day-section",
@@ -200,10 +202,14 @@ const STATIC_SURFACE_MODULE = {
 
   // ── Settings, Layout groups ──
   "settings-layout:medications": "medications",
-  "settings-layout:mood": "mood",
   "settings-layout:labs": "labs",
   "settings-layout:illness": "illness",
   "settings-layout:documents": "inboundDocuments",
+
+  // ── Settings, a module's own page under Modules ──
+  "settings-module:medications": "medications",
+  "settings-module:mood": "mood",
+  "settings-module:labs": "labs",
 
   // ── Correlation channels ──
   // Rated mood factors (`FACTOR:<key>`) are mood's too; see

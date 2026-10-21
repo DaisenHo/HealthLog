@@ -35,6 +35,9 @@ vi.mock("@/components/records/ai-profile-inclusion-manager", () => ({
 vi.mock("@/components/records/conditions-manager", () => ({
   ConditionsManager: () => null,
 }));
+vi.mock("@/components/records/screening-hints-card", () => ({
+  ScreeningHintsCard: () => null,
+}));
 vi.mock("@/components/records/life-circumstances-manager", () => ({
   LifeCircumstancesManager: () => null,
 }));

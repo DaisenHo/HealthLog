@@ -11,8 +11,8 @@ import type { IntegrationCallbackUrls } from "@/lib/integrations/callback-urls";
 /**
  * One settings section, loaded on its own.
  *
- * The section route renders exactly one of twenty-one sections, but importing
- * them statically put all twenty-one (and everything under them: the import
+ * The section route renders exactly one of the sections, but importing
+ * them statically put all of them (and everything under them: the import
  * panel, the integration cards, the MCP and API token tables, the score
  * editor) into the route's entry bundle, so opening "About" downloaded the
  * whole settings tree. Each section is now its own chunk. A first load still
@@ -124,6 +124,10 @@ const LOADERS: Record<
     import("@/components/settings/privacy-section").then(
       (m) => m.PrivacySection,
     ),
+  preview: () =>
+    import("@/components/settings/preview-section").then(
+      (m) => m.PreviewSection,
+    ),
 };
 
 const SECTIONS: Record<SettingsSectionSlug, ComponentType<SectionProps>> = {
@@ -158,6 +162,7 @@ const SECTIONS: Record<SettingsSectionSlug, ComponentType<SectionProps>> = {
   export: dynamic(LOADERS.export, { loading: () => <SectionLoading /> }),
   advanced: dynamic(LOADERS.advanced, { loading: () => <SectionLoading /> }),
   privacy: dynamic(LOADERS.privacy, { loading: () => <SectionLoading /> }),
+  preview: dynamic(LOADERS.preview, { loading: () => <SectionLoading /> }),
 };
 
 /**

@@ -3264,12 +3264,9 @@
         "provider": "Antwoordt met",
         "modelManaged": "Het model voor deze provider stel je in bij de AI-instellingen.",
         "noProvider": "Geen provider beschikbaar",
-        "saving": "Opslaan…",
-        "saveFailed": "Die wijziging kon niet worden opgeslagen.",
         "allSettings": "Alle AI-instellingen",
-        "providerNotActive": "{provider} kon het niet overnemen: er is geen werkende aanmelding of sleutel. Stel deze provider in bij de AI-instellingen.",
         "operatorCodex": "ChatGPT (gedeeld door de serverbeheerder)",
-        "operatorManaged": "De beheerder van je server beheert deze verbinding. Zodra een van je eigen providers is ingesteld, antwoordt die als eerste."
+        "changeModel": "Wijzigen in Instellingen > AI"
       },
       "answer": {
         "scrollToBottom": "Naar het nieuwste bericht",
@@ -5289,12 +5286,17 @@
       "groups": {
         "account": "Account",
         "yourData": "Je gegevens",
-        "display": "Weergave",
         "healthProfile": "Gezondheidsprofiel",
         "ai": "AI",
         "connectivity": "Verbindingen",
-        "system": "Systeem"
-      }
+        "system": "Systeem",
+        "tracking": "Bijhouden",
+        "arrangement": "Indeling",
+        "notifications": "Meldingen",
+        "connections": "Verbindingen",
+        "data": "Gegevens"
+      },
+      "allSections": "Alle onderdelen"
     },
     "sharedRecord": {
       "managedSettings": {
@@ -5428,7 +5430,21 @@
         "remindersHeading": "Herinneringen",
         "matrixLink": "Meldingen per kanaal",
         "channelsLink": "Bezorgkanalen",
-        "displayHeading": "Op je telefoon"
+        "displayHeading": "Op je telefoon",
+        "elsewhere": {
+          "title": "Ingesteld waar ze thuishoren",
+          "description": "Deze herinneringen stel je in bij waar ze over gaan.",
+          "doses": {
+            "title": "Medicatie-innames",
+            "description": "Innametijden en herinneringen stel je per medicijn in.",
+            "link": "Medicatie openen"
+          },
+          "cycle": {
+            "title": "Cyclus",
+            "description": "Herinneringen voor menstruatie en vruchtbare dagen zet je per kanaal aan in het meldingenoverzicht.",
+            "link": "Meldingenoverzicht openen"
+          }
+        }
       },
       "layout": {
         "title": "Indeling",
@@ -5441,7 +5457,7 @@
           "title": "Inzichten",
           "description": "Overzichtsonderdelen en volgorde van de navigatieknoppen."
         },
-        "subtitle": "Kies wat je dashboard, inzichten en registratiemodules laten zien, en in welke volgorde.",
+        "subtitle": "Kies de volgorde en weergave van je dashboard, inzichten en lijsten.",
         "medications": {
           "title": "Medicatie",
           "description": "Lijstweergave en handmatige volgorde."
@@ -5457,10 +5473,6 @@
         "vorsorge": {
           "title": "Preventieve controles",
           "description": "Lijstweergave en volgorde van herinneringen."
-        },
-        "mood": {
-          "title": "Stemmingstags",
-          "description": "Groepen, tags en gearchiveerde tags voor de stemmingskiezer."
         },
         "documents": {
           "title": "Documenten",
@@ -5852,7 +5864,28 @@
         },
         "manageIn": "Beheren in {section}",
         "operatorDisabled": "Op de hele server uitgeschakeld",
-        "subtitle": "Kies welke onderdelen HealthLog in de hele app toont."
+        "subtitle": "Kies welke onderdelen HealthLog in de hele app toont.",
+        "backToHub": "Terug naar Modules",
+        "openModuleSettings": "Module-instellingen",
+        "pages": {
+          "medications": {
+            "title": "Medicatie",
+            "description": "Injectieplaatsen die de rotatie overslaat."
+          },
+          "mood": {
+            "title": "Stemmingstags",
+            "description": "Groepen, je eigen tags en gearchiveerde tags."
+          },
+          "labs": {
+            "title": "Labwaarden",
+            "description": "Biomarkers en tekstherkenning op het apparaat voor labuitslagen."
+          },
+          "arrangementTitle": "Volgorde en weergave",
+          "arrangementDescription": "Hoe deze lijst wordt gesorteerd en getoond, stel je in bij Indeling.",
+          "openArrangement": "Openen in Indeling",
+          "moduleSettingsTitle": "Module-instellingen",
+          "moduleSettingsDescription": "Al het andere staat op de pagina van de module onder Modules."
+        }
       },
       "gesundheitsakte": {
         "title": "Gezondheidsdossier",
@@ -5995,6 +6028,10 @@
       "access": {
         "title": "Gedeelde toegang",
         "subtitle": "Wie je gezondheidsdossier kan openen, en wiens dossier jij kunt openen."
+      },
+      "preview": {
+        "title": "Previewfuncties",
+        "subtitle": "Probeer wat nog niet af is. Alles hier blijft uit tot je het aanzet."
       }
     },
     "profile": "Profiel",
@@ -7006,21 +7043,19 @@
     },
     "integrationSetupGuide": "Installatiehandleiding",
     "coach": {
-      "activate": {
-        "title": "Coach activeren",
-        "description": "De Coach-knop en het Coach-paneel tonen.",
-        "toggleAria": "De Coach-knop en het Coach-paneel activeren",
-        "savedOn": "Coach geactiveerd.",
-        "savedOff": "Coach verborgen.",
-        "saveError": "De wijziging kon niet worden opgeslagen. Probeer het opnieuw."
-      },
       "memory": {
         "edit": "Bewerken",
         "source": {
           "user": "van jou",
           "coach": "van de Coach"
         }
-      }
+      },
+      "state": {
+        "title": "Coach",
+        "description": "Of de Coach-knop en het Coach-paneel zichtbaar zijn. De schakelaar staat bij Modules."
+      },
+      "nudgesMoved": "Stel je in bij je andere herinneringen onder Meldingen.",
+      "openNudges": "Openen in Meldingen"
     },
     "integrationRedirectGuide": {
       "intro": "Dit koppelt via je eigen {provider}-ontwikkelaarsapp; het instellen duurt ongeveer 5 minuten:",
@@ -7163,12 +7198,6 @@
         "delivery": "Logboek van bezorgde meldingen: {days} dagen bewaard",
         "unavailable": "Details over de bewaartermijn zijn op dit moment niet beschikbaar."
       },
-      "export": {
-        "title": "Mijn gegevens downloaden",
-        "description": "Je gegevens als CSV of JSON, of een volledig medisch dossier voor je arts.",
-        "openExport": "Export en back-up",
-        "openHealthRecord": "Medisch dossier"
-      },
       "delete": {
         "title": "Verwijderen of wissen",
         "description": "Verwijder je account volledig, of wis je gezondheidsgegevens en behoud je account.",
@@ -7184,7 +7213,6 @@
     "mcp": {
       "enableTitle": "Extern MCP-endpoint",
       "enableDescription": "Laat een assistent met MCP-ondersteuning (Claude.ai, ChatGPT) je gezondheidsgegevens lezen via een token met beperkte rechten.",
-      "enableToggleLabel": "Het MCP-endpoint inschakelen",
       "endpointLabel": "Connector-URL",
       "connectDescription": "Plak deze URL in de instellingen voor aangepaste connectors van je assistent en autoriseer daarna met het token hieronder, of log in wanneer daarom wordt gevraagd.",
       "tokensTitle": "Connectortokens",
@@ -7203,7 +7231,8 @@
       "connectionRevokeFailed": "De assistent kon niet worden ontkoppeld.",
       "connectionsDetail": "Als je een koppeling intrekt, eindigt de toegang direct, inclusief de mogelijkheid om die te vernieuwen.",
       "tokensDetail": "Het token wordt één keer getoond.",
-      "tokenNamePlaceholder": "Naam, bijv. Claude Desktop"
+      "tokenNamePlaceholder": "Naam, bijv. Claude Desktop",
+      "offKeepsTokens": "Uitzetten pauzeert het eindpunt. Je tokens en verbindingen blijven en werken weer zodra het aan staat."
     },
     "strava": "Strava",
     "stravaDescription": "Koppel je Strava-account om je activiteiten naar je trainingsgeschiedenis te synchroniseren.",
@@ -7465,7 +7494,25 @@
     "passkeyAddedToast": "Passkey toegevoegd.",
     "passkeyRemovedToast": "Passkey verwijderd.",
     "integrationDisconnected": "{provider} ontkoppeld.",
-    "integrationDisconnectFailed": "{provider} kon niet worden ontkoppeld."
+    "integrationDisconnectFailed": "{provider} kon niet worden ontkoppeld.",
+    "preview": {
+      "topics": {
+        "title": "Onderwerpen (bèta)",
+        "description": "Voegt een apart item Onderwerpen toe, met overzichtspagina’s boven de pagina’s per meting.",
+        "detail": "Je inzichtpagina’s, navigatie en links blijven precies zoals ze zijn. De onderwerppagina’s komen met een latere update; deze schakelaar bepaalt of je ze ziet.",
+        "savedOn": "Preview van onderwerpen ingeschakeld.",
+        "savedOff": "Preview van onderwerpen uitgeschakeld."
+      },
+      "loadError": "Je preview-instellingen konden niet worden geladen.",
+      "feedbackLink": "Geef feedback in de GitHub-discussies"
+    },
+    "timezoneSaved": "Tijdzone opgeslagen.",
+    "moduleState": {
+      "on": "Aan",
+      "off": "Uit",
+      "change": "Wijzigen in Modules"
+    },
+    "timezoneUseDevice": "Tijdzone van dit apparaat gebruiken ({zone})"
   },
   "admin": {
     "title": "Beheer",
@@ -8855,6 +8902,10 @@
       "detailedToast": "Meldingen bevatten nu gezondheidscijfers.",
       "genericToast": "Meldingen bevatten geen gezondheidscijfers meer.",
       "saveError": "Opslaan mislukt. Probeer het later opnieuw."
+    },
+    "checkupReminders": {
+      "title": "Herinneringen voor controles",
+      "description": "Zet afzonderlijke herinneringen voor controles aan of uit."
     }
   },
   "i18n": {
@@ -9631,8 +9682,6 @@
       "description": "Voer de meetwaarde in; de herinnering wordt als gedaan gemarkeerd."
     },
     "manage": {
-      "title": "Herinneringen beheren",
-      "description": "Zet afzonderlijke herinneringen aan of uit.",
       "empty": "Nog geen herinneringen om aan te passen."
     },
     "dashboard": {

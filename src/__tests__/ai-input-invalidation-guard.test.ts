@@ -104,8 +104,12 @@ describe("AI-input writes evict the capability answer", () => {
 
   it("finds the write sites it is meant to hold (an empty sweep is a broken matcher)", () => {
     const total = sites.reduce((n, s) => n + s.writes.length, 0);
-    expect(sites.length).toBeGreaterThanOrEqual(21);
-    expect(total).toBeGreaterThanOrEqual(22);
+    // v1.44 — three write sites left on purpose: the Coach's second switch
+    // and the MCP page's second switch (the one switch is in Modules), and
+    // the Coach overlay's copy of the provider and model selects (chosen in
+    // Settings > AI only).
+    expect(sites.length).toBeGreaterThanOrEqual(19);
+    expect(total).toBeGreaterThanOrEqual(19);
   });
 
   it.each(sites.map((s) => [s.rel, s] as const))(

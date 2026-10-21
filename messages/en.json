@@ -3264,12 +3264,9 @@
         "provider": "Answers with",
         "modelManaged": "The model for this provider is set in AI settings.",
         "noProvider": "No provider available",
-        "saving": "Saving…",
-        "saveFailed": "That change could not be saved.",
         "allSettings": "All AI settings",
-        "providerNotActive": "{provider} could not take over: it has no working sign-in or key. Set it up in AI settings.",
         "operatorCodex": "ChatGPT (shared by the operator)",
-        "operatorManaged": "Your server's operator manages this connection. Once one of your own providers is set up, it answers first."
+        "changeModel": "Change in Settings > AI"
       },
       "answer": {
         "scrollToBottom": "Jump to the latest message",
@@ -5289,12 +5286,17 @@
       "groups": {
         "account": "Account",
         "yourData": "Your data",
-        "display": "Display",
         "healthProfile": "Health profile",
         "ai": "AI",
         "connectivity": "Connectivity",
-        "system": "System"
-      }
+        "system": "System",
+        "tracking": "Tracking",
+        "arrangement": "Arrangement",
+        "notifications": "Notifications",
+        "connections": "Connections",
+        "data": "Data"
+      },
+      "allSections": "All sections"
     },
     "sharedRecord": {
       "managedSettings": {
@@ -5428,11 +5430,25 @@
         "remindersHeading": "Reminders",
         "matrixLink": "Per-channel notifications",
         "channelsLink": "Delivery channels",
-        "displayHeading": "On your phone"
+        "displayHeading": "On your phone",
+        "elsewhere": {
+          "title": "Set where they belong",
+          "description": "These reminders are set next to what they are about.",
+          "doses": {
+            "title": "Medication doses",
+            "description": "Each medication's dose times and reminders are set on the medication.",
+            "link": "Open medications"
+          },
+          "cycle": {
+            "title": "Cycle",
+            "description": "Period and fertile-window reminders are switched per channel in the notification matrix.",
+            "link": "Open the notification matrix"
+          }
+        }
       },
       "layout": {
-        "title": "Layout",
-        "backToHub": "Back to Layout",
+        "title": "Arrangement",
+        "backToHub": "Back to Arrangement",
         "dashboard": {
           "title": "Dashboard",
           "description": "Tile layout and order."
@@ -5441,7 +5457,7 @@
           "title": "Insights",
           "description": "Overview sections and navigation-pill order."
         },
-        "subtitle": "Choose what your dashboard, insights and tracking modules show, and in which order.",
+        "subtitle": "Choose the order and view of your dashboard, insights and tracking lists.",
         "medications": {
           "title": "Medications",
           "description": "List view and manual order."
@@ -5457,10 +5473,6 @@
         "vorsorge": {
           "title": "Checkups",
           "description": "List view and reminder order."
-        },
-        "mood": {
-          "title": "Mood tags",
-          "description": "Groups, tags, and archived tags for the mood picker."
         },
         "documents": {
           "title": "Documents",
@@ -5852,7 +5864,28 @@
         },
         "manageIn": "Manage in {section}",
         "operatorDisabled": "Disabled server-wide",
-        "subtitle": "Choose which tracking areas HealthLog shows across the app."
+        "subtitle": "Choose which tracking areas HealthLog shows across the app.",
+        "backToHub": "Back to Modules",
+        "openModuleSettings": "Module settings",
+        "pages": {
+          "medications": {
+            "title": "Medications",
+            "description": "Injection sites the rotation leaves out."
+          },
+          "mood": {
+            "title": "Mood tags",
+            "description": "Groups, your own tags and archived tags."
+          },
+          "labs": {
+            "title": "Labs",
+            "description": "Biomarkers and on-device text recognition for lab reports."
+          },
+          "arrangementTitle": "Order and view",
+          "arrangementDescription": "How this list is sorted and shown lives under Arrangement.",
+          "openArrangement": "Open in Arrangement",
+          "moduleSettingsTitle": "Module settings",
+          "moduleSettingsDescription": "Everything beyond order and view lives on the module's page under Modules."
+        }
       },
       "gesundheitsakte": {
         "title": "Health record",
@@ -5995,6 +6028,10 @@
       "access": {
         "title": "Shared access",
         "subtitle": "Who can open your health record, and whose you can open."
+      },
+      "preview": {
+        "title": "Preview features",
+        "subtitle": "Try what is not finished yet. Everything here stays off until you switch it on."
       }
     },
     "profile": "Profile",
@@ -7006,21 +7043,19 @@
     },
     "integrationSetupGuide": "Setup guide",
     "coach": {
-      "activate": {
-        "title": "Activate Coach",
-        "description": "Show the Coach button and drawer.",
-        "toggleAria": "Activate the Coach button and drawer",
-        "savedOn": "Coach activated.",
-        "savedOff": "Coach hidden.",
-        "saveError": "Could not save the change. Please try again."
-      },
       "memory": {
         "edit": "Edit",
         "source": {
           "user": "from you",
           "coach": "from the Coach"
         }
-      }
+      },
+      "state": {
+        "title": "Coach",
+        "description": "Whether the Coach button and drawer show. The switch is in Modules."
+      },
+      "nudgesMoved": "Set with your other reminders under Notifications.",
+      "openNudges": "Open in Notifications"
     },
     "integrationRedirectGuide": {
       "intro": "This connects through your own {provider} developer app, about 5 minutes to set up:",
@@ -7163,12 +7198,6 @@
         "delivery": "Notification delivery log: kept {days} days",
         "unavailable": "Retention details are unavailable right now."
       },
-      "export": {
-        "title": "Download my data",
-        "description": "Your records as CSV or JSON, or a complete health record for your doctor.",
-        "openExport": "Export & backup",
-        "openHealthRecord": "Health record"
-      },
       "delete": {
         "title": "Delete or reset",
         "description": "Remove your account entirely, or wipe your health records while keeping the account.",
@@ -7184,7 +7213,6 @@
     "mcp": {
       "enableTitle": "Remote MCP endpoint",
       "enableDescription": "Let an MCP-capable assistant (Claude.ai, ChatGPT) read your health data over a scoped token.",
-      "enableToggleLabel": "Enable the MCP endpoint",
       "endpointLabel": "Connector URL",
       "connectDescription": "Paste this URL into your assistant's custom-connector setup, then authorize with the token below or sign in when prompted.",
       "tokensTitle": "Connector tokens",
@@ -7203,7 +7231,8 @@
       "connectionRevokeFailed": "Could not disconnect the assistant.",
       "connectionsDetail": "Revoking a connection ends its access immediately, including its ability to refresh.",
       "tokensDetail": "The token is shown once.",
-      "tokenNamePlaceholder": "Name, e.g. Claude Desktop"
+      "tokenNamePlaceholder": "Name, e.g. Claude Desktop",
+      "offKeepsTokens": "Switching it off pauses the endpoint. Your tokens and connections stay and work again once it is back on."
     },
     "strava": "Strava",
     "stravaDescription": "Connect your Strava account to sync your activities into your workout history.",
@@ -7465,7 +7494,25 @@
     "passkeyAddedToast": "Passkey added.",
     "passkeyRemovedToast": "Passkey removed.",
     "integrationDisconnected": "{provider} disconnected.",
-    "integrationDisconnectFailed": "Could not disconnect {provider}."
+    "integrationDisconnectFailed": "Could not disconnect {provider}.",
+    "preview": {
+      "topics": {
+        "title": "Topics (beta)",
+        "description": "Adds a separate Topics entry with overview pages above the single-metric Insights pages.",
+        "detail": "Your Insights pages, navigation and links stay exactly as they are. The topic pages arrive in a later update; this switch decides whether you see them.",
+        "savedOn": "Topics preview switched on.",
+        "savedOff": "Topics preview switched off."
+      },
+      "loadError": "Could not load your preview settings.",
+      "feedbackLink": "Share feedback in the GitHub discussions"
+    },
+    "timezoneSaved": "Timezone saved.",
+    "moduleState": {
+      "on": "On",
+      "off": "Off",
+      "change": "Change in Modules"
+    },
+    "timezoneUseDevice": "Use this device's timezone ({zone})"
   },
   "admin": {
     "title": "Administration",
@@ -8855,6 +8902,10 @@
       "detailedToast": "Notifications now include health figures.",
       "genericToast": "Notifications no longer include health figures.",
       "saveError": "Could not save. Please try again later."
+    },
+    "checkupReminders": {
+      "title": "Checkup reminders",
+      "description": "Switch individual checkup reminders on or off."
     }
   },
   "i18n": {
@@ -9631,8 +9682,6 @@
       "description": "Enter the reading; the reminder is marked done."
     },
     "manage": {
-      "title": "Manage reminders",
-      "description": "Enable or disable individual reminders.",
       "empty": "No reminders to customize yet."
     },
     "dashboard": {

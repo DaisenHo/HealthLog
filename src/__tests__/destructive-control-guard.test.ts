@@ -162,7 +162,7 @@ const REGISTRY: DestructiveEntry[] = [
     file: "components/settings/mcp-section.tsx",
     destroys: "an MCP client grant or an MCP token",
     recovery: "permanent",
-    confirm: ["AlertDialog"],
+    confirm: ["ConfirmButton"],
   },
   {
     file: "components/settings/sharing-section.tsx",

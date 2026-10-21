@@ -246,7 +246,8 @@ describe("settings sections — SSR smoke", () => {
     // card is gone.
     expect(html).toContain('id="mood-reminder"');
     expect(html).toContain('id="low-stock"');
-    expect(html).not.toContain('id="coach-nudge"');
+    // v1.44 — the Coach nudges are back with the other reminders.
+    expect(html).toContain('id="coach-nudge"');
     // v1.25.7 — delivery channels moved to Settings → Integrationen, so the
     // channels group + panel no longer render on this surface.
     expect(html).not.toContain('id="channels"');

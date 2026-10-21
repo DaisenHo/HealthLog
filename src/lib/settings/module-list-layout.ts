@@ -76,13 +76,6 @@ export function moduleListDefaults(list: ModuleListKey): ModuleListPrefs {
   return { ...defaults, order: [...defaults.order] };
 }
 
-export function isModuleListKey(value: unknown): value is ModuleListKey {
-  return (
-    typeof value === "string" &&
-    (MODULE_LIST_KEYS as readonly string[]).includes(value)
-  );
-}
-
 export function isModuleListView(value: unknown): value is ModuleListView {
   return (
     typeof value === "string" &&

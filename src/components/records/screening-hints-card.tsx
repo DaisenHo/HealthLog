@@ -2,10 +2,11 @@
 
 /**
  * v1.43 (#614) — screening hints from the life circumstances, in Settings →
- * Vorsorge. Low-dose CT for lung cancer and the abdominal-aorta ultrasound,
- * each with its status, the reasons in the account's language and the rule's
- * source and country. A hint, never a reminder: nothing is scheduled here,
- * and the card says so. Resolved on the server; rendered as delivered.
+ * Health profile → Medical history (under Checkups until v1.44). Low-dose CT
+ * for lung cancer and the abdominal-aorta ultrasound, each with its status,
+ * the reasons in the account's language and the rule's source and country.
+ * A hint, never a reminder: nothing is scheduled here, and the card says so.
+ * Resolved on the server; rendered as delivered.
  *
  * The card stays away until it has something to say: the person has said
  * something about smoking, or a hint already applies without it (the German

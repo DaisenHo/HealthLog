@@ -382,7 +382,7 @@ const PINNED_AFFORDANCES: Record<
   },
   "src/components/settings/mcp-section.tsx": {
     "text-success": 4,
-    "toast.success": 2,
+    "toast.success": 1,
   },
   "src/components/settings/notification-status-card.tsx": {
     CheckCircle2: 2,

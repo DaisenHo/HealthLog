@@ -3264,12 +3264,9 @@
         "provider": "Odpowiada przez",
         "modelManaged": "Model tego dostawcy ustawisz w ustawieniach AI.",
         "noProvider": "Brak dostępnego dostawcy",
-        "saving": "Zapisywanie…",
-        "saveFailed": "Nie udało się zapisać zmiany.",
         "allSettings": "Wszystkie ustawienia AI",
-        "providerNotActive": "{provider} nie mógł przejąć odpowiedzi: brak działającego logowania lub klucza. Skonfiguruj go w ustawieniach AI.",
         "operatorCodex": "ChatGPT (udostępniony przez operatora)",
-        "operatorManaged": "Tym połączeniem zarządza operator Twojego serwera. Gdy skonfigurujesz własnego dostawcę, to on odpowie jako pierwszy."
+        "changeModel": "Zmień w Ustawieniach > AI"
       },
       "answer": {
         "scrollToBottom": "Przejdź do najnowszej wiadomości",
@@ -5289,12 +5286,17 @@
       "groups": {
         "account": "Konto",
         "yourData": "Twoje dane",
-        "display": "Wyświetlanie",
         "healthProfile": "Profil zdrowotny",
         "ai": "AI",
         "connectivity": "Łączność",
-        "system": "System"
-      }
+        "system": "System",
+        "tracking": "Śledzenie",
+        "arrangement": "Układ",
+        "notifications": "Powiadomienia",
+        "connections": "Połączenia",
+        "data": "Dane"
+      },
+      "allSections": "Wszystkie sekcje"
     },
     "sharedRecord": {
       "managedSettings": {
@@ -5428,11 +5430,25 @@
         "remindersHeading": "Przypomnienia",
         "matrixLink": "Powiadomienia wg kanału",
         "channelsLink": "Kanały dostarczania",
-        "displayHeading": "Na telefonie"
+        "displayHeading": "Na telefonie",
+        "elsewhere": {
+          "title": "Ustawiane tam, gdzie należą",
+          "description": "Te przypomnienia ustawiasz obok tego, czego dotyczą.",
+          "doses": {
+            "title": "Dawki leków",
+            "description": "Godziny przyjmowania i przypomnienia ustawiasz przy każdym leku.",
+            "link": "Otwórz leki"
+          },
+          "cycle": {
+            "title": "Cykl",
+            "description": "Przypomnienia o miesiączce i dniach płodnych włączasz dla każdego kanału w tabeli powiadomień.",
+            "link": "Otwórz tabelę powiadomień"
+          }
+        }
       },
       "layout": {
         "title": "Układ",
-        "backToHub": "Powrót do układu",
+        "backToHub": "Wróć do Układu",
         "dashboard": {
           "title": "Pulpit",
           "description": "Układ i kolejność kafelków."
@@ -5441,7 +5457,7 @@
           "title": "Analizy",
           "description": "Kolejność przeglądu i pigułek nawigacyjnych."
         },
-        "subtitle": "Wybierz, co pokazują pulpit, analizy i moduły śledzenia oraz w jakiej kolejności.",
+        "subtitle": "Wybierz kolejność i widok pulpitu, analiz i list śledzenia.",
         "medications": {
           "title": "Leki",
           "description": "Widok listy i ręczna kolejność."
@@ -5457,10 +5473,6 @@
         "vorsorge": {
           "title": "Badania kontrolne",
           "description": "Widok listy i kolejność przypomnień."
-        },
-        "mood": {
-          "title": "Tagi nastroju",
-          "description": "Grupy, tagi i zarchiwizowane tagi w wyborze nastroju."
         },
         "documents": {
           "title": "Dokumenty",
@@ -5852,7 +5864,28 @@
         },
         "manageIn": "Zarządzaj w {section}",
         "operatorDisabled": "Wyłączone na całym serwerze",
-        "subtitle": "Wybierz, które obszary śledzenia pokazuje HealthLog w aplikacji."
+        "subtitle": "Wybierz, które obszary śledzenia pokazuje HealthLog w aplikacji.",
+        "backToHub": "Wróć do Modułów",
+        "openModuleSettings": "Ustawienia modułu",
+        "pages": {
+          "medications": {
+            "title": "Leki",
+            "description": "Miejsca wstrzyknięć pomijane w rotacji."
+          },
+          "mood": {
+            "title": "Tagi nastroju",
+            "description": "Grupy, własne tagi i tagi zarchiwizowane."
+          },
+          "labs": {
+            "title": "Badania",
+            "description": "Biomarkery i rozpoznawanie tekstu na urządzeniu dla wyników badań."
+          },
+          "arrangementTitle": "Kolejność i widok",
+          "arrangementDescription": "Sortowanie i widok tej listy ustawiasz w Układzie.",
+          "openArrangement": "Otwórz w Układzie",
+          "moduleSettingsTitle": "Ustawienia modułu",
+          "moduleSettingsDescription": "Wszystko poza kolejnością i widokiem jest na stronie modułu w Modułach."
+        }
       },
       "gesundheitsakte": {
         "title": "Dokumentacja zdrowotna",
@@ -5995,6 +6028,10 @@
       "access": {
         "title": "Udostępniony dostęp",
         "subtitle": "Kto może otworzyć twoją kartę zdrowia i czyją kartę możesz otworzyć ty."
+      },
+      "preview": {
+        "title": "Funkcje w podglądzie",
+        "subtitle": "Wypróbuj to, co nie jest jeszcze gotowe. Wszystko tutaj pozostaje wyłączone, dopóki tego nie włączysz."
       }
     },
     "profile": "Profil",
@@ -7006,21 +7043,19 @@
     },
     "integrationSetupGuide": "Przewodnik konfiguracji",
     "coach": {
-      "activate": {
-        "title": "Włącz Coacha",
-        "description": "Pokazuje przycisk i panel Coacha.",
-        "toggleAria": "Włącz przycisk i panel Coacha",
-        "savedOn": "Coach włączony.",
-        "savedOff": "Coach ukryty.",
-        "saveError": "Nie udało się zapisać zmiany. Spróbuj ponownie."
-      },
       "memory": {
         "edit": "Edytuj",
         "source": {
           "user": "od ciebie",
           "coach": "od Coacha"
         }
-      }
+      },
+      "state": {
+        "title": "Coach",
+        "description": "Czy przycisk i panel Coacha są widoczne. Przełącznik jest w Modułach."
+      },
+      "nudgesMoved": "Ustawiasz je razem z innymi przypomnieniami w Powiadomieniach.",
+      "openNudges": "Otwórz w Powiadomieniach"
     },
     "integrationRedirectGuide": {
       "intro": "To połączenie działa przez Twoją własną aplikację deweloperską {provider}, około 5 minut konfiguracji:",
@@ -7163,12 +7198,6 @@
         "delivery": "Dziennik wysyłki powiadomień: {days} dni",
         "unavailable": "Szczegóły przechowywania są obecnie niedostępne."
       },
-      "export": {
-        "title": "Pobierz moje dane",
-        "description": "Twoje rekordy jako CSV lub JSON albo pełna dokumentacja dla lekarza.",
-        "openExport": "Eksport i kopia zapasowa",
-        "openHealthRecord": "Dokumentacja medyczna"
-      },
       "delete": {
         "title": "Usuń lub zresetuj",
         "description": "Usuń całe konto albo wyczyść dane zdrowotne, zachowując konto.",
@@ -7184,7 +7213,6 @@
     "mcp": {
       "enableTitle": "Zdalny punkt końcowy MCP",
       "enableDescription": "Zezwól asystentowi obsługującemu MCP (Claude.ai, ChatGPT) na odczyt danych zdrowotnych za pomocą ograniczonego tokenu.",
-      "enableToggleLabel": "Włącz punkt końcowy MCP",
       "endpointLabel": "Adres URL łącznika",
       "connectDescription": "Wklej ten adres URL w konfiguracji własnego łącznika asystenta, a następnie autoryzuj za pomocą poniższego tokenu lub zaloguj się po wyświetleniu monitu.",
       "tokensTitle": "Tokeny łącznika",
@@ -7203,7 +7231,8 @@
       "connectionRevokeFailed": "Nie udało się rozłączyć asystenta.",
       "tokensDetail": "Token jest wyświetlany tylko raz.",
       "connectionsDetail": "Cofnięcie połączenia natychmiast kończy dostęp, w tym możliwość odnawiania.",
-      "tokenNamePlaceholder": "Nazwa, np. Claude Desktop"
+      "tokenNamePlaceholder": "Nazwa, np. Claude Desktop",
+      "offKeepsTokens": "Wyłączenie wstrzymuje punkt końcowy. Tokeny i połączenia zostają i działają ponownie po włączeniu."
     },
     "strava": "Strava",
     "stravaDescription": "Połącz konto Strava, aby synchronizować aktywności z historią treningów.",
@@ -7465,7 +7494,25 @@
     "passkeyAddedToast": "Dodano passkey.",
     "passkeyRemovedToast": "Usunięto passkey.",
     "integrationDisconnected": "Rozłączono {provider}.",
-    "integrationDisconnectFailed": "Nie udało się rozłączyć {provider}."
+    "integrationDisconnectFailed": "Nie udało się rozłączyć {provider}.",
+    "preview": {
+      "topics": {
+        "title": "Tematy (beta)",
+        "description": "Dodaje osobną pozycję Tematy ze stronami przeglądowymi nad stronami poszczególnych pomiarów.",
+        "detail": "Strony analiz, nawigacja i linki pozostają dokładnie takie, jakie są. Strony tematów pojawią się w późniejszej aktualizacji; ten przełącznik decyduje, czy je zobaczysz.",
+        "savedOn": "Podgląd tematów włączony.",
+        "savedOff": "Podgląd tematów wyłączony."
+      },
+      "loadError": "Nie udało się wczytać ustawień podglądu.",
+      "feedbackLink": "Podziel się opinią w dyskusjach na GitHubie"
+    },
+    "timezoneSaved": "Strefa czasowa zapisana.",
+    "moduleState": {
+      "on": "Włączone",
+      "off": "Wyłączone",
+      "change": "Zmień w Modułach"
+    },
+    "timezoneUseDevice": "Użyj strefy czasowej tego urządzenia ({zone})"
   },
   "admin": {
     "title": "Administracja",
@@ -8855,6 +8902,10 @@
       "detailedToast": "Powiadomienia zawierają teraz wartości zdrowotne.",
       "genericToast": "Powiadomienia nie zawierają już wartości zdrowotnych.",
       "saveError": "Nie udało się zapisać. Spróbuj ponownie później."
+    },
+    "checkupReminders": {
+      "title": "Przypomnienia o badaniach kontrolnych",
+      "description": "Włączaj lub wyłączaj pojedyncze przypomnienia o badaniach."
     }
   },
   "i18n": {
@@ -9631,8 +9682,6 @@
       "description": "Wpisz wartość; przypomnienie zostanie oznaczone jako wykonane."
     },
     "manage": {
-      "title": "Zarządzaj przypomnieniami",
-      "description": "Włącz lub wyłącz poszczególne przypomnienia.",
       "empty": "Brak przypomnień do dostosowania."
     },
     "dashboard": {

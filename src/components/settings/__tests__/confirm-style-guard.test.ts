@@ -24,8 +24,6 @@ const ALLOWED: Readonly<Record<string, string>> = {
     "the add-passkey re-authentication form; the delete confirm uses ConfirmButton",
   "security-section/totp-card.tsx":
     "the disable confirm asks for a current code and stays open until the server answers; both actions wear the destructive style",
-  "mcp-section.tsx":
-    "the connection and token revoke confirms; the MCP card is reshaped separately",
 };
 
 /** Owned by the integration cards, which follow their own card kit. */

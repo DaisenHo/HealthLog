@@ -74,6 +74,7 @@ export function InjectionSitesCard({
   return (
     <SettingsCard>
       <SettingsCardHeader
+        anchor="injection-sites"
         icon={Syringe}
         title={t("settings.globalExcludedInjectionSitesLabel")}
         description={t("settings.globalExcludedInjectionSitesHint")}
