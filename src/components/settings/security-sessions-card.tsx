@@ -32,7 +32,7 @@ import { accountLabel } from "@/lib/sharing/account-access-view";
 import { cn } from "@/lib/utils";
 
 /** An accepted grant sign-out-everywhere left standing (`grantsKept`). */
-interface KeptGrant {
+export interface KeptGrant {
   id: string;
   account: { id: string; username: string; displayName: string | null };
   access: "READ" | "WRITE" | "MANAGE";
@@ -82,7 +82,7 @@ export function SecuritySessionsCard({
   // Ending one of them is the same act as on the access card, so it asks the
   // same question with the same disclosure — and that names the audit window,
   // which rides the grant list. Read only once there is a row to end.
-  const { data: grantList } = useAccountGrants(keptGrants.length > 0);
+  const grantListQuery = useAccountGrants(keptGrants.length > 0);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.sessions(),
@@ -284,69 +284,119 @@ export function SecuritySessionsCard({
           </p>
         )}
 
-        {keptGrants.length > 0 && (
-          <div
-            data-slot="sign-out-everywhere-grants-kept"
-            className="space-y-2 border-t pt-4"
-          >
-            <p className="text-sm font-medium">
-              {t("settings.security.grantsKeptTitle")}
-            </p>
-            <p className="text-muted-foreground text-sm">
-              {t("settings.security.grantsKeptBody")}
-            </p>
-            <ul className="divide-y">
-              {keptGrants.map((grant) => (
-                <li
-                  key={grant.id}
-                  className="flex items-center justify-between gap-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm">
-                      {accountLabel(grant.account)}
-                    </p>
-                    <p className="text-muted-foreground text-xs">
-                      {t(ACCESS_LABEL_KEY[grant.access])}
-                    </p>
-                  </div>
-                  {grantList ? (
-                    <ConfirmButton
-                      slot="kept-grant-revoke"
-                      destructive
-                      size="sm"
-                      className="min-h-11 shrink-0 sm:min-h-9"
-                      label={t("recordSharing.given.revoke")}
-                      title={t("recordSharing.given.revokeTitle", {
-                        name: accountLabel(grant.account),
-                      })}
-                      body={revokeBody({
-                        t,
-                        access: grant.access,
-                        name: accountLabel(grant.account),
-                        retentionDays: grantList.retentionDays,
-                      })}
-                      confirmLabel={t("recordSharing.given.revokeConfirm")}
-                      pending={revokeGrant.isPending}
-                      onConfirm={() =>
-                        revokeGrant.mutate(grant.id, {
-                          onSuccess: () =>
-                            setKeptGrants((current) =>
-                              current.filter((g) => g.id !== grant.id),
-                            ),
-                          onError: () =>
-                            setStatus(
-                              t("recordSharing.actionError.revokeFailed"),
-                            ),
-                        })
-                      }
-                    />
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <KeptGrantsList
+          grants={keptGrants}
+          grantList={grantListQuery}
+          revokeGrant={revokeGrant}
+          onRevoked={(id) =>
+            setKeptGrants((current) => current.filter((g) => g.id !== id))
+          }
+          onRevokeFailed={() =>
+            setStatus(t("recordSharing.actionError.revokeFailed"))
+          }
+        />
       </div>
     </SettingsCard>
+  );
+}
+
+/**
+ * The grants "sign out everywhere" left standing, each with its "end access"
+ * button. The button asks the access card's question, whose disclosure names
+ * the audit window off the grant list; until that list has loaded the button
+ * is shown disabled rather than left out, and a failed read says so with a
+ * retry instead of leaving the row without its action.
+ */
+export function KeptGrantsList({
+  grants,
+  grantList,
+  revokeGrant,
+  onRevoked,
+  onRevokeFailed,
+}: {
+  grants: readonly KeptGrant[];
+  grantList: {
+    data?: { retentionDays: number };
+    isError: boolean;
+    error: unknown;
+    refetch: () => unknown;
+  };
+  /** The revoke mutation; called only from the confirmation's action. */
+  revokeGrant: {
+    mutate: (
+      grantId: string,
+      callbacks: { onSuccess: () => void; onError: () => void },
+    ) => void;
+    isPending: boolean;
+  };
+  onRevoked: (grantId: string) => void;
+  onRevokeFailed: () => void;
+}) {
+  const { t } = useTranslations();
+  if (grants.length === 0) return null;
+  const retentionDays = grantList.data?.retentionDays;
+  return (
+    <div
+      data-slot="sign-out-everywhere-grants-kept"
+      className="space-y-2 border-t pt-4"
+    >
+      <p className="text-sm font-medium">
+        {t("settings.security.grantsKeptTitle")}
+      </p>
+      <p className="text-muted-foreground text-sm">
+        {t("settings.security.grantsKeptBody")}
+      </p>
+      {grantList.isError && (
+        <QueryErrorRow
+          inset
+          error={grantList.error}
+          onRetry={() => void grantList.refetch()}
+        />
+      )}
+      <ul className="divide-y">
+        {grants.map((grant) => (
+          <li
+            key={grant.id}
+            className="flex items-center justify-between gap-3 py-2"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm">{accountLabel(grant.account)}</p>
+              <p className="text-muted-foreground text-xs">
+                {t(ACCESS_LABEL_KEY[grant.access])}
+              </p>
+            </div>
+            <ConfirmButton
+              slot="kept-grant-revoke"
+              destructive
+              size="sm"
+              className="min-h-11 shrink-0 sm:min-h-9"
+              label={t("recordSharing.given.revoke")}
+              title={t("recordSharing.given.revokeTitle", {
+                name: accountLabel(grant.account),
+              })}
+              body={
+                retentionDays === undefined
+                  ? ""
+                  : revokeBody({
+                      t,
+                      access: grant.access,
+                      name: accountLabel(grant.account),
+                      retentionDays,
+                    })
+              }
+              confirmLabel={t("recordSharing.given.revokeConfirm")}
+              disabled={retentionDays === undefined}
+              pending={revokeGrant.isPending}
+              onConfirm={() =>
+                revokeGrant.mutate(grant.id, {
+                  onSuccess: () => onRevoked(grant.id),
+                  onError: onRevokeFailed,
+                })
+              }
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
