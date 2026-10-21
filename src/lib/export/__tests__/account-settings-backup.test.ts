@@ -198,6 +198,41 @@ describe("admitAccountSettings", () => {
     ]);
   });
 
+  it("keeps the valid activity goals and names the ones it drops", () => {
+    const { data, refused } = admitAccountSettings(
+      {
+        activityGoalsJson: {
+          workoutsPerWeek: 4,
+          activeMinutesPerWeek: 150,
+          stepsPerWeek: 70_000,
+          stepsPerMonth: 300_000,
+          stepsPerDay: 10_000,
+          workoutsPerWeekTypo: "four",
+        },
+      },
+      ctx,
+    );
+    expect(data.activityGoalsJson).toEqual({
+      workoutsPerWeek: 4,
+      activeMinutesPerWeek: 150,
+      stepsPerWeek: 70_000,
+      stepsPerMonth: 300_000,
+    });
+    expect(refused.sort()).toEqual([
+      "activityGoalsJson.stepsPerDay",
+      "activityGoalsJson.workoutsPerWeekTypo",
+    ]);
+  });
+
+  it("refuses an activity goal outside its bounds and keeps the rest", () => {
+    const { data, refused } = admitAccountSettings(
+      { activityGoalsJson: { workoutsPerWeek: 0, stepsPerWeek: 50_000 } },
+      ctx,
+    );
+    expect(data.activityGoalsJson).toEqual({ stepsPerWeek: 50_000 });
+    expect(refused).toEqual(["activityGoalsJson.workoutsPerWeek"]);
+  });
+
   // #1126 — the reasoning setting lives on the provider chain entries, so
   // the chain column carries it through a backup unchanged.
   it("carries the provider chain's reasoning settings through a round trip", async () => {
