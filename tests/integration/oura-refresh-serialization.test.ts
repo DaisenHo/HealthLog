@@ -41,7 +41,7 @@ vi.mock("@/lib/oura/client", async (importOriginal) => {
 
 import { decrypt, encrypt } from "@/lib/crypto";
 import { OuraApiError } from "@/lib/oura/response-classifier";
-import { refreshOuraAccessToken } from "@/lib/oura/credentials";
+import { refreshOuraAfterRefusal } from "@/lib/oura/oauth-descriptor";
 import { syncUserOura } from "@/lib/oura/sync";
 
 const USER = "user-oura-refresh";
@@ -142,10 +142,7 @@ describe("Oura token refresh (real Postgres)", () => {
       };
     });
 
-    const token = await refreshOuraAccessToken(USER, spent, {
-      clientId: "oura-client",
-      clientSecret: "oura-secret",
-    });
+    const token = await refreshOuraAfterRefusal(USER, spent);
 
     expect(token).toBe("reconnect-access");
     expect(await storedTokens()).toEqual({

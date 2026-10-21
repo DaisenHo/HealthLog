@@ -86,12 +86,8 @@ import {
   mapVo2Max,
   type MappedMeasurement,
 } from "./client";
-import {
-  getOuraClientCredentials,
-  getOuraConnection,
-  refreshOuraAccessToken,
-  syncOuraScopeDenied,
-} from "./credentials";
+import { getOuraConnection, syncOuraScopeDenied } from "./credentials";
+import { refreshOuraAfterRefusal } from "./oauth-descriptor";
 import { OuraApiError, classifyOuraError } from "./response-classifier";
 import { syncUserOuraCyclePhases } from "./cycle-sync";
 import { isOuraScopeGatedCollection } from "./scope";
@@ -524,21 +520,9 @@ async function fetchAll(
   // same one-time refresh token twice, and retry the collections that failed
   // for any reason but a named scope. A failed refresh throws so the caller
   // parks reauth_required.
-  const creds = await getOuraClientCredentials(userId);
-  if (!creds)
-    return {
-      readings: first.readings,
-      // The refresh never happened, so no sibling's success can be trusted
-      // over it; a refusal that names its scope still says what it says.
-      ...splitScopeDenied(first.failures, false),
-      sleepSweeps,
-      sleepRetirements,
-    };
-
-  const usableToken = await refreshOuraAccessToken(
+  const usableToken = await refreshOuraAfterRefusal(
     userId,
     refreshTokenCiphertext,
-    creds,
   );
   if (!usableToken)
     return {

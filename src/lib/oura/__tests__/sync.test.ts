@@ -70,11 +70,12 @@ const {
 // these cases pin.
 vi.mock("../credentials", () => ({
   getOuraConnection: getConnMock,
-  refreshOuraAccessToken: async (
-    userId: string,
-    spentCiphertext: string,
-    creds: unknown,
-  ) => {
+  syncOuraScopeDenied: scopeDeniedMock,
+}));
+vi.mock("../oauth-descriptor", () => ({
+  refreshOuraAfterRefusal: async (userId: string, spentCiphertext: string) => {
+    const creds = await getCredsMock(userId);
+    if (!creds) return null;
     const rotated = await refreshMock("ref", creds);
     return storeTokensMock(
       userId,
@@ -83,8 +84,6 @@ vi.mock("../credentials", () => ({
       spentCiphertext,
     );
   },
-  getOuraClientCredentials: getCredsMock,
-  syncOuraScopeDenied: scopeDeniedMock,
 }));
 
 vi.mock("@/lib/db", () => ({
