@@ -22,6 +22,7 @@ import { CalendarClock, CheckCircle2, Plus } from "lucide-react";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { encounterKindText } from "@/components/encounters/encounter-labels";
 import { useEncounters } from "@/hooks/use-encounters";
+import { visitPath } from "@/lib/encounters/visit-links";
 import {
   useFormatters,
   useTranslations,
@@ -240,10 +241,12 @@ export function VorsorgeDashboardCard() {
 
         {/* Visually distinct from a due checkup: a quiet line under the block
             rather than a fourth row with an action, because there is nothing
-            to do about an appointment except keep it. */}
+            to do about an appointment except keep it. It opens the visit
+            itself: a bare `/checkups` lands on the checkups tab, which is
+            exactly where the appointment is not. */}
         {nextAppointment ? (
           <Link
-            href="/checkups"
+            href={visitPath(nextAppointment.id)}
             data-slot="vorsorge-dashboard-next-visit"
             className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex items-center gap-2 rounded-md border-t pt-2 text-xs transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
           >

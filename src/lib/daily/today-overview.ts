@@ -28,6 +28,7 @@ import { isFromToday } from "@/lib/insights/measurement-freshness";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { PriorityItem } from "@/lib/daily/priority-item";
 import { translateOrNull } from "@/lib/i18n/translate-code";
+import { visitsPath } from "@/lib/encounters/visit-links";
 
 type Translate = (
   key: string,
@@ -681,7 +682,8 @@ function appointmentFact(
         : "daily.todayFact.appointment.tomorrow",
       { time: visit.timeLabel, what },
     ),
-    href: "/checkups",
+    // The visit itself, or the visits list when the line counts several.
+    href: visitsPath(sameDay.map((v) => v.id)),
   };
 }
 

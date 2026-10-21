@@ -141,6 +141,8 @@ interface FakeReminder {
   lastSatisfiedAt: Date | null;
   /** v1.39.2 — the last delivered nudge; absent on most fixtures. */
   lastNotifiedAt?: Date | null;
+  /** The visit an appointment's row belongs to; absent on a checkup. */
+  encounters?: Array<{ id: string; userId: string; practitioner: null }>;
   enabled: boolean;
   createdAt: Date;
   user: {
@@ -355,6 +357,30 @@ describe("runMeasurementReminderTick", () => {
     expect(payload.metadata?.reminderId).toBe("appt-1");
   });
 
+  it("opens the appointment's visit, not the checkups list", async () => {
+    // The event's default target is the bare `/checkups`, whose first tab is
+    // the preventive-care list an appointment is never on.
+    const { prisma } = makePrisma({
+      reminders: [
+        reminder({
+          origin: "ENCOUNTER",
+          measurementType: null,
+          id: "appt-1",
+          encounters: [{ id: "visit-9", userId: "u1", practitioner: null }],
+        }),
+      ],
+      measurementMatch: null,
+      labMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+
+    await runMeasurementReminderTick(prisma as never, NINE_LOCAL, { dispatch });
+
+    expect(dispatch.mock.calls[0][0].metadata?.url).toBe(
+      "/checkups?visit=visit-9",
+    );
+  });
+
   it("leaves a checkup nudge actionable", async () => {
     // The negative control. Without it the assertion above would still pass
     // against a producer that suppressed every reminder's affordance.
@@ -368,6 +394,8 @@ describe("runMeasurementReminderTick", () => {
 
     expect(dispatch).toHaveBeenCalledTimes(1);
     expect(dispatch.mock.calls[0][0].suppressActions).toBeUndefined();
+    // And keeps the event's default target, the checkups list.
+    expect(dispatch.mock.calls[0][0].metadata?.url).toBeUndefined();
   });
 
   it("free-text reminder never queries Measurement (matches on LabResult instead)", async () => {

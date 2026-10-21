@@ -11997,6 +11997,8 @@
       "logDose": "Log dose",
       "reconnect": "Reconnect",
       "viewCheckups": "View check-ups",
+      "viewAppointment": "View appointment",
+      "viewAppointments": "View appointments",
       "checkinKeep": "Keep it",
       "checkinAdjust": "Adjust",
       "checkinLetGo": "Let it go",

@@ -11997,6 +11997,8 @@
       "logDose": "Enregistrer la dose",
       "reconnect": "Reconnecter",
       "viewCheckups": "Voir les examens",
+      "viewAppointment": "Voir le rendez-vous",
+      "viewAppointments": "Voir les rendez-vous",
       "checkinKeep": "Garder",
       "checkinAdjust": "Ajuster",
       "checkinLetGo": "Laisser tomber",

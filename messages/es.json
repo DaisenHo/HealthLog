@@ -11997,6 +11997,8 @@
       "logDose": "Registrar dosis",
       "reconnect": "Reconectar",
       "viewCheckups": "Ver revisiones",
+      "viewAppointment": "Ver cita",
+      "viewAppointments": "Ver citas",
       "checkinKeep": "Conservar",
       "checkinAdjust": "Ajustar",
       "checkinLetGo": "Dejarlo ir",

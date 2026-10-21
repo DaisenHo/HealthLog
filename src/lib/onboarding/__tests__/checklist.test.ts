@@ -225,9 +225,11 @@ describe("the visit row (v1.39 C2)", () => {
       inputs({ onboarding: onboardingState({}, { visit: "within-a-month" }) }),
     );
     expect(asked.map((i) => i.id)).toContain("visit");
+    // The visits tab: the bare page opens on the checkups, where a visit is
+    // neither listed nor added.
     expect(asked.find((i) => i.id === "visit")).toMatchObject({
       done: false,
-      href: "/checkups",
+      href: "/checkups?view=visits",
     });
     const later = buildChecklist(
       inputs({ onboarding: onboardingState({}, { visit: "later" }) }),

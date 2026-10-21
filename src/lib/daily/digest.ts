@@ -24,6 +24,7 @@ import type { DailyBriefing, DailyBriefingSignal } from "@/lib/ai/schema";
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 import type { ArrivalKind } from "@/lib/arrivals/types";
 import { encounterKindLabelKey } from "@/lib/encounters/kind-label";
+import { visitsPath } from "@/lib/encounters/visit-links";
 import type { MedsTodayBlock } from "@/lib/dashboard/meds-today";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { ServerTranslator } from "@/lib/i18n/server-translator";
@@ -675,9 +676,15 @@ function buildPreventiveCareItem(
  * appointments alone.
  *
  * No module gate: a visit is core, like the checkups page it lives on. No
- * action beyond opening the page either — there is nothing to do about an
+ * action beyond opening the visit either — there is nothing to do about an
  * appointment except keep it, and a "mark done" here would duplicate the
  * visit's own status field with a second place to set it.
+ *
+ * The action opens where the appointment lives: the visit itself, or the
+ * visits list for a day with several. It is `visit.view` and not the checkup
+ * item's `checkup.view`: the two kinds used to share that intent, its label
+ * and its bare `/checkups`, which sent every tap on an appointment to the
+ * preventive-care list the appointment is not on.
  */
 function buildUpcomingVisitItems(
   visits: readonly DailyDigestUpcomingVisit[],
@@ -706,9 +713,12 @@ function buildUpcomingVisitItems(
       status: "info",
       actions: [
         {
-          labelKey: "daily.action.viewCheckups",
-          intent: "checkup.view",
-          href: "/checkups",
+          labelKey:
+            group.length === 1
+              ? "daily.action.viewAppointment"
+              : "daily.action.viewAppointments",
+          intent: "visit.view",
+          href: visitsPath(group.map((visit) => visit.id)),
         },
       ],
     };

@@ -11997,6 +11997,8 @@
       "logDose": "Dosis erfassen",
       "reconnect": "Neu verbinden",
       "viewCheckups": "Vorsorge ansehen",
+      "viewAppointment": "Termin ansehen",
+      "viewAppointments": "Termine ansehen",
       "checkinKeep": "Behalten",
       "checkinAdjust": "Anpassen",
       "checkinLetGo": "Loslassen",
