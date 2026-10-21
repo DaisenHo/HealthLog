@@ -7239,6 +7239,11 @@
         "title": "Posture de confidentialité",
         "description": "Contrôlez la quantité de données partagées avec les fonctions d'IA.",
         "openAi": "Mode confidentialité IA"
+      },
+      "sessions": {
+        "title": "Sessions et appareils",
+        "description": "Où tu es connecté, les appareils qui sautent le second facteur et l'activité de sécurité de ton compte.",
+        "open": "Ouvrir la sécurité"
       }
     },
     "mcp": {

@@ -7239,6 +7239,11 @@
         "title": "Ustawienia prywatności",
         "description": "Kontroluj, ile Twoich danych jest udostępnianych funkcjom AI.",
         "openAi": "Tryb prywatności AI"
+      },
+      "sessions": {
+        "title": "Sesje i urządzenia",
+        "description": "Gdzie jesteś zalogowany, które urządzenia pomijają drugi składnik i aktywność zabezpieczeń twojego konta.",
+        "open": "Otwórz zabezpieczenia"
       }
     },
     "mcp": {

@@ -114,6 +114,16 @@ describe("<VorsorgeSection> loading + empty", () => {
     expect(html).not.toContain('data-slot="vorsorge-loading"');
   });
 
+  it("links the checkups page to the reminder and screening settings that moved", () => {
+    remindersMock.mockReturnValue({ data: [], isLoading: false });
+    const page = render(<VorsorgeSection variant="page" />);
+    expect(page).toContain('href="/settings/notifications#vorsorge-reminders"');
+    expect(page).toContain('href="/settings/anamnesis#screening-hints"');
+    // The embedded settings card is already in Settings and carries no links.
+    const embedded = render(<VorsorgeSection />);
+    expect(embedded).not.toContain('data-slot="vorsorge-settings-links"');
+  });
+
   it("renders reminder cards once data lands", () => {
     const reminder: MeasurementReminder = {
       id: "r1",

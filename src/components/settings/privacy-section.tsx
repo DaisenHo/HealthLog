@@ -23,6 +23,7 @@ import {
   Clock,
   Sparkles,
   Info,
+  MonitorSmartphone,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -178,6 +179,25 @@ export function PrivacySection() {
             </li>
           </ul>
         )}
+      </SettingsCard>
+
+      {/* Sessions, trusted devices and the security activity live under
+          Security since v1.44; the row keeps them reachable from here, where
+          people looked for them before. */}
+      <SettingsCard>
+        <SettingsCardHeader
+          anchor="sessions-link"
+          icon={MonitorSmartphone}
+          title={t("settings.privacy.sessions.title")}
+          description={t("settings.privacy.sessions.description")}
+        />
+        <SettingsCardActions align="start">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/settings/security#sessions">
+              {t("settings.privacy.sessions.open")}
+            </Link>
+          </Button>
+        </SettingsCardActions>
       </SettingsCard>
 
       {/* Delete / reset — with the honest backup lag disclosure */}

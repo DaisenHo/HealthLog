@@ -7239,6 +7239,11 @@
         "title": "Privacy posture",
         "description": "Control how much of your data is shared with AI features.",
         "openAi": "AI privacy mode"
+      },
+      "sessions": {
+        "title": "Sessions and devices",
+        "description": "Where you are signed in, the devices that skip the second factor, and the security activity of your account.",
+        "open": "Open security"
       }
     },
     "mcp": {

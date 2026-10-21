@@ -71,6 +71,8 @@ describe("<PrivacySection> — assembled Data & Privacy dashboard", () => {
     expect(html).not.toContain("settings-security-sessions-card");
     expect(html).not.toContain("settings-trusted-devices-card");
     expect(html).not.toContain('href="/settings/export"');
+    // ...but stay one tap away from here, where people looked for them.
+    expect(html).toContain('href="/settings/security#sessions"');
   });
 
   it("shows a loading placeholder for the retention block before the summary resolves", () => {

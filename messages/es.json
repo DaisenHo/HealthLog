@@ -7239,6 +7239,11 @@
         "title": "Configuración de privacidad",
         "description": "Controla cuántos de tus datos se comparten con las funciones de IA.",
         "openAi": "Modo de privacidad de IA"
+      },
+      "sessions": {
+        "title": "Sesiones y dispositivos",
+        "description": "Dónde tienes la sesión iniciada, qué dispositivos omiten el segundo factor y la actividad de seguridad de tu cuenta.",
+        "open": "Abrir seguridad"
       }
     },
     "mcp": {

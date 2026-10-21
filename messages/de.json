@@ -7239,6 +7239,11 @@
         "title": "Datenschutz-Einstellung",
         "description": "Steuere, wie viele deiner Daten an KI-Funktionen weitergegeben werden.",
         "openAi": "KI-Datenschutzmodus"
+      },
+      "sessions": {
+        "title": "Sitzungen und Geräte",
+        "description": "Wo du angemeldet bist, welche Geräte den zweiten Faktor überspringen, und die Sicherheitsaktivität deines Kontos.",
+        "open": "Sicherheit öffnen"
       }
     },
     "mcp": {

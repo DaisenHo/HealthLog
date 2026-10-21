@@ -7239,6 +7239,11 @@
         "title": "Privacyniveau",
         "description": "Bepaal hoeveel van je gegevens met AI-functies wordt gedeeld.",
         "openAi": "AI-privacymodus"
+      },
+      "sessions": {
+        "title": "Sessies en apparaten",
+        "description": "Waar je bent ingelogd, welke apparaten de tweede factor overslaan en de beveiligingsactiviteit van je account.",
+        "open": "Beveiliging openen"
       }
     },
     "mcp": {

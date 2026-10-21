@@ -7239,6 +7239,11 @@
         "title": "Impostazione privacy",
         "description": "Controlla quanti dei tuoi dati vengono condivisi con le funzioni di IA.",
         "openAi": "Modalità privacy IA"
+      },
+      "sessions": {
+        "title": "Sessioni e dispositivi",
+        "description": "Dove hai effettuato l'accesso, i dispositivi che saltano il secondo fattore e l'attività di sicurezza del tuo account.",
+        "open": "Apri sicurezza"
       }
     },
     "mcp": {
