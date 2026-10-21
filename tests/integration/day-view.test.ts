@@ -881,6 +881,68 @@ describe("notable days", () => {
       ["2026-04-01", "gap"],
     ]);
   });
+  it("anchors a window without `from` where the next planned visit's preparation starts", async () => {
+    // The web passes `preparation.from` of the next booked visit; a client
+    // that sends no `from` (the shipped iOS app) must read the same window,
+    // not the one since the last completed visit of any kind.
+    const db = getPrismaClient();
+    const owner = await makeUser("notable-next");
+    const cardiologist = await db.practitioner.create({
+      data: { userId: owner.id, name: "Practice A", specialty: "Cardiology" },
+    });
+    const now = Date.now();
+    const daysAgo = (n: number) => new Date(now - n * 86_400_000);
+    // The last cardiology visit, and a later routine one of another kind.
+    await db.encounter.create({
+      data: {
+        userId: owner.id,
+        occurredAt: daysAgo(60),
+        status: "DONE",
+        kind: "SPECIALIST",
+        practitionerId: cardiologist.id,
+      },
+    });
+    await db.encounter.create({
+      data: {
+        userId: owner.id,
+        occurredAt: daysAgo(10),
+        status: "DONE",
+        kind: "ROUTINE",
+      },
+    });
+    const next = await db.encounter.create({
+      data: {
+        userId: owner.id,
+        occurredAt: new Date(now + 7 * 86_400_000),
+        status: "PLANNED",
+        kind: "SPECIALIST",
+        practitionerId: cardiologist.id,
+      },
+    });
+    await signIn(owner.id);
+
+    const { GET: list } = await import("@/app/api/encounters/route");
+    const visits = await json<{
+      upcoming: Array<{ id: string; preparation: { from: string } | null }>;
+    }>(await call(list as Handler, "GET", "/api/encounters"));
+    const prepared = visits.upcoming.find((v) => v.id === next.id)!.preparation;
+    expect(prepared).not.toBeNull();
+
+    const { GET: notable } = await import("@/app/api/day/notable/route");
+    const window = await json<{ from: string; anchor: string }>(
+      await call(notable as Handler, "GET", "/api/day/notable"),
+    );
+    expect(window).toMatchObject({ anchor: "nextVisit", from: prepared!.from });
+    // With nothing booked, the last completed visit again.
+    await db.encounter.update({
+      where: { id: next.id },
+      data: { status: "CANCELLED" },
+    });
+    const afterCancel = await json<{ anchor: string }>(
+      await call(notable as Handler, "GET", "/api/day/notable"),
+    );
+    expect(afterCancel.anchor).toBe("lastVisit");
+  });
 });
 
 describe("timeline", () => {

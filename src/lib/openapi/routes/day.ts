@@ -84,7 +84,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "Since the last visit",
       description:
-        "What stood out and what changed in a window, for the preparation of the next visit: deterministic observations (a value highest or lowest for at least three months, a first reading, a regular reading that stopped for two weeks or more) and context changes (dose changes, medication and course starts and ends, pauses, illness onsets and recoveries, vaccinations, procedures, lab days). Without `from` the window starts at the last completed visit the caller may see (else 90 days back); without `to` it ends today; at most 1096 days. Keys and the record's own names only, no judgement. Days are cut in the record's own time zone. Sections the caller's grant does not cover are left out.",
+        "What stood out and what changed in a window, for the preparation of the next visit: deterministic observations (a value highest or lowest for at least three months, a first reading, a regular reading that stopped for two weeks or more) and context changes (dose changes, medication and course starts and ends, pauses, illness onsets and recoveries, vaccinations, procedures, lab days). Without `from` the window is the one the next planned visit prepares (its `preparation.from` on `GET /api/encounters`, `anchor: nextVisit`); with nothing booked it starts at the last completed visit the caller may see (else 90 days back); without `to` it ends today; at most 1096 days. Keys and the record's own names only, no judgement. Days are cut in the record's own time zone. Sections the caller's grant does not cover are left out.",
       requestParams: { query: dayNotableQuerySchema },
       responses: {
         "200": {

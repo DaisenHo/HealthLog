@@ -1,8 +1,9 @@
 /**
  * `GET /api/day/notable?from=&to=` — what changed and what stood out in a
  * window, for the preparation of the next visit (v1.42, #613). Without
- * `from` the window starts at the last completed visit the caller may see;
- * without `to` it ends today. The shape is `DayNotableWindowResponse` in
+ * `from` the window is the one the next planned visit prepares (its
+ * `preparation.from`), else it starts at the last completed visit the caller
+ * may see; without `to` it ends today. The shape is `DayNotableWindowResponse` in
  * `src/lib/day/contract.ts`.
  *
  * Observations and changes only, as keys and the record's own names: no

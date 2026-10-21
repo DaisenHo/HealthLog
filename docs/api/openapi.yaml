@@ -24180,10 +24180,11 @@ paths:
       description: "What stood out and what changed in a window, for the preparation of the next visit: deterministic
         observations (a value highest or lowest for at least three months, a first reading, a regular reading that
         stopped for two weeks or more) and context changes (dose changes, medication and course starts and ends, pauses,
-        illness onsets and recoveries, vaccinations, procedures, lab days). Without `from` the window starts at the last
-        completed visit the caller may see (else 90 days back); without `to` it ends today; at most 1096 days. Keys and
-        the record's own names only, no judgement. Days are cut in the record's own time zone. Sections the caller's
-        grant does not cover are left out."
+        illness onsets and recoveries, vaccinations, procedures, lab days). Without `from` the window is the one the
+        next planned visit prepares (its `preparation.from` on `GET /api/encounters`, `anchor: nextVisit`); with nothing
+        booked it starts at the last completed visit the caller may see (else 90 days back); without `to` it ends today;
+        at most 1096 days. Keys and the record's own names only, no judgement. Days are cut in the record's own time
+        zone. Sections the caller's grant does not cover are left out."
       parameters:
         - in: query
           name: from
@@ -85880,11 +85881,15 @@ components:
         anchor:
           type: string
           enum:
+            - nextVisit
             - lastVisit
             - requested
             - fallback
-          description: "Where `from` came from: the last completed visit, the request, or the fallback of 90 days when the record
-            holds no visit the caller may see."
+          description: "Where `from` came from. `requested`: the request named it. `nextVisit`: no `from` was sent and a visit is
+            booked; `from` is that visit's `preparation.from` on `GET /api/encounters` (the soonest PLANNED visit
+            ahead), so a client that omits `from` reads the window the web shows for it. `lastVisit`: nothing is booked;
+            the day of the last completed visit. `fallback`: 90 days, when the record holds no visit the caller may see.
+            Clients should treat an unknown value like `fallback`."
         observations:
           type: array
           items:

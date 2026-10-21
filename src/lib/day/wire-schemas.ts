@@ -332,9 +332,9 @@ export const dayNotableResponseSchema = z
     from: dateKeySchema,
     to: dateKeySchema,
     anchor: z
-      .enum(["lastVisit", "requested", "fallback"])
+      .enum(["nextVisit", "lastVisit", "requested", "fallback"])
       .describe(
-        "Where `from` came from: the last completed visit, the request, or the fallback of 90 days when the record holds no visit the caller may see.",
+        "Where `from` came from. `requested`: the request named it. `nextVisit`: no `from` was sent and a visit is booked; `from` is that visit's `preparation.from` on `GET /api/encounters` (the soonest PLANNED visit ahead), so a client that omits `from` reads the window the web shows for it. `lastVisit`: nothing is booked; the day of the last completed visit. `fallback`: 90 days, when the record holds no visit the caller may see. Clients should treat an unknown value like `fallback`.",
       ),
     observations: z.array(
       z
