@@ -10,7 +10,7 @@
  *      same question, two answers. The fact is a property of the METRIC, not
  *      of the surface that renders it, so it belongs beside the metric — and
  *      it is already declared there: `VALUE_RANGES` in
- *      `@/lib/validations/measurement` is the app-wide plausibility domain
+ *      `@/lib/measurements/value-ranges` is the app-wide plausibility domain
  *      every ingest path validates against, and its `min` IS the metric's
  *      floor. Nothing new to maintain; this module only reads it. Two types
  *      declare a genuinely signed floor (`ANS_CHARGE`,
@@ -30,7 +30,7 @@
  * real quantity too, but a step is indivisible, so the metric is read as a
  * count and rendered as one.
  */
-import { VALUE_RANGES } from "@/lib/validations/measurement";
+import { VALUE_RANGES } from "@/lib/measurements/value-ranges";
 
 /**
  * Decimal places used for a metric with no discreteness constraint — the
