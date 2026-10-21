@@ -8,7 +8,8 @@
  *   - re-uploading the same file writes nothing: every row is a duplicate;
  *   - a refused row is reported by line and does not stop the rest;
  *   - medications take a daily schedule, reminders off, as-needed without
- *     schedule, and a dated window opens a course.
+ *     schedule, and a dated window opens a course;
+ *   - a medication and its category land together or not at all.
  */
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -27,6 +28,20 @@ vi.mock("@/lib/db-compat", () => ({
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));
+const categoryFault = vi.hoisted(() => ({ on: false }));
+vi.mock("@/lib/medication-category", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/medication-category")>();
+  return {
+    ...actual,
+    setMedicationCategory: vi.fn(
+      async (...args: Parameters<typeof actual.setMedicationCategory>) => {
+        if (categoryFault.on) throw new Error("category write failed");
+        return actual.setMedicationCategory(...args);
+      },
+    ),
+  };
+});
 
 const prisma = getPrismaClient();
 const USER = "csv-import-user";
@@ -365,5 +380,52 @@ describe("medication CSV import", () => {
       query: query(false),
     });
     expect(again).toMatchObject({ inserted: 0, duplicates: 4 });
+  });
+});
+
+describe("medication CSV import, a crash between medication and category", () => {
+  const CSV = ["name,dose,times", "Atorvastatin,20 mg,20:00"].join("\n");
+  const query = medicationsCsvQuerySchema.parse({
+    name: "0",
+    dose: "1",
+    times: "2",
+    dryRun: "0",
+  });
+
+  it("leaves no medication without a category, so the retry writes it whole", async () => {
+    categoryFault.on = true;
+    await expect(
+      importMedicationsCsv({
+        userId: USER,
+        tz: TZ,
+        stream: textToStream(CSV),
+        maxBytes: 100_000,
+        query,
+      }),
+    ).rejects.toThrow("category write failed");
+    categoryFault.on = false;
+    expect(
+      await prisma.medication.count({
+        where: { userId: USER, name: "Atorvastatin" },
+      }),
+    ).toBe(0);
+
+    const retry = await importMedicationsCsv({
+      userId: USER,
+      tz: TZ,
+      stream: textToStream(CSV),
+      maxBytes: 100_000,
+      query,
+    });
+    expect(retry).toMatchObject({ inserted: 1, duplicates: 0 });
+    const med = await prisma.medication.findFirstOrThrow({
+      where: { userId: USER, name: "Atorvastatin" },
+      select: { id: true },
+    });
+    expect(
+      await prisma.medicationCategoryAssignment.count({
+        where: { medicationId: med.id },
+      }),
+    ).toBe(1);
   });
 });
