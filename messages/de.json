@@ -13471,5 +13471,73 @@
       "clinicalUpper": "Klinische Obergrenze",
       "clinicalLower": "Klinische Untergrenze"
     }
+  },
+  "activityCalendar": {
+    "title": "Aktivitätskalender",
+    "periodLabel": "Zeitraum",
+    "period": {
+      "week": "Woche",
+      "month": "Monat"
+    },
+    "weekRange": "{start} bis {end}",
+    "previous": "Vorheriger Zeitraum",
+    "next": "Nächster Zeitraum",
+    "metricLabel": "Tage einfärben nach",
+    "metric": {
+      "steps": "Schritte",
+      "activeMinutes": "Aktive Minuten",
+      "load": "Trainingslast"
+    },
+    "empty": "In diesem Zeitraum gibt es noch keine Schritte, aktiven Minuten oder Trainings.",
+    "loadError": "Der Aktivitätskalender konnte nicht geladen werden.",
+    "weekGoalsColumn": "Wochenziele",
+    "weekGoalsMet": "Alle Wochenziele erreicht",
+    "weekGoalsNotMet": "Nicht alle Wochenziele erreicht",
+    "cell": {
+      "steps": "{value} Schritte",
+      "activeMinutes": "{value} aktive Minuten",
+      "workouts": "{value} Trainings: {sports}"
+    },
+    "level": {
+      "none": "Keine Daten",
+      "unrated": "Noch zu wenig Verlauf",
+      "low": "Weit unter deinem Üblichen",
+      "below": "Unter deinem Üblichen",
+      "usual": "Etwa wie üblich",
+      "above": "Über deinem Üblichen",
+      "high": "Weit über deinem Üblichen"
+    },
+    "legend": "Verglichen mit deinen 12 Wochen davor:",
+    "noBaseline": "Dein üblicher Bereich erscheint nach 14 Tagen mit Daten.",
+    "summary": {
+      "steps": "{value} Schritte",
+      "activeMinutes": "{value} aktive Minuten",
+      "workouts": "{value} Trainings",
+      "load": "Durchschnittliche Trainingslast {value}",
+      "usual": "Bis hierher üblich bei dir: {value}",
+      "noUsual": "Noch zu wenige frühere Wochen oder Monate zum Vergleichen."
+    },
+    "sportCount": "{sport}: {count}",
+    "goal": {
+      "workoutsPerWeek": "Trainings pro Woche",
+      "activeMinutesPerWeek": "Aktive Minuten pro Woche",
+      "stepsPerWeek": "Schritte pro Woche",
+      "stepsPerMonth": "Schritte pro Monat"
+    },
+    "goalOf": "{value} von {target}",
+    "setGoals": "Ziele festlegen",
+    "editGoals": "Ziele ändern",
+    "goalsSheet": {
+      "title": "Aktivitätsziele",
+      "description": "Lass ein Feld leer, wenn du dort kein Ziel möchtest.",
+      "none": "Kein Ziel",
+      "invalid": "Eine ganze Zahl von {min} bis {max}.",
+      "saveError": "Die Ziele konnten nicht gespeichert werden."
+    },
+    "crossLink": {
+      "title": "Aktivitätskalender",
+      "body": "Deine Schritte als Woche oder Monat, verglichen mit deinem Üblichen.",
+      "cta": "Kalender öffnen"
+    }
   }
 }

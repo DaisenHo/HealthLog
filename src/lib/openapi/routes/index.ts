@@ -27,6 +27,7 @@ import {
   recordEpochParameter,
   recordScopeParameter,
 } from "./account-sharing";
+import { activityPaths } from "./activity";
 import { adminDiagnosticPaths, adminInvitePaths } from "./admin";
 import { aiUsagePaths } from "./ai-usage";
 import { dawarichPaths } from "./dawarich";
@@ -105,6 +106,7 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...syncPaths,
   ...measurementPaths,
   ...workoutPaths,
+  ...activityPaths,
   ...devicePaths,
   ...medicationPaths,
   ...profilePaths,

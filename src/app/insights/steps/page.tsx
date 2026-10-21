@@ -1,8 +1,11 @@
 "use client";
 
-import { Footprints } from "lucide-react";
+import { CalendarDays, Footprints } from "lucide-react";
 
+import { CrossLinkCard } from "@/components/insights/cross-link-card";
 import { HealthKitMetricPage } from "@/components/insights/healthkit-metric-page";
+import { useSurfaceVisible } from "@/hooks/use-surface-visible";
+import { useTranslations } from "@/lib/i18n/context";
 
 /**
  * v1.12 — `/insights/steps`.
@@ -15,8 +18,14 @@ import { HealthKitMetricPage } from "@/components/insights/healthkit-metric-page
  * user having step data. Reuses the generic HealthKitMetricPage scaffold;
  * empty-state carries no manual-entry CTA — the series arrives from Apple
  * Health or Withings sync.
+ *
+ * v1.44 — links across to the activity calendar on the workouts page, which
+ * shows the same day totals as a week or month against the person's usual.
+ * The link follows the Workouts module: switched off, it is not offered.
  */
 export default function InsightsStepsPage() {
+  const { t } = useTranslations();
+  const calendarVisible = useSurfaceVisible("insights-page:workouts");
   return (
     <HealthKitMetricPage
       measurementType="ACTIVITY_STEPS"
@@ -32,6 +41,18 @@ export default function InsightsStepsPage() {
       emptyStateCtaType={null}
       captureType="ACTIVITY_STEPS"
       coachPrefill="I haven't logged any steps yet. What's a reasonable daily step target, and how does walking more help my health?"
+      afterChart={
+        calendarVisible ? (
+          <CrossLinkCard
+            href="/insights/workouts#activity-calendar"
+            slot="steps-activity-calendar-link"
+            icon={CalendarDays}
+            title={t("activityCalendar.crossLink.title")}
+            body={t("activityCalendar.crossLink.body")}
+            cta={t("activityCalendar.crossLink.cta")}
+          />
+        ) : null
+      }
     />
   );
 }

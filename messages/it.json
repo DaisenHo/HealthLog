@@ -13471,5 +13471,73 @@
       "clinicalUpper": "Limite clinico superiore",
       "clinicalLower": "Limite clinico inferiore"
     }
+  },
+  "activityCalendar": {
+    "title": "Calendario attività",
+    "periodLabel": "Periodo del calendario",
+    "period": {
+      "week": "Settimana",
+      "month": "Mese"
+    },
+    "weekRange": "dal {start} al {end}",
+    "previous": "Periodo precedente",
+    "next": "Periodo successivo",
+    "metricLabel": "Colora i giorni per",
+    "metric": {
+      "steps": "Passi",
+      "activeMinutes": "Minuti attivi",
+      "load": "Carico di allenamento"
+    },
+    "empty": "Ancora nessun passo, minuto attivo o allenamento in questo periodo.",
+    "loadError": "Impossibile caricare il calendario attività.",
+    "weekGoalsColumn": "Obiettivi settimanali",
+    "weekGoalsMet": "Tutti gli obiettivi settimanali raggiunti",
+    "weekGoalsNotMet": "Non tutti gli obiettivi settimanali raggiunti",
+    "cell": {
+      "steps": "{value} passi",
+      "activeMinutes": "{value} minuti attivi",
+      "workouts": "{value} allenamenti: {sports}"
+    },
+    "level": {
+      "none": "Nessun dato",
+      "unrated": "Storico ancora insufficiente",
+      "low": "Molto sotto il tuo solito",
+      "below": "Sotto il tuo solito",
+      "usual": "Come al solito",
+      "above": "Sopra il tuo solito",
+      "high": "Molto sopra il tuo solito"
+    },
+    "legend": "Rispetto alle tue 12 settimane precedenti:",
+    "noBaseline": "Il tuo intervallo abituale compare dopo 14 giorni con dati.",
+    "summary": {
+      "steps": "{value} passi",
+      "activeMinutes": "{value} minuti attivi",
+      "workouts": "{value} allenamenti",
+      "load": "Carico di allenamento medio {value}",
+      "usual": "Il tuo solito fino a questo punto: {value}",
+      "noUsual": "Non ci sono ancora abbastanza settimane o mesi precedenti per un confronto."
+    },
+    "sportCount": "{sport}: {count}",
+    "goal": {
+      "workoutsPerWeek": "Allenamenti a settimana",
+      "activeMinutesPerWeek": "Minuti attivi a settimana",
+      "stepsPerWeek": "Passi a settimana",
+      "stepsPerMonth": "Passi al mese"
+    },
+    "goalOf": "{value} di {target}",
+    "setGoals": "Imposta obiettivi",
+    "editGoals": "Modifica obiettivi",
+    "goalsSheet": {
+      "title": "Obiettivi di attività",
+      "description": "Lascia vuoto un campo per non avere un obiettivo.",
+      "none": "Nessun obiettivo",
+      "invalid": "Un numero intero da {min} a {max}.",
+      "saveError": "Impossibile salvare gli obiettivi."
+    },
+    "crossLink": {
+      "title": "Calendario attività",
+      "body": "I tuoi passi per settimana o per mese, rispetto al tuo solito.",
+      "cta": "Apri il calendario"
+    }
   }
 }

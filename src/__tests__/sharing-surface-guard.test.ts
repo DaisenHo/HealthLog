@@ -1077,6 +1077,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "measurements",
     why: "The record's workout list. Verified to carry no AI-written paragraph: the single-workout route beside it does, and stays refused for exactly that reason.",
   },
+  "app/api/activity/calendar/route.ts": {
+    domain: "measurements",
+    why: "The activity calendar: day totals of steps, active minutes and load, workouts by sport, and the record owner's goals, computed without AI. Read-only, scoped to the resolved user, module-gated on the record's own `workouts` switch like the workout list beside it.",
+  },
   "app/api/cycle/cycles/route.ts": {
     domain: "cycle",
     why: "The record's cycle history. Whether cycle tracking applies is a property of the record, and the gate gets there by re-loading the profile and gender for the resolved user id — note that the `gender` argument at the call site is dead (`requireCycleEnabled` names it `_gender`), so it is the id that carries the substitution, not that argument.",
@@ -2172,7 +2176,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  * v1.44 -- a guardian connects and disconnects a managed profile's OAuth
  * providers: two guardian-only entries. 266 -> 268.
  */
-const FROZEN_ENTRY_COUNT = 268;
+const FROZEN_ENTRY_COUNT = 269;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

@@ -13471,5 +13471,73 @@
       "clinicalUpper": "Clinical upper limit",
       "clinicalLower": "Clinical lower limit"
     }
+  },
+  "activityCalendar": {
+    "title": "Activity calendar",
+    "periodLabel": "Calendar span",
+    "period": {
+      "week": "Week",
+      "month": "Month"
+    },
+    "weekRange": "{start} to {end}",
+    "previous": "Previous period",
+    "next": "Next period",
+    "metricLabel": "Colour the days by",
+    "metric": {
+      "steps": "Steps",
+      "activeMinutes": "Active minutes",
+      "load": "Training load"
+    },
+    "empty": "No steps, active minutes or workouts in this period yet.",
+    "loadError": "The activity calendar could not be loaded.",
+    "weekGoalsColumn": "Weekly goals",
+    "weekGoalsMet": "All weekly goals met",
+    "weekGoalsNotMet": "Not all weekly goals met",
+    "cell": {
+      "steps": "{value} steps",
+      "activeMinutes": "{value} active minutes",
+      "workouts": "{value} workouts: {sports}"
+    },
+    "level": {
+      "none": "No data",
+      "unrated": "Not enough history yet",
+      "low": "Far below your usual",
+      "below": "Below your usual",
+      "usual": "About your usual",
+      "above": "Above your usual",
+      "high": "Far above your usual"
+    },
+    "legend": "Compared with your 12 weeks before:",
+    "noBaseline": "Your usual range shows after 14 days with data.",
+    "summary": {
+      "steps": "{value} steps",
+      "activeMinutes": "{value} active minutes",
+      "workouts": "{value} workouts",
+      "load": "Average training load {value}",
+      "usual": "Your usual by this point: {value}",
+      "noUsual": "Not enough earlier weeks or months to compare with yet."
+    },
+    "sportCount": "{sport}: {count}",
+    "goal": {
+      "workoutsPerWeek": "Workouts per week",
+      "activeMinutesPerWeek": "Active minutes per week",
+      "stepsPerWeek": "Steps per week",
+      "stepsPerMonth": "Steps per month"
+    },
+    "goalOf": "{value} of {target}",
+    "setGoals": "Set goals",
+    "editGoals": "Change goals",
+    "goalsSheet": {
+      "title": "Activity goals",
+      "description": "Leave a field empty for no goal.",
+      "none": "No goal",
+      "invalid": "A whole number from {min} to {max}.",
+      "saveError": "The goals could not be saved."
+    },
+    "crossLink": {
+      "title": "Activity calendar",
+      "body": "Your steps as a week or a month, against your own usual.",
+      "cta": "Open calendar"
+    }
   }
 }

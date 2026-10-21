@@ -47,6 +47,7 @@ import { searchKeys } from "./search";
 import { sharingKeys } from "./sharing";
 import { vaccinationKeys } from "./vaccinations";
 import { workoutKeys } from "./workouts";
+import { activityKeys } from "./activity";
 
 export const queryKeys = {
   ...authKeys,
@@ -60,6 +61,7 @@ export const queryKeys = {
   ...adminKeys,
   ...integrationKeys,
   ...workoutKeys,
+  ...activityKeys,
   ...settingsKeys,
   ...cycleKeys,
   ...measurementReminderKeys,

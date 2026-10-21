@@ -13471,5 +13471,73 @@
       "clinicalUpper": "Limite clinique haute",
       "clinicalLower": "Limite clinique basse"
     }
+  },
+  "activityCalendar": {
+    "title": "Calendrier d'activité",
+    "periodLabel": "Période du calendrier",
+    "period": {
+      "week": "Semaine",
+      "month": "Mois"
+    },
+    "weekRange": "{start} au {end}",
+    "previous": "Période précédente",
+    "next": "Période suivante",
+    "metricLabel": "Colorer les jours selon",
+    "metric": {
+      "steps": "Pas",
+      "activeMinutes": "Minutes actives",
+      "load": "Charge d'entraînement"
+    },
+    "empty": "Aucun pas, aucune minute active ni aucun entraînement sur cette période pour l'instant.",
+    "loadError": "Le calendrier d'activité n'a pas pu être chargé.",
+    "weekGoalsColumn": "Objectifs hebdomadaires",
+    "weekGoalsMet": "Tous les objectifs hebdomadaires atteints",
+    "weekGoalsNotMet": "Objectifs hebdomadaires pas tous atteints",
+    "cell": {
+      "steps": "{value} pas",
+      "activeMinutes": "{value} minutes actives",
+      "workouts": "{value} entraînements : {sports}"
+    },
+    "level": {
+      "none": "Aucune donnée",
+      "unrated": "Pas encore assez d'historique",
+      "low": "Bien en dessous de ton habitude",
+      "below": "En dessous de ton habitude",
+      "usual": "Comme d'habitude",
+      "above": "Au-dessus de ton habitude",
+      "high": "Bien au-dessus de ton habitude"
+    },
+    "legend": "Comparé à tes 12 semaines précédentes :",
+    "noBaseline": "Ta plage habituelle apparaît après 14 jours avec des données.",
+    "summary": {
+      "steps": "{value} pas",
+      "activeMinutes": "{value} minutes actives",
+      "workouts": "{value} entraînements",
+      "load": "Charge d'entraînement moyenne {value}",
+      "usual": "Ton habitude à ce stade : {value}",
+      "noUsual": "Pas encore assez de semaines ou de mois précédents pour comparer."
+    },
+    "sportCount": "{sport} : {count}",
+    "goal": {
+      "workoutsPerWeek": "Entraînements par semaine",
+      "activeMinutesPerWeek": "Minutes actives par semaine",
+      "stepsPerWeek": "Pas par semaine",
+      "stepsPerMonth": "Pas par mois"
+    },
+    "goalOf": "{value} sur {target}",
+    "setGoals": "Définir des objectifs",
+    "editGoals": "Modifier les objectifs",
+    "goalsSheet": {
+      "title": "Objectifs d'activité",
+      "description": "Laisse un champ vide pour ne pas fixer d'objectif.",
+      "none": "Aucun objectif",
+      "invalid": "Un nombre entier de {min} à {max}.",
+      "saveError": "Les objectifs n'ont pas pu être enregistrés."
+    },
+    "crossLink": {
+      "title": "Calendrier d'activité",
+      "body": "Tes pas par semaine ou par mois, comparés à ton habitude.",
+      "cta": "Ouvrir le calendrier"
+    }
   }
 }

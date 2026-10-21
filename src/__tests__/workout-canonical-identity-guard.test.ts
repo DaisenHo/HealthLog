@@ -43,6 +43,9 @@ const IDENTITY_OWNER: Record<string, string> = {
     "lib/jobs/workout-insight-generate.ts",
   "lib/workouts/list-read.ts": "lib/workouts/list-read.ts",
   "lib/workouts/sport-context.ts": "lib/workouts/sport-context.ts",
+  // The activity calendar counts workouts per day; a session two devices
+  // recorded must count once there, as it does in the list.
+  "lib/activity/calendar-read.ts": "lib/activity/calendar-read.ts",
   // The only indirection in the set. The Coach block is handed rows it does not
   // read itself; the snapshot builder fetches them in parallel with every other
   // block's data. Recording the owner here rather than assuming the call site

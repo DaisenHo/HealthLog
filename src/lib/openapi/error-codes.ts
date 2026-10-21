@@ -40,6 +40,7 @@ import { DEFAULT_ERROR_CODES } from "@/lib/api/default-error-codes";
  */
 export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
   {
+    activity: ["activity.calendar.future_date", "activity.calendar.too_old"],
     ai: [
       "ai.budget.exceeded",
       "ai.provider.none",

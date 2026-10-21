@@ -13471,5 +13471,73 @@
       "clinicalUpper": "임상 기준 상한",
       "clinicalLower": "임상 기준 하한"
     }
+  },
+  "activityCalendar": {
+    "title": "활동 캘린더",
+    "periodLabel": "캘린더 기간",
+    "period": {
+      "week": "주",
+      "month": "월"
+    },
+    "weekRange": "{start} ~ {end}",
+    "previous": "이전 기간",
+    "next": "다음 기간",
+    "metricLabel": "날짜 색상 기준",
+    "metric": {
+      "steps": "걸음 수",
+      "activeMinutes": "활동 시간(분)",
+      "load": "운동 부하"
+    },
+    "empty": "이 기간에는 아직 걸음 수, 활동 시간, 운동 기록이 없습니다.",
+    "loadError": "활동 캘린더를 불러오지 못했습니다.",
+    "weekGoalsColumn": "주간 목표",
+    "weekGoalsMet": "주간 목표를 모두 달성함",
+    "weekGoalsNotMet": "주간 목표를 모두 달성하지는 못함",
+    "cell": {
+      "steps": "{value}걸음",
+      "activeMinutes": "활동 {value}분",
+      "workouts": "운동 {value}회: {sports}"
+    },
+    "level": {
+      "none": "데이터 없음",
+      "unrated": "아직 기록이 충분하지 않음",
+      "low": "평소보다 훨씬 적음",
+      "below": "평소보다 적음",
+      "usual": "평소와 비슷함",
+      "above": "평소보다 많음",
+      "high": "평소보다 훨씬 많음"
+    },
+    "legend": "이전 12주와 비교:",
+    "noBaseline": "데이터가 있는 날이 14일이 되면 평소 범위가 표시됩니다.",
+    "summary": {
+      "steps": "{value}걸음",
+      "activeMinutes": "활동 {value}분",
+      "workouts": "운동 {value}회",
+      "load": "평균 운동 부하 {value}",
+      "usual": "이 시점까지의 평소 값: {value}",
+      "noUsual": "비교할 이전 주나 달이 아직 충분하지 않습니다."
+    },
+    "sportCount": "{sport}: {count}",
+    "goal": {
+      "workoutsPerWeek": "주당 운동 횟수",
+      "activeMinutesPerWeek": "주당 활동 시간(분)",
+      "stepsPerWeek": "주당 걸음 수",
+      "stepsPerMonth": "월간 걸음 수"
+    },
+    "goalOf": "{target} 중 {value}",
+    "setGoals": "목표 설정",
+    "editGoals": "목표 변경",
+    "goalsSheet": {
+      "title": "활동 목표",
+      "description": "목표를 두지 않으려면 칸을 비워 두세요.",
+      "none": "목표 없음",
+      "invalid": "{min}부터 {max}까지의 정수를 입력하세요.",
+      "saveError": "목표를 저장하지 못했습니다."
+    },
+    "crossLink": {
+      "title": "활동 캘린더",
+      "body": "주 또는 월 단위의 걸음 수를 내 평소 값과 비교합니다.",
+      "cta": "캘린더 열기"
+    }
   }
 }

@@ -61,6 +61,7 @@ import {
 import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
 import { locales } from "@/lib/i18n/config";
 import { thresholdsUpdateSchema } from "@/lib/validations/thresholds";
+import { activityGoalsSchema } from "@/lib/validations/activity-goals";
 import { isPublicUrl } from "@/lib/validations/notifications";
 import {
   glucoseUnitPatchSchema,
@@ -258,6 +259,37 @@ const thresholds: SettingCodec = {
         kept[metric] = band;
       } else {
         refused.push(`thresholdsJson.${metric}`);
+      }
+    }
+    return new PartlyRefused(
+      Object.keys(kept).length === 0 ? Prisma.DbNull : kept,
+      refused,
+    );
+  },
+};
+
+/**
+ * The activity goals, goal by goal. A goal outside its bounds, or a key this
+ * release does not know, is dropped and named; the valid goals beside it
+ * still come back.
+ */
+const activityGoals: SettingCodec = {
+  write: (row) => ({ activityGoalsJson: row.activityGoalsJson ?? null }),
+  read: (entry) => {
+    if (!has(entry, "activityGoalsJson")) return undefined;
+    const value = entry.activityGoalsJson;
+    if (value === null) return Prisma.DbNull;
+    if (typeof value !== "object" || Array.isArray(value)) {
+      return new Refused("activityGoalsJson");
+    }
+    const kept: Record<string, number> = {};
+    const refused: string[] = [];
+    for (const [key, goal] of Object.entries(value)) {
+      const parsed = activityGoalsSchema.safeParse({ [key]: goal });
+      if (!parsed.success) {
+        refused.push(`activityGoalsJson.${key}`);
+      } else if (typeof goal === "number") {
+        kept[key] = goal;
       }
     }
     return new PartlyRefused(
@@ -505,6 +537,7 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   documentsLayoutJson: json("documentsLayoutJson"),
   moduleListLayoutJson: json("moduleListLayoutJson"),
   previewFeaturesJson: json("previewFeaturesJson"),
+  activityGoalsJson: activityGoals,
   reportSelectionJson: json("reportSelectionJson"),
   globalExcludedInjectionSites: excludedSites,
   healthKitConfigJson: json("healthKitConfigJson"),

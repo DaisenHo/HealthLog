@@ -2156,6 +2156,7 @@ const accountSettingsBackupSchema = z
     documentsLayoutJson: z.unknown().optional(),
     moduleListLayoutJson: z.unknown().optional(),
     previewFeaturesJson: z.unknown().optional(),
+    activityGoalsJson: z.unknown().optional(),
     reportSelectionJson: z.unknown().optional(),
     globalExcludedInjectionSites: z.array(z.string()).optional(),
     healthKitConfigJson: z.unknown().optional(),
