@@ -1718,6 +1718,14 @@ enum MeasurementType {
   STAND_HOURS // count — HealthKit `HKCategoryTypeIdentifierAppleStandHour`. One row per hour in which the person stood (`stood` = 1; an `idle` hour is not stored); cumulative, daily SUM gives the stand-ring hours.
   MINDFUL_MINUTES // minutes — HealthKit `HKCategoryTypeIdentifierMindfulSession`. Session length from the sample's own dates; cumulative, daily SUM.
   STATE_OF_MIND_VALENCE // valence (−1..1) — HealthKit `HKStateOfMind.valence` (iOS 18+). How pleasant the logged emotion or mood felt, from very unpleasant (−1) to very pleasant (1). A self-report, not a measurement.
+  // ── v1.44 — room climate from a home automation system ──
+  // Pushed through the ingest token (`measurements:write`, source EXTERNAL),
+  // e.g. by a Home Assistant automation. Spot readings: the daily rollup
+  // carries mean, min and max. Indoor, so never mixed with the outdoor
+  // environment channels.
+  INDOOR_CO2 // ppm — indoor carbon dioxide concentration.
+  INDOOR_TEMPERATURE // celsius — indoor air temperature. Distinct from every body temperature type.
+  INDOOR_HUMIDITY // percent (0–100) — indoor relative humidity.
   AFIB_BURDEN // percent (0–100, scaled ×100 from Apple's 0..1 fraction) — HealthKit `atrialFibrillationBurden` (iOS 16+, AFib History). The share of time the watch estimated in AFib over a week. AWARENESS ONLY — never a HealthLog diagnosis.
 
   @@map("measurement_type")

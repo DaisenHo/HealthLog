@@ -149,6 +149,86 @@ Units are derived server-side from the type, so send the number in the unit
 above and do not send a `unit` field. The full enum is in
 `docs/api/openapi.yaml` under `MeasurementType`.
 
+## Room climate
+
+Indoor CO₂, temperature and humidity are their own types, kept apart from the
+body temperatures and from the outdoor weather the environment module pulls:
+
+| What the sensor reports | `type`               | Unit expected |
+| ----------------------- | -------------------- | ------------- |
+| Carbon dioxide          | `INDOOR_CO2`         | ppm           |
+| Room temperature        | `INDOOR_TEMPERATURE` | °C            |
+| Relative humidity       | `INDOOR_HUMIDITY`    | %             |
+
+Each push is kept as a reading, and the day's mean, low and high are what the
+charts and the daily views read, so a sensor sampled every 15 minutes gives a
+clear picture without anything further on your side. Pushing every few seconds
+adds rows, not detail.
+
+Add a second `rest_command` that takes a ready-made list of readings, so one
+request carries all three:
+
+```yaml
+rest_command:
+  healthlog_room_climate:
+    url: "https://healthlog.example.com/api/measurements"
+    method: POST
+    headers:
+      Authorization: !secret healthlog_token
+      Content-Type: "application/json"
+    payload: "{{ readings | to_json }}"
+```
+
+Then import the blueprint, either from
+[`docs/integrations/blueprints/healthlog-room-climate.yaml`](./blueprints/healthlog-room-climate.yaml)
+or by its raw GitHub URL under Settings → Automations & scenes → Blueprints →
+Import blueprint, and create one automation per room. It asks for the three
+sensors (each optional) and an interval. Every push:
+
+- leaves out a sensor that reports `unknown`, `unavailable` or anything that is
+  not a number, and skips the push when nothing is left;
+- converts a temperature reported in °F to °C;
+- stamps all readings with the current minute, so a retry of the same push is
+  refused with a 409 instead of written twice.
+
+If you would rather write the automation yourself, this is the same thing for a
+single room without the blueprint:
+
+```yaml
+automation:
+  - alias: "Push bedroom climate to HealthLog"
+    trigger:
+      - platform: time_pattern
+        minutes: "/15"
+    variables:
+      readings: >-
+        {% set at = now().replace(second=0, microsecond=0).isoformat() %}
+        {% set ns = namespace(items=[]) %}
+        {% for type, entity in [
+          ('INDOOR_CO2', 'sensor.bedroom_co2'),
+          ('INDOOR_TEMPERATURE', 'sensor.bedroom_temperature'),
+          ('INDOOR_HUMIDITY', 'sensor.bedroom_humidity')
+        ] %}
+          {% if is_number(states(entity)) %}
+            {% set ns.items = ns.items + [{'type': type,
+              'value': states(entity) | float, 'measuredAt': at}] %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.items }}
+    condition:
+      - condition: template
+        value_template: "{{ readings | count > 0 }}"
+    action:
+      - service: rest_command.healthlog_room_climate
+        data:
+          readings: "{{ readings }}"
+```
+
+One request takes up to five readings, so a room is one call. Several rooms
+are several automations: the readings carry no room name, and two rooms pushed
+in the same minute collide on the 409 above. If you track more than one room,
+pick the one you sleep in; that is the one worth reading next to your sleep.
+
 ## Sending several readings at once
 
 A bare array writes up to five readings in one request — the shape to use for

@@ -23,6 +23,10 @@ import type { MeasurementType } from "@/generated/prisma/client";
  * silently failing the assertion.
  */
 const MEASUREMENT_TYPES_WITHOUT_HK_COUNTERPART = new Set<MeasurementType>([
+  // v1.44 — room climate arrives through the ingest token, not HealthKit.
+  "INDOOR_CO2",
+  "INDOOR_TEMPERATURE",
+  "INDOOR_HUMIDITY",
   // Withings-only metrics (no HK identifier ships any of these as a
   // first-class quantity — Apple delegates body-composition tail to
   // third-party devices via the BodyMass/BodyFat pair).

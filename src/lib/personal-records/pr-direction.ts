@@ -217,6 +217,10 @@ export function getPRDirection(
     // Neither is a goal axis a record could celebrate.
     case "AFIB_BURDEN":
     case "STATE_OF_MIND_VALENCE":
+    // v1.44 — room climate describes a room, not a person's effort.
+    case "INDOOR_CO2":
+    case "INDOOR_TEMPERATURE":
+    case "INDOOR_HUMIDITY":
     case "HIGH_HEART_RATE_EVENT":
     case "LOW_HEART_RATE_EVENT":
     case "WALKING_STEADINESS_EVENT":

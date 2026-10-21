@@ -1,0 +1,93 @@
+# Push a room's CO2, temperature and humidity to HealthLog every few minutes.
+#
+# Needs the `healthlog_room_climate` rest_command from
+# docs/integrations/home-assistant.md ("Room climate") and a measurement
+# ingest token. Every sensor is optional; a sensor that reports `unknown`,
+# `unavailable` or a non-number is left out of that push, and a push with
+# nothing left is skipped. Temperatures in °F are converted to °C.
+blueprint:
+  name: HealthLog room climate
+  description: >-
+    Sends indoor CO2 (ppm), temperature (°C) and relative humidity (%) to
+    HealthLog through a measurement ingest token. HealthLog keeps each
+    reading and shows the day's mean, low and high.
+  domain: automation
+  source_url: https://github.com/MBombeck/HealthLog/blob/main/docs/integrations/blueprints/healthlog-room-climate.yaml
+  input:
+    co2_sensor:
+      name: CO2 sensor
+      description: A sensor reporting carbon dioxide in ppm.
+      default: ""
+      selector:
+        entity:
+          domain: sensor
+          device_class: carbon_dioxide
+    temperature_sensor:
+      name: Temperature sensor
+      description: A sensor reporting the room temperature (°C or °F).
+      default: ""
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    humidity_sensor:
+      name: Humidity sensor
+      description: A sensor reporting relative humidity in %.
+      default: ""
+      selector:
+        entity:
+          domain: sensor
+          device_class: humidity
+    interval_minutes:
+      name: Interval
+      description: Minutes between pushes. 15 is plenty for a daily picture.
+      default: 15
+      selector:
+        number:
+          min: 5
+          max: 60
+          step: 5
+          unit_of_measurement: min
+
+mode: single
+
+variables:
+  co2_sensor: !input co2_sensor
+  temperature_sensor: !input temperature_sensor
+  humidity_sensor: !input humidity_sensor
+  interval_minutes: !input interval_minutes
+  # A list of readings (Home Assistant keeps a rendered list a list).
+  readings: >-
+    {% set at = now().replace(second=0, microsecond=0).isoformat() %}
+    {% set ns = namespace(items=[]) %}
+    {% for type, entity in [
+      ('INDOOR_CO2', co2_sensor),
+      ('INDOOR_TEMPERATURE', temperature_sensor),
+      ('INDOOR_HUMIDITY', humidity_sensor)
+    ] %}
+      {% if entity and is_number(states(entity)) %}
+        {% set v = states(entity) | float %}
+        {% if type == 'INDOOR_TEMPERATURE'
+              and state_attr(entity, 'unit_of_measurement') == '°F' %}
+          {% set v = ((v - 32) * 5 / 9) | round(2) %}
+        {% endif %}
+        {% set ns.items = ns.items
+          + [{'type': type, 'value': v, 'measuredAt': at}] %}
+      {% endif %}
+    {% endfor %}
+    {{ ns.items }}
+
+trigger:
+  - platform: time_pattern
+    minutes: "/5"
+
+condition:
+  - condition: template
+    value_template: >-
+      {{ now().minute % (interval_minutes | int(15)) == 0
+         and readings | count > 0 }}
+
+action:
+  - service: rest_command.healthlog_room_climate
+    data:
+      readings: "{{ readings }}"

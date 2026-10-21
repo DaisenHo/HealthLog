@@ -166,6 +166,10 @@ const unitMap: Record<string, string> = {
   STATE_OF_MIND_VALENCE: "valence",
   // Percent of the week after the ×100 scaling.
   AFIB_BURDEN: "%",
+  // ── v1.44 — room climate ──
+  INDOOR_CO2: "ppm",
+  INDOOR_TEMPERATURE: "celsius",
+  INDOOR_HUMIDITY: "%",
 };
 
 export function getUnitForType(type: string): string {

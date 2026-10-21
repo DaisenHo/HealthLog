@@ -4321,6 +4321,9 @@ paths:
               - MINDFUL_MINUTES
               - STATE_OF_MIND_VALENCE
               - AFIB_BURDEN
+              - INDOOR_CO2
+              - INDOOR_TEMPERATURE
+              - INDOOR_HUMIDITY
         - in: query
           name: from
           schema:
@@ -26000,7 +26003,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 101
+              maxItems: 104
               type: array
               items:
                 type: string
@@ -26060,7 +26063,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 101
+              maxItems: 104
               type: array
               items:
                 type: string
@@ -26901,6 +26904,9 @@ components:
             - MINDFUL_MINUTES
             - STATE_OF_MIND_VALENCE
             - AFIB_BURDEN
+            - INDOOR_CO2
+            - INDOOR_TEMPERATURE
+            - INDOOR_HUMIDITY
         value:
           type: number
         measuredAt:
@@ -28588,6 +28594,9 @@ components:
             - MINDFUL_MINUTES
             - STATE_OF_MIND_VALENCE
             - AFIB_BURDEN
+            - INDOOR_CO2
+            - INDOOR_TEMPERATURE
+            - INDOOR_HUMIDITY
         biomarkerId:
           type: string
           minLength: 1
@@ -29087,7 +29096,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 101
+          maxItems: 104
           type: array
           items:
             type: string
@@ -30264,6 +30273,9 @@ components:
         - MINDFUL_MINUTES
         - STATE_OF_MIND_VALENCE
         - AFIB_BURDEN
+        - INDOOR_CO2
+        - INDOOR_TEMPERATURE
+        - INDOOR_HUMIDITY
       description: DB-stored measurement category. v1.4.23 added 7 Apple Health values (HRV, resting HR, active energy,
         flights, walking/running distance, VO2 max, body temperature).
     InsightsSettingsPutRequest:
@@ -39046,6 +39058,9 @@ components:
                   - STAND_HOURS
                   - MINDFUL_MINUTES
                   - STATE_OF_MIND_VALENCE
+                  - INDOOR_CO2
+                  - INDOOR_TEMPERATURE
+                  - INDOOR_HUMIDITY
                   - AFIB_BURDEN
               value:
                 type: number
@@ -39792,6 +39807,9 @@ components:
                             - STAND_HOURS
                             - MINDFUL_MINUTES
                             - STATE_OF_MIND_VALENCE
+                            - INDOOR_CO2
+                            - INDOOR_TEMPERATURE
+                            - INDOOR_HUMIDITY
                             - AFIB_BURDEN
                         - type: "null"
                     biomarkerName:
@@ -42273,6 +42291,9 @@ components:
                   - STAND_HOURS
                   - MINDFUL_MINUTES
                   - STATE_OF_MIND_VALENCE
+                  - INDOOR_CO2
+                  - INDOOR_TEMPERATURE
+                  - INDOOR_HUMIDITY
                   - AFIB_BURDEN
               dateKey:
                 type: string
@@ -43457,6 +43478,9 @@ components:
                       - STAND_HOURS
                       - MINDFUL_MINUTES
                       - STATE_OF_MIND_VALENCE
+                      - INDOOR_CO2
+                      - INDOOR_TEMPERATURE
+                      - INDOOR_HUMIDITY
                       - AFIB_BURDEN
                   - type: "null"
               intervalDays:
@@ -43675,6 +43699,9 @@ components:
                   - STAND_HOURS
                   - MINDFUL_MINUTES
                   - STATE_OF_MIND_VALENCE
+                  - INDOOR_CO2
+                  - INDOOR_TEMPERATURE
+                  - INDOOR_HUMIDITY
                   - AFIB_BURDEN
               metricSlot:
                 type:

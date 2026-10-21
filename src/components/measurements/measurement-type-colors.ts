@@ -138,4 +138,8 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
   MINDFUL_MINUTES: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   STATE_OF_MIND_VALENCE: "bg-chart-1/10 text-chart-1 dark:bg-chart-1/20",
   AFIB_BURDEN: "bg-chart-3/10 text-chart-3 dark:bg-chart-3/20",
+  // Room climate takes the environment family of daylight (chart-2).
+  INDOOR_CO2: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  INDOOR_TEMPERATURE: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  INDOOR_HUMIDITY: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
 };

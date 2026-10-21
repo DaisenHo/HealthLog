@@ -1914,6 +1914,78 @@ export const SIGNALS: Record<string, SignalDefinition> = {
       category: "vital-signs",
     },
   },
+  // ── v1.44 — room climate pushed through the ingest token ──
+  // Bands are the usual comfort guidance (CO2 under 1000 ppm as the long-
+  // standing ventilation threshold, 18–24 °C, 40–60 % RH); placement only.
+  INDOOR_CO2: {
+    key: "INDOOR_CO2",
+    kind: "measurement",
+    source: { measurementType: "INDOOR_CO2" },
+    displayName: "Indoor CO2",
+    unit: "ppm",
+    direction: "target-band",
+    archetype: "environmental-exposure",
+    normalRange: { low: 400, high: 1000 },
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      // A room reading, not a body observation; no LOINC concept applies.
+      loinc: null,
+      display: "Indoor carbon dioxide",
+      unit: "[ppm]",
+      category: "activity",
+    },
+  },
+  INDOOR_TEMPERATURE: {
+    key: "INDOOR_TEMPERATURE",
+    kind: "measurement",
+    source: { measurementType: "INDOOR_TEMPERATURE" },
+    displayName: "Indoor temperature",
+    unit: "°C",
+    direction: "target-band",
+    archetype: "environmental-exposure",
+    normalRange: { low: 18, high: 24 },
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      // A room reading, not a body observation; no LOINC concept applies.
+      loinc: null,
+      display: "Indoor air temperature",
+      unit: "Cel",
+      category: "activity",
+    },
+  },
+  INDOOR_HUMIDITY: {
+    key: "INDOOR_HUMIDITY",
+    kind: "measurement",
+    source: { measurementType: "INDOOR_HUMIDITY" },
+    displayName: "Indoor humidity",
+    unit: "%",
+    direction: "target-band",
+    archetype: "environmental-exposure",
+    normalRange: { low: 40, high: 60 },
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      // A room reading, not a body observation; no LOINC concept applies.
+      loinc: null,
+      display: "Indoor relative humidity",
+      unit: "%",
+      category: "activity",
+    },
+  },
 };
 
 /** Type guard: narrow an arbitrary string to a registered signal key. */

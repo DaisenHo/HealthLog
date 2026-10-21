@@ -153,6 +153,10 @@ export const measurementTypeEnum = z.enum([
   "MINDFUL_MINUTES",
   "STATE_OF_MIND_VALENCE",
   "AFIB_BURDEN",
+  // ── v1.44 — room climate pushed through the ingest token ──
+  "INDOOR_CO2",
+  "INDOOR_TEMPERATURE",
+  "INDOOR_HUMIDITY",
 ]);
 
 /**
@@ -460,6 +464,13 @@ export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   // AFib burden as a percent of the week, after the ×100 scaling. A client
   // that already scaled sends 2 for 2 %, which lands at 200 and is refused.
   AFIB_BURDEN: { min: 0, max: 100 },
+  // ── v1.44 — room climate. CO2: outdoor air sits near 420 ppm and a closed
+  // bedroom can pass 3000; consumer sensors top out at 5000–10000 ppm.
+  INDOOR_CO2: { min: 0, max: 10000 },
+  // Indoor air °C: a cold cellar to an overheated attic.
+  INDOOR_TEMPERATURE: { min: -20, max: 60 },
+  // Relative humidity, percent.
+  INDOOR_HUMIDITY: { min: 0, max: 100 },
   // Grip strength kg — a child can read in the single digits, an elite athlete
   // tops ~90 kg; 120 is a generous ceiling that still rejects sensor noise.
   GRIP_STRENGTH: { min: 0, max: 120 },

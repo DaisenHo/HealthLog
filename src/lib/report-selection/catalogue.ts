@@ -184,6 +184,9 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   AUDIO_EXPOSURE_HEADPHONE: "environment",
   AUDIO_EXPOSURE_EVENT: "environment",
   TIME_IN_DAYLIGHT: "environment",
+  INDOOR_CO2: "environment",
+  INDOOR_TEMPERATURE: "environment",
+  INDOOR_HUMIDITY: "environment",
 
   // ── glucose ──
   BLOOD_GLUCOSE: "glucose",
@@ -311,6 +314,9 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   AUDIO_EXPOSURE_HEADPHONE: "environment",
   AUDIO_EXPOSURE_EVENT: "environment",
   TIME_IN_DAYLIGHT: "environment",
+  INDOOR_CO2: "environment",
+  INDOOR_TEMPERATURE: "environment",
+  INDOOR_HUMIDITY: "environment",
   // Glucose: the raw series and the derived panel.
   BLOOD_GLUCOSE: "glucose",
   GLUCOSE_PANEL: "glucose",

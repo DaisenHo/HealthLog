@@ -298,5 +298,23 @@
     "display": "Atrial fibrillation burden",
     "unit": "%",
     "category": "vital-signs"
+  },
+  "INDOOR_CO2": {
+    "loinc": null,
+    "display": "Indoor carbon dioxide",
+    "unit": "[ppm]",
+    "category": "activity"
+  },
+  "INDOOR_TEMPERATURE": {
+    "loinc": null,
+    "display": "Indoor air temperature",
+    "unit": "Cel",
+    "category": "activity"
+  },
+  "INDOOR_HUMIDITY": {
+    "loinc": null,
+    "display": "Indoor relative humidity",
+    "unit": "%",
+    "category": "activity"
   }
 }

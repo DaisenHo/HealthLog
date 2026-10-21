@@ -145,6 +145,10 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:MINDFUL_MINUTES",
   "metric:STATE_OF_MIND_VALENCE",
   "metric:AFIB_BURDEN",
+  // v1.44 — room climate from the ingest token.
+  "metric:INDOOR_CO2",
+  "metric:INDOOR_TEMPERATURE",
+  "metric:INDOOR_HUMIDITY",
   "metric:GRIP_STRENGTH",
   "metric:PAIN_NRS",
   "metric:WAIST_CIRCUMFERENCE",

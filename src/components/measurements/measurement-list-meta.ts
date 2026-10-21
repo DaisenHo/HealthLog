@@ -139,6 +139,9 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<string, string> = {
   MINDFUL_MINUTES: "measurements.typeMindfulMinutes",
   STATE_OF_MIND_VALENCE: "measurements.typeStateOfMindValence",
   AFIB_BURDEN: "measurements.typeAfibBurden",
+  INDOOR_CO2: "measurements.typeIndoorCo2",
+  INDOOR_TEMPERATURE: "measurements.typeIndoorTemperature",
+  INDOOR_HUMIDITY: "measurements.typeIndoorHumidity",
 };
 
 export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
@@ -282,6 +285,10 @@ export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
   MINDFUL_MINUTES: Wind,
   STATE_OF_MIND_VALENCE: Gauge,
   AFIB_BURDEN: HeartPulse,
+  // Room climate: air, warmth, moisture.
+  INDOOR_CO2: Wind,
+  INDOOR_TEMPERATURE: Thermometer,
+  INDOOR_HUMIDITY: Droplets,
 };
 
 // The colour map lives in its own icon-free module so a surface that only

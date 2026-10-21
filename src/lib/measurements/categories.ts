@@ -230,6 +230,10 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["STATE_OF_MIND_VALENCE", "scores"],
   // AFib burden joins the rhythm notifications on the cardiovascular surface.
   ["AFIB_BURDEN", "cardiovascular"],
+  // ── v1.44 — room climate joins daylight in the environment cluster ──
+  ["INDOOR_CO2", "environment"],
+  ["INDOOR_TEMPERATURE", "environment"],
+  ["INDOOR_HUMIDITY", "environment"],
 ]);
 
 /**

@@ -53,9 +53,9 @@ function resolves(key: string): boolean {
 
 describe("report selection catalogue", () => {
   it("carries every measurement type and every structured leaf", () => {
-    expect(MEASUREMENT_LEAF_IDS).toHaveLength(83);
+    expect(MEASUREMENT_LEAF_IDS).toHaveLength(86);
     expect(STRUCTURED_LEAF_IDS).toHaveLength(18);
-    expect(ALL_LEAF_IDS).toHaveLength(101);
+    expect(ALL_LEAF_IDS).toHaveLength(104);
   });
 
   it("resolves a label for every leaf", () => {

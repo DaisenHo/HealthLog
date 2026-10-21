@@ -120,10 +120,14 @@ const EXPECTED_TYPES = [
   "MINDFUL_MINUTES",
   "STATE_OF_MIND_VALENCE",
   "AFIB_BURDEN",
+  // ── v1.44 — room climate pushed through the ingest token ──
+  "INDOOR_CO2",
+  "INDOOR_TEMPERATURE",
+  "INDOOR_HUMIDITY",
 ] as const;
 
 describe("measurementTypeEnum coverage", () => {
-  it("exposes the 83 canonical measurement types", () => {
+  it("exposes the 86 canonical measurement types", () => {
     expect([...measurementTypeEnum.options].sort()).toEqual(
       [...EXPECTED_TYPES].sort(),
     );
