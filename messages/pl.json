@@ -6909,7 +6909,9 @@
       "reselectReason": "Ten link udostępniał zakres, którego nikt nie wybrał, więc został zamknięty. Utwórz nowy i wybierz jego zawartość.",
       "reselectAction": "Utwórz zamiennik",
       "createDetail": "Token jest pokazywany tylko raz przy tworzeniu. Zapisz go wtedy; nie można go odzyskać.",
-      "activeDescription": "Udostępnione linki, termin ich wygaśnięcia i liczba otwarć."
+      "activeDescription": "Udostępnione linki, termin ich wygaśnięcia i liczba otwarć.",
+      "revokedToast": "Unieważniono link.",
+      "revokeFailed": "Nie udało się unieważnić linku."
     },
     "genderOther": "Inna",
     "nightscout": "Nightscout",
@@ -7096,7 +7098,9 @@
         "lastUsed": "Ostatnio użyty {date}",
         "neverUsed": "Nigdy nieużywany",
         "added": "dodany {date}",
-        "nameLabel": "Nazwa klucza bezpieczeństwa"
+        "nameLabel": "Nazwa klucza bezpieczeństwa",
+        "addedToast": "Dodano klucz bezpieczeństwa.",
+        "removedToast": "Usunięto klucz bezpieczeństwa."
       },
       "passkeyNudge": {
         "title": "Dodaj klucz dostępu, aby logować się szybciej",
@@ -7439,7 +7443,11 @@
       "homePlaceUnknown": "Instancja Dawarich nie zna już tego miejsca.",
       "notConnected": "Dawarich nie jest połączony.",
       "generic": "Nie udało się. Spróbuj ponownie."
-    }
+    },
+    "passkeyAddedToast": "Dodano passkey.",
+    "passkeyRemovedToast": "Usunięto passkey.",
+    "integrationDisconnected": "Rozłączono {provider}.",
+    "integrationDisconnectFailed": "Nie udało się rozłączyć {provider}."
   },
   "admin": {
     "title": "Administracja",

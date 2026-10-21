@@ -11,6 +11,7 @@
  * reminder PATCH route.
  */
 import { ArrowUpDown, LayoutGrid, ListChecks } from "lucide-react";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -31,6 +32,7 @@ import {
 } from "@/hooks/use-measurement-reminders";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 import { EmptyState } from "@/components/ui/empty-state";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 function resolveLabel(
   reminder: MeasurementReminder,
@@ -127,10 +129,20 @@ export function VorsorgeSettings() {
                     <Switch
                       checked={reminder.enabled}
                       onCheckedChange={(next) =>
-                        update.mutate({
-                          id: reminder.id,
-                          body: { enabled: next },
-                        })
+                        update.mutate(
+                          { id: reminder.id, body: { enabled: next } },
+                          {
+                            onSuccess: () =>
+                              toastWrittenOutcome(
+                                "success",
+                                t("settings.saved"),
+                              ),
+                            onError: (failure) =>
+                              showErrorToast(t("settings.savingError"), {
+                                cause: failure,
+                              }),
+                          },
+                        )
                       }
                       disabled={update.isPending}
                       // Label each row's Switch by its own name span so SR

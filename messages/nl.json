@@ -6909,7 +6909,9 @@
       "reselectReason": "Deze link gaf toegang tot een selectie die nooit was gekozen, daarom is hij gesloten. Maak een nieuwe link aan en kies wat erin moet staan.",
       "reselectAction": "Vervanging aanmaken",
       "createDetail": "Het token wordt één keer getoond bij het aanmaken. Bewaar het dan; het kan niet worden hersteld.",
-      "activeDescription": "Links die je hebt gedeeld, wanneer ze verlopen en hoe vaak ze zijn geopend."
+      "activeDescription": "Links die je hebt gedeeld, wanneer ze verlopen en hoe vaak ze zijn geopend.",
+      "revokedToast": "Link ingetrokken.",
+      "revokeFailed": "De link kon niet worden ingetrokken."
     },
     "genderOther": "Anders",
     "nightscout": "Nightscout",
@@ -7096,7 +7098,9 @@
         "lastUsed": "Laatst gebruikt op {date}",
         "neverUsed": "Nooit gebruikt",
         "added": "toegevoegd op {date}",
-        "nameLabel": "Naam van de beveiligingssleutel"
+        "nameLabel": "Naam van de beveiligingssleutel",
+        "addedToast": "Beveiligingssleutel toegevoegd.",
+        "removedToast": "Beveiligingssleutel verwijderd."
       },
       "passkeyNudge": {
         "title": "Voeg een passkey toe om sneller in te loggen",
@@ -7439,7 +7443,11 @@
       "homePlaceUnknown": "De Dawarich-instantie kent deze plaats niet meer.",
       "notConnected": "Dawarich is niet gekoppeld.",
       "generic": "Dat is niet gelukt. Probeer het opnieuw."
-    }
+    },
+    "passkeyAddedToast": "Passkey toegevoegd.",
+    "passkeyRemovedToast": "Passkey verwijderd.",
+    "integrationDisconnected": "{provider} ontkoppeld.",
+    "integrationDisconnectFailed": "{provider} kon niet worden ontkoppeld."
   },
   "admin": {
     "title": "Beheer",

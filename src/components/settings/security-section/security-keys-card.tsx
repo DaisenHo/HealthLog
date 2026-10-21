@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import {
   AlertTriangle,
   Check,
@@ -133,6 +134,7 @@ export function SecurityKeysCard({
       setReauthOpen(false);
       setReauthError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.mfaStatus() });
+      toastWrittenOutcome("success", t("settings.security.keys.addedToast"));
     },
     onError: (err, proof) => {
       if (isReproofRequired(err) && nothingToReprove(err)) {
@@ -192,6 +194,7 @@ export function SecurityKeysCard({
     onSuccess: () => {
       setError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.mfaStatus() });
+      toastWrittenOutcome("success", t("settings.security.keys.removedToast"));
     },
     onError: (err) => {
       if (err instanceof ReproofCancelledError) return;

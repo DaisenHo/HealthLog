@@ -14,6 +14,7 @@
  * View / sort / order persist client-side via `useModuleListPrefs("labs")`.
  */
 import { useQuery } from "@tanstack/react-query";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import {
   ArrowDownUp,
   FlaskConical,
@@ -29,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { apiGet } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { ModuleViewToggle } from "@/components/module-list/module-view-toggle";
@@ -139,7 +141,16 @@ export function LabsSettings() {
             <Switch
               checked={localOcr.data?.labsLocalOcrEnabled ?? false}
               disabled={localOcr.isLoading || updateLocalOcr.isPending}
-              onCheckedChange={(checked) => updateLocalOcr.mutate(checked)}
+              onCheckedChange={(checked) =>
+                updateLocalOcr.mutate(checked, {
+                  onSuccess: () =>
+                    toastWrittenOutcome("success", t("settings.saved")),
+                  onError: (failure) =>
+                    showErrorToast(t("settings.savingError"), {
+                      cause: failure,
+                    }),
+                })
+              }
               aria-label={t("labs.localOcr.heading")}
             />
           }

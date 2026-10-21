@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { Syringe } from "lucide-react";
 
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -14,6 +15,7 @@ import {
   type InjectionSiteKey,
 } from "@/lib/medications/injection-sites";
 import { apiFetchRaw, apiPatch } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 /**
  * v1.8.5 — Settings → global injection-site exclusion.
@@ -56,7 +58,10 @@ export function InjectionSitesCard({
       void queryClient.invalidateQueries({
         queryKey: queryKeys.injectionSitePrefs(),
       });
+      toastWrittenOutcome("success", t("settings.saved"));
     },
+    onError: (failure) =>
+      showErrorToast(t("settings.savingError"), { cause: failure }),
   });
 
   function toggle(site: InjectionSiteKey, checked: boolean) {

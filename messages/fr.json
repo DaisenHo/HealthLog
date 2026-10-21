@@ -6909,7 +6909,9 @@
       "reselectReason": "Ce lien diffusait un périmètre que personne n'avait choisi ; il a donc été fermé. Créez-en un nouveau et choisissez son contenu.",
       "reselectAction": "Créer un remplacement",
       "createDetail": "Le jeton n'est affiché qu'une fois à la création. Conservez-le alors ; il ne peut pas être récupéré.",
-      "activeDescription": "Les liens que vous avez partagés, leur expiration et le nombre d'ouvertures."
+      "activeDescription": "Les liens que vous avez partagés, leur expiration et le nombre d'ouvertures.",
+      "revokedToast": "Lien révoqué.",
+      "revokeFailed": "Impossible de révoquer le lien."
     },
     "genderOther": "Autre",
     "nightscout": "Nightscout",
@@ -7096,7 +7098,9 @@
         "lastUsed": "Dernière utilisation le {date}",
         "neverUsed": "Jamais utilisée",
         "added": "ajoutée le {date}",
-        "nameLabel": "Nom de la clé de sécurité"
+        "nameLabel": "Nom de la clé de sécurité",
+        "addedToast": "Clé de sécurité ajoutée.",
+        "removedToast": "Clé de sécurité supprimée."
       },
       "passkeyNudge": {
         "title": "Ajoutez une clé d'accès pour une connexion plus rapide",
@@ -7439,7 +7443,11 @@
       "homePlaceUnknown": "L’instance Dawarich ne connaît plus ce lieu.",
       "notConnected": "Dawarich n’est pas connecté.",
       "generic": "Ça n’a pas marché. Réessaie."
-    }
+    },
+    "passkeyAddedToast": "Passkey ajoutée.",
+    "passkeyRemovedToast": "Passkey supprimée.",
+    "integrationDisconnected": "{provider} déconnecté.",
+    "integrationDisconnectFailed": "Impossible de déconnecter {provider}."
   },
   "admin": {
     "title": "Administration",

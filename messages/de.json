@@ -6909,7 +6909,9 @@
       "reselectReason": "Dieser Link lieferte einen Umfang, den niemand gewählt hatte, und wurde deshalb geschlossen. Lege einen neuen an und wähle den Inhalt.",
       "reselectAction": "Ersatz anlegen",
       "createDetail": "Der Token wird nur einmal bei der Erstellung angezeigt. Sichere ihn dann; er lässt sich nicht wiederherstellen.",
-      "activeDescription": "Deine geteilten Links, wann sie ablaufen und wie oft sie geöffnet wurden."
+      "activeDescription": "Deine geteilten Links, wann sie ablaufen und wie oft sie geöffnet wurden.",
+      "revokedToast": "Link widerrufen.",
+      "revokeFailed": "Der Link konnte nicht widerrufen werden."
     },
     "genderOther": "Divers",
     "nightscout": "Nightscout",
@@ -7096,7 +7098,9 @@
         "lastUsed": "Zuletzt verwendet {date}",
         "neverUsed": "Noch nie verwendet",
         "added": "hinzugefügt {date}",
-        "nameLabel": "Name des Sicherheitsschlüssels"
+        "nameLabel": "Name des Sicherheitsschlüssels",
+        "addedToast": "Sicherheitsschlüssel hinzugefügt.",
+        "removedToast": "Sicherheitsschlüssel entfernt."
       },
       "passkeyNudge": {
         "title": "Füge einen Passkey für schnellere Anmeldung hinzu",
@@ -7439,7 +7443,11 @@
       "homePlaceUnknown": "Diesen Ort kennt die Dawarich-Instanz nicht mehr.",
       "notConnected": "Dawarich ist nicht verbunden.",
       "generic": "Das hat nicht geklappt. Versuche es erneut."
-    }
+    },
+    "passkeyAddedToast": "Passkey hinzugefügt.",
+    "passkeyRemovedToast": "Passkey entfernt.",
+    "integrationDisconnected": "{provider} getrennt.",
+    "integrationDisconnectFailed": "{provider} konnte nicht getrennt werden."
   },
   "admin": {
     "title": "Administration",

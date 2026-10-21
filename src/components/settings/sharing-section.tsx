@@ -23,6 +23,7 @@
  */
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { FileText, KeyRound, Link2, List, Trash2 } from "lucide-react";
 
 import {
@@ -53,6 +54,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiDelete, apiGet } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 export function SharingSection() {
   // v1.18.7 — the visible heading + subtitle come from the shared settings
@@ -127,7 +129,12 @@ function ShareLinksCard() {
     mutationFn: (id: string) => apiDelete(`/api/share-links/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.shareLinks() });
+      toastWrittenOutcome("success", t("settings.sharing.revokedToast"));
     },
+    // A refused revoke leaves the link working; that has to be said, since
+    // the dialog that asked has already closed.
+    onError: (failure) =>
+      showErrorToast(t("settings.sharing.revokeFailed"), { cause: failure }),
   });
 
   const activeLinks = useMemo(

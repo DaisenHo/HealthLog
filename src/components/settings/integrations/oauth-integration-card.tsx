@@ -15,6 +15,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import {
   Activity,
   ArrowRight,
@@ -34,6 +35,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { apiPost } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import type { IntegrationCallbackUrls } from "@/lib/integrations/callback-urls";
 import { loadDocument } from "@/lib/navigation/load-document";
@@ -298,7 +300,20 @@ export function OAuthIntegrationCardView({
     mutationFn: async () => {
       await apiPost(`/api/${provider}/disconnect`);
     },
-    onSuccess: invalidateStatus,
+    onSuccess: () => {
+      invalidateStatus();
+      toastWrittenOutcome(
+        "success",
+        t("settings.integrationDisconnected", { provider: providerName }),
+      );
+    },
+    // The confirmation dialog has closed by now; without this a refused
+    // disconnect left the card connected and said nothing.
+    onError: (failure) =>
+      showErrorToast(
+        t("settings.integrationDisconnectFailed", { provider: providerName }),
+        { cause: failure },
+      ),
   });
 
   const resume = useMutation({

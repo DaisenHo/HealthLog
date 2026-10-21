@@ -6909,7 +6909,9 @@
       "reselectReason": "이 링크는 선택한 적 없는 범위를 제공하고 있어서 닫았어요. 새로 만들고 담을 내용을 골라 주세요.",
       "reselectAction": "새 링크 만들기",
       "createDetail": "토큰은 만들 때 한 번만 보여줘요. 그때 저장해 두세요. 복구할 수 없어요.",
-      "activeDescription": "공유한 링크와 만료 시점, 열람 횟수를 보여줘요."
+      "activeDescription": "공유한 링크와 만료 시점, 열람 횟수를 보여줘요.",
+      "revokedToast": "링크를 해지했어요.",
+      "revokeFailed": "링크를 해지하지 못했어요."
     },
     "genderOther": "기타",
     "nightscout": "Nightscout",
@@ -7096,7 +7098,9 @@
         "lastUsed": "마지막 사용 {date}",
         "neverUsed": "사용한 적 없음",
         "added": "{date} 추가됨",
-        "nameLabel": "보안 키 이름"
+        "nameLabel": "보안 키 이름",
+        "addedToast": "보안 키를 추가했어요.",
+        "removedToast": "보안 키를 삭제했어요."
       },
       "passkeyNudge": {
         "title": "패스키를 추가하면 더 빠르게 로그인해요",
@@ -7439,7 +7443,11 @@
       "homePlaceUnknown": "Dawarich 인스턴스에 이 장소가 더 이상 없습니다.",
       "notConnected": "Dawarich가 연결되어 있지 않습니다.",
       "generic": "실패했습니다. 다시 시도하세요."
-    }
+    },
+    "passkeyAddedToast": "패스키를 추가했어요.",
+    "passkeyRemovedToast": "패스키를 삭제했어요.",
+    "integrationDisconnected": "{provider} 연결을 해제했어요.",
+    "integrationDisconnectFailed": "{provider} 연결을 해제하지 못했어요."
   },
   "admin": {
     "title": "관리자",
