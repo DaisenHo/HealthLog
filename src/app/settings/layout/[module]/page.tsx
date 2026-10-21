@@ -9,7 +9,7 @@ import {
   isLayoutGroupId,
 } from "@/components/settings/layout-groups";
 import { SettingsShell } from "@/components/settings/settings-shell";
-import { ModuleSettingsLinkCard } from "@/components/settings/module-settings-pages";
+import { ModuleSettingsLinkCard } from "@/components/settings/module-settings-link-card";
 import { isModuleSettingsPageId } from "@/components/settings/module-settings-page-ids";
 import { SettingsHubBackLink } from "@/components/settings/settings-hub-back-link";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";

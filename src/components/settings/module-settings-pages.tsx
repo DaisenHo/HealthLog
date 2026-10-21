@@ -15,7 +15,7 @@
  */
 
 import Link from "next/link";
-import { ArrowUpDown, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { ArrowUpDown, ChevronRight } from "lucide-react";
 
 import { LabsModuleSettings } from "@/components/labs/labs-settings";
 import { InjectionSitesCard } from "@/components/settings/injection-sites-card";
@@ -87,31 +87,4 @@ export const MODULE_SETTINGS_PAGE_BODIES: Record<
 export function ModuleSettingsPageBody({ id }: { id: ModuleSettingsPageId }) {
   const Body = MODULE_SETTINGS_PAGE_BODIES[id];
   return <Body />;
-}
-
-/**
- * The way from a module's arrangement page to its own page under Modules,
- * for the modules that have one.
- */
-export function ModuleSettingsLinkCard({ id }: { id: ModuleSettingsPageId }) {
-  const { t } = useTranslations();
-  return (
-    <SettingsCard data-slot="arrangement-module-settings-link">
-      <SettingsCardHeader
-        icon={SlidersHorizontal}
-        title={t("settings.sections.modules.pages.moduleSettingsTitle")}
-        description={t(
-          "settings.sections.modules.pages.moduleSettingsDescription",
-        )}
-      />
-      <SettingsCardActions align="start">
-        <Button asChild variant="outline" size="sm" className="min-h-11">
-          <Link href={`/settings/modules/${id}`}>
-            {t("settings.sections.modules.openModuleSettings")}
-            <ChevronRight className="size-4" aria-hidden="true" />
-          </Link>
-        </Button>
-      </SettingsCardActions>
-    </SettingsCard>
-  );
 }
