@@ -10392,6 +10392,7 @@
     "vital": {
       "RESTING_HEART_RATE": "안정 시 심박수",
       "HEART_RATE_VARIABILITY": "심박변이도",
+      "HRV_RMSSD": "심박변이도 (RMSSD)",
       "RECOVERY_SCORE": "회복",
       "OXYGEN_SATURATION": "산소포화도",
       "BODY_TEMPERATURE": "체온",

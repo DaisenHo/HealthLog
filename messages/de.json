@@ -10392,6 +10392,7 @@
     "vital": {
       "RESTING_HEART_RATE": "Ruheherzfrequenz",
       "HEART_RATE_VARIABILITY": "Herzfrequenzvariabilität",
+      "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Recovery",
       "OXYGEN_SATURATION": "Sauerstoffsättigung",
       "BODY_TEMPERATURE": "Körpertemperatur",

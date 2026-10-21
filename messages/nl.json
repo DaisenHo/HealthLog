@@ -10392,6 +10392,7 @@
     "vital": {
       "RESTING_HEART_RATE": "Rusthartslag",
       "HEART_RATE_VARIABILITY": "Hartslagvariabiliteit",
+      "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Herstel",
       "OXYGEN_SATURATION": "Zuurstofverzadiging",
       "BODY_TEMPERATURE": "Lichaamstemperatuur",

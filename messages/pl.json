@@ -10392,6 +10392,7 @@
     "vital": {
       "RESTING_HEART_RATE": "Spoczynkowe tętno",
       "HEART_RATE_VARIABILITY": "Zmienność rytmu serca",
+      "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Recovery",
       "OXYGEN_SATURATION": "Saturacja tlenem",
       "BODY_TEMPERATURE": "Temperatura ciała",
