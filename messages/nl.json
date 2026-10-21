@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "De keten wordt teruggezet naar Codex → OpenAI → Anthropic → Lokaal → OpenAI van beheerder. Je opgeslagen inloggegevens blijven onaangeroerd."
       },
       "activeProviderHeading": "Actieve provider",
-      "activeProviderLabel": "Primaire provider",
+      "activeProviderLabel": "Provider instellen",
       "providerSelect": {
         "codex": "ChatGPT-account (Codex)",
         "openai": "OpenAI (je eigen API-sleutel)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "In de Coach geldt de denkdiepte uit de Coach-instellingen."
       },
-      "providerCardDescription": "De provider die HealthLog als eerste raadpleegt, met de bijbehorende sleutel en het model.",
+      "providerCardDescription": "Stel per provider de sleutel en het model in; de volgorde hieronder bepaalt welke HealthLog als eerste raadpleegt.",
       "runtimeTitle": "Controleren en vernieuwen",
       "usage": {
         "title": "AI-gebruik",

@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "순서가 Codex → OpenAI → Anthropic → 로컬 → 관리자 OpenAI로 돌아가요. 저장한 인증 정보는 그대로예요."
       },
       "activeProviderHeading": "사용 중인 제공자",
-      "activeProviderLabel": "기본 제공자",
+      "activeProviderLabel": "설정할 제공자",
       "providerSelect": {
         "codex": "ChatGPT 계정 (Codex)",
         "openai": "OpenAI (내 API 키)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "코치에서는 코치 설정의 사고 깊이가 적용됩니다."
       },
-      "providerCardDescription": "HealthLog가 가장 먼저 쓰는 제공자와 그 키, 모델이에요.",
+      "providerCardDescription": "제공자마다 키와 모델을 설정하고, 아래 순서로 HealthLog가 먼저 쓸 제공자를 정해요.",
       "runtimeTitle": "확인 및 새로고침",
       "usage": {
         "title": "AI 사용량",

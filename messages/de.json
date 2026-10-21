@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "Die Kette wird auf Codex → OpenAI → Anthropic → Lokal → Admin-OpenAI zurückgesetzt. Gespeicherte Zugangsdaten bleiben erhalten."
       },
       "activeProviderHeading": "Aktiver Provider",
-      "activeProviderLabel": "Primärer Provider",
+      "activeProviderLabel": "Anbieter einrichten",
       "providerSelect": {
         "codex": "ChatGPT-Account (Codex)",
         "openai": "OpenAI (eigener API-Key)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "Im Coach gilt die Denktiefe aus den Coach-Einstellungen."
       },
-      "providerCardDescription": "Der Anbieter, den HealthLog zuerst fragt, mit Schlüssel und Modell.",
+      "providerCardDescription": "Richte Schlüssel und Modell je Anbieter ein; die Reihenfolge darunter bestimmt, welchen HealthLog zuerst fragt.",
       "runtimeTitle": "Prüfen und aktualisieren",
       "usage": {
         "title": "KI-Einsatz",

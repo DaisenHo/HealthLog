@@ -6206,7 +6206,7 @@
         "resetConfirmBody": "La chaîne revient à Codex → OpenAI → Anthropic → Local → OpenAI administrateur. Vos identifiants enregistrés ne sont pas affectés."
       },
       "activeProviderHeading": "Fournisseur actif",
-      "activeProviderLabel": "Fournisseur principal",
+      "activeProviderLabel": "Configurer un fournisseur",
       "providerSelect": {
         "codex": "Compte ChatGPT (Codex)",
         "openai": "OpenAI (votre clé API)",
@@ -6413,7 +6413,7 @@
         },
         "coachNote": "Dans le Coach, c'est la profondeur de réflexion des réglages du Coach qui s'applique."
       },
-      "providerCardDescription": "Le fournisseur que HealthLog sollicite en premier, avec sa clé et son modèle.",
+      "providerCardDescription": "Configurez la clé et le modèle de chaque fournisseur ; l’ordre ci-dessous décide lequel HealthLog sollicite en premier.",
       "runtimeTitle": "Vérifier et actualiser",
       "usage": {
         "title": "Usage de l'IA",

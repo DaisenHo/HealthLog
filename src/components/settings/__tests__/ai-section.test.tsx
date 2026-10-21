@@ -216,12 +216,25 @@ describe("<AiSection> — dropdown-driven UX (B2)", () => {
     expect(html).toContain("ChatGPT-Account (Codex)");
     // v1.4.33 — the active-provider heading and the parent section
     // both ship without the "KI"/"AI" prefix per the project-voice rule
-    // ("Aktiver KI-Provider" → "Aktiver Provider"). The heading and the
-    // chain summary now share the same phrase, so we assert against the
-    // explicit `activeProviderLabel` slot below it ("Primärer Provider")
-    // to keep the test pinned to the right surface.
+    // ("Aktiver KI-Provider" → "Aktiver Provider"). The picker below it is
+    // labelled for what it does: it chooses the form, not the order.
     expect(html).toContain("Aktiver Provider");
-    expect(html).toContain("Primärer Provider");
+    expect(html).toContain("Anbieter einrichten");
+  });
+
+  it("labels the picker for what it does, not as the primary provider", () => {
+    // The select picks which provider's key and model the form below edits.
+    // It never wrote anything, yet read "Primary provider" under a card
+    // that said it held "the provider HealthLog asks first": a person who
+    // picked one expected it to answer first, and the chain order, which is
+    // what decides that, stayed as it was. The copy now points at the chain.
+    activeProviderQuery = "codex";
+    const html = render();
+    expect(html).not.toContain("Primary provider");
+    expect(html).toContain("Set up a provider");
+    expect(html).toContain(
+      "the order below decides which one HealthLog asks first",
+    );
   });
 
   // v1.18.0 — the Coach preference cards (disable toggle, preferences,
