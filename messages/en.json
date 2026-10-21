@@ -6851,7 +6851,7 @@
       "errorRateLimit": "You have reached the export limit for this hour.",
       "errorModuleDisabled": "The health record export is switched off for this account.",
       "visitOffer": "An appointment is coming up on {when}: {what}.",
-      "visitOfferApply": "Report up to then"
+      "visitOfferApplyWindow": "Use this window"
     },
     "globalExcludedInjectionSitesLabel": "Globally excluded injection sites",
     "globalExcludedInjectionSitesHint": "Never offered and rejected when logging a dose, even if a medication prefers them.",
@@ -12723,6 +12723,13 @@
       "noMatchTitle": "Nothing matches this filter",
       "clearFilter": "Clear filter",
       "loadError": "Procedures could not be loaded."
+    },
+    "preparation": {
+      "practitioner": "Since your last visit with {name} on {date}",
+      "specialty": "Since your last {specialty} visit on {date}",
+      "kind": "Since your last visit of the same kind ({kind}) on {date}",
+      "default": "The last {days} days",
+      "defaultReason": "No earlier visit with the same practice, specialty or kind."
     }
   },
   "checkups": {
@@ -12972,7 +12979,6 @@
     "meanOfReadingsFew": "Average of {count} readings",
     "meanOfReadingsOther": "Average of {count} readings",
     "sinceLastVisit": {
-      "title": "Since the last visit on {date}",
       "countOne": "1 entry",
       "countFew": "{count} entries",
       "countOther": "{count} entries",

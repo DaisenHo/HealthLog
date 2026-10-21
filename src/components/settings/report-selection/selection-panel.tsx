@@ -322,11 +322,12 @@ export function HealthRecordExportPanel() {
         </div>
 
         {/* Never auto-applies: pressing it is what opens the custom window and
-            sets its end date. */}
+            sets both its dates, which stay editable. */}
         <ReportVisitOffer
-          onUseVisitDate={(endDay) => {
+          onUseVisitWindow={({ from, to }) => {
             setCustomRange(true);
-            setEndDate(endDay);
+            if (from) setStartDate(from);
+            setEndDate(to);
           }}
         />
 

@@ -6851,7 +6851,7 @@
       "errorRateLimit": "Osiągnięto limit eksportów w tej godzinie.",
       "errorModuleDisabled": "Eksport dokumentacji jest wyłączony dla tego konta.",
       "visitOffer": "{when} zaplanowano wizytę: {what}.",
-      "visitOfferApply": "Raport do tego dnia"
+      "visitOfferApplyWindow": "Użyj tego okresu"
     },
     "globalExcludedInjectionSitesLabel": "Globalnie wykluczone miejsca iniekcji",
     "globalExcludedInjectionSitesHint": "Nigdy nieproponowane i odrzucane przy rejestracji, nawet jeśli lek je preferuje.",
@@ -12723,6 +12723,13 @@
       "noMatchTitle": "Nic nie pasuje do tego filtra",
       "clearFilter": "Wyczyść filtr",
       "loadError": "Nie udało się wczytać zabiegów."
+    },
+    "preparation": {
+      "practitioner": "Od ostatniej wizyty ({name}) {date}",
+      "specialty": "Od ostatniej wizyty ({specialty}) {date}",
+      "kind": "Od ostatniej wizyty tego samego rodzaju ({kind}) {date}",
+      "default": "Ostatnie {days} dni",
+      "defaultReason": "Brak wcześniejszej wizyty w tym samym gabinecie, tej samej specjalizacji lub tego samego rodzaju."
     }
   },
   "checkups": {
@@ -12972,7 +12979,6 @@
     "meanOfReadingsFew": "Średnia z {count} pomiarów",
     "meanOfReadingsOther": "Średnia z {count} pomiarów",
     "sinceLastVisit": {
-      "title": "Od ostatniej wizyty {date}",
       "countOne": "1 wpis",
       "countFew": "{count} wpisy",
       "countOther": "{count} wpisów",

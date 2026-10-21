@@ -14,15 +14,20 @@
  * Termin ansteht") and does nothing until pressed. A control that moves on its
  * own is the thing that makes an export panel untrustworthy.
  *
- * Nothing about the stored selection changes: this sets the custom-range end
- * date and nothing else.
+ * Pressing it sets both ends of the custom range: the end on the appointment's
+ * day, the start where the server put the window before that visit
+ * (`EncounterDTO.preparation`: the last visit with the same practitioner, else
+ * the same specialty, else the same kind, else the last 90 days). The offer
+ * says which, so the start date explains itself, and both dates stay editable.
+ * Nothing about the stored selection changes.
  */
 import { CalendarClock, X } from "lucide-react";
 import { useState } from "react";
 
 import { encounterKindText } from "@/components/encounters/encounter-labels";
+import { preparationText } from "@/components/encounters/preparation-text";
 import { Button } from "@/components/ui/button";
-import { useEncounters } from "@/hooks/use-encounters";
+import { useEncounters, type Encounter } from "@/hooks/use-encounters";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { EncounterKind } from "@/generated/prisma/client";
 import { detectBrowserTimezone, userDayKey } from "@/lib/tz/format";
@@ -40,11 +45,27 @@ function localDay(iso: string): string {
   return userDayKey(new Date(iso), detectBrowserTimezone());
 }
 
+/** The report window an appointment offers, as `yyyy-MM-dd` days. */
+export interface VisitReportWindow {
+  /** The server's start of the window before the visit; null if it has none. */
+  from: string | null;
+  /** The appointment's own day. */
+  to: string;
+}
+
+/** What pressing the offer for `visit` applies. */
+export function visitReportWindow(visit: Encounter): VisitReportWindow {
+  return {
+    from: visit.preparation?.from ?? null,
+    to: localDay(visit.occurredAt),
+  };
+}
+
 export function ReportVisitOffer({
-  onUseVisitDate,
+  onUseVisitWindow,
 }: {
-  /** Sets the custom window's END date. Called only on an explicit press. */
-  onUseVisitDate: (endDay: string) => void;
+  /** Sets the custom window. Called only on an explicit press. */
+  onUseVisitWindow: (window: VisitReportWindow) => void;
 }) {
   const { t } = useTranslations();
   const format = useFormatters();
@@ -68,6 +89,9 @@ export function ReportVisitOffer({
 
   const what =
     next.practitioner?.name ?? encounterKindText(t, next.kind as EncounterKind);
+  const windowText = next.preparation
+    ? preparationText(t, format.dateShortSmartCalendar, next.preparation)
+    : null;
 
   return (
     <div
@@ -78,24 +102,38 @@ export function ReportVisitOffer({
           a phone the sentence takes the full row and the two buttons wrap
           below it; with a zero basis it was squeezed into a one-word column
           beside them. */}
-      <p className="text-foreground flex min-w-0 flex-1 basis-full items-center gap-2 text-sm sm:basis-0">
-        <CalendarClock className="size-4 shrink-0" aria-hidden />
-        <span>
-          {t("settings.healthRecord.visitOffer", {
-            what,
-            when: format.date(next.occurredAt),
-          })}
-        </span>
-      </p>
+      <div className="text-foreground flex min-w-0 flex-1 basis-full items-start gap-2 text-sm sm:basis-0">
+        <CalendarClock className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <div className="min-w-0 space-y-0.5">
+          <p>
+            {t("settings.healthRecord.visitOffer", {
+              what,
+              when: format.date(next.occurredAt),
+            })}
+          </p>
+          {/* Where the report would start, and why there: meta, so muted. */}
+          {windowText ? (
+            <p
+              className="text-muted-foreground text-xs"
+              data-slot="report-visit-offer-window"
+            >
+              {windowText.title}
+            </p>
+          ) : null}
+          {windowText?.reason ? (
+            <p className="text-muted-foreground text-xs">{windowText.reason}</p>
+          ) : null}
+        </div>
+      </div>
       <Button
         type="button"
         variant="outline"
         size="sm"
         className="ml-auto min-h-11 sm:ml-0 sm:min-h-9"
         data-slot="report-visit-offer-apply"
-        onClick={() => onUseVisitDate(localDay(next.occurredAt))}
+        onClick={() => onUseVisitWindow(visitReportWindow(next))}
       >
-        {t("settings.healthRecord.visitOfferApply")}
+        {t("settings.healthRecord.visitOfferApplyWindow")}
       </Button>
       <Button
         type="button"

@@ -32,7 +32,7 @@ vi.mock("@/lib/api/api-fetch", async () => {
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { EncounterDTO } from "@/lib/encounters/dto";
-import { ReportVisitOffer } from "../report-visit-offer";
+import { ReportVisitOffer, visitReportWindow } from "../report-visit-offer";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -67,7 +67,7 @@ function render(upcoming: EncounterDTO[], onUse = () => {}) {
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
       <I18nProvider initialLocale="en">
-        <ReportVisitOffer onUseVisitDate={onUse} />
+        <ReportVisitOffer onUseVisitWindow={onUse} />
       </I18nProvider>
     </QueryClientProvider>,
   );
@@ -107,5 +107,58 @@ describe("<ReportVisitOffer>", () => {
     // about a component that produced nothing.
     expect(html).toContain('data-slot="report-visit-offer-apply"');
     expect(onUse).not.toHaveBeenCalled();
+  });
+
+  // The issue behind this: an internist a week ago, a dermatologist next. The
+  // start used to be whatever the panel held, typically the last visit of any
+  // kind; it is now the server's window before this visit, and says why.
+  it("names where the report would start, and why there", () => {
+    const html = render([
+      visit({
+        id: "derm",
+        preparation: {
+          from: "2026-03-02",
+          basis: "specialty",
+          since: {
+            id: "old-derm",
+            occurredAt: "2026-03-02T09:00:00.000Z",
+            kind: "SPECIALIST",
+            practitionerName: "Former skin practice",
+            specialty: "Dermatology",
+          },
+        },
+      }),
+    ]);
+    expect(html).toContain('data-slot="report-visit-offer-window"');
+    expect(html).toContain("Since your last Dermatology visit on");
+    expect(html).toContain("Use this window");
+  });
+
+  it("says why on the default window", () => {
+    const html = render([
+      visit({
+        id: "first",
+        preparation: { from: "2026-07-23", basis: "default", since: null },
+      }),
+    ]);
+    expect(html).toContain("The last 90 days");
+    expect(html).toContain(
+      "No earlier visit with the same practice, specialty or kind.",
+    );
+  });
+
+  it("applies the server's start and the appointment's day on a press", () => {
+    const at = new Date(Date.now() + 5 * DAY_MS);
+    const window = visitReportWindow(
+      visit({
+        id: "derm",
+        occurredAt: at.toISOString(),
+        preparation: { from: "2026-03-02", basis: "default", since: null },
+      }),
+    );
+    expect(window.from).toBe("2026-03-02");
+    expect(window.to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // Without a window from the server, only the end moves.
+    expect(visitReportWindow(visit({ id: "plain" })).from).toBeNull();
   });
 });
