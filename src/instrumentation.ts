@@ -79,57 +79,76 @@ export async function register() {
       // A diagnostic must never break boot.
     }
 
-    const { shouldRunWorker } = await import("@/lib/process-type");
+    // The background role starts after the server is up. Awaiting it here
+    // held every request, `/api/health` included, for the seconds pg-boss
+    // needs to start, provision its queues and run the boot discovery; the
+    // probe now answers `starting` meanwhile. A request that enqueues while
+    // the boss is not bound yet takes the same path as during a producer
+    // reconnect: a garnish skips its enqueue (the owning cron catches up),
+    // and a route that needs the worker answers 503 until it is up.
+    const [{ shouldRunWorker }, { markStartup }] = await Promise.all([
+      import("@/lib/process-type"),
+      import("@/lib/boot/startup-state"),
+    ]);
+    markStartup("starting");
     if (!shouldRunWorker()) {
       // Split deployment: web requests still produce queue jobs, but this
       // process owns no schedules, supervision, or consumers.
-      try {
-        const { startGlobalBossProducer } =
-          await import("@/lib/jobs/boss-instance");
-        const boss = await startGlobalBossProducer(process.env.DATABASE_URL);
-        if (boss) {
-          const { registerShutdownHandlers } =
-            await import("@/lib/jobs/reminder/worker-lifecycle");
-          registerShutdownHandlers(boss);
+      void (async () => {
+        try {
+          const { startGlobalBossProducer } =
+            await import("@/lib/jobs/boss-instance");
+          const boss = await startGlobalBossProducer(process.env.DATABASE_URL);
+          if (boss) {
+            const { registerShutdownHandlers } =
+              await import("@/lib/jobs/reminder/worker-lifecycle");
+            registerShutdownHandlers(boss);
+          }
+          markStartup(boss ? "ready" : "failed");
+        } catch (err) {
+          markStartup("failed");
+          // Queue-backed garnishes degrade independently; never make the web
+          // server unavailable because its producer connection failed.
+          console.error(
+            "[instrumentation] Failed to start pg-boss producer:",
+            err,
+          );
         }
-      } catch (err) {
-        // Queue-backed garnishes degrade independently; never make the web
-        // server unavailable because its producer connection failed.
-        console.error(
-          "[instrumentation] Failed to start pg-boss producer:",
-          err,
-        );
-      }
+      })();
       return;
     }
 
-    const { WideEventBuilder } = await import("@/lib/logging/event-builder");
-    const { emitIfSampled } = await import("@/lib/logging/transports");
+    void (async () => {
+      const { WideEventBuilder } = await import("@/lib/logging/event-builder");
+      const { emitIfSampled } = await import("@/lib/logging/transports");
 
-    // Emit startup event
-    const startupEvt = new WideEventBuilder("background");
-    startupEvt.setBackground({ task_name: "startup" });
+      // Emit startup event
+      const startupEvt = new WideEventBuilder("background");
+      startupEvt.setBackground({ task_name: "startup" });
 
-    try {
-      const { startReminderWorker } =
-        await import("@/lib/jobs/reminder-worker");
-      await startReminderWorker();
+      try {
+        const { startReminderWorker } =
+          await import("@/lib/jobs/reminder-worker");
+        await startReminderWorker();
+        markStartup("ready");
 
-      startupEvt.addMeta("reminder_worker", "started");
-      startupEvt.finish();
-      emitIfSampled(startupEvt.toJSON());
-    } catch (err) {
-      startupEvt.setError(err);
-      startupEvt.addMeta("reminder_worker", "failed");
-      startupEvt.finish();
-      emitIfSampled(startupEvt.toJSON());
+        startupEvt.addMeta("reminder_worker", "started");
+        startupEvt.finish();
+        emitIfSampled(startupEvt.toJSON());
+      } catch (err) {
+        markStartup("failed");
+        startupEvt.setError(err);
+        startupEvt.addMeta("reminder_worker", "failed");
+        startupEvt.finish();
+        emitIfSampled(startupEvt.toJSON());
 
-      // Still log to stderr for container health checks
-      console.error(
-        "[instrumentation] CRITICAL: Failed to start reminder worker:",
-        err,
-      );
-    }
+        // Still log to stderr for container health checks
+        console.error(
+          "[instrumentation] CRITICAL: Failed to start reminder worker:",
+          err,
+        );
+      }
+    })();
   }
 }
 

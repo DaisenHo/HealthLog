@@ -9,6 +9,11 @@
  * prefilter's read answering nothing, which is the pre-v1.42 path where every
  * row went through the reconciler. Statuses, reasons and counters must match
  * exactly; only the transaction count may differ.
+ *
+ * v1.44 — the golden run is also blind to the set-based insert: its
+ * `INSERT … ON CONFLICT DO NOTHING` stand-in lands nothing, so every row
+ * reaches the reconciler one at a time, the sequential path. The shipped run
+ * takes the set insert, and the two must still leave the same table.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
@@ -29,6 +34,8 @@ const store = vi.hoisted(() => ({
   rows: [] as StoredRow[],
   /** Golden mode: the prefilter's read answers nothing. */
   prefilterBlind: false,
+  /** Golden mode: the set-based insert lands nothing. */
+  setInsertBlind: false,
   nextId: 1,
 }));
 
@@ -81,12 +88,70 @@ vi.mock("@/lib/db", () => {
         },
       ),
     },
-    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn({})),
+    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) =>
+      fn({
+        measurement: {
+          // `INSERT … ON CONFLICT DO NOTHING` over both unique identities,
+          // in VALUES order, returning the rows that landed.
+          createManyAndReturn: async (args: {
+            data: Array<{
+              userId: string;
+              type: string;
+              source: string;
+              externalId: string;
+              measuredAt: Date;
+              sleepStage: string | null;
+              value: number;
+            }>;
+          }) => {
+            if (store.setInsertBlind) return [];
+            const landed: Array<{
+              type: string;
+              source: string;
+              externalId: string;
+            }> = [];
+            for (const d of args.data) {
+              const scope = store.rows.filter(
+                (r) =>
+                  r.userId === d.userId &&
+                  r.type === d.type &&
+                  r.source === d.source,
+              );
+              const conflict = scope.some(
+                (r) =>
+                  r.externalId === d.externalId ||
+                  (sameInstant(r.measuredAt, d.measuredAt) &&
+                    r.sleepStage === (d.sleepStage ?? null)),
+              );
+              if (conflict) continue;
+              store.rows.push({
+                id: `m${store.nextId++}`,
+                userId: d.userId,
+                type: d.type,
+                source: d.source,
+                externalId: d.externalId,
+                measuredAt: d.measuredAt,
+                sleepStage: d.sleepStage ?? null,
+                value: d.value,
+                deletedAt: null,
+              });
+              landed.push({
+                type: d.type,
+                source: d.source,
+                externalId: d.externalId,
+              });
+            }
+            return landed;
+          },
+        },
+      }),
+    ),
   };
   return { prisma };
 });
 
 vi.mock("@/lib/measurements/reconcile-external-measurement", () => ({
+  lockMeasurementUser: async () => undefined,
   reconcileExternalMeasurement: async (
     _tx: unknown,
     desired: {
@@ -283,6 +348,7 @@ async function golden(setup: () => void, entries: Entry[]) {
   store.nextId = 1;
   setup();
   store.prefilterBlind = true;
+  store.setInsertBlind = true;
   vi.mocked(prisma.$transaction).mockClear();
   const old = await post(entries);
   const oldTransactions = vi.mocked(prisma.$transaction).mock.calls.length;
@@ -292,6 +358,7 @@ async function golden(setup: () => void, entries: Entry[]) {
   store.nextId = 1;
   setup();
   store.prefilterBlind = false;
+  store.setInsertBlind = false;
   vi.mocked(prisma.$transaction).mockClear();
   const next = await post(entries);
   const transactions = vi.mocked(prisma.$transaction).mock.calls.length;
@@ -304,6 +371,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   store.rows = [];
   store.prefilterBlind = false;
+  store.setInsertBlind = false;
   vi.mocked(getSession).mockResolvedValue({
     session: { id: "s", expiresAt: new Date(NOW + HOUR) },
     user: { id: USER, username: "u", role: "USER" as const },
@@ -334,7 +402,9 @@ describe("exact-duplicate prefilter (v1.42)", () => {
       entries,
     );
     expect(next.duplicates).toBe(500);
-    expect(oldTransactions).toBe(500);
+    // Sequentially: two set-insert statements that land nothing, then one
+    // reconciler transaction per row.
+    expect(oldTransactions).toBe(502);
     expect(transactions).toBe(0);
   });
 
@@ -366,7 +436,8 @@ describe("exact-duplicate prefilter (v1.42)", () => {
       weight("uuid-move", new Date(NOW - DAY)),
     ]);
     expect(next.entries[0].status).toBe("updated");
-    expect(transactions).toBe(1);
+    // The set insert skips it on the external identity, the reconciler moves it.
+    expect(transactions).toBe(2);
   });
 
   it("4: the same id with another sleep stage still reconciles", async () => {
@@ -389,7 +460,7 @@ describe("exact-duplicate prefilter (v1.42)", () => {
       sleepStage: 3,
     };
     const { transactions } = await golden(setup, [entry]);
-    expect(transactions).toBe(1);
+    expect(transactions).toBe(2);
   });
 
   it("5: `stats:` rows are never prefiltered; a second snapshot is superseded", async () => {
@@ -613,5 +684,90 @@ describe("folded_window guard (v1.42)", () => {
     });
     const data = await post([{ ...pulse("manual-hr", old), source: "MANUAL" }]);
     expect(data.entries[0].status).toBe("inserted");
+  });
+});
+
+describe("set-based insert (v1.44)", () => {
+  it("500 fresh samples land in two statements, as the reconciler would have", async () => {
+    const entries = Array.from({ length: 500 }, (_, i) =>
+      pulse(`fresh-${i}`, new Date(NOW - DAY - i * 60_000), 60 + (i % 30)),
+    );
+    const { next, oldTransactions, transactions } = await golden(
+      () => undefined,
+      entries,
+    );
+    expect(next.inserted).toBe(500);
+    expect(oldTransactions).toBe(502);
+    expect(transactions).toBe(2);
+  });
+
+  it("a mix of fresh, moved and resurrected rows leaves the same table", async () => {
+    const at = (h: number) => new Date(NOW - DAY - h * HOUR);
+    const setup = () => {
+      // Moves: the stored row sits at another instant.
+      seed({ type: "WEIGHT", externalId: "moved", measuredAt: at(9) });
+      // Resurrects: a tombstone at a different instant under the same id.
+      seed({
+        type: "WEIGHT",
+        externalId: "back",
+        measuredAt: at(8),
+        deletedAt: new Date(NOW - HOUR),
+      });
+      // Natural-identity collision under another id: reconciled, not inserted.
+      seed({ type: "WEIGHT", externalId: "other", measuredAt: at(3) });
+    };
+    const { next, transactions } = await golden(setup, [
+      weight("fresh-a", at(1)),
+      weight("moved", at(2)),
+      weight("collides", at(3)),
+      weight("fresh-b", at(4)),
+      weight("back", at(5)),
+      weight("fresh-c", at(6)),
+    ]);
+    expect(next.entries.map((e) => e.status)).toEqual([
+      "inserted",
+      "updated",
+      "updated",
+      "inserted",
+      "updated",
+      "inserted",
+    ]);
+    // One set statement, then the three rows it skipped.
+    expect(transactions).toBe(4);
+  });
+
+  it("a row sharing an identity in the batch flushes the buffer first", async () => {
+    const at = new Date(NOW - DAY);
+    const { next } = await golden(
+      () => undefined,
+      [
+        weight("solo", new Date(at.getTime() - HOUR)),
+        weight("twice", at),
+        weight("twice", at),
+      ],
+    );
+    expect(next.entries.map((e) => e.status)).toEqual([
+      "inserted",
+      "inserted",
+      "duplicate",
+    ]);
+  });
+
+  it("keeps the order when a later reconcile would claim a buffered row's slot", async () => {
+    // Stored X at t1. C moves X to t5; D and E share t1, so neither is
+    // buffered. Sequentially C frees t1 before D arrives: D inserts, E
+    // merges into D. Reconciling D before C would instead take X's row for
+    // D and leave C to insert, a different table with the same rows.
+    const t1 = new Date(NOW - DAY - HOUR);
+    const t5 = new Date(NOW - DAY - 5 * HOUR);
+    const { next } = await golden(
+      () => seed({ type: "WEIGHT", externalId: "X", measuredAt: t1 }),
+      [weight("X", t5), weight("Y", t1), weight("Z", t1)],
+    );
+    expect(next.entries.map((e) => e.status)).toEqual([
+      "updated",
+      "inserted",
+      "updated",
+    ]);
   });
 });

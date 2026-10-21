@@ -22852,8 +22852,9 @@ paths:
                   - $ref: "#/components/schemas/HealthAdminResponse"
                   - $ref: "#/components/schemas/HealthPublicResponse"
         "503":
-          description: "Degraded — the database did not answer, or a role this process runs is not up. Same body shape as the 200,
-            with `status: \"degraded\"`. A restart loop reports this rather than failing to answer, so a monitor can
+          description: "Degraded — the database did not answer within two seconds, or a role this process runs is not up. Same
+            body shape as the 200, with `status: \"degraded\"`, and `reason: \"starting\"` while the background role is
+            still coming up after a start. A restart loop reports this rather than failing to answer, so a monitor can
             tell 'starting' from 'gone'."
           content:
             application/json:
@@ -84210,14 +84211,18 @@ components:
         when the process serves web, and the worker loop is running when the process runs the worker. `degraded` on any
         of those failing."
     HealthReason:
-      description: "Present only when the process refuses to serve for a reason a person has to fix.
-        `encryption_key_mismatch`: the configured encryption key cannot open the data in this database (checked at
-        boot). Every other route then answers 503 with `meta.errorCode` `encryption.key_mismatch`, and background jobs
-        are not started. Fix: restore the original key, point the server at the matching database, or start with an
-        empty one; then restart."
+      description: "Why a `degraded` process is degraded, when it is something other than a component failure.
+        `encryption_key_mismatch`: the process refuses to serve for a reason a person has to fix; the configured
+        encryption key cannot open the data in this database (checked at boot). Every other route then answers 503 with
+        `meta.errorCode` `encryption.key_mismatch`, and background jobs are not started. Fix: restore the original key,
+        point the server at the matching database, or start with an empty one; then restart. `starting`: the database
+        answers but the background role (the pg-boss worker, or the producer of a web-only process) is still coming up
+        after a start. Transient; nothing to fix, poll again. The probe answers at once while it lasts rather than
+        waiting for the start to finish."
       type: string
       enum:
         - encryption_key_mismatch
+        - starting
     HealthPublicResponse:
       type: object
       properties:

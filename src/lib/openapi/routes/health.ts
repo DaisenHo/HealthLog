@@ -26,11 +26,14 @@ const healthStatusEnum = z.enum(["ok", "degraded"]).meta({
     "`ok` when the database answers AND every role this process runs holds up: the pg-boss producer is bound when the process serves web, and the worker loop is running when the process runs the worker. `degraded` on any of those failing.",
 });
 
-const healthReason = z.enum(["encryption_key_mismatch"]).optional().meta({
-  id: "HealthReason",
-  description:
-    "Present only when the process refuses to serve for a reason a person has to fix. `encryption_key_mismatch`: the configured encryption key cannot open the data in this database (checked at boot). Every other route then answers 503 with `meta.errorCode` `encryption.key_mismatch`, and background jobs are not started. Fix: restore the original key, point the server at the matching database, or start with an empty one; then restart.",
-});
+const healthReason = z
+  .enum(["encryption_key_mismatch", "starting"])
+  .optional()
+  .meta({
+    id: "HealthReason",
+    description:
+      "Why a `degraded` process is degraded, when it is something other than a component failure. `encryption_key_mismatch`: the process refuses to serve for a reason a person has to fix; the configured encryption key cannot open the data in this database (checked at boot). Every other route then answers 503 with `meta.errorCode` `encryption.key_mismatch`, and background jobs are not started. Fix: restore the original key, point the server at the matching database, or start with an empty one; then restart. `starting`: the database answers but the background role (the pg-boss worker, or the producer of a web-only process) is still coming up after a start. Transient; nothing to fix, poll again. The probe answers at once while it lasts rather than waiting for the start to finish.",
+  });
 
 const healthPublicResponse = z
   .object({ status: healthStatusEnum, reason: healthReason })
@@ -92,7 +95,7 @@ export const healthPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "503": {
           description:
-            "Degraded — the database did not answer, or a role this process runs is not up. Same body shape as the 200, with `status: \"degraded\"`. A restart loop reports this rather than failing to answer, so a monitor can tell 'starting' from 'gone'.",
+            "Degraded — the database did not answer within two seconds, or a role this process runs is not up. Same body shape as the 200, with `status: \"degraded\"`, and `reason: \"starting\"` while the background role is still coming up after a start. A restart loop reports this rather than failing to answer, so a monitor can tell 'starting' from 'gone'.",
           content: {
             "application/json": {
               schema: z.union([healthAdminResponse, healthPublicResponse]),

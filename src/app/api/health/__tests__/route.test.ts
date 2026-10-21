@@ -163,3 +163,53 @@ describe("GET /api/health under ENCRYPTION_KEY_CHECK=warn", () => {
     }
   });
 });
+
+describe("GET /api/health while the background role starts", () => {
+  it("says `starting` at once, and `ok` when the role is up", async () => {
+    const { markStartup } = await import("@/lib/boot/startup-state");
+    vi.stubEnv("HEALTHLOG_PROCESS_TYPE", "web");
+    markStartup("starting");
+    try {
+      const starting = await health();
+      expect(starting.response.status).toBe(503);
+      expect(starting.body).toEqual({ status: "degraded", reason: "starting" });
+
+      getGlobalBoss.mockReturnValue({});
+      markStartup("ready");
+      const ready = await health();
+      expect(ready.response.status).toBe(200);
+      expect(ready.body).toEqual({ status: "ok" });
+    } finally {
+      markStartup("ready");
+    }
+  });
+
+  it("does not call a failed start `starting`", async () => {
+    const { markStartup } = await import("@/lib/boot/startup-state");
+    vi.stubEnv("HEALTHLOG_PROCESS_TYPE", "web");
+    markStartup("failed");
+    try {
+      const { response, body } = await health();
+      expect(response.status).toBe(503);
+      expect(body).toEqual({ status: "degraded" });
+    } finally {
+      markStartup("ready");
+    }
+  });
+
+  it("does not wait on a database that does not answer", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubEnv("HEALTHLOG_PROCESS_TYPE", "web");
+      getGlobalBoss.mockReturnValue({});
+      queryRaw.mockImplementation(() => new Promise(() => undefined));
+      const pending = health();
+      await vi.advanceTimersByTimeAsync(2_000);
+      const { response, body } = await pending;
+      expect(response.status).toBe(503);
+      expect(body).toEqual({ status: "degraded" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
