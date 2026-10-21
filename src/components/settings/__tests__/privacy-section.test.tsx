@@ -55,7 +55,7 @@ function render(node: React.ReactNode, locale: "en" | "de" = "en") {
 }
 
 describe("<PrivacySection> — assembled Data & Privacy dashboard", () => {
-  it("renders the assembled sections (encryption, retention, export, delete, sessions, activity)", () => {
+  it("renders the assembled sections (encryption, retention, delete)", () => {
     const html = render(<PrivacySection />);
     // Encryption-at-rest block driven from the seeded summary.
     expect(html).toContain("AES-256-GCM");
@@ -63,15 +63,14 @@ describe("<PrivacySection> — assembled Data & Privacy dashboard", () => {
     expect(html).toContain("365");
     // The honest backup↔deletion lag disclosure is present.
     expect(html.toLowerCase()).toContain("backup");
-    // Links to the existing export + destructive surfaces (assembly, not rebuild).
-    expect(html).toContain('href="/settings/export"');
-    expect(html).toContain('href="/settings/gesundheitsakte"');
+    // Links to the destructive surface (assembly, not rebuild).
     expect(html).toContain('href="/settings/advanced"');
-    // Embedded active-session + security-activity cards.
-    expect(html).toContain("settings-security-sessions-card");
-    // Trusted devices now lives here (and only here) — its single home is the
-    // Privacy dashboard, not the Security section.
-    expect(html).toContain("settings-trusted-devices-card");
+    // v1.44 — sessions, trusted devices and the activity feed live under
+    // Security, and the duplicate export card is gone: Export & import and
+    // the Health record sit beside this page in the Data group.
+    expect(html).not.toContain("settings-security-sessions-card");
+    expect(html).not.toContain("settings-trusted-devices-card");
+    expect(html).not.toContain('href="/settings/export"');
   });
 
   it("shows a loading placeholder for the retention block before the summary resolves", () => {

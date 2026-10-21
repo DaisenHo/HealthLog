@@ -7,6 +7,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import { PasswordCard } from "@/components/settings/password-card";
+import { SecurityActivityCard } from "@/components/settings/security-activity-card";
+import { SecuritySessionsCard } from "@/components/settings/security-sessions-card";
+import { TrustedDevicesCard } from "@/components/settings/trusted-devices-card";
 import { TotpCard } from "./totp-card";
 import { SecurityKeysCard, type WebauthnKeyInfo } from "./security-keys-card";
 import { PasskeyListSection } from "./passkey-list-section";
@@ -79,6 +82,15 @@ export function SecuritySection() {
           `/api/auth/me/mfa` that never answers must not take it down with the
           cards that do need the status. */}
       <PasswordCard />
+
+      {/* v1.44 — who is signed in and what happened, beside the controls
+          that decide how one signs in. These lived on the privacy page;
+          `/settings/privacy#sessions` (and the other two anchors) forward
+          here. Outside the status conditional for the same reason as the
+          password: they read their own routes. */}
+      <SecuritySessionsCard isAuthenticated={isAuthenticated} />
+      <TrustedDevicesCard isAuthenticated={isAuthenticated} />
+      <SecurityActivityCard isAuthenticated={isAuthenticated} />
     </div>
   );
 }

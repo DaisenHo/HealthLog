@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Info, Loader2, MessageCircle, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,8 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { isTelegramFormDirty } from "@/components/settings/channel-form-dirty";
-import {
-  optimisticallySetChannelEnabled,
-  persistChannelEnabled,
-  rollbackChannelEnabled,
-} from "@/components/settings/notification-channel-toggle";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
@@ -39,9 +36,10 @@ export function TelegramCard({
   const queryClient = useQueryClient();
   const [botToken, setBotToken] = useState("");
   const [chatId, setChatId] = useState("");
+  // The enable switch is a draft field: it saves with the form's one Save.
+  const [enabled, setEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { data: settings } = useQuery({
     queryKey: queryKeys.telegramSettings(),
@@ -52,67 +50,25 @@ export function TelegramCard({
   });
 
   // Sync from server using the React-recommended "previous-payload-id"
-  // pattern instead of setState-in-effect. This avoids the strict
-  // `react-hooks/set-state-in-effect` lint failure that the legacy file
-  // disabled at module scope.
-  const settingsKey = settings ? (settings.chatId ?? "") : null;
+  // pattern instead of setState-in-effect. Reseeds after every save, so the
+  // switch reads what the server stored.
+  const settingsKey = settings
+    ? `${settings.chatId ?? ""}|${settings.enabled}`
+    : null;
   const [seededKey, setSeededKey] = useState<string | null>(null);
   if (settingsKey && settingsKey !== seededKey) {
     setSeededKey(settingsKey);
     if (settings!.chatId) setChatId(settings!.chatId);
+    setEnabled(settings!.enabled);
   }
-  const dirty = isTelegramFormDirty({ botToken, chatId }, settings);
-
-  const toggleEnabled = useMutation<
-    void,
-    Error,
-    boolean,
-    TelegramSettings | undefined
-  >({
-    mutationFn: (enabled) =>
-      persistChannelEnabled(
-        "/api/settings/telegram",
-        enabled,
-        t("settings.savingError"),
-      ),
-    onMutate: async (enabled) => {
-      const queryKey = queryKeys.telegramSettings();
-      await queryClient.cancelQueries({ queryKey });
-      setMsg(null);
-      setMsgType(null);
-      return optimisticallySetChannelEnabled<TelegramSettings>(
-        queryClient,
-        queryKey,
-        enabled,
-      );
-    },
-    onSuccess: () => {
-      setMsg(t("settings.saved"));
-      setMsgType("success");
-    },
-    onError: (err, _enabled, previous) => {
-      rollbackChannelEnabled(
-        queryClient,
-        queryKeys.telegramSettings(),
-        previous,
-      );
-      setMsg(err.message);
-      setMsgType("error");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.telegramSettings() });
-    },
-  });
+  const dirty = isTelegramFormDirty({ botToken, chatId, enabled }, settings);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    setMsg(null);
-    setMsgType(null);
+    setError(null);
 
-    const body: Record<string, unknown> = {
-      enabled: settings?.enabled ?? false,
-    };
+    const body: Record<string, unknown> = { enabled };
     if (botToken.trim()) body.botToken = botToken.trim();
     if (chatId !== (settings?.chatId ?? "")) body.chatId = chatId;
 
@@ -126,16 +82,16 @@ export function TelegramCard({
       }).catch(() => null);
 
       if (res?.ok) {
-        setMsg(t("settings.saved"));
-        setMsgType("success");
+        toastWrittenOutcome("success", t("settings.saved"));
         setBotToken("");
         queryClient.invalidateQueries({ queryKey: queryKeys.telegram() });
       } else {
         const json = (await res?.json().catch(() => null)) as {
           error?: string;
         } | null;
-        setMsg(json?.error || t("settings.savingError"));
-        setMsgType("error");
+        const message = json?.error || t("settings.savingError");
+        setError(message);
+        showErrorToast(message);
       }
     } finally {
       setSaving(false);
@@ -192,9 +148,9 @@ export function TelegramCard({
           <div className="flex items-center gap-3">
             <Switch
               id="tg-enabled"
-              checked={settings?.enabled ?? false}
-              onCheckedChange={(checked) => toggleEnabled.mutate(checked)}
-              disabled={saving || toggleEnabled.isPending}
+              checked={enabled}
+              onCheckedChange={setEnabled}
+              disabled={saving}
             />
             <Label htmlFor="tg-enabled" className="cursor-pointer">
               {t("settings.enableNotifications")}
@@ -209,14 +165,9 @@ export function TelegramCard({
             </ol>
           </SettingsInfoTile>
 
-          {msg && (msgType === "error" || !dirty) && (
-            <p
-              role="alert"
-              className={`text-sm ${
-                msgType === "success" ? "text-success" : "text-destructive"
-              }`}
-            >
-              {msg}
+          {error && (
+            <p role="alert" className="text-destructive text-sm">
+              {error}
             </p>
           )}
 
@@ -226,11 +177,7 @@ export function TelegramCard({
               disabled={!settings?.hasBotToken}
               unsavedChanges={dirty}
             />
-            <Button
-              type="submit"
-              disabled={saving || toggleEnabled.isPending}
-              className="min-h-11"
-            >
+            <Button type="submit" disabled={saving} className="min-h-11">
               {saving ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
               ) : (

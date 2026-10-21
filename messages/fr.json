@@ -3273,12 +3273,9 @@
         "provider": "Répond avec",
         "modelManaged": "Le modèle de ce fournisseur se règle dans les paramètres IA.",
         "noProvider": "Aucun fournisseur disponible",
-        "saving": "Enregistrement…",
-        "saveFailed": "Impossible d’enregistrer cette modification.",
         "allSettings": "Tous les paramètres IA",
-        "providerNotActive": "{provider} n'a pas pu prendre le relais : aucune connexion ni clé valide. Configurez-le dans les réglages IA.",
         "operatorCodex": "ChatGPT (partagé par l'opérateur)",
-        "operatorManaged": "L'opérateur de votre serveur gère cette connexion. Dès qu'un de vos propres fournisseurs est configuré, c'est lui qui répond en premier."
+        "changeModel": "Modifier dans Réglages > IA"
       },
       "answer": {
         "scrollToBottom": "Aller au dernier message",
@@ -5299,12 +5296,17 @@
       "groups": {
         "account": "Compte",
         "yourData": "Vos données",
-        "display": "Affichage",
         "healthProfile": "Profil de santé",
         "ai": "IA",
         "connectivity": "Connectivité",
-        "system": "Système"
-      }
+        "system": "Système",
+        "tracking": "Suivi",
+        "arrangement": "Disposition",
+        "notifications": "Notifications",
+        "connections": "Connexions",
+        "data": "Données"
+      },
+      "allSections": "Toutes les sections"
     },
     "sharedRecord": {
       "managedSettings": {
@@ -5445,7 +5447,21 @@
         "remindersHeading": "Rappels",
         "matrixLink": "Notifications par canal",
         "channelsLink": "Canaux de diffusion",
-        "displayHeading": "Sur ton téléphone"
+        "displayHeading": "Sur ton téléphone",
+        "elsewhere": {
+          "title": "Réglés là où ils se rattachent",
+          "description": "Ces rappels se règlent à côté de ce qu’ils concernent.",
+          "doses": {
+            "title": "Prises de médicaments",
+            "description": "Les heures de prise et les rappels se règlent sur chaque médicament.",
+            "link": "Ouvrir les médicaments"
+          },
+          "cycle": {
+            "title": "Cycle",
+            "description": "Les rappels de règles et de fenêtre fertile s’activent par canal dans la grille des notifications.",
+            "link": "Ouvrir la grille des notifications"
+          }
+        }
       },
       "layout": {
         "title": "Disposition",
@@ -5458,7 +5474,7 @@
           "title": "Analyses",
           "description": "Ordre de la vue d'ensemble et des onglets de navigation."
         },
-        "subtitle": "Choisissez ce qu'affichent le tableau de bord, les analyses et les modules de suivi, et dans quel ordre.",
+        "subtitle": "Choisissez l’ordre et l’affichage du tableau de bord, des analyses et des listes de suivi.",
         "medications": {
           "title": "Médicaments",
           "description": "Vue en liste et ordre manuel."
@@ -5474,10 +5490,6 @@
         "vorsorge": {
           "title": "Examens",
           "description": "Vue en liste et ordre des rappels."
-        },
-        "mood": {
-          "title": "Étiquettes d’humeur",
-          "description": "Groupes, étiquettes et étiquettes archivées du sélecteur d’humeur."
         },
         "documents": {
           "title": "Documents",
@@ -5869,7 +5881,28 @@
         },
         "manageIn": "Gérer dans {section}",
         "operatorDisabled": "Désactivé sur tout le serveur",
-        "subtitle": "Choisissez les domaines de suivi affichés par HealthLog."
+        "subtitle": "Choisissez les domaines de suivi affichés par HealthLog.",
+        "backToHub": "Retour à Modules",
+        "openModuleSettings": "Réglages du module",
+        "pages": {
+          "medications": {
+            "title": "Médicaments",
+            "description": "Sites d’injection que la rotation laisse de côté."
+          },
+          "mood": {
+            "title": "Étiquettes d’humeur",
+            "description": "Groupes, vos propres étiquettes et les étiquettes archivées."
+          },
+          "labs": {
+            "title": "Analyses",
+            "description": "Biomarqueurs et reconnaissance de texte sur l’appareil pour les comptes rendus d’analyses."
+          },
+          "arrangementTitle": "Ordre et affichage",
+          "arrangementDescription": "Le tri et l’affichage de cette liste se règlent dans Disposition.",
+          "openArrangement": "Ouvrir dans Disposition",
+          "moduleSettingsTitle": "Réglages du module",
+          "moduleSettingsDescription": "Tout le reste se trouve sur la page du module, dans Modules."
+        }
       },
       "gesundheitsakte": {
         "title": "Dossier médical",
@@ -6012,6 +6045,10 @@
       "access": {
         "title": "Accès partagé",
         "subtitle": "Qui peut ouvrir votre dossier de santé, et lequel vous pouvez ouvrir."
+      },
+      "preview": {
+        "title": "Fonctions en aperçu",
+        "subtitle": "Essayez ce qui n’est pas encore terminé. Tout reste désactivé ici tant que vous ne l’activez pas."
       }
     },
     "profile": "Profil",
@@ -7025,21 +7062,19 @@
     },
     "integrationSetupGuide": "Guide de configuration",
     "coach": {
-      "activate": {
-        "title": "Activer le Coach",
-        "description": "Affiche le bouton et le panneau du Coach.",
-        "toggleAria": "Activer le bouton et le panneau du Coach",
-        "savedOn": "Coach activé.",
-        "savedOff": "Coach masqué.",
-        "saveError": "Impossible d enregistrer la modification. Veuillez réessayer."
-      },
       "memory": {
         "edit": "Modifier",
         "source": {
           "user": "de toi",
           "coach": "du Coach"
         }
-      }
+      },
+      "state": {
+        "title": "Coach",
+        "description": "Si le bouton et le panneau du Coach s’affichent. L’interrupteur se trouve dans Modules."
+      },
+      "nudgesMoved": "Se règlent avec vos autres rappels dans Notifications.",
+      "openNudges": "Ouvrir dans Notifications"
     },
     "integrationRedirectGuide": {
       "intro": "Cette connexion passe par votre propre application développeur {provider}, environ 5 minutes de configuration :",
@@ -7188,12 +7223,6 @@
         "delivery": "Journal d'envoi des notifications : {days} jours",
         "unavailable": "Les détails de conservation sont indisponibles pour le moment."
       },
-      "export": {
-        "title": "Télécharger mes données",
-        "description": "Vos enregistrements en CSV ou JSON, ou un dossier complet pour votre médecin.",
-        "openExport": "Export et sauvegarde",
-        "openHealthRecord": "Dossier médical"
-      },
       "delete": {
         "title": "Supprimer ou réinitialiser",
         "description": "Supprimez complètement votre compte, ou effacez vos données de santé tout en conservant le compte.",
@@ -7209,7 +7238,6 @@
     "mcp": {
       "enableTitle": "Point de terminaison MCP distant",
       "enableDescription": "Autorisez un assistant compatible MCP (Claude.ai, ChatGPT) à lire vos données de santé via un jeton restreint.",
-      "enableToggleLabel": "Activer le point de terminaison MCP",
       "endpointLabel": "URL du connecteur",
       "connectDescription": "Collez cette URL dans la configuration du connecteur personnalisé de votre assistant, puis autorisez avec le jeton ci-dessous ou connectez-vous lorsque vous y êtes invité.",
       "tokensTitle": "Jetons du connecteur",
@@ -7228,7 +7256,8 @@
       "connectionRevokeFailed": "Impossible de déconnecter l'assistant.",
       "tokensDetail": "Le jeton n'est affiché qu'une seule fois.",
       "connectionsDetail": "Révoquer une connexion met fin à son accès immédiatement, y compris sa capacité à se renouveler.",
-      "tokenNamePlaceholder": "Nom, p. ex. Claude Desktop"
+      "tokenNamePlaceholder": "Nom, p. ex. Claude Desktop",
+      "offKeepsTokens": "Le désactiver met le point d’accès en pause. Vos jetons et connexions restent et fonctionnent de nouveau dès sa réactivation."
     },
     "strava": "Strava",
     "stravaDescription": "Connecte ton compte Strava pour synchroniser tes activités avec ton historique d'entraînement.",
@@ -7490,7 +7519,25 @@
     "passkeyAddedToast": "Passkey ajoutée.",
     "passkeyRemovedToast": "Passkey supprimée.",
     "integrationDisconnected": "{provider} déconnecté.",
-    "integrationDisconnectFailed": "Impossible de déconnecter {provider}."
+    "integrationDisconnectFailed": "Impossible de déconnecter {provider}.",
+    "preview": {
+      "topics": {
+        "title": "Thèmes (bêta)",
+        "description": "Ajoute une entrée Thèmes distincte, avec des pages de synthèse au-dessus des pages par mesure.",
+        "detail": "Vos pages d’analyse, la navigation et les liens restent exactement tels quels. Les pages de thèmes arrivent dans une mise à jour ultérieure ; cet interrupteur décide si vous les voyez.",
+        "savedOn": "Aperçu des thèmes activé.",
+        "savedOff": "Aperçu des thèmes désactivé."
+      },
+      "loadError": "Impossible de charger vos réglages d’aperçu.",
+      "feedbackLink": "Donner votre avis dans les discussions GitHub"
+    },
+    "timezoneSaved": "Fuseau horaire enregistré.",
+    "moduleState": {
+      "on": "Activé",
+      "off": "Désactivé",
+      "change": "Modifier dans Modules"
+    },
+    "timezoneUseDevice": "Utiliser le fuseau horaire de cet appareil ({zone})"
   },
   "admin": {
     "title": "Administration",
@@ -8881,6 +8928,10 @@
       "detailedToast": "Les notifications incluent désormais des valeurs de santé.",
       "genericToast": "Les notifications n'incluent plus de valeurs de santé.",
       "saveError": "Enregistrement impossible. Réessaie plus tard."
+    },
+    "checkupReminders": {
+      "title": "Rappels de bilans",
+      "description": "Activez ou désactivez chaque rappel de bilan."
     }
   },
   "i18n": {
@@ -9657,8 +9708,6 @@
       "description": "Saisissez la valeur ; le rappel est marqué comme fait."
     },
     "manage": {
-      "title": "Gérer les rappels",
-      "description": "Activer ou désactiver des rappels individuels.",
       "empty": "Aucun rappel à personnaliser pour l'instant."
     },
     "dashboard": {

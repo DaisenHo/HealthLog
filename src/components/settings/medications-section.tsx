@@ -11,8 +11,6 @@ import { MedicationViewToggle } from "@/components/medications/medication-view-t
 import { SettingsCard } from "@/components/settings/settings-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { InjectionSitesCard } from "@/components/settings/injection-sites-card";
-import { useAuth } from "@/hooks/use-auth";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { applyMedicationOrder } from "@/lib/medications/medication-order";
@@ -24,7 +22,7 @@ import { useMedicationListLayout } from "@/lib/queries/use-medication-list-layou
  * from a Layout-hub child to its own standalone nav entry and gathered the
  * medication-specific preferences here. v1.18.1 (D3) made medications a
  * toggleable fail-open module, so this nav entry hides when the account
- * turns the module off (the medication data routes stay live). Hosts three
+ * turns the module off (the medication data routes stay live). Hosts two
  * blocks:
  *   1. The list VIEW preference — cards vs table, written optimistically
  *      through the same `PUT /api/medications/layout` the page header
@@ -32,8 +30,9 @@ import { useMedicationListLayout } from "@/lib/queries/use-medication-list-layou
  *   2. The manual ORDER editor — two grouped lists (Aktiv / Inaktiv)
  *      with drag + arrow reordering, flushed by an explicit Save,
  *      persisted as active-ids-then-inactive-ids on the same layout row.
- *   3. Injection-site exclusions — moved here from the account profile so
- *      every medication-specific preference lives on one screen.
+ *
+ * v1.44 — Arrangement holds order and view only; the injection-site
+ * exclusions moved to the medications page under Modules.
  *
  * The list view + order both write through the same `/api/medications/layout`
  * contract the /medications page reads, so a save here repaints both views.
@@ -49,7 +48,6 @@ interface MedicationListEntry {
 
 export function MedicationsSection() {
   const { t } = useTranslations();
-  const { isAuthenticated } = useAuth();
   const { layout, isLayoutLoading, setView } = useMedicationListLayout();
 
   const { data: medications, isLoading } = useQuery({
@@ -120,11 +118,6 @@ export function MedicationsSection() {
           <MedicationOrderEditor medications={ordered} />
         )}
       </SettingsCard>
-
-      {/* v1.18.0 — injection-site exclusions are a medication setting;
-          they moved here from the account profile so all medication-specific
-          preferences live in one place. */}
-      <InjectionSitesCard isAuthenticated={isAuthenticated} />
     </div>
   );
 }

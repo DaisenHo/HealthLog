@@ -16,7 +16,6 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../dashboard-section", () => ({ DashboardSection: () => null }));
 vi.mock("../insights-section", () => ({ InsightsSection: () => null }));
 vi.mock("../medications-section", () => ({ MedicationsSection: () => null }));
-vi.mock("../mood-section", () => ({ MoodSection: () => null }));
 vi.mock("../labs-section", () => ({ LabsSection: () => null }));
 vi.mock("../illness-section", () => ({ IllnessSection: () => null }));
 vi.mock("../vorsorge-section", () => ({ VorsorgeSection: () => null }));
@@ -29,12 +28,13 @@ import {
 } from "../layout-groups";
 
 describe("layout-groups registry", () => {
-  it("exposes the eight Appearance modules as statically-generated subpage params", () => {
+  it("exposes the seven Arrangement modules as statically-generated subpage params", () => {
+    // v1.44 — mood left: its page was tag management, which lives under
+    // Settings > Modules > Mood now (`/settings/layout/mood` redirects).
     expect(LAYOUT_GROUP_IDS).toEqual([
       "dashboard",
       "insights",
       "medications",
-      "mood",
       "labs",
       "illness",
       "documents",
@@ -45,7 +45,6 @@ describe("layout-groups registry", () => {
       { module: "dashboard" },
       { module: "insights" },
       { module: "medications" },
-      { module: "mood" },
       { module: "labs" },
       { module: "illness" },
       { module: "documents" },
@@ -66,7 +65,7 @@ describe("layout-groups registry", () => {
         ? layoutGroupModule(id)
         : "not-a-group";
     expect(gate("medications")).toBe("medications");
-    expect(gate("mood")).toBe("mood");
+    expect(gate("mood")).toBe("not-a-group");
     expect(gate("labs")).toBe("labs");
     expect(gate("illness")).toBe("illness");
     // dashboard / insights / vorsorge are never gated.

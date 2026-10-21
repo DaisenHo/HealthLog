@@ -4,17 +4,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Trash2 } from "lucide-react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-button";
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -137,62 +127,38 @@ function DataResetCard() {
         </p>
       )}
       <SettingsCardActions>
-        <AlertDialog
+        <Button
+          type="button"
+          onClick={() => setConfirmOpen(true)}
+          variant="destructive"
+          size="sm"
+          disabled={deleting}
+          className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
+        >
+          {deleting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5" />
+          )}
+          {t("settings.dangerZone")}
+        </Button>
+        <ConfirmDialog
           open={confirmOpen}
           onOpenChange={(open) => {
-            // Hold the dialog open while the destructive mutation is in
-            // flight so the in-dialog pending state stays visible and a
-            // stray backdrop tap can't dismiss it mid-request.
+            // Hold the dialog open while the request runs so the pending
+            // state stays on screen and a stray dismissal cannot fire it twice.
             if (deleting) return;
             setConfirmOpen(open);
           }}
-        >
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={deleting}
-              className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
-            >
-              {deleting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5" />
-              )}
-              {t("settings.dangerZone")}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {t("settings.dangerZoneConfirm")}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {t("settings.dangerZoneConfirmDescription")}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleting}>
-                {t("common.cancel")}
-              </AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                onClick={(e) => {
-                  e.preventDefault();
-                  void handleDeleteAllData();
-                }}
-                disabled={deleting}
-                aria-busy={deleting || undefined}
-                data-slot="settings-data-reset-confirm"
-              >
-                {deleting && (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-                )}
-                {t("settings.finalDelete")}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          title={t("settings.dangerZoneConfirm")}
+          body={t("settings.dangerZoneConfirmDescription")}
+          confirmLabel={t("settings.finalDelete")}
+          onConfirm={() => void handleDeleteAllData()}
+          pending={deleting}
+          slot="settings-data-reset"
+          holdOpen
+          destructive
+        />
       </SettingsCardActions>
     </SettingsCard>
   );
@@ -291,63 +257,39 @@ function AccountDeleteCard() {
         </p>
       )}
       <SettingsCardActions>
-        <AlertDialog
+        <Button
+          type="button"
+          onClick={() => setConfirmOpen(true)}
+          variant="destructive"
+          size="sm"
+          disabled={deleting}
+          className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
+          data-slot="settings-account-delete-trigger"
+        >
+          {deleting ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5" />
+          )}
+          {t("settings.deleteAccountCta")}
+        </Button>
+        <ConfirmDialog
           open={confirmOpen}
           onOpenChange={(open) => {
-            // Hold the dialog open while the irreversible delete runs so
-            // the pending state stays on screen and a stray dismissal
-            // can't fire a second request.
+            // Hold the dialog open while the request runs so the pending
+            // state stays on screen and a stray dismissal cannot fire it twice.
             if (deleting) return;
             setConfirmOpen(open);
           }}
-        >
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={deleting}
-              className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
-              data-slot="settings-account-delete-trigger"
-            >
-              {deleting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-              ) : (
-                <Trash2 className="h-3.5 w-3.5" />
-              )}
-              {t("settings.deleteAccountCta")}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                {t("settings.deleteAccountConfirmTitle")}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {t("settings.deleteAccountConfirmDescription")}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleting}>
-                {t("common.cancel")}
-              </AlertDialogCancel>
-              <AlertDialogAction
-                variant="destructive"
-                onClick={(e) => {
-                  e.preventDefault();
-                  void handleDeleteAccount();
-                }}
-                disabled={deleting}
-                aria-busy={deleting || undefined}
-                data-slot="settings-account-delete-confirm"
-              >
-                {deleting && (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-                )}
-                {t("settings.deleteAccountFinal")}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          title={t("settings.deleteAccountConfirmTitle")}
+          body={t("settings.deleteAccountConfirmDescription")}
+          confirmLabel={t("settings.deleteAccountFinal")}
+          onConfirm={() => void handleDeleteAccount()}
+          pending={deleting}
+          slot="settings-account-delete"
+          holdOpen
+          destructive
+        />
       </SettingsCardActions>
     </SettingsCard>
   );

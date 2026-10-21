@@ -23,6 +23,68 @@ import {
   stdResponses,
 } from "./shared";
 import { WEBHOOK_PAYLOAD_FORMATS } from "@/lib/notifications/types";
+import {
+  MODULE_LIST_VIEWS,
+  MODULE_SORT_DIRS,
+} from "@/lib/settings/module-list-layout";
+import {
+  moduleListLayoutPutSchema,
+  previewFeaturesPatchSchema,
+} from "@/lib/validations/settings-prefs";
+
+const moduleListPrefsEntry = z
+  .object({
+    view: z
+      .enum(MODULE_LIST_VIEWS)
+      .describe(
+        '`cards` renders the card grid, `list` the compact list. Default "list" for labs, "cards" otherwise.',
+      ),
+    order: z
+      .array(z.string())
+      .describe(
+        "Manual order as an id allow-list. Ids missing from the live data are ignored; items missing from the list follow in the server order.",
+      ),
+    sortDir: z
+      .enum(MODULE_SORT_DIRS)
+      .describe(
+        'Sort of the labs list; `manual` follows `order`. Default "recentDesc". The other lists ignore it.',
+      ),
+    saved: z
+      .boolean()
+      .describe(
+        "True when the server holds a choice for this list; false means every field is a default.",
+      ),
+  })
+  .meta({ id: "ModuleListPrefs" });
+
+const moduleListLayoutSchema = z
+  .object({
+    version: z.literal(1),
+    lists: z.object({
+      labs: moduleListPrefsEntry,
+      illness: moduleListPrefsEntry,
+      vorsorge: moduleListPrefsEntry,
+    }),
+  })
+  .meta({
+    id: "ModuleListLayout",
+    description:
+      "Per-user presentation of the labs, illness and checkups lists. Display-only; a client that does not render a list ignores it.",
+  });
+
+const previewFeaturesSchema = z
+  .object({
+    topics: z
+      .boolean()
+      .describe(
+        "Topic overview pages above the single-metric Insights pages. Off by default.",
+      ),
+  })
+  .meta({
+    id: "PreviewFeatures",
+    description:
+      "Per-user opt-in to preview features, one boolean per flag, every flag off by default.",
+  });
 
 // v1.16.11 — the one threshold read every dose-status consumer makes
 // (cards, table, take-all-due derivation). `lateMinutes` /
@@ -853,6 +915,109 @@ export const settingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             SHARING_NOT_PERMITTED_DESCRIPTION,
           content: { "application/json": { schema: errorEnvelope } },
         },
+      },
+    },
+  },
+  "/api/settings/module-list-layout": {
+    get: {
+      tags: ["Meta"],
+      summary: "Get the list presentation of labs, illness and checkups",
+      description:
+        "Every list resolved, defaults filled in, with `saved` per list. Never writes a row.",
+      responses: {
+        "200": {
+          description: "The resolved presentation of every list.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                moduleListLayoutSchema,
+                "ModuleListLayoutEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+    put: {
+      tags: ["Meta"],
+      summary: "Change the presentation of one list",
+      description:
+        "Preserve-when-absent: the fields the body leaves out keep their stored value, and every other list stays as stored. Returns every list resolved.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: moduleListLayoutPutSchema.meta({
+              id: "ModuleListLayoutPutBody",
+            }),
+          },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The presentation as stored.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                moduleListLayoutSchema,
+                "ModuleListLayoutSavedEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/settings/preview-features": {
+    get: {
+      tags: ["Meta"],
+      summary: "Get the preview-feature opt-ins",
+      description: "Every flag, off unless the caller switched it on.",
+      responses: {
+        "200": {
+          description: "The opt-ins.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                previewFeaturesSchema,
+                "PreviewFeaturesEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+    patch: {
+      tags: ["Meta"],
+      summary: "Switch preview features on or off",
+      description:
+        "Sets the flags the body names and keeps the rest. An unknown flag or an empty body is refused with 422.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: previewFeaturesPatchSchema.meta({
+              id: "PreviewFeaturesPatchBody",
+            }),
+          },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The opt-ins as stored.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                previewFeaturesSchema,
+                "PreviewFeaturesSavedEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
       },
     },
   },

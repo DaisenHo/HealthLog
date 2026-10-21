@@ -1,107 +1,101 @@
 "use client";
 
 /**
- * v1.18.6 — client-side per-module list preferences for the
- * three secondary modules (Vorsorge, Illness, Labs).
+ * Per-list presentation for the labs, illness and checkups lists: card or
+ * list view, a manual order, and (labs only) the sort.
  *
- * These modules do not carry a server-side list-layout column the way
- * Medications does (`/api/medications/layout`). Rather than mint three new
- * Prisma columns + routes — which a parallel backend phase owns — the
- * reorder + view choice live in `localStorage`, keyed per module. The choice
- * is presentational only: it reorders / reshapes what the page already
- * fetched and never feeds a server read, so a missing or stale blob degrades
- * to the server's own default order.
+ * The choices live on the server (`GET/PUT /api/settings/module-list-layout`,
+ * `User.moduleListLayoutJson`) so they follow a person to every device. Until
+ * v1.44 they lived in this browser's `localStorage`, one key per list. Those
+ * values are carried over, never reset: when the server holds nothing for a
+ * list and this browser still has a value, the value is sent up once and the
+ * browser copy is removed after the server confirmed it. While the first read
+ * is in flight the browser copy (or the default) paints, so a person who
+ * arranged a list does not see it jump back to the default order.
  *
- * Shape per module (one localStorage key each):
- *   { view: "cards" | "list", order: string[] }
- * `order` is an id allow-list; ids absent from the live data are ignored and
- * ids present in the data but absent from `order` sort after the ordered
- * block (the server default order is preserved for the tail).
+ * The choice is presentational only: it reorders or reshapes what the page
+ * already fetched, so a missing or stale value degrades to the server order.
  */
 
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import {
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 
-export const MODULE_LIST_VIEWS = ["cards", "list"] as const;
-export type ModuleListView = (typeof MODULE_LIST_VIEWS)[number];
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { useMounted } from "@/hooks/use-mounted";
+import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
+import { useTranslations } from "@/lib/i18n/context";
+import { queryKeys } from "@/lib/query-keys";
+import {
+  isModuleListView,
+  isModuleSortDir,
+  moduleListDefaults,
+  normaliseModuleListOrder,
+  resolveModuleListLayout,
+  type ModuleListKey,
+  type ModuleListLayout,
+  type ModuleListPrefs,
+  type ModuleListView,
+  type ModuleSortDir,
+} from "@/lib/settings/module-list-layout";
 
-export type ModuleListKey = "vorsorge" | "illness" | "labs";
+export type {
+  ModuleListKey,
+  ModuleListPrefs,
+  ModuleListView,
+  ModuleSortDir,
+} from "@/lib/settings/module-list-layout";
+
+const ENDPOINT = "/api/settings/module-list-layout";
+
+/** The browser key earlier releases stored a list's choices under. */
+export function legacyModuleListStorageKey(list: ModuleListKey): string {
+  return `healthlog:module-list-prefs:${list}`;
+}
 
 /**
- * Sort choice for the Labs surface (MOD-04): order biomarker groups by the
- * recency of their most-recent reading, alphabetically by analyte name
- * (#43), or `manual`, which defers to the persisted `order` array.
+ * Parse a browser-stored blob from before the server column. Anything
+ * malformed collapses onto the defaults field by field.
  */
-export const MODULE_SORT_DIRS = [
-  "recentDesc",
-  "recentAsc",
-  "alphaAsc",
-  "alphaDesc",
-  "manual",
-] as const;
-export type ModuleSortDir = (typeof MODULE_SORT_DIRS)[number];
-
-export interface ModuleListPrefs {
-  view: ModuleListView;
-  order: string[];
-  /** Only consumed by the Labs surface; defaults to most-recent-first. */
-  sortDir: ModuleSortDir;
-}
-
-const DEFAULT_PREFS: ModuleListPrefs = {
-  view: "cards",
-  order: [],
-  sortDir: "recentDesc",
-};
-
-/**
- * Per-module default overrides applied when no preference blob is stored yet.
- * Labs defaults to the compact list view (#40) so the dense reading table is
- * the first thing the user sees; Vorsorge and Illness keep the card grid.
- */
-const MODULE_DEFAULTS: Partial<
-  Record<ModuleListKey, Partial<ModuleListPrefs>>
-> = {
-  labs: { view: "list" },
-};
-
-function defaultsFor(module: ModuleListKey): ModuleListPrefs {
-  return { ...DEFAULT_PREFS, ...MODULE_DEFAULTS[module] };
-}
-
-function storageKey(module: ModuleListKey): string {
-  return `healthlog:module-list-prefs:${module}`;
-}
-
-function isView(value: unknown): value is ModuleListView {
-  return (
-    typeof value === "string" &&
-    (MODULE_LIST_VIEWS as readonly string[]).includes(value)
-  );
-}
-
-function isSortDir(value: unknown): value is ModuleSortDir {
-  return (
-    typeof value === "string" &&
-    (MODULE_SORT_DIRS as readonly string[]).includes(value)
-  );
-}
-
 export function parseModuleListPrefs(
   raw: string | null,
-  defaults: ModuleListPrefs = DEFAULT_PREFS,
+  defaults: ModuleListPrefs,
 ): ModuleListPrefs {
   if (!raw) return defaults;
   try {
     const blob = JSON.parse(raw) as Record<string, unknown>;
-    const view = isView(blob.view) ? blob.view : defaults.view;
-    const order = Array.isArray(blob.order)
-      ? blob.order.filter((v): v is string => typeof v === "string")
-      : [];
-    const sortDir = isSortDir(blob.sortDir) ? blob.sortDir : defaults.sortDir;
-    return { view, order, sortDir };
+    return {
+      view: isModuleListView(blob.view) ? blob.view : defaults.view,
+      order: normaliseModuleListOrder(blob.order) ?? [],
+      sortDir: isModuleSortDir(blob.sortDir) ? blob.sortDir : defaults.sortDir,
+    };
   } catch {
     return defaults;
   }
+}
+
+/**
+ * The fields of a browser-stored value worth carrying over: the ones that
+ * differ from the default. The old blob always held all three fields, so a
+ * field equal to the default cannot be told apart from one never chosen and
+ * is left to follow the default.
+ */
+export function legacyModuleListPatch(
+  list: ModuleListKey,
+  raw: string | null,
+): Partial<ModuleListPrefs> {
+  if (!raw) return {};
+  const defaults = moduleListDefaults(list);
+  const legacy = parseModuleListPrefs(raw, defaults);
+  return {
+    ...(legacy.view !== defaults.view ? { view: legacy.view } : {}),
+    ...(legacy.order.length > 0 ? { order: legacy.order } : {}),
+    ...(legacy.sortDir !== defaults.sortDir ? { sortDir: legacy.sortDir } : {}),
+  };
 }
 
 /**
@@ -127,84 +121,165 @@ export function applyOrder<T>(
   return [...ordered, ...rest];
 }
 
-// A module-scoped event so every mounted hook for the same module repaints
-// when one writer flushes a change (the settings page + the module page can
-// both be alive across a client navigation without a full reload).
-const listeners = new Set<() => void>();
-function emit() {
-  for (const l of listeners) l();
+function readLegacy(list: ModuleListKey): string | null {
+  try {
+    return window.localStorage.getItem(legacyModuleListStorageKey(list));
+  } catch {
+    return null;
+  }
+}
+
+function removeLegacy(list: ModuleListKey): void {
+  try {
+    window.localStorage.removeItem(legacyModuleListStorageKey(list));
+  } catch {
+    // Storage unavailable: nothing to remove.
+  }
+}
+
+/** Lists already carried over (or checked) in this page load. */
+const carriedOver = new Set<ModuleListKey>();
+
+/**
+ * Carry a browser-stored value up to the server, once, when the server holds
+ * nothing for the list. A failed write leaves the browser copy in place and
+ * tries again on the next mount; a list the server already holds keeps the
+ * server value and drops the stale browser copy.
+ */
+export async function carryOverLegacyModuleListPrefs(deps: {
+  list: ModuleListKey;
+  layout: ModuleListLayout;
+  queryClient: QueryClient;
+}): Promise<void> {
+  const { list, layout, queryClient } = deps;
+  if (typeof window === "undefined" || carriedOver.has(list)) return;
+  carriedOver.add(list);
+  const raw = readLegacy(list);
+  if (raw === null) return;
+  if (layout.lists[list].saved) {
+    removeLegacy(list);
+    return;
+  }
+  const patch = legacyModuleListPatch(list, raw);
+  if (Object.keys(patch).length === 0) {
+    removeLegacy(list);
+    return;
+  }
+  try {
+    const saved = await apiPut<ModuleListLayout>(ENDPOINT, {
+      version: 1,
+      list,
+      ...patch,
+    });
+    if (saved) queryClient.setQueryData(queryKeys.moduleListLayout(), saved);
+    removeLegacy(list);
+  } catch {
+    carriedOver.delete(list);
+  }
+}
+
+/** Forget which lists were carried over. Tests only. */
+export function resetModuleListCarryOverForTests(): void {
+  carriedOver.clear();
+}
+
+type Translator = (
+  key: string,
+  params?: Record<string, string | number>,
+) => string;
+
+/**
+ * Apply one field optimistically (the control has to feel instant), then
+ * persist it. On failure the cache rolls back and a toast says so; a view or
+ * sort change confirms with a toast, an order change is its own feedback.
+ */
+export async function runSetModuleListPrefs(deps: {
+  list: ModuleListKey;
+  patch: Partial<ModuleListPrefs>;
+  queryClient: QueryClient;
+  t: Translator;
+}): Promise<void> {
+  const { list, patch, queryClient, t } = deps;
+  const key = queryKeys.moduleListLayout();
+  if (queryClient.isFetching({ queryKey: key }) > 0) {
+    await queryClient.cancelQueries({ queryKey: key });
+  }
+  const previous = queryClient.getQueryData<ModuleListLayout>(key);
+  const base = previous ?? resolveModuleListLayout(null);
+  queryClient.setQueryData<ModuleListLayout>(key, {
+    ...base,
+    lists: {
+      ...base.lists,
+      [list]: { ...base.lists[list], ...patch, saved: true },
+    },
+  });
+  try {
+    const saved = await apiPut<ModuleListLayout>(ENDPOINT, {
+      version: 1,
+      list,
+      ...patch,
+    });
+    if (saved) queryClient.setQueryData(key, saved);
+    if (patch.view !== undefined || patch.sortDir !== undefined) {
+      toastWrittenOutcome("success", t("settings.saved"));
+    }
+  } catch (failure) {
+    queryClient.setQueryData(key, previous);
+    showErrorToast(t("settings.savingError"), { cause: failure });
+  }
 }
 
 /**
- * Read + write the per-module list preferences. SSR-safe via
- * `useSyncExternalStore` with a null server snapshot (parsed to defaults).
+ * Read + write one list's presentation. The server value once it is read;
+ * before that, the browser copy from an earlier release, or the default.
  */
-export function useModuleListPrefs(module: ModuleListKey): {
+export function useModuleListPrefs(list: ModuleListKey): {
   prefs: ModuleListPrefs;
   setView: (view: ModuleListView) => void;
   setOrder: (order: string[]) => void;
   setSortDir: (sortDir: ModuleSortDir) => void;
 } {
-  const key = storageKey(module);
-  const defaults = useMemo(() => defaultsFor(module), [module]);
+  const queryClient = useQueryClient();
+  const { t } = useTranslations();
 
-  const subscribe = useCallback(
-    (onChange: () => void) => {
-      listeners.add(onChange);
-      const onStorage = (e: StorageEvent) => {
-        if (e.key === null || e.key === key) onChange();
-      };
-      if (typeof window !== "undefined") {
-        window.addEventListener("storage", onStorage);
-      }
-      return () => {
-        listeners.delete(onChange);
-        if (typeof window !== "undefined") {
-          window.removeEventListener("storage", onStorage);
-        }
-      };
-    },
-    [key],
-  );
+  const { data } = useQuery({
+    queryKey: queryKeys.moduleListLayout(),
+    queryFn: () => apiGet<ModuleListLayout>(ENDPOINT),
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const getSnapshot = useCallback(() => {
-    if (typeof window === "undefined") return null;
-    return window.localStorage.getItem(key);
-  }, [key]);
+  useEffect(() => {
+    if (!data) return;
+    void carryOverLegacyModuleListPrefs({ list, layout: data, queryClient });
+  }, [data, list, queryClient]);
 
-  const raw = useSyncExternalStore(subscribe, getSnapshot, () => null);
-  // `useSyncExternalStore` returns a stable `raw` string when storage hasn't
-  // changed, so keying the parse on it gives downstream `applyOrder`
-  // memoisation a stable `prefs` reference instead of a fresh object + a
-  // JSON.parse on every render.
-  const prefs = useMemo(
-    () => parseModuleListPrefs(raw, defaults),
-    [raw, defaults],
-  );
+  // The browser copy is read only after hydration, so the server render and
+  // the first client paint agree (React #418).
+  const mounted = useMounted();
+  const entry = data?.lists[list];
+  const prefs = useMemo<ModuleListPrefs>(() => {
+    if (entry) {
+      return { view: entry.view, order: entry.order, sortDir: entry.sortDir };
+    }
+    const defaults = moduleListDefaults(list);
+    if (!mounted) return defaults;
+    return parseModuleListPrefs(readLegacy(list), defaults);
+  }, [entry, list, mounted]);
 
   const write = useCallback(
-    (next: ModuleListPrefs) => {
-      if (typeof window === "undefined") return;
-      window.localStorage.setItem(key, JSON.stringify(next));
-      emit();
-    },
-    [key],
+    (patch: Partial<ModuleListPrefs>) =>
+      void runSetModuleListPrefs({ list, patch, queryClient, t }),
+    [list, queryClient, t],
   );
 
   const setView = useCallback(
-    (view: ModuleListView) =>
-      write({ ...parseModuleListPrefs(getSnapshot(), defaults), view }),
-    [write, getSnapshot, defaults],
+    (view: ModuleListView) => write({ view }),
+    [write],
   );
-  const setOrder = useCallback(
-    (order: string[]) =>
-      write({ ...parseModuleListPrefs(getSnapshot(), defaults), order }),
-    [write, getSnapshot, defaults],
-  );
+  const setOrder = useCallback((order: string[]) => write({ order }), [write]);
   const setSortDir = useCallback(
-    (sortDir: ModuleSortDir) =>
-      write({ ...parseModuleListPrefs(getSnapshot(), defaults), sortDir }),
-    [write, getSnapshot, defaults],
+    (sortDir: ModuleSortDir) => write({ sortDir }),
+    [write],
   );
 
   return { prefs, setView, setOrder, setSortDir };

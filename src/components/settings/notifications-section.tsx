@@ -1,78 +1,148 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Smartphone } from "lucide-react";
+import { Bell, BellRing, ChevronRight, Smartphone } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
+import { isSurfaceVisible } from "@/lib/modules/surface";
+import { CoachNudgeCard } from "@/components/settings/coach-nudge-card";
 import { LowStockCard } from "@/components/settings/low-stock-card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { MoodReminderCard } from "@/components/settings/mood-reminder-card";
 import { NotificationContentCard } from "@/components/settings/notification-content-card";
+import { SettingsCard } from "@/components/settings/settings-card";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { VorsorgeReminderSwitchesCard } from "@/components/measurement-reminders/vorsorge-settings";
 import { Button } from "@/components/ui/button";
+import { InlineAction } from "@/components/ui/inline-action";
 
 /**
  * `<NotificationsSection>` — Settings → Notifications ("Benachrichtigungen").
  *
- * v1.18.0 — the single module-gated home for reminder TYPES. Earlier the
- * settings carried two near-identical entries: this Notifications screen and a
- * separate "Erinnerungen" hub that only deep-linked into the canonical editors
- * ("doppelt gemoppelt"). The hub is gone (its route 301-redirects here); the
- * reminder TYPES now live centrally on this one screen.
+ * The one home for every reminder kind. A reminder whose settings belong to
+ * one place is set here; a reminder that is set where its subject lives (a
+ * medication's dose times on the medication, the cycle reminders in the
+ * per-event matrix) gets a row here that says where, so nothing has to be
+ * found by luck.
  *
- * Each reminder-type card is shown ONLY when its module is enabled, read from
- * the resolved `useAuth().user.modules` map (the same `/auth/me` map nav and
- * Insights pills gate off). Mood → `mood`, low-stock runway → `medications`
- * (a toggleable fail-open module since D3, so a missing key reads as enabled
- * and a stale `/me` payload never blanks a card).
+ * Each card is shown only while its module is on, read from the resolved
+ * `useAuth().user.modules` map and failing open, so a stale `/me` payload
+ * never blanks a card.
  *
- * v1.25.7 — delivery channels move to Settings → Integrationen (channels are
- * delivery providers, the same family as the connected services). This screen
- * keeps ONLY the reminder-TYPE content; `/settings/channels` 301-redirects to
- * `/settings/integrations#channels`.
- *
- * v1.18.6 — the page heading + subtitle come from the shared
- * `<SettingsSectionFrame>`. The proactive-Coach nudge card lives under
- * Settings → Coach (it is a Coach setting, not a generic notification).
+ * v1.18.0 — the separate "Erinnerungen" hub is gone; `/settings/reminders`
+ * redirects here. v1.25.7 — the delivery channels live under Integrations
+ * (they are delivery providers); `/settings/channels` redirects there and this
+ * page links to them. v1.44 — the Coach nudges came back from Settings > Coach
+ * and the checkup reminder switches from the checkups arrangement page; both
+ * old places link here (`/settings/coach#coach-nudge` forwards).
  */
 export function NotificationsSection() {
   const { isAuthenticated, user } = useAuth();
   const { t } = useTranslations();
+  // The Coach gate reads the surface map like the Coach section does, after
+  // hydration, so the server render and the first client paint agree.
+  const mounted = useMounted();
 
-  // v1.18.0 — module-gated per-type visibility. Fail OPEN (`!== false`)
-  // so a stale `/me` payload without the module map keeps every card visible.
   const moodEnabled = user?.modules?.mood !== false;
   const medsEnabled = user?.modules?.medications !== false;
-  const anyReminder = moodEnabled || medsEnabled;
+  const cycleEnabled = user?.modules?.cycle !== false;
+  const coachEnabled =
+    !mounted || isSurfaceVisible("settings:coach", user?.modules);
 
   return (
     <div className="space-y-10">
-      {/* Group 1 — Reminders ("what you receive"). Rendered only when at
-          least one reminder-type card is visible, so a fully-disabled
-          account never shows an empty heading. */}
-      {anyReminder ? (
-        <section className="space-y-4">
-          <SectionHeading
-            icon={Bell}
-            title={t("settings.sections.notifications.remindersHeading")}
-          />
+      {/* Group 1 — Reminders ("what you receive"). The checkup reminders are
+          not a module and always show, so the group always has content. */}
+      <section className="space-y-4">
+        <SectionHeading
+          icon={Bell}
+          title={t("settings.sections.notifications.remindersHeading")}
+        />
 
-          {/* Mood check-in reminder — only when the mood module is enabled. */}
-          {moodEnabled ? (
-            <div id="mood-reminder" className="scroll-mt-28">
-              <MoodReminderCard isAuthenticated={isAuthenticated} />
-            </div>
-          ) : null}
+        {moodEnabled ? (
+          <div id="mood-reminder" className="scroll-mt-28">
+            <MoodReminderCard isAuthenticated={isAuthenticated} />
+          </div>
+        ) : null}
 
-          {/* Medication low-stock runway — only when the medications module
-              is enabled (toggleable, fail-open, since D3). */}
-          {medsEnabled ? (
-            <div id="low-stock" className="scroll-mt-28">
-              <LowStockCard isAuthenticated={isAuthenticated} />
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+        {medsEnabled ? (
+          <div id="low-stock" className="scroll-mt-28">
+            <LowStockCard isAuthenticated={isAuthenticated} />
+          </div>
+        ) : null}
+
+        {coachEnabled ? (
+          <div id="coach-nudge" className="scroll-mt-28">
+            <CoachNudgeCard isAuthenticated={isAuthenticated} />
+          </div>
+        ) : null}
+
+        <div id="vorsorge-reminders" className="scroll-mt-28">
+          <VorsorgeReminderSwitchesCard />
+        </div>
+
+        {/* Reminders set where their subject lives. One row each, saying
+            where; nothing here writes. */}
+        {medsEnabled || cycleEnabled ? (
+          <SettingsCard data-slot="notifications-elsewhere">
+            <SettingsCardHeader
+              anchor="other-reminders"
+              icon={BellRing}
+              title={t("settings.sections.notifications.elsewhere.title")}
+              description={t(
+                "settings.sections.notifications.elsewhere.description",
+              )}
+            />
+            <ul className="divide-border divide-y">
+              {medsEnabled ? (
+                <li className="space-y-1 py-3 first:pt-0">
+                  <p className="text-sm font-medium">
+                    {t("settings.sections.notifications.elsewhere.doses.title")}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {t(
+                      "settings.sections.notifications.elsewhere.doses.description",
+                    )}
+                  </p>
+                  <InlineAction asChild tone="muted">
+                    <Link href="/medications">
+                      {t(
+                        "settings.sections.notifications.elsewhere.doses.link",
+                      )}
+                      <ChevronRight className="size-3.5" aria-hidden="true" />
+                    </Link>
+                  </InlineAction>
+                </li>
+              ) : null}
+              {cycleEnabled ? (
+                <li
+                  id="cycle-reminders"
+                  className="scroll-mt-28 space-y-1 py-3 first:pt-0"
+                >
+                  <p className="text-sm font-medium">
+                    {t("settings.sections.notifications.elsewhere.cycle.title")}
+                  </p>
+                  <p className="text-muted-foreground text-xs">
+                    {t(
+                      "settings.sections.notifications.elsewhere.cycle.description",
+                    )}
+                  </p>
+                  <InlineAction asChild tone="muted">
+                    <Link href="/notifications">
+                      {t(
+                        "settings.sections.notifications.elsewhere.cycle.link",
+                      )}
+                      <ChevronRight className="size-3.5" aria-hidden="true" />
+                    </Link>
+                  </InlineAction>
+                </li>
+              ) : null}
+            </ul>
+          </SettingsCard>
+        ) : null}
+      </section>
 
       {/* Group 2 — How notifications look on the phone. Not module-gated:
           it applies to every notification the account receives. */}

@@ -137,11 +137,11 @@ describe("<MedicationsSection> — SSR smoke", () => {
     expect(lastActive).toBeLessThan(html.indexOf("Amoxicillin"));
   });
 
-  it("gathers the injection-sites card (moved from the account profile)", () => {
-    // v1.18.0 — injection-site exclusions are a medication setting and
-    // now live on this screen alongside the list view + order.
+  it("holds order and view only; the injection sites live under Modules", () => {
+    // v1.44 — Arrangement holds order and view; the injection-site
+    // exclusions moved to Settings > Modules > Medications.
     const html = render();
-    expect(html).toContain("Globally excluded injection sites");
+    expect(html).not.toContain("Globally excluded injection sites");
   });
 
   it("feeds the editor the saved order (active block re-sorted by layout.order)", () => {

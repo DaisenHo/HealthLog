@@ -7,13 +7,14 @@
  * their own dedicated entry so the AI section owns only provider / model /
  * BYOK configuration. This section gathers the Coach-specific surface:
  *
- *   1. Disable Coach    — the per-user opt-out (kept first so a user who
- *                         wants the surface gone finds it immediately).
+ *   1. Coach state       — on or off, with a link to the one switch in
+ *                          Settings > Modules (v1.44: the second switch that
+ *                          used to sit here is gone; kept first so a person
+ *                          who wants the surface gone finds the way at once).
  *   2. Coach preferences — tone, verbosity, data scope (`useCoachPrefs`).
- *   3. Proactive nudge   — the daily-nudge opt-out + per-group frequency
- *                          (moved here from Settings → Benachrichtigungen in
- *                          v1.18.6: it is a Coach setting, not a generic
- *                          notification).
+ *   3. Proactive nudges  — a pointer to Settings > Notifications, where the
+ *                          nudge card lives with the other reminders since
+ *                          v1.44 (`#coach-nudge` forwards there).
  *   4. Coach memory      — durable-fact review + forget controls.
  *
  * The nav entry is module-gated on `coach`. The preference + nudge cards
@@ -34,19 +35,30 @@
  * `<SettingsSectionFrame>` in the route; this body is the Coach cards only.
  */
 
-import { DisableCoachCard } from "@/components/settings/ai/disable-coach-card";
+import Link from "next/link";
+import { BellRing, ChevronRight, MessageCircleHeart } from "lucide-react";
+
 import { CoachMemorySection } from "@/components/settings/coach-memory-section";
 import { CoachConversationsMemoryCard } from "@/components/settings/coach-conversations-memory-card";
 import { CoachRemindersSection } from "@/components/settings/coach-reminders-section";
 import { CoachPlansMemoryCard } from "@/components/settings/coach-plans-memory-card";
-import { CoachNudgeCard } from "@/components/settings/coach-nudge-card";
+import { ModuleStateCard } from "@/components/settings/module-state-card";
+import { SettingsCard } from "@/components/settings/settings-card";
+import { SettingsCardHeader } from "@/components/settings/_card-header";
+import { SettingsCardActions } from "@/components/settings/_card-actions";
+import { Button } from "@/components/ui/button";
 import { CoachPrefsSection } from "@/components/settings/coach-prefs-section";
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
+import { useModuleEnabledState } from "@/hooks/use-module-toggle";
+import { useTranslations } from "@/lib/i18n/context";
 import { isSurfaceVisible } from "@/lib/modules/surface";
 
 export function CoachSection() {
   const { isAuthenticated, user } = useAuth();
+  const { t } = useTranslations();
+  // The same reading the Modules switch shows, so both say one thing.
+  const moduleSwitchState = useModuleEnabledState();
   // Mirror the AI section's hydration-safe gating: the auth query can
   // resolve before this boundary hydrates, so gate the child props on
   // `useMounted()` to keep the hydration render matching the SSR HTML.
@@ -62,16 +74,38 @@ export function CoachSection() {
 
   return (
     <div className="space-y-6">
-      <DisableCoachCard isAuthenticated={authed} />
+      {/* Before hydration the state reads on, the default, so the server
+          render and the first client paint agree. */}
+      <ModuleStateCard
+        moduleKey="coach"
+        enabled={!mounted || moduleSwitchState("coach")}
+        icon={MessageCircleHeart}
+        title={t("settings.coach.state.title")}
+        description={t("settings.coach.state.description")}
+        anchor="coach-activate"
+        slot="settings-coach-state-card"
+      />
 
       {coachEnabled && <CoachPrefsSection isAuthenticated={authed} />}
 
-      {/* Proactive Coach nudge — moved here from Benachrichtigungen (v1.18.6).
-          Keeps the `#coach-nudge` anchor so existing deep links resolve. */}
+      {/* The proactive nudges are a reminder: set under Notifications with
+          the others since v1.44. */}
       {coachEnabled && (
-        <div id="coach-nudge" className="scroll-mt-28">
-          <CoachNudgeCard isAuthenticated={isAuthenticated} />
-        </div>
+        <SettingsCard data-slot="settings-coach-nudge-link">
+          <SettingsCardHeader
+            icon={BellRing}
+            title={t("notifications.coachNudge.title")}
+            description={t("settings.coach.nudgesMoved")}
+          />
+          <SettingsCardActions align="start">
+            <Button asChild variant="outline" size="sm" className="min-h-11">
+              <Link href="/settings/notifications#coach-nudge">
+                {t("settings.coach.openNudges")}
+                <ChevronRight className="size-4" aria-hidden="true" />
+              </Link>
+            </Button>
+          </SettingsCardActions>
+        </SettingsCard>
       )}
 
       <CoachMemorySection isAuthenticated={authed} />

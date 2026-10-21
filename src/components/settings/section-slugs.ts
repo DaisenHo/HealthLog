@@ -114,6 +114,9 @@ export const SETTINGS_SECTION_SLUGS = [
   // pieces into one coherent privacy pane. Sits next to `advanced` (the
   // destructive-action home) and before `about`.
   "privacy",
+  // v1.44 — "Preview features": per-user opt-in to things finished enough to
+  // try and not yet the default. Sits in the System group before About.
+  "preview",
   "about",
 ] as const;
 

@@ -218,7 +218,7 @@ describe("<AiSection> — dropdown-driven UX (B2)", () => {
     // both ship without the "KI"/"AI" prefix per the project-voice rule
     // ("Aktiver KI-Provider" → "Aktiver Provider"). The picker below it is
     // labelled for what it does: it chooses the form, not the order.
-    expect(html).toContain("Aktiver Provider");
+    expect(html).toContain("Aktiver Anbieter");
     expect(html).toContain("Anbieter einrichten");
   });
 
@@ -243,6 +243,6 @@ describe("<AiSection> — dropdown-driven UX (B2)", () => {
   it("no longer mounts the Coach cards (moved to the Coach section)", () => {
     activeProviderQuery = "codex";
     const html = render();
-    expect(html).not.toContain('data-testid="settings-disable-coach-card"');
+    expect(html).not.toContain('data-slot="settings-coach-state-card"');
   });
 });

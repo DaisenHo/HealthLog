@@ -4,18 +4,20 @@
  * v1.23 — "Data & Privacy" dashboard (P7).
  *
  * One coherent pane that ASSEMBLES already-shipped machinery — it does not
- * rebuild any of it. Each block either embeds an existing card (active
- * sessions, security activity, trusted devices) or links to the existing
- * surface that owns the action (export incl. the passphrase option, account
- * deletion / data reset, AI privacy mode, research mode). The retention +
- * encryption facts are read from the server so the copy stays truthful, and
- * the backup↔deletion lag is disclosed honestly.
+ * rebuild any of it. Each block states a fact or links to the surface that
+ * owns the action (account deletion / data reset, AI privacy mode). The
+ * retention + encryption facts are read from the server so the copy stays
+ * truthful, and the backup↔deletion lag is disclosed honestly.
+ *
+ * v1.44 — the active sessions, trusted devices and security activity moved
+ * to Settings > Security beside the sign-in controls, and the export card
+ * left: Export & import and the Health record sit next to this page in the
+ * Data group. The old anchors forward (`settings-anchor-forward.tsx`).
  */
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   Database,
-  Download,
   ShieldCheck,
   Trash2,
   Clock,
@@ -29,9 +31,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { SettingsInfoTile } from "@/components/settings/_info-tile";
-import { SecuritySessionsCard } from "@/components/settings/security-sessions-card";
-import { SecurityActivityCard } from "@/components/settings/security-activity-card";
-import { TrustedDevicesCard } from "@/components/settings/trusted-devices-card";
 import { WorkoutRoutesCard } from "@/components/settings/workout-routes-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
@@ -181,28 +180,6 @@ export function PrivacySection() {
         )}
       </SettingsCard>
 
-      {/* Export */}
-      <SettingsCard>
-        <SettingsCardHeader
-          anchor="your-data-export"
-          icon={Download}
-          title={t("settings.privacy.export.title")}
-          description={t("settings.privacy.export.description")}
-        />
-        <SettingsCardActions align="start">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/settings/export">
-              {t("settings.privacy.export.openExport")}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/settings/gesundheitsakte">
-              {t("settings.privacy.export.openHealthRecord")}
-            </Link>
-          </Button>
-        </SettingsCardActions>
-      </SettingsCard>
-
       {/* Delete / reset — with the honest backup lag disclosure */}
       <SettingsCard>
         <SettingsCardHeader
@@ -241,11 +218,6 @@ export function PrivacySection() {
           </Button>
         </SettingsCardActions>
       </SettingsCard>
-
-      {/* Active sessions + trusted devices + security activity (embedded) */}
-      <SecuritySessionsCard isAuthenticated={isAuthenticated} />
-      <TrustedDevicesCard isAuthenticated={isAuthenticated} />
-      <SecurityActivityCard isAuthenticated={isAuthenticated} />
     </div>
   );
 }

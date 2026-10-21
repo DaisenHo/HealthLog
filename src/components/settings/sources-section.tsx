@@ -697,6 +697,7 @@ export function SourcesSection() {
             disabled={saveMutation.isPending}
             pending={resetMutation.isPending}
             onConfirm={() => resetMutation.mutate()}
+            destructive
           />
           {dirty && priority ? (
             <>

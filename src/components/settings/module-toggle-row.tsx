@@ -92,7 +92,12 @@ export function ModuleToggleRow({
   // is in flight.
   const interactive = !locked && disabledReason == null;
   return (
-    <div className="flex items-start justify-between gap-4 py-3">
+    // `id="module-<key>"` is the anchor other pages link to when they show a
+    // module's state and send the person here to change it.
+    <div
+      id={`module-${moduleKey}`}
+      className="flex scroll-mt-28 items-start justify-between gap-4 py-3"
+    >
       <div className="flex min-w-0 items-start gap-3">
         <Icon
           className="text-muted-foreground mt-0.5 h-5 w-5 shrink-0"

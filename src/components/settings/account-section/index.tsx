@@ -28,17 +28,12 @@ import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { TimezonePicker } from "@/components/settings/timezone-picker";
-import { storeTimezone } from "@/lib/timezone-mirror";
+import { TimezoneSelect } from "@/components/settings/timezone-select";
 import { TimeFormatSelect } from "@/components/settings/time-format-select";
 import { DateFormatSelect } from "@/components/settings/date-format-select";
 import { UnitPreferenceSelect } from "@/components/settings/unit-preference-select";
 import { GlucoseUnitSelect } from "@/components/settings/glucose-unit-select";
-import {
-  detectBrowserTimezone,
-  DEFAULT_TIMEZONE,
-  userDayKey,
-} from "@/lib/tz/format";
+import { detectBrowserTimezone, userDayKey } from "@/lib/tz/format";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import {
   recentProofErrorMessage,
@@ -52,7 +47,6 @@ import {
 import { FieldError } from "@/components/forms/field-error";
 import {
   clearRejectedField,
-  resolveInitialTimezone,
   statusText,
   type StatusMessage,
 } from "./account-section-utils";
@@ -95,7 +89,6 @@ export function AccountSection() {
   const [height, setHeight] = useState<HeightDraft>(EMPTY_HEIGHT_DRAFT);
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<string>("");
-  const [timezone, setTimezone] = useState<string>(DEFAULT_TIMEZONE);
   // The name the app addresses the account by; set in the setup flow, and
   // until now not editable anywhere after it.
   const [displayName, setDisplayName] = useState("");
@@ -109,7 +102,6 @@ export function AccountSection() {
     height: EMPTY_HEIGHT_DRAFT,
     dateOfBirth: "",
     gender: "",
-    timezone: DEFAULT_TIMEZONE,
     fullName: "",
     insurerName: "",
     insuranceNumber: "",
@@ -160,7 +152,6 @@ export function AccountSection() {
         ? dateOnlyKey(new Date(user.dateOfBirth))
         : "",
       gender: user.gender ?? "",
-      timezone: resolveInitialTimezone(user.timezone, detectBrowserTimezone()),
       fullName: user.fullName ?? "",
       insurerName: user.insurerName ?? "",
       insuranceNumber: user.insuranceNumber ?? "",
@@ -171,7 +162,6 @@ export function AccountSection() {
     setHeight(seed.height);
     setDateOfBirth(seed.dateOfBirth);
     setGender(seed.gender);
-    setTimezone(seed.timezone);
     setFullName(seed.fullName);
     setInsurerName(seed.insurerName);
     setInsuranceNumber(seed.insuranceNumber);
@@ -203,7 +193,6 @@ export function AccountSection() {
       height,
       dateOfBirth,
       gender,
-      timezone,
       fullName,
       insurerName,
       insuranceNumber,
@@ -268,55 +257,36 @@ export function AccountSection() {
         height,
         dateOfBirth,
         gender,
-        timezone,
         fullName: fullName.trim(),
         insurerName: insurerName.trim(),
         insuranceNumber: insuranceNumber.trim(),
       };
 
-      // The timezone is owned by a dedicated route (v1.4.25 W7) so the
-      // resolver cache can be invalidated without piping the flag
-      // through the bigger profile patch path. Run the two PUTs in
-      // parallel — they're independent.
-      const [profileRes, tzRes] = await Promise.all([
-        apiFetchRaw("/api/auth/profile", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: savedProfile.email || null,
-            // An emptied field clears the name; the greeting falls back to
-            // the username, as it does for an account that never set one.
-            displayName: savedProfile.displayName || null,
-            ...(emailChanged && emailPassword
-              ? { currentPassword: emailPassword }
-              : {}),
-            heightCm: heightAdapter.toCanonicalCm(savedProfile.height),
-            dateOfBirth: savedProfile.dateOfBirth || null,
-            gender: savedProfile.gender || null,
-            fullName: savedProfile.fullName || null,
-            insurerName: savedProfile.insurerName || null,
-            insuranceNumber: savedProfile.insuranceNumber || null,
-          }),
+      // v1.44 — the timezone left this form: it saves on change in the
+      // Display card (`TimezoneSelect`), like the other display preferences.
+      const profileRes = await apiFetchRaw("/api/auth/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: savedProfile.email || null,
+          // An emptied field clears the name; the greeting falls back to
+          // the username, as it does for an account that never set one.
+          displayName: savedProfile.displayName || null,
+          ...(emailChanged && emailPassword
+            ? { currentPassword: emailPassword }
+            : {}),
+          heightCm: heightAdapter.toCanonicalCm(savedProfile.height),
+          dateOfBirth: savedProfile.dateOfBirth || null,
+          gender: savedProfile.gender || null,
+          fullName: savedProfile.fullName || null,
+          insurerName: savedProfile.insurerName || null,
+          insuranceNumber: savedProfile.insuranceNumber || null,
         }),
-        user && timezone && timezone !== user.timezone
-          ? apiFetchRaw("/api/auth/me/timezone", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ timezone }),
-            })
-          : Promise.resolve({ ok: true } as Response),
-      ]);
+      });
 
       setEmailPassword("");
 
-      if (profileRes.ok && tzRes.ok) {
-        // Instant same-tab flip of every rendered timestamp (issue #490):
-        // mirror the accepted zone before the `/me` refetch confirms it —
-        // the same synchronous-update pattern the time/date-format selects
-        // use. `refetch()` → `fetchMe` re-writes the mirror authoritatively.
-        if (user && timezone && timezone !== user.timezone) {
-          storeTimezone(timezone);
-        }
+      if (profileRes.ok) {
         const profileJson = (await profileRes.json().catch(() => null)) as {
           data?: { rejectedFields?: RejectedProfileField[] };
         } | null;
@@ -351,22 +321,6 @@ export function AccountSection() {
           setProfileSeed(savedProfile);
           await refetch();
         }
-      } else if (!tzRes.ok) {
-        // The dedicated tz endpoint owns the IANA validation error
-        // text. Surface its message verbatim so the user sees
-        // "Not a valid IANA timezone." instead of the generic save
-        // failure copy.
-        try {
-          const json = (await (tzRes as Response).json()) as { error?: string };
-          setSaveMsg(
-            json.error
-              ? { text: json.error }
-              : { key: "settings.timezoneInvalid" },
-          );
-        } catch {
-          setSaveMsg({ key: "settings.timezoneInvalid" });
-        }
-        setSaveMsgType("error");
       } else {
         // The server's top-level `error` string is intentionally generic
         // (never a raw validator message); resolve the specific, localized
@@ -584,10 +538,9 @@ export function AccountSection() {
             </div>
           </div>
 
-          {/* Date of birth + timezone share one paired grid row. The
-              timezone stays on this card because it saves with the form
-              (its own PUT runs beside the profile PUT); the display
-              preferences that save on change live in their own card below. */}
+          {/* Date of birth shares the grid of the fields above. The timezone
+              moved to the Display card below in v1.44: it saves on change
+              there, like the other display preferences. */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="dob">{t("settings.dateOfBirth")}</Label>
@@ -609,7 +562,6 @@ export function AccountSection() {
               </p>
               <FieldError id="dob-error" message={fieldErrors.dateOfBirth} />
             </div>
-            <TimezonePicker value={timezone} onChange={setTimezone} />
           </div>
 
           {/* v1.7.0 — optional patient-identity fields surfaced on the
@@ -817,6 +769,7 @@ export function DisplayPreferencesCard({
         <GlucoseUnitSelect isAuthenticated={isAuthenticated} />
         <TimeFormatSelect isAuthenticated={isAuthenticated} />
         <DateFormatSelect isAuthenticated={isAuthenticated} />
+        <TimezoneSelect isAuthenticated={isAuthenticated} />
       </div>
     </SettingsCard>
   );

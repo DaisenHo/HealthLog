@@ -39,8 +39,15 @@ import { describe, expect, it } from "vitest";
 
 const SRC = join(process.cwd(), "src");
 
-/** The prefix every customise shortcut points at. */
-const LAYOUT_PREFIX = "/settings/layout/";
+/**
+ * The prefixes a customise shortcut points at: a module's order and view
+ * under Arrangement, or (since v1.44) its own page under Modules.
+ */
+const SHORTCUT_PREFIXES = ["/settings/layout/", "/settings/modules/"];
+
+function isShortcut(text: string): boolean {
+  return SHORTCUT_PREFIXES.some((prefix) => text.startsWith(prefix));
+}
 
 /** The answer a shared-record surface withholds these on: `!inSharedRecord`. */
 const GUARD = "inSharedRecord";
@@ -62,6 +69,8 @@ const NOT_A_SHARED_DESTINATION: Record<string, string> = {
     "The Insights page itself. Same flag, same reason.",
   "components/insights/insights-edit-mode.tsx":
     "The Insights arrange mode, reachable only from the page above.",
+  "components/settings/settings-anchor-forward.tsx":
+    "Not a shortcut: the table of old Settings anchors and where they moved, read on a Settings page, which the record gate already answers for.",
 };
 
 function allSourceFiles(): string[] {
@@ -127,7 +136,7 @@ function unguardedShortcuts(source: string, fileName: string): string[] {
   const visit = (node: ts.Node): void => {
     if (
       ts.isStringLiteralLike(node) &&
-      node.text.startsWith(LAYOUT_PREFIX) &&
+      isShortcut(node.text) &&
       !guardedByOwnRecord(node)
     ) {
       found.push(node.text);
@@ -140,7 +149,9 @@ function unguardedShortcuts(source: string, fileName: string): string[] {
 
 describe("the customise shortcut is withheld inside somebody else's record", () => {
   const carrying = allSourceFiles().filter((rel) =>
-    readFileSync(join(SRC, rel), "utf8").includes(LAYOUT_PREFIX),
+    SHORTCUT_PREFIXES.some((prefix) =>
+      readFileSync(join(SRC, rel), "utf8").includes(prefix),
+    ),
   );
 
   it("finds the surfaces that carry one", () => {

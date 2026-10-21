@@ -3273,12 +3273,9 @@
         "provider": "Responde con",
         "modelManaged": "El modelo de este proveedor se configura en los ajustes de IA.",
         "noProvider": "Ningún proveedor disponible",
-        "saving": "Guardando…",
-        "saveFailed": "No se pudo guardar el cambio.",
         "allSettings": "Todos los ajustes de IA",
-        "providerNotActive": "{provider} no pudo encargarse: no tiene un inicio de sesión ni una clave que funcionen. Configúralo en los ajustes de IA.",
         "operatorCodex": "ChatGPT (compartido por el operador)",
-        "operatorManaged": "El operador de tu servidor gestiona esta conexión. Cuando configures uno de tus propios proveedores, responderá primero."
+        "changeModel": "Cambiar en Ajustes > IA"
       },
       "answer": {
         "scrollToBottom": "Ir al último mensaje",
@@ -5299,12 +5296,17 @@
       "groups": {
         "account": "Cuenta",
         "yourData": "Tus datos",
-        "display": "Visualización",
         "healthProfile": "Perfil de salud",
         "ai": "IA",
         "connectivity": "Conectividad",
-        "system": "Sistema"
-      }
+        "system": "Sistema",
+        "tracking": "Seguimiento",
+        "arrangement": "Disposición",
+        "notifications": "Notificaciones",
+        "connections": "Conexiones",
+        "data": "Datos"
+      },
+      "allSections": "Todas las secciones"
     },
     "sharedRecord": {
       "managedSettings": {
@@ -5445,11 +5447,25 @@
         "remindersHeading": "Recordatorios",
         "matrixLink": "Notificaciones por canal",
         "channelsLink": "Canales de entrega",
-        "displayHeading": "En tu teléfono"
+        "displayHeading": "En tu teléfono",
+        "elsewhere": {
+          "title": "Se ajustan donde corresponden",
+          "description": "Estos recordatorios se ajustan junto a aquello a lo que se refieren.",
+          "doses": {
+            "title": "Tomas de medicación",
+            "description": "Las horas de toma y los recordatorios se ajustan en cada medicamento.",
+            "link": "Abrir medicamentos"
+          },
+          "cycle": {
+            "title": "Ciclo",
+            "description": "Los recordatorios del periodo y de la ventana fértil se activan por canal en la matriz de notificaciones.",
+            "link": "Abrir la matriz de notificaciones"
+          }
+        }
       },
       "layout": {
-        "title": "Diseño",
-        "backToHub": "Volver a Diseño",
+        "title": "Disposición",
+        "backToHub": "Volver a Disposición",
         "dashboard": {
           "title": "Panel",
           "description": "Diseño y orden de los mosaicos."
@@ -5458,7 +5474,7 @@
           "title": "Análisis",
           "description": "Orden de la vista general y de las pestañas de navegación."
         },
-        "subtitle": "Elige qué muestran tu panel, los análisis y los módulos de seguimiento, y en qué orden.",
+        "subtitle": "Elige el orden y la vista de tu panel, tus análisis y tus listas de seguimiento.",
         "medications": {
           "title": "Medicamentos",
           "description": "Vista de lista y orden manual."
@@ -5474,10 +5490,6 @@
         "vorsorge": {
           "title": "Revisiones",
           "description": "Vista de lista y orden de recordatorios."
-        },
-        "mood": {
-          "title": "Etiquetas de ánimo",
-          "description": "Grupos, etiquetas y etiquetas archivadas del selector de ánimo."
         },
         "documents": {
           "title": "Documentos",
@@ -5869,7 +5881,28 @@
         },
         "manageIn": "Gestionar en {section}",
         "operatorDisabled": "Desactivado en todo el servidor",
-        "subtitle": "Elige qué áreas de seguimiento muestra HealthLog en la app."
+        "subtitle": "Elige qué áreas de seguimiento muestra HealthLog en la app.",
+        "backToHub": "Volver a Módulos",
+        "openModuleSettings": "Ajustes del módulo",
+        "pages": {
+          "medications": {
+            "title": "Medicamentos",
+            "description": "Zonas de inyección que la rotación omite."
+          },
+          "mood": {
+            "title": "Etiquetas de ánimo",
+            "description": "Grupos, tus propias etiquetas y las archivadas."
+          },
+          "labs": {
+            "title": "Laboratorio",
+            "description": "Biomarcadores y reconocimiento de texto en el dispositivo para informes de laboratorio."
+          },
+          "arrangementTitle": "Orden y vista",
+          "arrangementDescription": "Cómo se ordena y muestra esta lista se ajusta en Disposición.",
+          "openArrangement": "Abrir en Disposición",
+          "moduleSettingsTitle": "Ajustes del módulo",
+          "moduleSettingsDescription": "Todo lo demás está en la página del módulo, en Módulos."
+        }
       },
       "gesundheitsakte": {
         "title": "Historial médico",
@@ -6012,6 +6045,10 @@
       "access": {
         "title": "Acceso compartido",
         "subtitle": "Quién puede abrir tu historial de salud y cuál puedes abrir tú."
+      },
+      "preview": {
+        "title": "Funciones en vista previa",
+        "subtitle": "Prueba lo que aún no está terminado. Todo aquí sigue desactivado hasta que lo actives."
       }
     },
     "profile": "Perfil",
@@ -7025,21 +7062,19 @@
     },
     "integrationSetupGuide": "Guía de configuración",
     "coach": {
-      "activate": {
-        "title": "Activar el Coach",
-        "description": "Muestra el botón y el panel del Coach.",
-        "toggleAria": "Activar el botón y el panel del Coach",
-        "savedOn": "Coach activado.",
-        "savedOff": "Coach oculto.",
-        "saveError": "No se pudo guardar el cambio. Inténtalo de nuevo."
-      },
       "memory": {
         "edit": "Editar",
         "source": {
           "user": "de ti",
           "coach": "del Coach"
         }
-      }
+      },
+      "state": {
+        "title": "Coach",
+        "description": "Si se muestran el botón y el panel del Coach. El interruptor está en Módulos."
+      },
+      "nudgesMoved": "Se ajustan con tus otros recordatorios en Notificaciones.",
+      "openNudges": "Abrir en Notificaciones"
     },
     "integrationRedirectGuide": {
       "intro": "Esto se conecta mediante tu propia app de desarrollador de {provider}, con unos 5 minutos de configuración:",
@@ -7188,12 +7223,6 @@
         "delivery": "Registro de envío de notificaciones: {days} días",
         "unavailable": "Los detalles de retención no están disponibles en este momento."
       },
-      "export": {
-        "title": "Descargar mis datos",
-        "description": "Tus registros en CSV o JSON, o un historial completo para tu médico.",
-        "openExport": "Exportar y copia de seguridad",
-        "openHealthRecord": "Historial médico"
-      },
       "delete": {
         "title": "Eliminar o restablecer",
         "description": "Elimina tu cuenta por completo o borra tus registros de salud conservando la cuenta.",
@@ -7209,7 +7238,6 @@
     "mcp": {
       "enableTitle": "Endpoint MCP remoto",
       "enableDescription": "Permite que un asistente compatible con MCP (Claude.ai, ChatGPT) lea tus datos de salud mediante un token limitado.",
-      "enableToggleLabel": "Activar el endpoint MCP",
       "endpointLabel": "URL del conector",
       "connectDescription": "Pega esta URL en la configuración del conector personalizado de tu asistente y autoriza con el token de abajo o inicia sesión cuando se te solicite.",
       "tokensTitle": "Tokens del conector",
@@ -7228,7 +7256,8 @@
       "connectionRevokeFailed": "No se pudo desconectar el asistente.",
       "tokensDetail": "El token se muestra una sola vez.",
       "connectionsDetail": "Revocar una conexión finaliza su acceso de inmediato, incluida su capacidad de renovación.",
-      "tokenNamePlaceholder": "Nombre, p. ej. Claude Desktop"
+      "tokenNamePlaceholder": "Nombre, p. ej. Claude Desktop",
+      "offKeepsTokens": "Desactivarlo pausa el punto de acceso. Tus tokens y conexiones se mantienen y vuelven a funcionar al activarlo."
     },
     "strava": "Strava",
     "stravaDescription": "Conecta tu cuenta de Strava para sincronizar tus actividades con tu historial de entrenamientos.",
@@ -7490,7 +7519,25 @@
     "passkeyAddedToast": "Passkey añadida.",
     "passkeyRemovedToast": "Passkey eliminada.",
     "integrationDisconnected": "{provider} desconectado.",
-    "integrationDisconnectFailed": "No se pudo desconectar {provider}."
+    "integrationDisconnectFailed": "No se pudo desconectar {provider}.",
+    "preview": {
+      "topics": {
+        "title": "Temas (beta)",
+        "description": "Añade una entrada aparte, Temas, con páginas de resumen por encima de las páginas de cada métrica.",
+        "detail": "Tus páginas de análisis, la navegación y los enlaces se quedan exactamente como están. Las páginas de temas llegan en una actualización posterior; este interruptor decide si las ves.",
+        "savedOn": "Vista previa de Temas activada.",
+        "savedOff": "Vista previa de Temas desactivada."
+      },
+      "loadError": "No se pudieron cargar tus ajustes de vista previa.",
+      "feedbackLink": "Comparte tu opinión en las discusiones de GitHub"
+    },
+    "timezoneSaved": "Zona horaria guardada.",
+    "moduleState": {
+      "on": "Activado",
+      "off": "Desactivado",
+      "change": "Cambiar en Módulos"
+    },
+    "timezoneUseDevice": "Usar la zona horaria de este dispositivo ({zone})"
   },
   "admin": {
     "title": "Administration",
@@ -8881,6 +8928,10 @@
       "detailedToast": "Las notificaciones ahora incluyen valores de salud.",
       "genericToast": "Las notificaciones ya no incluyen valores de salud.",
       "saveError": "No se pudo guardar. Inténtalo de nuevo más tarde."
+    },
+    "checkupReminders": {
+      "title": "Recordatorios de chequeos",
+      "description": "Activa o desactiva recordatorios de chequeos concretos."
     }
   },
   "i18n": {
@@ -9657,8 +9708,6 @@
       "description": "Introduce el valor; el recordatorio se marca como hecho."
     },
     "manage": {
-      "title": "Gestionar recordatorios",
-      "description": "Activa o desactiva recordatorios individuales.",
       "empty": "Aún no hay recordatorios para personalizar."
     },
     "dashboard": {

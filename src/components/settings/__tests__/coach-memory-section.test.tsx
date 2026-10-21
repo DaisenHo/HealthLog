@@ -12,8 +12,7 @@
  * The mutation wiring itself (DELETE `/facts/{id}` and DELETE `/facts`
  * → `queryKeys.coachFacts()` invalidation + toast) is pinned by the
  * route-shape contract in the component plus the typecheck gate; this
- * suite guards the render contract the way the sibling
- * `disable-coach-card.test.tsx` does for the toggle.
+ * suite guards the render contract.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";

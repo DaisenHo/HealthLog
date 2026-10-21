@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Input } from "@/components/ui/input";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -311,46 +312,21 @@ export function PasskeyListSection({
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 sm:h-8 sm:min-h-0 sm:w-8 sm:min-w-0"
-                            disabled={remove.isPending}
-                            aria-label={t("settings.deletePasskey")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              {t("settings.deletePasskey")}
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {t("settings.deletePasskeyDescription")}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>
-                              {t("common.cancel")}
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              variant="destructive"
-                              disabled={remove.isPending}
-                              aria-busy={remove.isPending || undefined}
-                              onClick={() => remove.mutate(pk.id)}
-                            >
-                              {remove.isPending && (
-                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-                              )}
-                              {t("common.delete")}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <ConfirmButton
+                        label=""
+                        ariaLabel={t("settings.deletePasskey")}
+                        title={t("settings.deletePasskey")}
+                        body={t("settings.deletePasskeyDescription")}
+                        confirmLabel={t("common.delete")}
+                        onConfirm={() => remove.mutate(pk.id)}
+                        pending={remove.isPending && remove.variables === pk.id}
+                        disabled={remove.isPending}
+                        size="icon"
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 sm:h-8 sm:min-h-0 sm:w-8 sm:min-w-0"
+                        icon={<Trash2 className="h-4 w-4" />}
+                        destructive
+                      />
                     </div>
                   )}
                 </div>

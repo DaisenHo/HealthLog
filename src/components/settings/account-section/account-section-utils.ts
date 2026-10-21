@@ -18,9 +18,9 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
  *     browser actually IS in Berlin, leave it alone — the picker
  *     stays on Berlin and the next save is a no-op.
  *   - If the stored value is the default AND the browser reports a
- *     non-Berlin zone, pre-fill the picker with the detected zone.
- *     The form's existing submit handler persists the change on the
- *     next save; no toast, no banner, no opt-in.
+ *     non-Berlin zone, that zone is the suggestion. Since v1.44 the
+ *     timezone saves on change in the Display card, which offers the
+ *     suggestion as a one-tap action under the select.
  *
  * The bootstrap deliberately runs inline during render (the strict
  * `react-hooks/set-state-in-effect` rule outlaws setState in an

@@ -498,6 +498,7 @@ export function TotpCard({
                   <AlertDialogFooter>
                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                     <AlertDialogAction
+                      variant="destructive"
                       data-testid="recovery-regenerate-confirm"
                       disabled={regenerate.isPending}
                       aria-busy={regenerate.isPending || undefined}

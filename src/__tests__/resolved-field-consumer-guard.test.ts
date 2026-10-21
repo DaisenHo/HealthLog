@@ -142,8 +142,6 @@ const RULES: ResolvedFieldRule[] = [
       'import { resolveAiCapability } from "@/lib/ai/capabilities/resolve";',
     ],
     allow: {
-      "src/components/settings/ai/disable-coach-card.tsx":
-        "the Activate-Coach switch: it edits the stored opt-out, so its checked state is that value",
       "src/hooks/use-module-toggle.ts":
         "the module switch for the Coach (Settings hub and command palette): its checked state is the stored opt-out it writes",
       "src/components/settings/managed-record-settings-section.tsx":
