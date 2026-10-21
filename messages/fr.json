@@ -6619,7 +6619,8 @@
       "nocode": "Fitbit n'a pas renvoyé de code d'autorisation. Réessayez et autorisez l'accès dans la fenêtre Fitbit.",
       "nocreds": "Fitbit n'est pas configuré. Ajoutez vos identifiants OAuth Fitbit ci-dessus et réessayez.",
       "token": "L'échange de jeton avec Fitbit a échoué. Veuillez relancer la connexion.",
-      "generic": "Erreur inconnue lors de la connexion. Veuillez relancer la connexion."
+      "generic": "Erreur inconnue lors de la connexion. Veuillez relancer la connexion.",
+      "retired": "Google a désactivé l'API Web Fitbit : il n'est plus possible de créer une nouvelle connexion Fitbit. Connectez plutôt Google Health, qui lit les mêmes appareils."
     },
     "integrations": {
       "withings": {
@@ -7439,6 +7440,15 @@
       "homePlaceUnknown": "L’instance Dawarich ne connaît plus ce lieu.",
       "notConnected": "Dawarich n’est pas connecté.",
       "generic": "Ça n’a pas marché. Réessaie."
+    },
+    "fitbitRetirement": {
+      "ending": "Google désactive l'API Web Fitbit le {date}. Ensuite, cette connexion ne se synchronisera plus.",
+      "ended": "Google a désactivé l'API Web Fitbit le {date}. Cette connexion ne se synchronise plus.",
+      "move": "Google Health lit les mêmes appareils Fitbit et Pixel. Connectez-le ci-dessous pour continuer à recevoir vos données. Google vous demandera de nouveau votre consentement, car la connexion Fitbit ne peut pas être transférée. Tout ce qui a déjà été importé est conservé.",
+      "toCard": "Aller à Google Health",
+      "guide": "Comment connecter Google Health",
+      "badgeEnding": "Bientôt désactivé",
+      "badgeEnded": "Désactivé"
     }
   },
   "admin": {
@@ -10403,6 +10413,7 @@
     "vital": {
       "RESTING_HEART_RATE": "Fréquence cardiaque au repos",
       "HEART_RATE_VARIABILITY": "Variabilité de la fréquence cardiaque",
+      "HRV_RMSSD": "VFC (RMSSD)",
       "RECOVERY_SCORE": "Recovery",
       "OXYGEN_SATURATION": "Saturation en oxygène",
       "BODY_TEMPERATURE": "Température corporelle",

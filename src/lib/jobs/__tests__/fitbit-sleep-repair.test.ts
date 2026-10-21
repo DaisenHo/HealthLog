@@ -71,6 +71,7 @@ import {
   enqueueBootTimeFitbitSleepRepair,
   runFitbitSleepRepairForUser,
 } from "../fitbit-sleep-repair";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -229,5 +230,31 @@ describe("runFitbitSleepRepairForUser", () => {
     });
     expect(syncUserSleep).not.toHaveBeenCalled();
     expect(prismaMock.fitbitConnection.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("after Google turned the Fitbit Web API off", () => {
+  it("enqueues no repair and runs a queued one without reading or stamping", async () => {
+    vi.mocked(isFitbitRetired).mockReturnValue(true);
+    try {
+      prismaMock.fitbitConnection.findMany.mockResolvedValue([
+        { userId: "u1" },
+      ]);
+      await expect(enqueueBootTimeFitbitSleepRepair()).resolves.toEqual({
+        enqueued: 0,
+        skipped: 0,
+        error: null,
+      });
+      expect(bossSend).not.toHaveBeenCalled();
+
+      await expect(runFitbitSleepRepairForUser("u1")).resolves.toEqual({
+        imported: 0,
+        removed: 0,
+      });
+      expect(syncUserSleep).not.toHaveBeenCalled();
+      expect(prismaMock.fitbitConnection.update).not.toHaveBeenCalled();
+    } finally {
+      vi.mocked(isFitbitRetired).mockReturnValue(false);
+    }
   });
 });

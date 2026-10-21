@@ -6619,7 +6619,8 @@
       "nocode": "Fitbit no devolvió un código de autorización. Inténtalo de nuevo y permite el acceso en el diálogo de Fitbit.",
       "nocreds": "Fitbit no está configurado. Añade tus credenciales OAuth de Fitbit arriba e inténtalo de nuevo.",
       "token": "El intercambio de token con Fitbit falló. Inicia la conexión de nuevo.",
-      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo."
+      "generic": "Error desconocido al conectar. Inicia la conexión de nuevo.",
+      "retired": "Google desactivó la API web de Fitbit, así que ya no se puede crear una nueva conexión de Fitbit. Conecta Google Health, que lee los mismos dispositivos."
     },
     "integrations": {
       "withings": {
@@ -7439,6 +7440,15 @@
       "homePlaceUnknown": "La instancia de Dawarich ya no conoce este lugar.",
       "notConnected": "Dawarich no está conectado.",
       "generic": "No ha funcionado. Inténtalo de nuevo."
+    },
+    "fitbitRetirement": {
+      "ending": "Google desactivará la API web de Fitbit el {date}. A partir de entonces, esta conexión dejará de sincronizar.",
+      "ended": "Google desactivó la API web de Fitbit el {date}. Esta conexión ya no sincroniza.",
+      "move": "Google Health lee los mismos dispositivos Fitbit y Pixel. Conéctalo abajo para que tus datos sigan llegando. Google te pedirá tu consentimiento otra vez, porque la conexión de Fitbit no se puede transferir. Todo lo ya importado se conserva.",
+      "toCard": "Ir a Google Health",
+      "guide": "Cómo conectar Google Health",
+      "badgeEnding": "Se desactiva pronto",
+      "badgeEnded": "Desactivado"
     }
   },
   "admin": {
@@ -10403,6 +10413,7 @@
     "vital": {
       "RESTING_HEART_RATE": "Frecuencia cardíaca en reposo",
       "HEART_RATE_VARIABILITY": "Variabilidad de la frecuencia cardíaca",
+      "HRV_RMSSD": "VFC (RMSSD)",
       "RECOVERY_SCORE": "Recovery",
       "OXYGEN_SATURATION": "Saturación de oxígeno",
       "BODY_TEMPERATURE": "Temperatura corporal",

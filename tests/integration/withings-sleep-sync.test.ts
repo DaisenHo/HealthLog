@@ -51,18 +51,63 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function stubWithingsSleep(series: unknown[]) {
+type Segment = {
+  startdate: number;
+  enddate: number;
+  state: number;
+  id: number;
+};
+
+/**
+ * Answer Sleep v2 the way Withings does: `getsummary` lists the nights,
+ * `get` returns the segments inside the span asked for, at most its first
+ * 24 hours.
+ */
+function stubWithingsSleep(series: Segment[]) {
+  const nights = new Map<
+    number,
+    { id: number; startdate: number; enddate: number }
+  >();
+  for (const seg of series) {
+    const night = nights.get(seg.id);
+    nights.set(seg.id, {
+      id: seg.id,
+      startdate: Math.min(night?.startdate ?? seg.startdate, seg.startdate),
+      enddate: Math.max(night?.enddate ?? seg.enddate, seg.enddate),
+    });
+  }
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => ({
-      status: 200,
-      json: async () => ({
-        status: 0,
-        body: { series },
-      }),
-    })),
+    vi.fn(async (_url: string, init: { body: string }) => {
+      const params = new URLSearchParams(init.body);
+      if (params.get("action") === "getsummary") {
+        return {
+          status: 200,
+          json: async () => ({
+            status: 0,
+            body: { series: [...nights.values()] },
+          }),
+        };
+      }
+      const from = Number(params.get("startdate"));
+      const to = Math.min(Number(params.get("enddate")), from + 24 * 3600);
+      return {
+        status: 200,
+        json: async () => ({
+          status: 0,
+          body: {
+            series: series.filter(
+              (seg) => seg.startdate >= from && seg.enddate <= to,
+            ),
+          },
+        }),
+      };
+    }),
   );
 }
+
+/** Last night: it started ten hours ago, so a run reads it again for a re-score. */
+const base = Math.floor(Date.now() / 1000) - 10 * 3600;
 
 describe("syncUserSleep — integration", () => {
   it("persists one Measurement row per stage segment for a single night", async () => {
@@ -70,7 +115,6 @@ describe("syncUserSleep — integration", () => {
     // All segments share the same parent night but each carries a
     // distinct sleepStage, so the W17b/c composite (Migration 0055)
     // keeps every row.
-    const base = 1715000000; // 2024-05-06 13:33:20 UTC (arbitrary)
     stubWithingsSleep([
       { startdate: base, enddate: base + 3600, state: 1, id: 99 },
       { startdate: base + 3600, enddate: base + 5400, state: 2, id: 99 },
@@ -106,7 +150,6 @@ describe("syncUserSleep — integration", () => {
   });
 
   it("re-syncing the same night updates rows in place (no duplicates)", async () => {
-    const base = 1715000000;
     // First sync: DEEP 30 minutes.
     stubWithingsSleep([
       { startdate: base, enddate: base + 1800, state: 2, id: 100 },

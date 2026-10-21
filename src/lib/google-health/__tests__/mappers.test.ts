@@ -148,7 +148,7 @@ describe("mapOxygenSaturation — daily-oxygen-saturation summary", () => {
 });
 
 describe("mapHeartRateVariability — daily-heart-rate-variability summary", () => {
-  it("maps averageHeartRateVariabilityMilliseconds to the HRV slot in ms", () => {
+  it("maps the RMSSD daily average to HRV_RMSSD in ms", () => {
     const rows = mapHeartRateVariability({
       dailyHeartRateVariability: {
         averageHeartRateVariabilityMilliseconds: 42.5,
@@ -157,7 +157,7 @@ describe("mapHeartRateVariability — daily-heart-rate-variability summary", () 
     });
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      type: "HEART_RATE_VARIABILITY",
+      type: "HRV_RMSSD",
       unit: "ms",
       value: 42.5,
       fieldTag: "2026-06-01:hrv",

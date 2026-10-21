@@ -127,6 +127,21 @@ describe("assembleDiscoveryMatrix — switched-off modules", () => {
     expect(keys).toContain("CUSTOM_METRIC:abc");
   });
 
+  it("scans the nightly RMSSD series as an outcome owned by recovery", async () => {
+    const on = await assembleDiscoveryMatrix("u1", OPTS);
+    expect(
+      on.series.find((s) => s.key === "HRV_RMSSD" && s.role === "outcome"),
+    ).toBeDefined();
+    const off = await assembleDiscoveryMatrix("u1", {
+      ...OPTS,
+      modules: { recovery: false },
+    });
+    const keys = keysOf(off.series);
+    expect(keys).not.toContain("HRV_RMSSD");
+    // SDNN is a plain vital and stays.
+    expect(keys).toContain("HEART_RATE_VARIABILITY");
+  });
+
   it("does not read the weather at all with the environment module off", async () => {
     const read = vi.mocked(fetchEnvironmentSeries);
     read.mockClear();

@@ -101,6 +101,7 @@ interface FakeActivity {
   steps?: number;
   distance?: number;
   calories?: number;
+  brand?: number;
 }
 
 function installFetchMock(entries: FakeActivity[]) {
@@ -412,6 +413,28 @@ describe("syncUserActivity — field mapping + idempotency", () => {
     expect(imported).toBe(2);
     const types = createManyRows().map((r) => r.type as string);
     expect(types).not.toContain("WALKING_RUNNING_DISTANCE");
+  });
+
+  it("skips a day Health Mate holds from another app (brand 18)", async () => {
+    // An Apple Health or Google Fit day written into Health Mate comes back
+    // from Getactivity as brand 18 ("external"). It reaches HealthLog from
+    // its own integration; under WITHINGS it was a second copy.
+    installFetchMock([
+      { date: "2026-05-12", steps: 8000, calories: 380, brand: 1 },
+      { date: "2026-05-13", steps: 9100, calories: 410, brand: 18 },
+    ]);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
+    vi.mocked(prisma.measurement.createMany).mockResolvedValue({
+      count: 2,
+    } as never);
+
+    await syncUserActivity("user-1");
+
+    const rows = createManyRows();
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.value)).toEqual(
+      expect.not.arrayContaining([9100, 410]),
+    );
   });
 
   it("ingests a 0-step rest day rather than dropping it", async () => {

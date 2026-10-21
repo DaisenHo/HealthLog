@@ -2,9 +2,12 @@
 
 HealthLog reads Fitbit, Pixel Watch and Fitbit Air data through the **Google
 Health API** (`health.googleapis.com/v4`), the successor to the classic Fitbit
-Web API. Google retires the classic Fitbit Web API in **September 2026**, and
-Fitbit access/refresh tokens do not carry over — every account re-consents
-through Google OAuth. This integration is that path.
+Web API. Google ended support for the classic Fitbit Web API on 30 September
+2026 and turns it off on **30 October 2026**
+([migration guide](https://developers.google.com/health/migration)); from that
+day HealthLog's `fitbit` connection stops syncing and keeps what it imported.
+Fitbit access/refresh tokens do not carry over, so every account consents once
+more through Google OAuth. This integration is that path.
 
 The OAuth app is a **Google Cloud** OAuth client, not a Fitbit developer-console
 app. Credentials are brought **per user**: each user registers their own Google

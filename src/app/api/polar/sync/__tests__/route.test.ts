@@ -67,13 +67,21 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
   vi.mocked(requireAuth).mockResolvedValue({ user: { id: "u1" } } as never);
-  syncUserPolarMock.mockResolvedValue({ imported: 0, failed: false });
+  syncUserPolarMock.mockResolvedValue({
+    imported: 0,
+    failed: false,
+    tokenProven: true,
+  });
   syncUserPolarWorkoutsMock.mockResolvedValue(0);
 });
 
 describe("POST /api/polar/sync", () => {
   it("runs both Polar legs and totals what they imported", async () => {
-    syncUserPolarMock.mockResolvedValue({ imported: 5, failed: false });
+    syncUserPolarMock.mockResolvedValue({
+      imported: 5,
+      failed: false,
+      tokenProven: true,
+    });
     syncUserPolarWorkoutsMock.mockResolvedValue(2);
 
     const response = await post(request());
@@ -84,7 +92,10 @@ describe("POST /api/polar/sync", () => {
       error: null,
     });
     expect(syncUserPolarMock).toHaveBeenCalledWith("u1");
-    expect(syncUserPolarWorkoutsMock).toHaveBeenCalledWith("u1");
+    // The vitals leg tells the workouts leg the token just worked.
+    expect(syncUserPolarWorkoutsMock).toHaveBeenCalledWith("u1", {
+      tokenProven: true,
+    });
   });
 
   it("does not call a run whose vitals collections all failed a success", async () => {

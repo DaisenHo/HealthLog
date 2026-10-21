@@ -32,7 +32,8 @@ import { getClientIp } from "@/lib/api-response";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
-import type { MeasurementType } from "@/generated/prisma/client";
+import type { MeasurementType, Prisma } from "@/generated/prisma/client";
+import { WHOOP_RECOVERY_FIELD_TAGS } from "./client";
 
 /**
  * Maximum age of a webhook timestamp before it is treated as a replay. Five
@@ -119,6 +120,31 @@ export function verifyWhoopSignature(args: {
   return timingSafeEqual(a, b);
 }
 
+/**
+ * The `externalId` match for the rows a `<resource>.deleted` event removes.
+ *
+ * Rows are keyed `<resource-id>:<field-tag>`, but the v2 recovery webhook
+ * carries the id of the associated SLEEP, and a recovery's rows are keyed off
+ * that same sleep id (`<sleep_id>:hrv_rmssd`, ...). The sleep's own rows share
+ * the prefix (`<sleep_id>:sleep_eff`, `<sleep_id>:seg:REM`, ...). A prefix
+ * match on a recovery deletion therefore took the whole night's sleep with it,
+ * and a sleep deletion took the recovery. Recovery names its exact ids; sleep
+ * keeps the prefix minus those ids; every other resource keeps the prefix.
+ */
+export function deletedResourceExternalIdFilter(
+  resource: string | undefined,
+  resourceId: string,
+): Prisma.StringFilter {
+  const recoveryIds = WHOOP_RECOVERY_FIELD_TAGS.map(
+    (tag) => `${resourceId}:${tag}`,
+  );
+  if (resource === "recovery") return { in: recoveryIds };
+  if (resource === "sleep") {
+    return { startsWith: `${resourceId}:`, notIn: recoveryIds };
+  }
+  return { startsWith: `${resourceId}:` };
+}
+
 interface WhoopWebhookBody {
   user_id?: number | string;
   id?: number | string;
@@ -160,11 +186,11 @@ export async function processWhoopNotification(
   const queue = WHOOP_RESOURCE_QUEUE[resource ?? ""];
 
   if (verb === "deleted") {
-    // Soft-delete every matching row for this user + WHOOP resource id.
-    // `externalId` is `<whoop-resource-uuid>:<field-tag>` so a `startsWith`
-    // match catches every measurement derived from the deleted resource.
+    // Soft-delete every row derived from the deleted resource for this user.
+    // See `deletedResourceExternalIdFilter` for why the match is per resource.
     if (resourceId) {
       const now = new Date();
+      const externalId = deletedResourceExternalIdFilter(resource, resourceId);
       // Collect the affected `(type, measuredAt)` pairs BEFORE the
       // soft-delete — the rollup tail below needs to know which
       // `(type, day)` buckets lose rows, and after the updateMany the
@@ -173,7 +199,7 @@ export async function processWhoopNotification(
         where: {
           userId: connection.userId,
           source: "WHOOP",
-          externalId: { startsWith: `${resourceId}:` },
+          externalId,
           deletedAt: null,
         },
         select: { type: true, measuredAt: true },
@@ -182,7 +208,7 @@ export async function processWhoopNotification(
         where: {
           userId: connection.userId,
           source: "WHOOP",
-          externalId: { startsWith: `${resourceId}:` },
+          externalId,
           deletedAt: null,
         },
         data: { deletedAt: now, syncVersion: { increment: 1 } },

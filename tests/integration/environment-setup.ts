@@ -1,4 +1,4 @@
-import { afterEach, inject } from "vitest";
+import { afterEach, inject, vi } from "vitest";
 
 declare module "vitest" {
   export interface ProvidedContext {
@@ -31,4 +31,25 @@ afterEach(async () => {
   const { settleBackgroundTasks } =
     await import("@/lib/logging/background-tasks");
   await settleBackgroundTasks();
+});
+
+/**
+ * The same pin the unit setup applies (see `vitest.setup.ts`): the Fitbit
+ * suites run before the Web API turndown, whatever the real date, and a test
+ * about the turndown flips `isFitbitRetired` itself. The factory imports the
+ * module lazily, so nothing of the application loads before DATABASE_URL is
+ * bridged above.
+ */
+vi.mock("@/lib/fitbit/retirement", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/fitbit/retirement")>();
+  const isFitbitRetired = vi.fn((_now?: Date) => false);
+  return {
+    ...actual,
+    isFitbitRetired,
+    fitbitRetirement: vi.fn((now?: Date) => ({
+      ...actual.fitbitRetirement(now),
+      ended: isFitbitRetired(now),
+    })),
+  };
 });

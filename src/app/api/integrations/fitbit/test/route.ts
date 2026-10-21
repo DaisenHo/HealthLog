@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { getValidToken } from "@/lib/fitbit/sync-core";
 import { FITBIT_API_BASE } from "@/lib/fitbit/client";
 import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,14 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Too many test requests", 429, {
       errorCode: "rate_limited_self",
     });
+  }
+
+  if (isFitbitRetired()) {
+    return apiError(
+      "Google has turned the Fitbit Web API off. Connect Google Health instead.",
+      410,
+      { errorCode: "provider_retired" },
+    );
   }
 
   const tokenInfo = await getValidToken(user.id);

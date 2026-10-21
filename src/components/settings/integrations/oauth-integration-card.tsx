@@ -220,6 +220,10 @@ export function OAuthIntegrationCard(props: {
   callbackUrl: IntegrationCallbackUrls[OAuthIntegrationKey];
   icon?: LucideIcon;
   titleAccessory?: ReactNode;
+  /** The provider cannot sync any more (Fitbit after its API turndown). */
+  syncDisabled?: boolean;
+  /** …and cannot be connected either. */
+  connectDisabled?: boolean;
 }) {
   const { config } = props;
   const sync = useStandardSync({
@@ -229,7 +233,13 @@ export function OAuthIntegrationCard(props: {
     fullSyncResult: config.fullSyncResult,
     statusQueryKey: config.statusQueryKey(),
   });
-  return <OAuthIntegrationCardView {...props} sync={sync} />;
+  return (
+    <OAuthIntegrationCardView
+      {...props}
+      sync={sync}
+      fullSyncDisabled={props.syncDisabled}
+    />
+  );
 }
 
 /**
@@ -248,6 +258,7 @@ export function OAuthIntegrationCardView({
   fullSyncDisabled,
   syncResults,
   details,
+  connectDisabled,
 }: {
   config: OAuthIntegrationConfig;
   viewModel: IntegrationStatusViewModel | undefined;
@@ -263,6 +274,8 @@ export function OAuthIntegrationCardView({
   syncResults?: ReactNode;
   /** Provider extras for the details section. */
   details?: ReactNode;
+  /** Greys out "Connect" whatever the credentials say. */
+  connectDisabled?: boolean;
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -374,7 +387,7 @@ export function OAuthIntegrationCardView({
             type="button"
             size="sm"
             className="min-h-11 w-full sm:min-h-9 sm:w-auto"
-            disabled={!configured}
+            disabled={!configured || connectDisabled}
             onClick={connect}
             data-slot="integration-primary-action"
             data-action="connect"

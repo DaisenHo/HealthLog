@@ -21,10 +21,14 @@
  * Rate limits: 200 req / 15 min + 2000 / day per app. The walk is page-bounded
  * (`walkPages`, which reports a walk cut off at its ceiling instead of
  * passing it off as the whole history) and the per-activity detail fetch (for `calories`, absent from the summary)
- * is budget-capped; a 429 mid-walk records a transient failure and the next
- * cron tick resumes from the cursor.
+ * is budget-capped. A 429 mid-walk ends the walk where it stands: what was
+ * read lands, the cursor moves only as far as an oldest-first walk proves, the
+ * failure is booked transient, and the run reports how long Strava's headers
+ * say to wait (`retryAfterSeconds`), which the backfill waits out before its
+ * next run. It used to throw out of the walk and discard everything read.
  */
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { annotate, getEvent } from "@/lib/logging/context";
@@ -50,7 +54,11 @@ import {
   getStravaConnection,
   storeStravaTokens,
 } from "./credentials";
-import { StravaApiError, classifyStravaError } from "./response-classifier";
+import {
+  StravaApiError,
+  classifyStravaError,
+  isStravaRateLimited,
+} from "./response-classifier";
 
 /** Default first-incremental lookback (days) when no cursor exists yet. */
 export const STRAVA_SYNC_LOOKBACK_DAYS = 30;
@@ -115,6 +123,8 @@ export interface StravaHistoryRun {
    * expect.
    */
   oldestStart: Date | null;
+  /** Set when Strava's rate limit ended the run: seconds until it resets. */
+  retryAfterSeconds?: number;
 }
 
 /**
@@ -203,6 +213,9 @@ async function runStravaSync(
   let oldestStart: Date | null = null;
   let previousStart: number | null = null;
   let newestFirst = true;
+  // Assigned inside the page callback; the cast keeps the compiler from
+  // narrowing it to its initial `null` after the walk.
+  let rateLimited = null as StravaApiError | null;
 
   try {
     // Strava pages by number; a short page is the last one. A walk that
@@ -213,29 +226,37 @@ async function runStravaSync(
       maxPages,
       async (cursor) => {
         const page = cursor ?? 1;
-        const activities = await authed((t) =>
-          fetchActivities(t, {
-            after: afterEpoch,
-            before: beforeEpoch,
-            page,
-            perPage: PER_PAGE,
-          }),
-        );
+        let activities: Awaited<ReturnType<typeof fetchActivities>>;
+        try {
+          activities = await authed((t) =>
+            fetchActivities(t, {
+              after: afterEpoch,
+              before: beforeEpoch,
+              page,
+              perPage: PER_PAGE,
+            }),
+          );
+        } catch (err) {
+          if (!isStravaRateLimited(err)) throw err;
+          rateLimited = err;
+          return { items: [], next: null, interrupted: true };
+        }
         const mapped: StravaWorkoutRow[] = [];
         for (const a of activities) {
           // Fetch detail only to fill `calories` (absent from the summary),
           // and only while the budget allows. When the summary already lacks
           // HR we also let the detail top it up. A detail failure is
-          // non-fatal — map from the summary — but a 429 aborts the whole
-          // walk (transient).
+          // non-fatal — map from the summary — but a 429 ends the walk here,
+          // keeping the activities before this one.
           let detail: StravaDetailedActivity | null = null;
           if (detailBudget > 0) {
             try {
               detail = await authed((t) => fetchActivityById(t, a.id));
               detailBudget -= 1;
             } catch (err) {
-              if (err instanceof StravaApiError && err.httpStatus === 429) {
-                throw err;
+              if (isStravaRateLimited(err)) {
+                rateLimited = err;
+                return { items: mapped, next: null, interrupted: true };
               }
               getEvent()?.addWarning(
                 `strava: activity detail fetch failed for ${a.id}: ${err}`,
@@ -277,6 +298,12 @@ async function runStravaSync(
     throw markSyncFailureRecorded(err);
   }
 
+  // A walk the rate limit ended is a prefix of the pages in the order Strava
+  // served them. Oldest first (an incremental walk), every activity up to the
+  // newest one read is in; newest first, older ones are still missing, and
+  // moving the cursor would skip them for good.
+  const cursorSafe = rateLimited === null || !newestFirst;
+
   let imported: number;
   try {
     imported = await upsertStravaWorkouts(userId, rows);
@@ -284,7 +311,7 @@ async function runStravaSync(
     // Advance the incremental cursor to the newest activity start we saw, but
     // never move it backwards (a bounded backfill page-walk may not reach the
     // very newest activity in one pass).
-    if (newestStart) {
+    if (newestStart && cursorSafe) {
       await prisma.user.updateMany({
         where: {
           id: userId,
@@ -301,6 +328,26 @@ async function runStravaSync(
     throw markSyncFailureRecorded(err);
   }
 
+  if (rateLimited) {
+    // Not finished, so no success; booked transient, the next run goes on.
+    await recordStravaFailure(userId, rateLimited);
+    if (imported > 0) invalidateUserMeasurements(userId);
+    annotate({
+      action: {
+        name: "strava.sync.rate_limited",
+        details: {
+          imported,
+          retry_after_seconds: rateLimited.retryAfterSeconds ?? null,
+        },
+      },
+    });
+    return {
+      imported,
+      oldestStart: newestFirst ? oldestStart : null,
+      retryAfterSeconds: rateLimited.retryAfterSeconds,
+    };
+  }
+
   await recordSyncSuccess(userId, "strava");
 
   // Background-sync posture: sweep the workouts cache and mark the analytics
@@ -314,6 +361,42 @@ async function runStravaSync(
     action: { name: "strava.sync.complete", details: { imported } },
   });
   return { imported, oldestStart: newestFirst ? oldestStart : null };
+}
+
+/**
+ * The update for a row mapped from the summary alone. Calories, the
+ * description and (when the summary has none) the heart rate come only from
+ * the detail read, so their absence here says nothing: the stored values stay.
+ * A detail read that did run is written as it came, nulls included.
+ */
+async function summaryOnlyUpdate<
+  D extends {
+    totalEnergyKcal: number | null;
+    avgHeartRate: number | null;
+    maxHeartRate: number | null;
+    metadata: Prisma.InputJsonValue;
+  },
+>(data: D, stored: { metadata: Prisma.JsonValue } | null) {
+  const { totalEnergyKcal, avgHeartRate, maxHeartRate, metadata, ...rest } =
+    data;
+  const storedMeta =
+    stored?.metadata && typeof stored.metadata === "object"
+      ? (stored.metadata as Record<string, unknown>)
+      : {};
+  const description = storedMeta.stravaDescription;
+  return {
+    ...rest,
+    ...(totalEnergyKcal != null ? { totalEnergyKcal } : {}),
+    ...(avgHeartRate != null ? { avgHeartRate } : {}),
+    ...(maxHeartRate != null ? { maxHeartRate } : {}),
+    metadata:
+      typeof description === "string"
+        ? ({
+            ...(metadata as Record<string, unknown>),
+            stravaDescription: description,
+          } as Prisma.InputJsonValue)
+        : metadata,
+  };
 }
 
 /**
@@ -362,15 +445,24 @@ export async function upsertStravaWorkouts(
           () => {},
         );
       } else {
-        await prisma.workout.update({
-          where: {
-            userId_source_externalId: {
-              userId,
-              source: "STRAVA",
-              externalId: r.externalId,
-            },
+        const where = {
+          userId_source_externalId: {
+            userId,
+            source: "STRAVA" as const,
+            externalId: r.externalId,
           },
-          data,
+        };
+        await prisma.workout.update({
+          where,
+          data: r.summaryOnly
+            ? await summaryOnlyUpdate(
+                data,
+                await prisma.workout.findUnique({
+                  where,
+                  select: { metadata: true },
+                }),
+              )
+            : data,
         });
       }
       imported += 1;

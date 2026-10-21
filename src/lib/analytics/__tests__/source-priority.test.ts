@@ -519,25 +519,23 @@ describe("pickCanonicalSourceRows — v1.4.25 W8c two-axis device-type picker", 
 /**
  * v1.38.x — what the EXTERNAL source does to a contested day.
  *
- * `EXTERNAL` is on no priority ladder, deliberately: the `steps` and `spo2`
- * defaults already sit at `metricSourceLadder`'s `.max(8)`, so a ninth entry
- * would come back from `GET /api/auth/me/source-priority`, be PUT back whole
- * by the settings page, and 422 — breaking ladder saves for everyone.
+ * `EXTERNAL` was on no priority ladder at first, because the ladders were
+ * capped at eight entries and a ninth would have 422'd every settings save.
+ * The cap is the number of sources now, and since v1.43.11 `EXTERNAL` sits
+ * right after `MANUAL` on the ladders that rank `MANUAL`.
  *
- * That omission is not inert. It decides a real behaviour, and one that
- * CHANGED when ingested rows stopped being labelled `MANUAL`: before, a typed
- * reading and a bridged one were the same source and both survived a day; now
- * `MANUAL` ranks, `EXTERNAL` does not, and the bridged row leaves the
- * canonical set for that day. Seven call sites consume this picker (daily
- * totals, the health score, the doctor report, correlations, mood crosstabs,
- * PR detection), so the effect is user-visible and is written up in the
- * changelog.
+ * The behaviour this pins CHANGED when ingested rows stopped being labelled
+ * `MANUAL`: before, a typed reading and a bridged one were the same source
+ * and both survived a day; now `MANUAL` outranks `EXTERNAL`, and the bridged
+ * row leaves the canonical set for that day. Seven call sites consume this
+ * picker (daily totals, the health score, the doctor report, correlations,
+ * mood crosstabs, PR detection), so the effect is user-visible.
  *
  * Pinned here because it is emergent from a rank ladder rather than stated
- * anywhere in code: put `EXTERNAL` on a ladder and the first case below goes
- * red, which is the review anybody adding it deserves.
+ * anywhere in code: rank `EXTERNAL` above `MANUAL` and the first case below
+ * goes red, which is the review anybody doing that deserves.
  */
-describe("pickCanonicalSourceRows — the unranked EXTERNAL source", () => {
+describe("pickCanonicalSourceRows — the EXTERNAL source", () => {
   const day = "2026-09-02";
 
   function weightRow(
@@ -573,10 +571,9 @@ describe("pickCanonicalSourceRows — the unranked EXTERNAL source", () => {
     expect(out.pickedByDay.get(day)).toBe("MANUAL");
   });
 
-  it("keeps a bridged-only day, since nothing on the ladder is present", () => {
-    // The `!picked` pass-through. Without this arm an account that ONLY ever
-    // pushes readings would go dark on every surface listed above, which
-    // would be a far worse regression than the one above is a change.
+  it("keeps a bridged-only day, picked from the ladder", () => {
+    // An account that ONLY ever pushes readings keeps every one of them:
+    // the bridge is the day's one source, and the ladder now names it.
     const out = pickCanonicalSourceRows(
       [
         weightRow("EXTERNAL", 82.4, "06:30"),
@@ -588,8 +585,7 @@ describe("pickCanonicalSourceRows — the unranked EXTERNAL source", () => {
     );
     expect(out.canonicalRows).toHaveLength(2);
     expect(out.canonicalRows.every((r) => r.source === "EXTERNAL")).toBe(true);
-    // No ladder source won, so the day names no pick.
-    expect(out.pickedByDay.has(day)).toBe(false);
+    expect(out.pickedByDay.get(day)).toBe("EXTERNAL");
   });
 
   it("kept both when the bridged row was still labelled MANUAL", () => {
@@ -607,10 +603,9 @@ describe("pickCanonicalSourceRows — the unranked EXTERNAL source", () => {
     expect(out.canonicalRows).toHaveLength(2);
   });
 
-  it("lets a user who ranks EXTERNAL themselves have it win", () => {
-    // Not reachable from the settings UI today (the ladder cap keeps it off
-    // the page), but the picker resolves whatever ladder it is handed, and a
-    // stored ladder naming it must be honoured rather than ignored.
+  it("lets a user who ranks EXTERNAL above MANUAL have it win", () => {
+    // The picker resolves whatever ladder it is handed; a stored ladder that
+    // puts the bridge first is honoured.
     const out = pickCanonicalSourceRows(
       [
         weightRow("EXTERNAL", 82.4, "06:30"),

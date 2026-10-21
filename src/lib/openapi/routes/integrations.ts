@@ -1151,10 +1151,29 @@ const integrationEnvelopeEntry = z
       ),
     hasToken: z.boolean().optional().describe("Nightscout only."),
     allowPrivateHost: z.boolean().optional().describe("Nightscout only."),
+    retirement: z
+      .object({
+        endsOn: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .describe("The day Google turns the legacy Fitbit Web API off."),
+        ended: z
+          .boolean()
+          .describe(
+            "The day has come: the connection no longer syncs, its imported data stays, and `health` is null.",
+          ),
+        successor: z
+          .enum(["google-health"])
+          .describe(
+            "The integration that reads the same Fitbit and Pixel devices. Moving needs a fresh consent; the Fitbit grant cannot be carried over.",
+          ),
+      })
+      .optional()
+      .describe("Fitbit only. The end of the legacy Fitbit Web API."),
     health: connectionHealth
       .nullable()
       .describe(
-        "The unified connection state, null when the provider is not connected. It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry; those nine are deprecated and removed in v1.44.",
+        "The unified connection state, null when the provider is not connected (and for Fitbit once `retirement.ended`). It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry; those nine are deprecated and removed in v1.44.",
       ),
   })
   .meta({
@@ -2020,6 +2039,11 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "Either limiter tripped: more than 5 syncs in 60 s, or a second full sync within the hour. `meta.errorCode` = `rate_limited_self` for both; the message distinguishes them.",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        "410": {
+          description:
+            "Google turned the legacy Fitbit Web API off on 2026-10-30; nothing is fetched. `meta.errorCode` = `provider_retired`. The data already imported stays; Google Health reads the same devices.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },
@@ -2663,6 +2687,11 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         ...stdResponses,
         ...probeNotConfigured422,
         ...selfRateLimited429,
+        "410": {
+          description:
+            "Google turned the legacy Fitbit Web API off on 2026-10-30; nothing is probed. `meta.errorCode` = `provider_retired`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

@@ -741,15 +741,16 @@ export function mapHeartRateVariability(
   body: unknown,
   tz?: string,
 ): FitbitMappedMeasurement[] {
-  // Fitbit's HRV summary is an RMSSD estimator (`value.dailyRmssd`). It lands in
-  // the canonical `HEART_RATE_VARIABILITY` slot that FITBIT occupies in the
-  // source-priority `hrv` ladder (alongside Apple / Oura), keeping cross-source
-  // comparison on one axis. (`HRV_RMSSD` is reserved for the WHOOP-native slot.)
+  // Fitbit's HRV summary is an RMSSD estimator (`value.dailyRmssd`), so it lands
+  // in `HRV_RMSSD` beside WHOOP / Oura / Polar. `HEART_RATE_VARIABILITY` is the
+  // SDNN series; the two estimators are not interchangeable, and a Fitbit night
+  // ranked into the SDNN ladder used to splice RMSSD values into an Apple
+  // Watch SDNN series day by day.
   const rows = readArray(body, "hrv") as FitbitDailyRow[];
   return mapDailySummary(
     rows,
     {
-      type: "HEART_RATE_VARIABILITY",
+      type: "HRV_RMSSD",
       unit: "ms",
       fieldTag: "hrv",
       leaves: ["dailyRmssd"],
@@ -987,9 +988,9 @@ export const FITBIT_FIELD_MAP: Record<
     note: "spo2 summary value.avg",
   },
   heartRateVariability: {
-    type: "HEART_RATE_VARIABILITY",
+    type: "HRV_RMSSD",
     unit: "ms",
-    note: "hrv summary value.dailyRmssd (RMSSD estimator); canonical HRV slot",
+    note: "hrv summary value.dailyRmssd (RMSSD estimator), apart from SDNN",
   },
   restingHeartRate: {
     type: "RESTING_HEART_RATE",

@@ -21,12 +21,13 @@
  * only write and it is idempotent — no cursor, no backfill queue (the API caps
  * history at 30 days, so first-connect backfill IS the first regular tick).
  *
- * Ledger: workouts and vitals share the single `polar` integration ledger. This
- * leg records only its OWN FAILURE (and rethrows so the cohort handler can
- * attribute it); the single success write stays the vitals leg's job so a fully
- * successful pass records success exactly once. A workouts-leg failure records a
- * transient/reauth failure on the shared ledger but never touches the vitals
- * success timestamp (`recordSyncFailure` leaves `lastSuccessAt` intact).
+ * Ledger: workouts and vitals share the single `polar` integration ledger, each
+ * under its own leg. This leg records its own failure (and rethrows so the
+ * cohort handler can attribute it) and its own success. The success used to be
+ * left to the vitals leg, but a leg-scoped success clears only its own leg, so
+ * a workouts failure stayed on the row for good once recorded: every later
+ * vitals success saw the workouts leg still failing and kept the connection in
+ * error, however healthy the exercises read had become.
  */
 import { prisma } from "@/lib/db";
 import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
@@ -35,11 +36,16 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import {
   markSyncFailureRecorded,
   recordSyncFailure,
+  recordSyncSuccess,
   toFailureKind,
 } from "@/lib/integrations/status";
 import { fetchExercises, mapExercise, type PolarWorkoutRow } from "./client";
 import { getPolarConnection } from "./credentials";
-import { PolarApiError, classifyPolarError } from "./response-classifier";
+import {
+  PolarApiError,
+  classifyPolarError,
+  isPolarCollectionRefusal,
+} from "./response-classifier";
 
 const POLAR_LEG_WORKOUTS = "workouts";
 
@@ -70,13 +76,16 @@ async function recordPolarWorkoutFailure(
  * written. A user with no Polar connection is a clean no-op (returns 0, touches
  * no status row).
  *
- * A 403 on the exercises read (a scope gap under `accesslink.read_all`) is
- * classified through the shared response classifier as `reauth_required` — a
- * SOFT/recoverable integration error surfaced on the status ledger, NOT a hard
- * crash: it is recorded and rethrown so the composite cohort pass isolates this
- * user and the vitals leg's own result is untouched.
+ * A 403 on the exercises read is a refusal when the vitals leg proved the token
+ * in the same run (`tokenProven`): the account does not share exercises, which
+ * no reconnect changes, so the leg reads nothing and stays healthy. Without
+ * that proof the 403 is classified `reauth_required` as before, recorded, and
+ * rethrown so the composite cohort pass isolates this user.
  */
-export async function syncUserPolarWorkouts(userId: string): Promise<number> {
+export async function syncUserPolarWorkouts(
+  userId: string,
+  opts: { tokenProven?: boolean } = {},
+): Promise<number> {
   const conn = await getPolarConnection(userId);
   if (!conn) return 0;
 
@@ -91,6 +100,11 @@ export async function syncUserPolarWorkouts(userId: string): Promise<number> {
       if (row) rows.push(row);
     }
   } catch (err) {
+    if (opts.tokenProven && isPolarCollectionRefusal(err)) {
+      annotate({ meta: { polar_collections_refused: [POLAR_LEG_WORKOUTS] } });
+      await recordSyncSuccess(userId, "polar", { leg: POLAR_LEG_WORKOUTS });
+      return 0;
+    }
     await recordPolarWorkoutFailure(userId, err);
     throw markSyncFailureRecorded(err);
   }
@@ -110,6 +124,7 @@ export async function syncUserPolarWorkouts(userId: string): Promise<number> {
     invalidateUserMeasurements(userId);
   }
 
+  await recordSyncSuccess(userId, "polar", { leg: POLAR_LEG_WORKOUTS });
   return imported;
 }
 

@@ -6619,7 +6619,8 @@
       "nocode": "Fitbit heeft geen autorisatiecode teruggestuurd. Probeer het opnieuw en sta toegang toe in het Fitbit-venster.",
       "nocreds": "Fitbit is niet geconfigureerd. Voeg hierboven je Fitbit-OAuth-inloggegevens toe en probeer het opnieuw.",
       "token": "De tokenuitwisseling met Fitbit is mislukt. Start de koppeling opnieuw.",
-      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw."
+      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw.",
+      "retired": "Google heeft de Fitbit Web API uitgeschakeld, dus er kan geen nieuwe Fitbit-koppeling meer worden gemaakt. Koppel in plaats daarvan Google Health, dat dezelfde apparaten leest."
     },
     "integrations": {
       "withings": {
@@ -7439,6 +7440,15 @@
       "homePlaceUnknown": "De Dawarich-instantie kent deze plaats niet meer.",
       "notConnected": "Dawarich is niet gekoppeld.",
       "generic": "Dat is niet gelukt. Probeer het opnieuw."
+    },
+    "fitbitRetirement": {
+      "ending": "Google schakelt de Fitbit Web API uit op {date}. Vanaf dan synchroniseert deze koppeling niet meer.",
+      "ended": "Google heeft de Fitbit Web API uitgeschakeld op {date}. Deze koppeling synchroniseert niet meer.",
+      "move": "Google Health leest dezelfde Fitbit- en Pixel-apparaten. Koppel het hieronder om je gegevens te blijven ontvangen. Google vraagt nog een keer om je toestemming, omdat de Fitbit-koppeling niet kan worden overgezet. Alles wat al is geïmporteerd blijft bewaard.",
+      "toCard": "Naar Google Health",
+      "guide": "Zo koppel je Google Health",
+      "badgeEnding": "Wordt uitgeschakeld",
+      "badgeEnded": "Uitgeschakeld"
     }
   },
   "admin": {
@@ -10403,6 +10413,7 @@
     "vital": {
       "RESTING_HEART_RATE": "Rusthartslag",
       "HEART_RATE_VARIABILITY": "Hartslagvariabiliteit",
+      "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Herstel",
       "OXYGEN_SATURATION": "Zuurstofverzadiging",
       "BODY_TEMPERATURE": "Lichaamstemperatuur",

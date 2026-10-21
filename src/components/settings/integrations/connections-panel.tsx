@@ -19,6 +19,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { AppleHealthCard } from "@/components/settings/integrations/apple-health-card";
 import { DawarichCard } from "@/components/settings/integrations/dawarich-card";
+import { FitbitRetirementNotice } from "@/components/settings/integrations/fitbit-retirement-notice";
 import { GarminInfoNote } from "@/components/settings/integrations/garmin-info-note";
 import { GoogleHealthCard } from "@/components/settings/integrations/google-health-card";
 import { IntegrationFallbackRow } from "@/components/settings/integrations/integration-fallback-row";
@@ -136,6 +137,9 @@ const PROVIDER_ONLY_REASONS: Partial<
   Record<OAuthOutcomeProvider, ReadonlySet<string>>
 > = {
   oura: new Set(["issuer"]),
+  // Fitbit's `retired`: Google has turned the Web API off, so the connect
+  // route refuses a new grant.
+  fitbit: new Set(["retired"]),
 };
 
 type OAuthOutcome =
@@ -216,6 +220,8 @@ export function ConnectionsPanel({
   const queryClient = useQueryClient();
 
   const { data: integrationStatus } = useIntegrationStatuses(isAuthenticated);
+  const fitbitStatus = pickStatus(integrationStatus, "fitbit");
+  const fitbitRetired = fitbitStatus?.retirement?.ended === true;
 
   // OAuth callback handler — reads `?withings=connected|error&reason=…`
   // from the URL (lazy initialiser, same shape as the Codex handler in
@@ -332,20 +338,35 @@ export function ConnectionsPanel({
         />
       </div>
       <div id="fitbit" className="scroll-mt-28">
+        <FitbitRetirementNotice retirement={fitbitStatus?.retirement} />
         <OAuthIntegrationCard
           config={OAUTH_INTEGRATIONS.fitbit}
-          viewModel={pickStatus(integrationStatus, "fitbit")}
+          viewModel={fitbitStatus}
           callbackUrl={callbackUrls.fitbit}
+          syncDisabled={fitbitRetired}
+          connectDisabled={fitbitRetired}
           titleAccessory={
             <>
               <TagChip>{t("settings.fitbitTag")}</TagChip>
-              <Badge
-                variant="outline"
-                data-testid="fitbit-experimental-badge"
-                className="border-warning/50 text-warning"
-              >
-                {t("settings.fitbitExperimentalBadge")}
-              </Badge>
+              {fitbitStatus?.retirement ? (
+                <Badge
+                  variant="outline"
+                  data-testid="fitbit-retirement-badge"
+                  className="border-warning/50 text-warning"
+                >
+                  {fitbitRetired
+                    ? t("settings.fitbitRetirement.badgeEnded")
+                    : t("settings.fitbitRetirement.badgeEnding")}
+                </Badge>
+              ) : (
+                <Badge
+                  variant="outline"
+                  data-testid="fitbit-experimental-badge"
+                  className="border-warning/50 text-warning"
+                >
+                  {t("settings.fitbitExperimentalBadge")}
+                </Badge>
+              )}
             </>
           }
         />

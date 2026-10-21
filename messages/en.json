@@ -6619,7 +6619,8 @@
       "nocode": "Fitbit did not return an authorization code. Try again and allow access in the Fitbit dialog.",
       "nocreds": "Fitbit is not configured. Add your Fitbit OAuth credentials above and try again.",
       "token": "The token exchange with Fitbit failed. Please start the connection again.",
-      "generic": "Unknown error while connecting. Please start the connection again."
+      "generic": "Unknown error while connecting. Please start the connection again.",
+      "retired": "Google has turned the Fitbit Web API off, so no new Fitbit connection can be made. Connect Google Health instead, which reads the same devices."
     },
     "integrations": {
       "withings": {
@@ -7439,6 +7440,15 @@
       "homePlaceUnknown": "The Dawarich instance no longer knows this place.",
       "notConnected": "Dawarich is not connected.",
       "generic": "That did not work. Try again."
+    },
+    "fitbitRetirement": {
+      "ending": "Google turns the Fitbit Web API off on {date}. From then on this connection stops syncing.",
+      "ended": "Google turned the Fitbit Web API off on {date}. This connection no longer syncs.",
+      "move": "Google Health reads the same Fitbit and Pixel devices. Connect it below to keep your data coming. Google asks for your consent once more, because the Fitbit connection cannot be carried over. Everything already imported stays.",
+      "toCard": "Go to Google Health",
+      "guide": "How to connect Google Health",
+      "badgeEnding": "Shutting down",
+      "badgeEnded": "Retired"
     }
   },
   "admin": {
@@ -10403,6 +10413,7 @@
     "vital": {
       "RESTING_HEART_RATE": "Resting heart rate",
       "HEART_RATE_VARIABILITY": "Heart-rate variability",
+      "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Recovery",
       "OXYGEN_SATURATION": "Oxygen saturation",
       "BODY_TEMPERATURE": "Body temperature",

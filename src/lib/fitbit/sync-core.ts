@@ -21,6 +21,7 @@ import {
   recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
 import { refreshAccessToken } from "./client";
+import { isFitbitRetired } from "./retirement";
 import { getUserFitbitCredentials } from "./credentials";
 import { FitbitApiError, classifyFitbitError } from "./response-classifier";
 import type { FitbitClassification } from "./response-classifier";
@@ -71,10 +72,15 @@ export interface FitbitTokenInfo {
  * response ever omits the new refresh token (a malformed reply), keep the stored
  * one rather than wiping it — a blank refresh token would brick every future
  * refresh.
+ *
+ * Once Google has turned the Web API off (`./retirement`) there is no token
+ * worth holding: null, with no refresh attempt and nothing on the ledger, so
+ * every caller reads the connection as having nothing to fetch.
  */
 export async function getValidToken(
   userId: string,
 ): Promise<FitbitTokenInfo | null> {
+  if (isFitbitRetired()) return null;
   const connection = await prisma.fitbitConnection.findUnique({
     where: { userId },
   });

@@ -43,6 +43,7 @@ import {
   enqueueBootTimeFitbitBackfill,
   runFitbitBackfillForUser,
 } from "../fitbit-backfill";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -144,5 +145,30 @@ describe("runFitbitBackfillForUser — a walk that reached its ceiling", () => {
       imported: 3,
     });
     expect(prismaMock.fitbitConnection.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("after Google turned the Fitbit Web API off", () => {
+  it("enqueues no backfill and runs a queued one without walking or stamping", async () => {
+    vi.mocked(isFitbitRetired).mockReturnValue(true);
+    try {
+      prismaMock.fitbitConnection.findMany.mockResolvedValue([
+        { userId: "u1" },
+      ]);
+      await expect(enqueueBootTimeFitbitBackfill()).resolves.toEqual({
+        enqueued: 0,
+        skipped: 0,
+        error: null,
+      });
+      expect(bossSend).not.toHaveBeenCalled();
+
+      await expect(runFitbitBackfillForUser("u1")).resolves.toEqual({
+        imported: 0,
+      });
+      expect(syncUserFitbit).not.toHaveBeenCalled();
+      expect(prismaMock.fitbitConnection.update).not.toHaveBeenCalled();
+    } finally {
+      vi.mocked(isFitbitRetired).mockReturnValue(false);
+    }
   });
 });

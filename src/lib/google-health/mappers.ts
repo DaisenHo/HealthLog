@@ -511,16 +511,16 @@ export function mapHeartRateVariability(
   tz?: string,
 ): GoogleHealthMappedMeasurement[] {
   const dt = GOOGLE_HEALTH_DATA_TYPES.heartRateVariability;
-  // The daily field is an unlabelled "average HRV ms". Per the design decision
-  // it lands in the SDNN-lineage `HEART_RATE_VARIABILITY` slot
-  // (Apple-comparable), NOT WHOOP's `HRV_RMSSD` (reserved for the WHOOP-native
-  // estimator). The per-sample type carries explicit RMSSD + SDNN fields —
-  // re-confirm the estimator against live data and revisit if warranted.
+  // Google documents the daily average as RMSSD ("average heart rate
+  // variability calculated using the root mean square of successive
+  // differences"), the same estimator the classic Fitbit API reports as
+  // `dailyRmssd`. It lands in `HRV_RMSSD`, apart from the SDNN
+  // `HEART_RATE_VARIABILITY` series.
   return mapSimple(
     point,
     dt,
     {
-      type: "HEART_RATE_VARIABILITY",
+      type: "HRV_RMSSD",
       unit: "ms",
       fieldTag: "hrv",
       valuePaths: [`${dt.key}.averageHeartRateVariabilityMilliseconds`],

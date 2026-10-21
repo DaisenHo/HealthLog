@@ -6619,7 +6619,8 @@
       "nocode": "Fitbit non ha restituito un codice di autorizzazione. Riprova e concedi l'accesso nella finestra di Fitbit.",
       "nocreds": "Fitbit non è configurato. Aggiungi le tue credenziali OAuth di Fitbit qui sopra e riprova.",
       "token": "Lo scambio del token con Fitbit è fallito. Riavvia la connessione.",
-      "generic": "Errore sconosciuto durante la connessione. Riavvia la connessione."
+      "generic": "Errore sconosciuto durante la connessione. Riavvia la connessione.",
+      "retired": "Google ha disattivato l'API web di Fitbit, quindi non è più possibile creare una nuova connessione Fitbit. Collega invece Google Health, che legge gli stessi dispositivi."
     },
     "integrations": {
       "withings": {
@@ -7439,6 +7440,15 @@
       "homePlaceUnknown": "L’istanza Dawarich non conosce più questo luogo.",
       "notConnected": "Dawarich non è collegato.",
       "generic": "Non ha funzionato. Riprova."
+    },
+    "fitbitRetirement": {
+      "ending": "Google disattiva l'API web di Fitbit il {date}. Da quel momento questa connessione smette di sincronizzarsi.",
+      "ended": "Google ha disattivato l'API web di Fitbit il {date}. Questa connessione non si sincronizza più.",
+      "move": "Google Health legge gli stessi dispositivi Fitbit e Pixel. Collegalo qui sotto per continuare a ricevere i tuoi dati. Google ti chiederà di nuovo il consenso, perché la connessione Fitbit non può essere trasferita. Tutto ciò che è già stato importato resta.",
+      "toCard": "Vai a Google Health",
+      "guide": "Come collegare Google Health",
+      "badgeEnding": "In dismissione",
+      "badgeEnded": "Dismesso"
     }
   },
   "admin": {
@@ -10403,6 +10413,7 @@
     "vital": {
       "RESTING_HEART_RATE": "Frequenza cardiaca a riposo",
       "HEART_RATE_VARIABILITY": "Variabilità della frequenza cardiaca",
+      "HRV_RMSSD": "HRV (RMSSD)",
       "RECOVERY_SCORE": "Recovery",
       "OXYGEN_SATURATION": "Saturazione di ossigeno",
       "BODY_TEMPERATURE": "Temperatura corporea",

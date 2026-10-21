@@ -20,6 +20,7 @@ import {
   withPageWalkLedger,
 } from "@/lib/integrations/page-walk";
 import { syncUserFitbit } from "@/lib/fitbit/sync";
+import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 export const FITBIT_BACKFILL_QUEUE = "fitbit-backfill";
 
@@ -58,6 +59,17 @@ export interface FitbitBackfillPayload {
 export async function runFitbitBackfillForUser(
   userId: string,
 ): Promise<{ imported: number }> {
+  // A job queued before the turndown: the history it would walk is gone with
+  // the API. Returns without stamping, so the marker never claims a walk.
+  if (isFitbitRetired()) {
+    annotate({
+      action: {
+        name: "fitbit.backfill.skipped_retired",
+        details: { imported: 0 },
+      },
+    });
+    return { imported: 0 };
+  }
   if (await isReauthRequired(userId, "fitbit")) {
     annotate({
       action: {
@@ -133,7 +145,7 @@ export async function enqueueBootTimeFitbitBackfill(
   error: string | null;
 }> {
   const boss = getGlobalBoss();
-  if (!boss) {
+  if (!boss || isFitbitRetired()) {
     return { enqueued: 0, skipped: 0, error: null };
   }
 

@@ -98,6 +98,7 @@ const LEGIT_IDENTICAL = new Set<string>([
   "insights.derived.composite.READINESS.component.hrv",
   "labs.catalog.hs-crp",
   "measurements.typeHrvRmssd",
+  "illness.vital.HRV_RMSSD",
   "settings.sections.sources.metrics.hrvRmssd",
   "measurements.typeVo2Max",
   // "{hours} h {minutes} min": the SI symbols for hour and minute.

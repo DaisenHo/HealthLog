@@ -17,6 +17,7 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: {
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       upsert: vi.fn(),
@@ -105,16 +106,69 @@ interface FakeSegment {
   id?: number;
 }
 
-function installFetchMock(segments: FakeSegment[]) {
-  const fetchMock = vi.fn(async () => ({
-    status: 200,
-    json: async () => ({
-      status: 0,
-      body: { series: segments },
-    }),
-  }));
+type FakeSummary = {
+  id?: number;
+  startdate: number;
+  enddate: number;
+  modified?: number;
+  data?: Record<string, number | null>;
+};
+
+/** The night list Withings would derive from these segments, one per session. */
+function nightsOf(segments: FakeSegment[]): FakeSummary[] {
+  const bySession = new Map<string, FakeSummary>();
+  for (const seg of segments) {
+    const key = String(seg.id ?? "no-id");
+    const night = bySession.get(key);
+    bySession.set(
+      key,
+      night
+        ? {
+            ...night,
+            startdate: Math.min(night.startdate, seg.startdate),
+            enddate: Math.max(night.enddate, seg.enddate),
+          }
+        : { id: seg.id, startdate: seg.startdate, enddate: seg.enddate },
+    );
+  }
+  return [...bySession.values()];
+}
+
+/**
+ * Answer the two Sleep v2 actions the way Withings does: `getsummary` lists
+ * the nights, `get` returns the segments inside the requested span, and no
+ * more than its first 24 hours.
+ */
+function installSleepApi(segments: FakeSegment[], summaries: FakeSummary[]) {
+  const fetchMock = vi.fn(async (_url: string, init: { body: string }) => {
+    const params = new URLSearchParams(init.body);
+    if (params.get("action") === "getsummary") {
+      return {
+        status: 200,
+        json: async () => ({ status: 0, body: { series: summaries } }),
+      };
+    }
+    // Sleep v2 Get: "only the first 24h after startdate will be returned".
+    const from = Number(params.get("startdate"));
+    const to = Math.min(Number(params.get("enddate")), from + 24 * 3600);
+    return {
+      status: 200,
+      json: async () => ({
+        status: 0,
+        body: {
+          series: segments.filter(
+            (seg) => seg.startdate >= from && seg.enddate <= to,
+          ),
+        },
+      }),
+    };
+  });
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
+}
+
+function installFetchMock(segments: FakeSegment[]) {
+  return installSleepApi(segments, nightsOf(segments));
 }
 
 beforeEach(() => {
@@ -144,6 +198,8 @@ beforeEach(() => {
   vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
     scope: "user.metrics,user.activity",
   } as never);
+  // No stage row stored yet: every listed night is one to read.
+  vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
 });
 
 afterEach(() => {
@@ -158,21 +214,9 @@ afterEach(() => {
  */
 function installSegmentThenSummaryFetch(
   segments: FakeSegment[],
-  summaries: Array<{
-    id?: number;
-    startdate: number;
-    enddate: number;
-    data?: Record<string, number | null>;
-  }>,
+  summaries: FakeSummary[],
 ) {
-  let call = 0;
-  const fetchMock = vi.fn(async () => {
-    const body = call === 0 ? { series: segments } : { series: summaries };
-    call++;
-    return { status: 200, json: async () => ({ status: 0, body }) };
-  });
-  vi.stubGlobal("fetch", fetchMock);
-  return fetchMock;
+  return installSleepApi(segments, summaries);
 }
 
 describe("mapWithingsSleepSummary", () => {
@@ -559,44 +603,50 @@ describe("syncUserSleep — segment writes + idempotency", () => {
     expect(byType.get("OXYGEN_SATURATION")?.value).toBe(95);
   });
 
-  it("keeps stage segments when the summary fetch fails (v1.18.10 P0)", async () => {
-    let call = 0;
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => {
-        const isSummary = call > 0;
-        call++;
-        return {
-          status: 200,
-          json: async () =>
-            isSummary
-              ? { status: 293 } // summary errors
-              : {
-                  status: 0,
-                  body: {
-                    series: [
-                      {
-                        startdate: 1715000000,
-                        enddate: 1715003600,
-                        state: 2,
-                        id: 1,
-                      },
-                    ],
-                  },
+  it("reads the last 24 hours and books the leg failed when the summary fails", async () => {
+    const fetchMock = vi.fn(async (_url: string, init: { body: string }) => {
+      const params = new URLSearchParams(init.body);
+      return {
+        status: 200,
+        json: async () =>
+          params.get("action") === "getsummary"
+            ? { status: 293 } // summary errors
+            : {
+                status: 0,
+                body: {
+                  series: [
+                    {
+                      startdate: 1715000000,
+                      enddate: 1715003600,
+                      state: 2,
+                      id: 1,
+                    },
+                  ],
                 },
-        };
-      }),
-    );
-    vi.mocked(prisma.measurement.findFirst).mockResolvedValue(null);
-    vi.mocked(prisma.measurement.create).mockResolvedValue({} as never);
+              },
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
 
     const imported = await syncUserSleep("user-1");
-    // The one stage segment is still written; the summary failure is swallowed.
+
+    // Without the night list one slice of the last 24 hours is read, so
+    // last night still lands; it is not swept, since a slice can cut a night.
     expect(imported).toBe(1);
-    expect(reconcileMock).toHaveBeenCalledTimes(1);
-    expect(recordSyncSuccess).toHaveBeenCalledWith("user-1", "withings", {
-      leg: "sleep",
-    });
+    const stageCalls = fetchMock.mock.calls
+      .map(([, init]) => new URLSearchParams(init.body))
+      .filter((p) => p.get("action") === "get");
+    expect(stageCalls).toHaveLength(1);
+    expect(
+      Number(stageCalls[0]!.get("enddate")) -
+        Number(stageCalls[0]!.get("startdate")),
+    ).toBe(24 * 3600);
+    expect(prisma.measurement.updateMany).not.toHaveBeenCalled();
+    // The failure is the leg's, not a warning beside a green leg.
+    expect(recordSyncSuccess).not.toHaveBeenCalled();
+    expect(recordSyncFailure).toHaveBeenCalledWith(
+      expect.objectContaining({ integration: "withings", leg: "sleep" }),
+    );
   });
 
   it("tolerates a ScanWatch night with no REM segment (no all-zeros row)", async () => {
@@ -846,5 +896,146 @@ describe("syncUserSleep — Withings API plan (status 277)", () => {
     expect(recordSyncSuccess).toHaveBeenCalledWith("user-1", "withings", {
       leg: "sleep",
     });
+  });
+});
+
+describe("syncUserSleep — one stage read per night (Sleep v2 Get answers 24 h)", () => {
+  const NOW = new Date("2026-10-21T09:00:00.000Z");
+  const nowUnix = Math.floor(NOW.getTime() / 1000);
+  const DAY = 24 * 3600;
+
+  /** Night `n` days back: 22:00 to 06:00, one CORE and one DEEP segment. */
+  function night(n: number, id: number) {
+    const end = nowUnix - 3 * 3600 - n * DAY; // 06:00 that morning
+    const startdate = end - 8 * 3600;
+    return {
+      summary: { id, startdate, enddate: end },
+      segments: [
+        { startdate, enddate: startdate + 4 * 3600, state: 1, id },
+        { startdate: startdate + 4 * 3600, enddate: end, state: 2, id },
+      ],
+    };
+  }
+
+  function stageReads(fetchMock: ReturnType<typeof installSleepApi>) {
+    return fetchMock.mock.calls
+      .map(([, init]) => new URLSearchParams(init.body))
+      .filter((p) => p.get("action") === "get")
+      .map((p) => [Number(p.get("startdate")), Number(p.get("enddate"))]);
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("reads every listed night with its own span and lands all of them", async () => {
+    // Before, one read over the 30-day window answered only its first 24
+    // hours: last night's stages came weeks late.
+    const nights = [0, 3, 9].map((n, i) => night(n, 100 + i));
+    const fetchMock = installSleepApi(
+      nights.flatMap((x) => x.segments),
+      nights.map((x) => x.summary),
+    );
+
+    const imported = await syncUserSleep("user-1");
+
+    expect(imported).toBe(6);
+    const bySpan = (a: number[], b: number[]) => a[0]! - b[0]!;
+    expect([...stageReads(fetchMock)].sort(bySpan)).toEqual(
+      nights.map((x) => [x.summary.startdate, x.summary.enddate]).sort(bySpan),
+    );
+    for (const [from, to] of stageReads(fetchMock)) {
+      expect(to - from).toBeLessThanOrEqual(DAY);
+    }
+    expect(recordSyncSuccess).toHaveBeenCalledWith("user-1", "withings", {
+      leg: "sleep",
+    });
+  });
+
+  it("re-reads the recent nights every run and skips older nights already stored", async () => {
+    const recent = night(0, 1);
+    const stored = night(5, 2);
+    const missing = night(6, 3);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+      { measuredAt: new Date(stored.summary.enddate * 1000) },
+    ] as never);
+    // The recent night is stored too; it is read again for a re-score.
+    const fetchMock = installSleepApi(
+      [...recent.segments, ...stored.segments, ...missing.segments],
+      [recent.summary, stored.summary, missing.summary],
+    );
+
+    await syncUserSleep("user-1");
+
+    expect(stageReads(fetchMock)).toEqual([
+      [recent.summary.startdate, recent.summary.enddate],
+      [missing.summary.startdate, missing.summary.enddate],
+    ]);
+  });
+
+  it("re-reads an older stored night Withings changed in the last 48 hours", async () => {
+    const rescored = night(6, 4);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+      { measuredAt: new Date(rescored.summary.enddate * 1000) },
+    ] as never);
+    const fetchMock = installSleepApi(rescored.segments, [
+      { ...rescored.summary, modified: nowUnix - 3600 } as FakeSummary,
+    ]);
+
+    await syncUserSleep("user-1");
+
+    expect(stageReads(fetchMock)).toEqual([
+      [rescored.summary.startdate, rescored.summary.enddate],
+    ]);
+  });
+
+  it("reads at most a run's budget of missing nights, rotating which", async () => {
+    const nights = Array.from({ length: 12 }, (_, i) => night(i + 3, i + 1));
+    const fetchMock = installSleepApi(
+      nights.flatMap((x) => x.segments),
+      nights.map((x) => x.summary),
+    );
+
+    await syncUserSleep("user-1");
+    const first = stageReads(fetchMock);
+    expect(first).toHaveLength(8);
+
+    fetchMock.mockClear();
+    vi.setSystemTime(new Date(NOW.getTime() + 3600_000));
+    await syncUserSleep("user-1");
+    const second = stageReads(fetchMock);
+    expect(second).toHaveLength(8);
+    expect(second).not.toEqual(first);
+  });
+
+  it("reads every night of the window on a full sync", async () => {
+    const nights = Array.from({ length: 12 }, (_, i) => night(i + 3, i + 1));
+    const fetchMock = installSleepApi(
+      nights.flatMap((x) => x.segments),
+      nights.map((x) => x.summary),
+    );
+
+    await syncUserSleep("user-1", { fullSync: true });
+
+    expect(stageReads(fetchMock)).toHaveLength(12);
+  });
+
+  it("caps a night longer than a day at the 24 hours one read can return", async () => {
+    const startdate = nowUnix - 30 * 3600;
+    const enddate = nowUnix - 2 * 3600; // 28 hours in bed
+    const fetchMock = installSleepApi(
+      [{ startdate, enddate: startdate + 3600, state: 1, id: 5 }],
+      [{ id: 5, startdate, enddate }],
+    );
+
+    await syncUserSleep("user-1");
+
+    expect(stageReads(fetchMock)).toEqual([[startdate, startdate + DAY]]);
+    // A capped read did not see the whole night, so the night is not swept.
+    expect(prisma.measurement.updateMany).not.toHaveBeenCalled();
   });
 });

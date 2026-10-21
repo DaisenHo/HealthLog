@@ -164,7 +164,11 @@ function createdRows() {
 describe("syncUserPolar", () => {
   it("no-ops cleanly for an unconnected user", async () => {
     getConnMock.mockResolvedValue(null);
-    expect(await syncUserPolar("u1")).toEqual({ imported: 0, failed: false });
+    expect(await syncUserPolar("u1")).toEqual({
+      imported: 0,
+      failed: false,
+      tokenProven: false,
+    });
     expect(createManyAndReturnMock).not.toHaveBeenCalled();
     expect(recordSuccessMock).not.toHaveBeenCalled();
   });
@@ -370,13 +374,13 @@ describe("syncUserPolar", () => {
 
   it("isolates one dead collection — imports the healthy four and records one named failure", async () => {
     getConnMock.mockResolvedValue(CONN);
-    // SpO2 403s (no sensor / consent), the other four return one row each.
+    // SpO2 fails upstream, the other four return one row each.
     fetchSpo2Mock.mockRejectedValue(
       new PolarApiError({
         verb: "fetchSpo2",
-        classification: "reauth_required",
-        httpStatus: 403,
-        reason: "http_403",
+        classification: "transient",
+        httpStatus: 503,
+        reason: "http_503",
       }),
     );
     fetchRechargesMock.mockResolvedValue([
@@ -402,6 +406,7 @@ describe("syncUserPolar", () => {
 
     // The partial rides back with the count rather than being narrowed away.
     expect(result.failed).toBe(true);
+    expect(result.tokenProven).toBe(true);
     // The healthy four still wrote their rows — the source is not blanked.
     const written = createdRows().map((row) => row.type);
     expect(written).toContain("RECOVERY_SCORE");
@@ -410,15 +415,70 @@ describe("syncUserPolar", () => {
     expect(written).toContain("CARDIO_LOAD");
     expect(written).not.toContain("OXYGEN_SATURATION");
     expect(imported).toBeGreaterThan(0);
-    // Exactly one failure, classified off the 403, naming spo2. No success.
+    // Exactly one failure, naming spo2. No success.
     expect(recordFailureMock).toHaveBeenCalledTimes(1);
     expect(recordFailureMock).toHaveBeenCalledWith(
       expect.objectContaining({
         integration: "polar",
-        kind: "reauth_required",
-        errorCode: "403",
+        kind: "transient",
+        errorCode: "503",
         message: expect.stringContaining("spo2"),
       }),
+    );
+    expect(recordSuccessMock).not.toHaveBeenCalled();
+  });
+
+  it("reads a 403 beside a healthy sibling as a refused data type, not a dead token", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    // An account without the SpO2 sensor or the consent for it: the same token
+    // reads the other collections fine.
+    fetchSpo2Mock.mockRejectedValue(
+      new PolarApiError({
+        verb: "fetchSpo2",
+        classification: "reauth_required",
+        httpStatus: 403,
+        reason: "http_403",
+      }),
+    );
+    fetchCardioLoadsMock.mockResolvedValue([
+      { date: "2026-06-10", cardio_load: 55 },
+    ]);
+
+    const result = await syncUserPolar("u1");
+
+    expect(result).toMatchObject({ failed: false, tokenProven: true });
+    expect(createdRows().map((row) => row.type)).toContain("CARDIO_LOAD");
+    expect(recordFailureMock).not.toHaveBeenCalled();
+    expect(recordSuccessMock).toHaveBeenCalledWith("u1", "polar", {
+      leg: "vitals",
+    });
+  });
+
+  it("keeps a 403 on every collection a reauth_required failure", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    for (const mock of [
+      fetchRechargesMock,
+      fetchSleepsMock,
+      fetchActivitiesMock,
+      fetchCardioLoadsMock,
+      fetchSpo2Mock,
+    ]) {
+      mock.mockRejectedValue(
+        new PolarApiError({
+          verb: "fetch",
+          classification: "reauth_required",
+          httpStatus: 403,
+          reason: "http_403",
+        }),
+      );
+    }
+
+    const result = await syncUserPolar("u1");
+
+    expect(result).toMatchObject({ failed: true, tokenProven: false });
+    expect(recordFailureMock).toHaveBeenCalledTimes(1);
+    expect(recordFailureMock).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: "reauth_required", errorCode: "403" }),
     );
     expect(recordSuccessMock).not.toHaveBeenCalled();
   });
@@ -534,9 +594,9 @@ describe("syncUserPolar", () => {
       mockByName[name]!.mockRejectedValue(
         new PolarApiError({
           verb: name,
-          classification: "reauth_required",
-          httpStatus: 403,
-          reason: "http_403",
+          classification: "persistent",
+          httpStatus: 404,
+          reason: "http_404",
         }),
       );
 

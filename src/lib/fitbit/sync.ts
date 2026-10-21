@@ -23,6 +23,7 @@ import type {
 import { syncUserMetrics } from "./sync-metrics";
 import { syncUserSleep } from "./sync-sleep";
 import { syncUserWorkout } from "./sync-workout";
+import { isFitbitRetired } from "./retirement";
 
 /**
  * Full per-user sync across every Fitbit resource. Drives the hourly poll
@@ -49,6 +50,13 @@ export async function syncUserFitbit(
   userId: string,
   opts: { fullSync?: boolean } = {},
 ): Promise<{ imported: number; failed: boolean }> {
+  // The Web API is gone (`./retirement`): nothing to fetch, nothing to stamp.
+  // Neither a success (it would paint the connection green) nor a failure (it
+  // would ask for a reconnect that cannot help).
+  if (isFitbitRetired()) {
+    annotate({ action: { name: "fitbit.sync.retired" } });
+    return { imported: 0, failed: false };
+  }
   if (await isReauthRequired(userId, "fitbit")) {
     getEvent()?.addWarning(
       `fitbit sync skipped for ${userId}: parked at error_reauth`,
