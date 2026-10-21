@@ -4748,7 +4748,8 @@
       "shiftDown": "{vital} hat sich gegenüber deiner jüngsten Norm nach unten verschoben.",
       "rangeContext": "Aktuell {value}, sonst {low}–{high}.",
       "rangeContextTimeOfDay": "Aktuell {value}, zu dieser Tageszeit sonst {low}–{high}.",
-      "shiftContext": "Etwa {before} davor, {after} seitdem."
+      "shiftContext": "Etwa {before} davor, {after} seitdem.",
+      "shiftDays": "Grundlage: {before} Tage davor und {after} seither."
     },
     "breathingScreening": {
       "sectionTitle": "Atmung im Schlaf",

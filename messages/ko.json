@@ -4748,7 +4748,8 @@
       "shiftDown": "{vital}: 최근 평소 수준보다 내려갔어요.",
       "rangeContext": "지금 {value}, 평소 {low}–{high}.",
       "rangeContextTimeOfDay": "지금 {value}, 이 시간대 평소 {low}–{high}.",
-      "shiftContext": "이전엔 약 {before}, 이후엔 {after}."
+      "shiftContext": "이전엔 약 {before}, 이후엔 {after}.",
+      "shiftDays": "이전 {before}일과 이후 {after}일 기준입니다."
     },
     "breathingScreening": {
       "sectionTitle": "수면 중 호흡",

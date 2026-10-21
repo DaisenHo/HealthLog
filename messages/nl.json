@@ -4748,7 +4748,8 @@
       "shiftDown": "{vital} is gedaald ten opzichte van wat recent normaal was voor jou.",
       "rangeContext": "Nu {value}, meestal {low}–{high}.",
       "rangeContextTimeOfDay": "Nu {value}, op dit moment van de dag meestal {low}–{high}.",
-      "shiftContext": "Eerst rond {before}, sindsdien {after}."
+      "shiftContext": "Eerst rond {before}, sindsdien {after}.",
+      "shiftDays": "Op basis van {before} dagen ervoor en {after} sindsdien."
     },
     "breathingScreening": {
       "sectionTitle": "Ademhaling tijdens de slaap",

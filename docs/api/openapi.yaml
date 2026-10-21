@@ -66698,6 +66698,16 @@ components:
                 enum:
                   - up
                   - down
+              beforeDays:
+                description: v1.44 — days with a value before the break.
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+              afterDays:
+                description: v1.44 — days with a value from the break on.
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
             required:
               - metric
               - breakDate

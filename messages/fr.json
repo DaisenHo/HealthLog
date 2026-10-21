@@ -4748,7 +4748,8 @@
       "shiftDown": "{vital} a diminué par rapport à votre normale récente.",
       "rangeContext": "Actuellement {value}, habituellement {low}–{high}.",
       "rangeContextTimeOfDay": "Actuellement {value}, habituellement {low}–{high} à ce moment de la journée.",
-      "shiftContext": "Environ {before} avant, {after} depuis."
+      "shiftContext": "Environ {before} avant, {after} depuis.",
+      "shiftDays": "Sur {before} jours avant et {after} depuis."
     },
     "breathingScreening": {
       "sectionTitle": "Respiration pendant le sommeil",

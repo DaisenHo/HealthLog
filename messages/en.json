@@ -4748,7 +4748,8 @@
       "shiftDown": "{vital} has shifted down from your recent normal.",
       "rangeContext": "Now {value}, usually {low}–{high}.",
       "rangeContextTimeOfDay": "Now {value}, usually {low}–{high} at this time of day.",
-      "shiftContext": "Around {before} before, {after} since."
+      "shiftContext": "Around {before} before, {after} since.",
+      "shiftDays": "Based on {before} days before and {after} since."
     },
     "breathingScreening": {
       "sectionTitle": "Breathing during sleep",
