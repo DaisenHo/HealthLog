@@ -26,6 +26,7 @@ import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
+import { visitPath } from "@/lib/encounters/visit-links";
 
 /** The window when the record holds no visit the caller may see. */
 export const FALLBACK_WINDOW_DAYS = 90;
@@ -275,7 +276,7 @@ async function procedureChanges(w: Window): Promise<DayChange[]> {
       kind: "procedure",
       id: row.id,
       title: openText(row.reasonEncrypted, "procedure reason") ?? "",
-      href: `/checkups?visit=${row.id}`,
+      href: visitPath(row.id),
     }),
   );
 }
