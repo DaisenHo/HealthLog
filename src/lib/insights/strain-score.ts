@@ -75,8 +75,13 @@ import { shiftDateKey } from "@/lib/tz/format";
 import {
   pickCanonicalWorkoutRows,
   workoutDuplicateSlotKey,
+  workoutSourceLadder,
   type WorkoutPickerRow,
 } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  pickCanonicalSourceRows,
+  type SourcePickerRow,
+} from "@/lib/analytics/source-priority";
 
 /** The per-day idempotency-key prefix for a stored Strain score row. */
 export const STRAIN_SCORE_EXTERNAL_ID_PREFIX = "strain:";
@@ -413,10 +418,16 @@ export async function computeStrainScore(
       deletedAt: null,
       measuredAt: { gte: dayStart, lt: dayEnd },
     },
-    select: { value: true },
+    orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
+    select: {
+      value: true,
+      source: true,
+      deviceType: true,
+      measuredAt: true,
+      type: true,
+    },
     take: 5000,
   });
-  const dayActiveEnergy = energyRows.reduce((s, r) => s + r.value, 0);
 
   // The day's workouts + their HR series, with the session identity the
   // cross-source picker needs: one run recorded by the watch and synced again
@@ -440,6 +451,13 @@ export async function computeStrainScore(
       select: { sourcePriorityJson: true },
     }),
   ]);
+
+  // The watch and the phone relay (or a ring) both write the day's active
+  // energy: one source per day, the same pick the energy chart applies.
+  const dayActiveEnergy = canonicalDayActiveEnergy(
+    energyRows,
+    account?.sourcePriorityJson ?? null,
+  );
 
   const hrMax = profile.ageYears != null ? tanakaHrMax(profile.ageYears) : null;
   const canTrimp = hrMax != null && hrRest != null && hrMax > hrRest;
@@ -530,6 +548,31 @@ export async function computeStrainScore(
 }
 
 /**
+ * The day's active energy from ONE source. The rows of a single scored day go
+ * through the cumulative-metric picker on the `activeEnergy` ladder (source,
+ * then device type); when no source on the ladder is present the picker keeps
+ * every row, so the sources left are then compared by their day total and the
+ * largest kept: never two sources' totals added. Pure; exported for tests.
+ */
+export function canonicalDayActiveEnergy<
+  T extends SourcePickerRow & { value: number },
+>(rows: readonly T[], priorityJson: unknown): number {
+  const { canonicalRows } = pickCanonicalSourceRows(
+    rows,
+    "activeEnergy",
+    priorityJson,
+    () => "day",
+  );
+  const bySource = new Map<string, number>();
+  for (const row of canonicalRows) {
+    bySource.set(row.source, (bySource.get(row.source) ?? 0) + row.value);
+  }
+  let best = 0;
+  for (const total of bySource.values()) best = Math.max(best, total);
+  return best;
+}
+
+/**
  * One training impulse per workout SESSION, not per stored row.
  *
  * The same session can be stored more than once: the watch writes it to Apple
@@ -542,6 +585,13 @@ export async function computeStrainScore(
  * rate: the winning row can be one without a series while its dropped twin
  * carries one. So the impulse of a slot is the sum over its picked rows, and
  * only when that is zero the largest impulse among the slot's dropped rows.
+ *
+ * The picker keeps every row of a slot none of whose sources is on the
+ * ladder, so the picked rows of one slot can come from several sources. Only
+ * one source's rows count: the best-ranked on the ladder, a source off the
+ * ladder ranking below every listed one, and among sources off the ladder
+ * the one with the largest impulse. Rows of that one source still add up
+ * (two distinct sessions of the same sport in one five-minute slot).
  * Returns the positive impulses, one per session. Pure; exported for tests.
  */
 export function canonicalWorkoutTrimps<
@@ -556,20 +606,42 @@ export function canonicalWorkoutTrimps<
   const picked = new Set(
     pickCanonicalWorkoutRows(rows, priorityJson).map((row) => row.id),
   );
-  const slots = new Map<string, { picked: number; dropped: number }>();
+  const ladder = workoutSourceLadder(priorityJson);
+  const rankOf = (source: string) => {
+    const index = ladder.indexOf(source as (typeof ladder)[number]);
+    return index === -1 ? ladder.length : index;
+  };
+  const slots = new Map<
+    string,
+    { picked: Map<string, number>; dropped: number }
+  >();
   for (const row of rows) {
     const key = workoutDuplicateSlotKey(row);
-    const slot = slots.get(key) ?? { picked: 0, dropped: 0 };
+    const slot = slots.get(key) ?? { picked: new Map(), dropped: 0 };
     const trimp = trimpOf(row);
     if (trimp > 0) {
-      if (picked.has(row.id)) slot.picked += trimp;
-      else slot.dropped = Math.max(slot.dropped, trimp);
+      if (picked.has(row.id)) {
+        slot.picked.set(row.source, (slot.picked.get(row.source) ?? 0) + trimp);
+      } else {
+        slot.dropped = Math.max(slot.dropped, trimp);
+      }
     }
     slots.set(key, slot);
   }
   const out: number[] = [];
   for (const slot of slots.values()) {
-    const trimp = slot.picked > 0 ? slot.picked : slot.dropped;
+    let best: { rank: number; trimp: number } | null = null;
+    for (const [source, trimp] of slot.picked) {
+      const rank = rankOf(source);
+      if (
+        best === null ||
+        rank < best.rank ||
+        (rank === best.rank && trimp > best.trimp)
+      ) {
+        best = { rank, trimp };
+      }
+    }
+    const trimp = best !== null ? best.trimp : slot.dropped;
     if (trimp > 0) out.push(trimp);
   }
   return out;
