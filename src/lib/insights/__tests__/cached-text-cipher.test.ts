@@ -23,50 +23,27 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("cached insights payload at rest", () => {
-  it("writes ciphertext and nulls the readable column in the same write", () => {
+  it("writes ciphertext only", () => {
     const data = insightsCacheWrite(PAYLOAD);
-    expect(data.insightsCachedText).toBeNull();
+    expect(Object.keys(data)).toEqual(["insightsCachedTextEncrypted"]);
     expect(
       Buffer.from(data.insightsCachedTextEncrypted).toString("utf8"),
     ).not.toContain("Sleep held");
     expect(openInsightsCachedText(data)).toBe(PAYLOAD);
   });
 
-  it("falls back to the readable column for a row the backfill has not reached", () => {
+  it("reads a sealed value", () => {
     expect(
       openInsightsCachedText({
-        insightsCachedText: PAYLOAD,
-        insightsCachedTextEncrypted: null,
-      }),
-    ).toBe(PAYLOAD);
-  });
-
-  // This used to prefer the readable column, the one sealed column read
-  // that way. Every sealed column now reads the ciphertext first.
-  it("reads a sealed value before a readable one beside it", () => {
-    expect(
-      openInsightsCachedText({
-        insightsCachedText: "readable",
         insightsCachedTextEncrypted: sealInsightsCachedText("sealed"),
       }),
     ).toBe("sealed");
-  });
-
-  it("never serves the readable value in place of a sealed one that does not open", () => {
-    const foreign = encryptBytes(Buffer.from(PAYLOAD, "utf8"), "other/v1");
-    expect(
-      openInsightsCachedText({
-        insightsCachedText: "readable",
-        insightsCachedTextEncrypted: new Uint8Array(foreign),
-      }),
-    ).toBeNull();
   });
 
   it("does not open a value sealed for another purpose", () => {
     const foreign = encryptBytes(Buffer.from(PAYLOAD, "utf8"), "other/v1");
     expect(
       openInsightsCachedText({
-        insightsCachedText: null,
         insightsCachedTextEncrypted: new Uint8Array(foreign),
       }),
     ).toBeNull();
@@ -75,6 +52,9 @@ describe("cached insights payload at rest", () => {
   it("reads an empty row as no cache", () => {
     expect(openInsightsCachedText(null)).toBeNull();
     expect(openInsightsCachedText({ ...INSIGHTS_CACHE_CLEARED })).toBeNull();
+    expect(
+      openInsightsCachedText({ insightsCachedTextEncrypted: new Uint8Array() }),
+    ).toBeNull();
   });
 
   it("is fail-closed on write: no key, no payload", () => {
@@ -82,13 +62,11 @@ describe("cached insights payload at rest", () => {
     expect(() => insightsCacheWrite(PAYLOAD)).toThrow();
   });
 
-  it("clears and selects both columns", () => {
+  it("clears and selects the sealed column", () => {
     expect(INSIGHTS_CACHE_CLEARED).toEqual({
-      insightsCachedText: null,
       insightsCachedTextEncrypted: null,
     });
-    expect(Object.keys(INSIGHTS_CACHE_SELECT).sort()).toEqual([
-      "insightsCachedText",
+    expect(Object.keys(INSIGHTS_CACHE_SELECT)).toEqual([
       "insightsCachedTextEncrypted",
     ]);
   });

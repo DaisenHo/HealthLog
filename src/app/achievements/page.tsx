@@ -318,7 +318,7 @@ export default function AchievementsPage() {
   }
 
   // A failed load must never fall through to the zeroed summary tiles + the
-  // "none unlocked yet" empty grid (UI-STANDARDS §6). Surface an honest
+  // "none unlocked yet" empty grid (ui-standards.md §6). Surface an honest
   // retry instead.
   if (isError) {
     return (

@@ -56,7 +56,11 @@ notes, and machine-readable specs that ship alongside the source:
   — the iOS submission gate.
 - [`codex-protocol-spec.md`](./codex-protocol-spec.md) — Codex / ChatGPT
   OAuth protocol reverse-engineering notes.
-- [`ui-guidelines.md`](./ui-guidelines.md) — UI / a11y house style.
+- [`contributing/ui-standards.md`](./contributing/ui-standards.md) — the
+  binding UI standards: card anatomy, spacing, text colour, tokens and
+  which primitive to use where. Read before touching any surface.
+- [`ui-guidelines.md`](./ui-guidelines.md) — UI / a11y house style; where
+  it disagrees with the UI standards, the standards win.
 
 If you're a self-hoster looking to spin up an instance, start at
 <https://docs.healthlog.dev> or jump to the [Quick Start in the project

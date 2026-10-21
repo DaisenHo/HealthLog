@@ -911,6 +911,15 @@
     "unitRating": "Stufe",
     "typeWho5Score": "WHO-5-Wert",
     "typeSciScore": "SCI-Wert",
+    "typeExerciseMinutes": "Trainingsminuten",
+    "typeStandMinutes": "Stehminuten",
+    "typeStandHours": "Stehstunden",
+    "typeMindfulMinutes": "Achtsamkeitsminuten",
+    "typeStateOfMindValence": "Gemütszustand",
+    "typeAfibBurden": "VHF-Last",
+    "typeIndoorCo2": "CO₂ (innen)",
+    "typeIndoorTemperature": "Raumtemperatur",
+    "typeIndoorHumidity": "Luftfeuchtigkeit (innen)",
     "durationReadAs": "Gelesen als {duration}",
     "durationHoursMinutes": "{hours} Std. {minutes} Min.",
     "durationHoursOnly": "{hours} Std.",
@@ -3565,6 +3574,7 @@
       "falls": "Stürze",
       "years": "Jahre",
       "breathingEvents": "Ereignisse",
+      "standHours": "Stunden",
       "respiratoryRate": "Atemzüge/min"
     },
     "sleep": {
@@ -7155,6 +7165,12 @@
         "profile": "Dein Profil, deine Anamnese und die Angaben für die Gesundheitsakte",
         "modules": "Einträge der Module: {list}"
       },
+      "workoutRoutes": {
+        "title": "Trainingsrouten",
+        "description": "Den GPS-Verlauf neuer Trainings aus der iPhone-App und dem Apple-Health-Export speichern.",
+        "detail": "Standardmäßig aus. Eine Route zeigt, wo du wohnst, arbeitest und trainierst, deshalb wird sie erst gespeichert, wenn du das einschaltest. Die Trainings selbst werden immer gespeichert, und keine KI-Funktion liest jemals eine Route. Ausschalten stoppt neue Routen; schon gespeicherte bleiben, bis du das Training löschst.",
+        "loadError": "Die Routen-Einstellung konnte nicht geladen werden."
+      },
       "retention": {
         "title": "Aufbewahrung",
         "description": "Wie lange zeitgebundene Datensätze vor der automatischen Bereinigung gespeichert bleiben.",
@@ -7600,6 +7616,7 @@
     "heapLimitLabel": "Heap-Grenze",
     "heapLimitValue": "{mb} MB",
     "heapLimitLow": "{mb} MB, zu knapp. APP_MEMORY_LIMIT=1536m in .env setzen",
+    "memoryBelowFloor": "Container {mb} MB, unter der unterstützten Untergrenze von {floor} MB. APP_MEMORY_LIMIT={floor}m in .env setzen",
     "offlineGeoOff": "Aus",
     "offlineGeoChosen": "Online ({host})",
     "apiGlobal": "API-Endpunkte und API-Tokens erlauben.",

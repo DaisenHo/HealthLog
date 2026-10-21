@@ -3555,15 +3555,13 @@ async function seed() {
     await client.query(
       `UPDATE users
          SET insights_cached_text_encrypted = $2,
-             insights_cached_text = NULL,
              insights_cached_at = NOW(),
              insights_snapshot_hash = $3,
              insights_briefing_reroll_date = $4
        WHERE id = $1`,
       [
         userId,
-        // Sealed like every write since v1.43.7; the app never reads the
-        // readable column while a ciphertext is there.
+        // Sealed like every write since v1.43.7.
         Buffer.from(
           sealInsightsCachedText(JSON.stringify(comprehensiveInsight)),
         ),

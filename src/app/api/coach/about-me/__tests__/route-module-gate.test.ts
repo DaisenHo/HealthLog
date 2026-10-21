@@ -226,7 +226,6 @@ describe("about-me module gate", () => {
       where: { id: "u1" },
       data: {
         insightsCachedAt: null,
-        insightsCachedText: null,
         insightsCachedTextEncrypted: null,
         insightsCachedLocale: null,
       },

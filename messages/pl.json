@@ -911,6 +911,15 @@
     "unitRating": "poziom",
     "typeWho5Score": "Wynik WHO-5",
     "typeSciScore": "Wynik SCI",
+    "typeExerciseMinutes": "Minuty ćwiczeń",
+    "typeStandMinutes": "Minuty stania",
+    "typeStandHours": "Godziny stania",
+    "typeMindfulMinutes": "Minuty uważności",
+    "typeStateOfMindValence": "Stan umysłu",
+    "typeAfibBurden": "Obciążenie AF",
+    "typeIndoorCo2": "CO₂ w pomieszczeniu",
+    "typeIndoorTemperature": "Temperatura w pomieszczeniu",
+    "typeIndoorHumidity": "Wilgotność w pomieszczeniu",
     "durationReadAs": "Odczytano jako {duration}",
     "durationHoursMinutes": "{hours} godz. {minutes} min",
     "durationHoursOnly": "{hours} godz.",
@@ -3565,6 +3574,7 @@
       "falls": "upadki",
       "years": "lata",
       "breathingEvents": "zdarzenia",
+      "standHours": "godz.",
       "respiratoryRate": "oddechów/min"
     },
     "sleep": {
@@ -7155,6 +7165,12 @@
         "profile": "Twój profil, wywiad medyczny i dane dokumentacji zdrowotnej",
         "modules": "Wpisy poszczególnych modułów: {list}"
       },
+      "workoutRoutes": {
+        "title": "Trasy treningów",
+        "description": "Zapisuj ślad GPS nowych treningów z aplikacji na iPhone’a i z eksportu Apple Zdrowie.",
+        "detail": "Domyślnie wyłączone. Trasa pokazuje, gdzie mieszkasz, pracujesz i trenujesz, więc zapisujemy ją dopiero po włączeniu. Treningi są zapisywane zawsze, a żadna funkcja AI nigdy nie odczytuje trasy. Wyłączenie zatrzymuje nowe trasy; już zapisane zostają do usunięcia treningu.",
+        "loadError": "Nie udało się wczytać ustawienia tras."
+      },
       "retention": {
         "title": "Retencja",
         "description": "Jak długo rekordy ograniczone czasowo są przechowywane przed automatycznym czyszczeniem.",
@@ -7600,6 +7616,7 @@
     "heapLimitLabel": "Limit sterty",
     "heapLimitValue": "{mb} MB",
     "heapLimitLow": "{mb} MB, za mało: ustaw APP_MEMORY_LIMIT=1536m w .env",
+    "memoryBelowFloor": "Kontener {mb} MB, poniżej obsługiwanego minimum {floor} MB: ustaw APP_MEMORY_LIMIT={floor}m w .env",
     "offlineGeoOff": "Wyłączone",
     "offlineGeoChosen": "Online ({host})",
     "apiGlobal": "Zezwól na punkty końcowe API i tokeny API.",

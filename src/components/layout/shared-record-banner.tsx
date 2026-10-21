@@ -33,7 +33,7 @@ import { accountLabel } from "@/lib/sharing/account-access-view";
  * dark for the muted token at this text size, while the foreground token keeps
  * the context legible at the same contrast floor as the name.
  *
- * The row is the inline-action shape from UI-STANDARDS §11 rather than a
+ * The row is the inline-action shape from ui-standards.md §11 rather than a
  * centred wrapping stack: sentence `min-w-0 flex-1`, action `shrink-0`, so the
  * way out stays beside the sentence instead of dropping onto its own line once
  * the name is long. `<MaintainershipBanner>` is the sibling that already had an

@@ -503,9 +503,10 @@ services:
     # workload can grow large enough to starve Postgres on a shared host.
     # Node sizes its heap from this limit: 1g gives a 524 MB heap, which a
     # long-used account fills in normal operation, so garbage collection
-    # stalls requests for seconds. 1536m gives 792 MB. The support report and
-    # Admin > System status flag a heap below 700 MB. On a host with 2 GB or less, lower it with
-    # APP_MEMORY_LIMIT in .env; on a busy instance, raise it.
+    # stalls requests for seconds. 1536m gives 792 MB and is the supported
+    # floor (host: 3 GB RAM, 4 GB recommended). Below it the boot log, the
+    # support report and Admin > System status say so. On a busy instance,
+    # raise it with APP_MEMORY_LIMIT in .env; do not lower it.
     mem_limit: "${APP_MEMORY_LIMIT:-1536m}"
     healthcheck:
       test:
@@ -521,7 +522,11 @@ services:
       # minutes (docs/ops/deploy.md), and failed probes in that time must not
       # read as a dead container. The first probe that answers still ends
       # the start period, so a normal boot is healthy within 30 seconds of
-      # listening.
+      # listening. After it listens, the pg-boss worker starts in the
+      # background and /api/health answers 503 with reason "starting" until it
+      # is up (10–60 s under load, reported as "starting" for at most five
+      # minutes); inside the start period those probes do not count, so a slow
+      # worker start cannot mark the container unhealthy.
       start_period: 10m
 
   # Optional dedicated worker container — uncomment + set

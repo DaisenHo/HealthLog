@@ -96,7 +96,10 @@ import { hashInsightSnapshot } from "../snapshot-hash";
 import { compactSections } from "@/lib/ai/prompts/compact-sections";
 import { featuresInReaderUnits } from "../features-units";
 import { DEFAULT_UNIT_PREFERENCES } from "@/lib/measurements/display-transform";
-import { openInsightsCachedText } from "@/lib/insights/cached-text-cipher";
+import {
+  openInsightsCachedText,
+  sealInsightsCachedText,
+} from "@/lib/insights/cached-text-cipher";
 
 // The cached payload is sealed at rest, so its writes need a key.
 vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
@@ -143,7 +146,7 @@ describe("generateComprehensiveInsight — the briefing capability at the wire",
   const STALE_USER = {
     insightsPrivacyMode: "aggregated",
     insightsCachedAt: null,
-    insightsCachedText: null,
+    insightsCachedTextEncrypted: null,
     insightsExcludeMetrics: [],
     insightsSnapshotHash: null,
   };
@@ -181,7 +184,7 @@ describe("generateComprehensiveInsight — the briefing capability at the wire",
     findUnique.mockResolvedValue({
       ...STALE_USER,
       insightsCachedAt: new Date(Date.now() - 60 * 60 * 1000),
-      insightsCachedText: "{}",
+      insightsCachedTextEncrypted: sealInsightsCachedText("{}"),
     });
     aiCapabilityForRecord.mockResolvedValue({
       available: false,
@@ -201,7 +204,7 @@ describe("generateComprehensiveInsight — cache short-circuit", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 21 * 60 * 60 * 1000),
-      insightsCachedText: "{}",
+      insightsCachedTextEncrypted: sealInsightsCachedText("{}"),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: null,
     });
@@ -220,7 +223,7 @@ describe("generateComprehensiveInsight — cache short-circuit", () => {
       insightsPrivacyMode: "aggregated",
       // 21h old — inside the 24h TTL, so the un-forced path would cache.
       insightsCachedAt: new Date(Date.now() - 21 * 60 * 60 * 1000),
-      insightsCachedText: "{}",
+      insightsCachedTextEncrypted: sealInsightsCachedText("{}"),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: null,
     });
@@ -251,7 +254,9 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "old" } }),
+      ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,
     });
@@ -280,7 +285,9 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "old" } }),
+      ),
       insightsExcludeMetrics: [],
       // Stored fingerprint from an older data state.
       insightsSnapshotHash: "0".repeat(64),
@@ -329,7 +336,9 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "old" } }),
+      ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,
       unitPreference: "imperial",
@@ -383,7 +392,9 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "english" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "english" } }),
+      ),
       insightsCachedLocale: "en",
       insightsExcludeMetrics: [],
       insightsSnapshotHash: null,
@@ -403,7 +414,9 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "old" } }),
+      ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: null,
     });
@@ -436,10 +449,12 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({
-        dailyBriefing: null,
-        recommendations: [],
-      }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({
+          dailyBriefing: null,
+          recommendations: [],
+        }),
+      ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,
     });
@@ -475,7 +490,7 @@ describe("generateComprehensiveInsight — content-hash gate (v1.16.8)", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: null,
-      insightsCachedText: null,
+      insightsCachedTextEncrypted: null,
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,
     });
@@ -522,7 +537,9 @@ describe("generateComprehensiveInsight — usage level", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "old" } }),
+      ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,
       aiUsageLevel,

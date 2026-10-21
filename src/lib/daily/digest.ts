@@ -3,7 +3,7 @@
  *
  * A pure, deterministic composer that assembles the day's read from data that
  * ALREADY EXISTS — the nightly `insight-pregenerate` output lifted read-only
- * from `User.insightsCachedText`, the dashboard-snapshot ingredients (health
+ * from `User.insightsCachedTextEncrypted`, the dashboard-snapshot ingredients (health
  * score, meds-today, sleep last-seen), plus two light deterministic reads
  * (integration status, due Vorsorge reminders). It computes no analytics and
  * NEVER triggers an AI/provider call — the warm-on-mount ban extends here. The

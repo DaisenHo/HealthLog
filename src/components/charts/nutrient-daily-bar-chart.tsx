@@ -29,7 +29,7 @@ import { RichChartTooltip, type RichTooltipRow } from "./chart-tooltip";
  * v1.29 — 30-day daily bar chart for the nutrients hydration / caffeine
  * cards. One bar per day (dense series — 0 for an unlogged day, summed
  * across sources), an optional thin dashed EFSA reference line, no
- * attainment colouring (UI-STANDARDS: value stays foreground, the bar +
+ * attainment colouring (ui-standards.md: value stays foreground, the bar +
  * reference line ARE the context). Registered in
  * `src/components/charts/chart-runtime.ts` — never import recharts
  * directly at the call site.

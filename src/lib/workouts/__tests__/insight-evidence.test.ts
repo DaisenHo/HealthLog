@@ -6,7 +6,6 @@ import {
   assertNumericLeaves,
   buildWorkoutInsightEvidence,
   narrowSportType,
-  routeClimbM,
   summariseHrShape,
   summariseOwnHistory,
 } from "../insight-evidence";
@@ -90,38 +89,6 @@ describe("summariseHrShape", () => {
   });
 });
 
-describe("routeClimbM", () => {
-  it("sums only the positive altitude deltas", () => {
-    const geometry = {
-      type: "LineString",
-      coordinates: [
-        [8, 50, 100],
-        [8, 50, 140],
-        [8, 50, 110],
-        [8, 50, 160],
-      ],
-    };
-    // +40 then −30 then +50 → 90 climbed, not 60 net.
-    expect(routeClimbM(geometry)).toBe(90);
-  });
-
-  it("returns null when the geometry carries no altitude channel", () => {
-    // Withings ships static GPX with no altitudes. Reporting a confident 0
-    // would be a claim about flat terrain that the data does not make.
-    expect(
-      routeClimbM({
-        type: "LineString",
-        coordinates: [
-          [8, 50],
-          [8.1, 50.1],
-        ],
-      }),
-    ).toBeNull();
-    expect(routeClimbM(null)).toBeNull();
-    expect(routeClimbM("not geometry")).toBeNull();
-  });
-});
-
 describe("summariseOwnHistory", () => {
   const row = (durationSec: number, avgHeartRate: number | null) => ({
     durationSec,
@@ -176,7 +143,6 @@ describe("buildWorkoutInsightEvidence", () => {
     tz: "Europe/Berlin",
     hrSeries: null,
     zones: null,
-    routeGeometry: null,
     history: [],
   };
 
@@ -196,20 +162,7 @@ describe("buildWorkoutInsightEvidence", () => {
     expect(evidence.localDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("prefers route-derived climb over the denormalised column", () => {
-    const evidence = buildWorkoutInsightEvidence({
-      ...base,
-      routeGeometry: {
-        coordinates: [
-          [8, 50, 100],
-          [8, 50, 130],
-        ],
-      },
-    });
-    expect(evidence.climbM).toBe(30);
-  });
-
-  it("falls back to the column when the route carries no altitudes", () => {
+  it("reads the climb from the stored column", () => {
     const evidence = buildWorkoutInsightEvidence(base);
     expect(evidence.climbM).toBe(210);
   });
@@ -240,7 +193,6 @@ describe("workoutInsightInputHash", () => {
     tz: "UTC",
     hrSeries: null,
     zones: null,
-    routeGeometry: null,
     history: [],
   });
 
@@ -372,7 +324,6 @@ describe("assertNumericLeaves", () => {
             },
           ],
         },
-        routeGeometry: null,
         history: [],
       }),
     ).toThrow(/non-numeric leaf/);
@@ -394,15 +345,14 @@ describe("assertNumericLeaves", () => {
       tz: "UTC",
       hrSeries: series([120, 130, 140, 150, 145, 138]),
       zones: null,
-      routeGeometry: null,
       history: [],
     });
     expect(evidence.hr).not.toBeNull();
     expect(evidence.hr).not.toHaveProperty("source");
   });
 
-  it("never carries route geometry — only the one number derived from it", () => {
-    const evidence = buildWorkoutInsightEvidence({
+  it("takes no route geometry at all", () => {
+    const input = {
       row: {
         sportType: "cycling",
         startedAt: new Date("2026-07-18T06:00:00.000Z"),
@@ -412,19 +362,19 @@ describe("assertNumericLeaves", () => {
         avgHeartRate: null,
         maxHeartRate: null,
         minHeartRate: null,
-        elevationM: null,
+        elevationM: 50,
       },
       tz: "UTC",
       hrSeries: null,
       zones: null,
-      routeGeometry: {
-        coordinates: [
-          [8.1, 50.1, 100],
-          [8.2, 50.2, 150],
-        ],
-      },
       history: [],
-    });
+    };
+    const withTrack = {
+      ...input,
+      // @ts-expect-error — the builder has no route input; a track cannot be handed to it.
+      routeGeometry: { coordinates: [[8.1, 50.1, 100]] },
+    } satisfies Parameters<typeof buildWorkoutInsightEvidence>[0];
+    const evidence = buildWorkoutInsightEvidence(withTrack);
     // Location history is not a figure and may not ride a prompt.
     expect(JSON.stringify(evidence)).not.toContain("8.1");
     expect(JSON.stringify(evidence)).not.toContain("coordinates");

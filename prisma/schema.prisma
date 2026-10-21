@@ -136,13 +136,6 @@ model User {
   useCentralCodex             Boolean   @default(false) @map("use_central_codex")
   insightsPrivacyMode         String    @default("aggregated") @map("insights_privacy_mode") // "aggregated" | "raw"
   insightsCachedAt            DateTime? @map("insights_cached_at")
-  /// @internal: legacy plaintext cache of the AI insights payload, read only
-  /// as a fallback for rows the free-text encryption backfill has not reached
-  /// yet (v1.43.7). Every write since then goes to `insightsCachedTextEncrypted`
-  /// and leaves this NULL; the backfill seals and nulls it on the old rows.
-  /// DROP this column in a later release, once the backfill reports zero
-  /// remaining rows on every instance.
-  insightsCachedText          String?   @map("insights_cached_text")
   /// v1.43.7 — the cached AI insights payload (briefing, per-domain readings,
   /// recommendations; JSON), AES-256-GCM binary layout under
   /// `INSIGHTS_CACHED_TEXT_AAD`. Read and written only through
@@ -381,6 +374,12 @@ model User {
   // review screen remains the safety backstop. Default `false`; vision-capable
   // users keep the higher-accuracy native path and never pay the WASM download.
   labsLocalOcrEnabled      Boolean              @default(false) @map("labs_local_ocr_enabled")
+  /// v1.44 — keep the GPS track of a workout. OFF by default: a route is
+  /// where a person lives, works and runs, so it is stored only after they
+  /// opt in. Read by the workout batch route and the export.zip import, which
+  /// drop the track while it is off (the workout itself is always kept).
+  /// Never read by any AI path; the AI egress guard freezes the route readers.
+  storeWorkoutRoutes       Boolean              @default(false) @map("store_workout_routes")
   // v1.7.0 unit pref — global metric/imperial display preference.
   // Canonical storage stays SI; this only selects the display-time
   // transform branch (km/h vs mph, km vs mi). Null = default "metric".
@@ -1710,6 +1709,24 @@ enum MeasurementType {
   // Note the inverted direction versus PHQ-9 / GAD-7: HIGHER is better for both.
   WHO5_SCORE // score (0–100) — WHO-5 well-being percentage (raw 0–25 × 4). Opt-in. See MentalHealthAssessment.
   SCI_SCORE // score (0–32) — Sleep Condition Indicator total; higher = better sleep. Opt-in. See MentalHealthAssessment.
+  // ── v1.44 — Apple Health activity rings, mindfulness, mood and AFib burden ──
+  // All five arrive over POST /api/measurements/batch and the export.zip import.
+  // The minute and hour types are cumulative (daily SUM); AFib burden and the
+  // State of Mind valence are spot readings.
+  EXERCISE_MINUTES // minutes — HealthKit `appleExerciseTime`. The activity ring's exercise minutes; cumulative, daily SUM.
+  STAND_MINUTES // minutes — HealthKit `appleStandTime`. Minutes spent standing; cumulative, daily SUM.
+  STAND_HOURS // count — HealthKit `HKCategoryTypeIdentifierAppleStandHour`. One row per hour in which the person stood (`stood` = 1; an `idle` hour is not stored); cumulative, daily SUM gives the stand-ring hours.
+  MINDFUL_MINUTES // minutes — HealthKit `HKCategoryTypeIdentifierMindfulSession`. Session length from the sample's own dates; cumulative, daily SUM.
+  STATE_OF_MIND_VALENCE // valence (−1..1) — HealthKit `HKStateOfMind.valence` (iOS 18+). How pleasant the logged emotion or mood felt, from very unpleasant (−1) to very pleasant (1). A self-report, not a measurement.
+  // ── v1.44 — room climate from a home automation system ──
+  // Pushed through the ingest token (`measurements:write`, source EXTERNAL),
+  // e.g. by a Home Assistant automation. Spot readings: the daily rollup
+  // carries mean, min and max. Indoor, so never mixed with the outdoor
+  // environment channels.
+  INDOOR_CO2 // ppm — indoor carbon dioxide concentration.
+  INDOOR_TEMPERATURE // celsius — indoor air temperature. Distinct from every body temperature type.
+  INDOOR_HUMIDITY // percent (0–100) — indoor relative humidity.
+  AFIB_BURDEN // percent (0–100, scaled ×100 from Apple's 0..1 fraction) — HealthKit `atrialFibrillationBurden` (iOS 16+, AFib History). The share of time the watch estimated in AFib over a week. AWARENESS ONLY — never a HealthLog diagnosis.
 
   @@map("measurement_type")
 }
@@ -5404,6 +5421,10 @@ model AppSettings {
   /// Last dry-run status and result (account ordinals only, no ids); the apply
   /// step's precondition and the admin card's result.
   pulseDayMeanDryRunJson Json?     @map("pulse_day_mean_dry_run_json")
+  /// @internal: progress marker of the one-time workout climb backfill
+  /// (`src/lib/workouts/climb-backfill.ts`): the last workout id scanned,
+  /// `done` when finished, NULL before it starts. Operational, never shown.
+  workoutClimbBackfillCursor String? @map("workout_climb_backfill_cursor")
 
   @@map("app_settings")
 }
@@ -6701,7 +6722,7 @@ model HostMetric {
 // (no prompt-tuning flow yet — that ratchet is v1.4.17).
 //
 // Privacy: server-side fills providerType + promptVersion from the
-// user's most recent cached payload (User.insightsCachedText) so the
+// user's most recent cached payload (User.insightsCachedTextEncrypted) so the
 // client can't tamper with the attribution.
 //
 // `(userId, recommendationId, recommendationText)` is the dedup key.

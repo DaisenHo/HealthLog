@@ -1,5 +1,6 @@
 /**
- * Bounded ZIP reader for Apple Health ECG CSV members.
+ * Bounded ZIP reader for Apple Health's auxiliary members: the ECG CSVs and
+ * the workout-route GPX files.
  *
  * ZIP entry names are treated as untrusted identifiers only: no archive member
  * is ever materialised on disk. Central-directory metadata is checked before
@@ -37,6 +38,18 @@ const CENTRAL_SIGNATURE = 0x02014b50;
 const LOCAL_SIGNATURE = 0x04034b50;
 const MAX_EOCD_SEARCH = 65_535 + 22;
 const ECG_PREFIX = "apple_health_export/electrocardiograms/";
+const ROUTE_PREFIX = "apple_health_export/workout-routes/";
+
+/**
+ * One family of auxiliary members: which names belong to it, the label its
+ * errors carry, and its own count and total-byte ceilings.
+ */
+interface MemberKind {
+  label: string;
+  matches: (name: string) => boolean;
+  maxMembers: number;
+  maxTotalBytes: number;
+}
 
 function archiveError(message: string): Error {
   return new Error(`Unsafe Apple Health archive: ${message}`);
@@ -95,19 +108,41 @@ function isUnsafeName(name: string): boolean {
   return segments.some((segment) => segment === "." || segment === "..");
 }
 
-function isEcgCsv(name: string): boolean {
+function isDirectChild(name: string, prefix: string, extension: string) {
   return (
-    name.startsWith(ECG_PREFIX) &&
-    name.length > ECG_PREFIX.length &&
-    name.toLowerCase().endsWith(".csv") &&
-    !name.slice(ECG_PREFIX.length).includes("/")
+    name.startsWith(prefix) &&
+    name.length > prefix.length &&
+    name.toLowerCase().endsWith(extension) &&
+    !name.slice(prefix.length).includes("/")
   );
+}
+
+function isEcgCsv(name: string): boolean {
+  return isDirectChild(name, ECG_PREFIX, ".csv");
+}
+
+/** A workout route as the archive names it: `workout-routes/<file>.gpx`. */
+export function isWorkoutRouteGpx(name: string): boolean {
+  return isDirectChild(name, ROUTE_PREFIX, ".gpx");
+}
+
+/**
+ * The archive member a `<FileReference path="…">` inside a `<Workout>`
+ * points at. Apple writes the path from the export root
+ * (`/workout-routes/route_….gpx`); the member carries the export folder in
+ * front. Null for anything that is not a direct route file.
+ */
+export function routeMemberNameFromReference(path: string): string | null {
+  const trimmed = path.startsWith("/") ? path.slice(1) : path;
+  const name = `apple_health_export/${trimmed}`;
+  return isWorkoutRouteGpx(name) ? name : null;
 }
 
 async function readCentralDirectory(
   handle: FileHandle,
   fileSize: number,
   limits: AppleHealthArchiveLimits,
+  kind: MemberKind,
 ): Promise<ZipEntry[]> {
   if (fileSize < 22) throw archiveError("missing ZIP directory");
 
@@ -148,7 +183,7 @@ async function readCentralDirectory(
   const entries: ZipEntry[] = [];
   const names = new Set<string>();
   let cursor = centralOffset;
-  let ecgCount = 0;
+  let kindCount = 0;
 
   for (let index = 0; index < totalEntries; index += 1) {
     const header = await readExactly(handle, 46, cursor);
@@ -177,23 +212,23 @@ async function readCentralDirectory(
     if (names.has(name)) throw archiveError("duplicate member name");
     names.add(name);
 
-    if (isEcgCsv(name)) {
-      ecgCount += 1;
-      if (ecgCount > limits.maxEcgMembers) {
-        throw archiveError("ECG member count limit exceeded");
+    if (kind.matches(name)) {
+      kindCount += 1;
+      if (kindCount > kind.maxMembers) {
+        throw archiveError(`${kind.label} member count limit exceeded`);
       }
       if ((flags & 0x1) !== 0) {
-        throw archiveError("encrypted ECG member is unsupported");
+        throw archiveError(`encrypted ${kind.label} member is unsupported`);
       }
       if (method !== 0 && method !== 8) {
-        throw archiveError("unsupported ECG compression method");
+        throw archiveError(`unsupported ${kind.label} compression method`);
       }
       if (uncompressedSize > limits.maxMemberBytes) {
-        throw archiveError("ECG member byte limit exceeded");
+        throw archiveError(`${kind.label} member byte limit exceeded`);
       }
       const ratio = uncompressedSize / Math.max(1, compressedSize);
       if (ratio > limits.maxCompressionRatio) {
-        throw archiveError("ECG compression ratio limit exceeded");
+        throw archiveError(`${kind.label} compression ratio limit exceeded`);
       }
     }
 
@@ -218,6 +253,7 @@ async function decompressEntry(
   entry: ZipEntry,
   fileSize: number,
   limits: AppleHealthArchiveLimits,
+  kind: MemberKind,
   total: { bytes: number },
 ): Promise<Buffer[]> {
   const local = await readExactly(handle, 30, entry.localHeaderOffset);
@@ -260,16 +296,16 @@ async function decompressEntry(
       const chunk = Buffer.isBuffer(value) ? value : Buffer.from(value);
       memberBytes += chunk.byteLength;
       if (memberBytes > limits.maxMemberBytes) {
-        throw archiveError("actual ECG member byte limit exceeded");
+        throw archiveError(`actual ${kind.label} member byte limit exceeded`);
       }
-      if (total.bytes + memberBytes > limits.maxTotalEcgBytes) {
-        throw archiveError("total ECG byte limit exceeded");
+      if (total.bytes + memberBytes > kind.maxTotalBytes) {
+        throw archiveError(`total ${kind.label} byte limit exceeded`);
       }
       chunks.push(chunk);
     }
   } catch {
     for (const chunk of chunks) chunk.fill(0);
-    throw archiveError("ECG decompression or byte limit failure");
+    throw archiveError(`${kind.label} decompression or byte limit failure`);
   } finally {
     compressed.fill(0);
   }
@@ -279,31 +315,35 @@ async function decompressEntry(
 }
 
 /**
- * Yield only Apple Health's ECG CSV members as in-memory bounded streams.
- * The generator validates the complete central directory before yielding any
- * health data, preventing partial processing of a structurally unsafe archive.
+ * Yield the members of one kind as in-memory bounded streams, one at a time.
+ * The complete central directory is validated before any health data is
+ * yielded, so a structurally unsafe archive is never partly processed.
+ * `wanted` narrows further (a route the export's XML actually references).
  */
-export async function* streamAppleHealthEcgMembers(input: {
-  archivePath: string;
-  limits: AppleHealthArchiveLimits;
-}): AsyncGenerator<AppleHealthArchiveMember> {
-  assertPositiveLimits(input.limits);
-  const handle = await open(input.archivePath, "r");
+async function* streamMembers(
+  archivePath: string,
+  limits: AppleHealthArchiveLimits,
+  kind: MemberKind,
+  wanted: (name: string) => boolean = () => true,
+): AsyncGenerator<AppleHealthArchiveMember> {
+  assertPositiveLimits(limits);
+  const handle = await open(archivePath, "r");
   try {
     const stat = await handle.stat();
     const fileSize = Number(stat.size);
     if (!Number.isSafeInteger(fileSize)) {
       throw archiveError("archive is too large to address safely");
     }
-    const entries = await readCentralDirectory(handle, fileSize, input.limits);
+    const entries = await readCentralDirectory(handle, fileSize, limits, kind);
     const total = { bytes: 0 };
     for (const entry of entries) {
-      if (!isEcgCsv(entry.name)) continue;
+      if (!kind.matches(entry.name) || !wanted(entry.name)) continue;
       const chunks = await decompressEntry(
         handle,
         entry,
         fileSize,
-        input.limits,
+        limits,
+        kind,
         total,
       );
       yield { name: entry.name, stream: Readable.from(chunks) };
@@ -311,4 +351,55 @@ export async function* streamAppleHealthEcgMembers(input: {
   } finally {
     await handle.close();
   }
+}
+
+/** Yield only Apple Health's ECG CSV members as in-memory bounded streams. */
+export async function* streamAppleHealthEcgMembers(input: {
+  archivePath: string;
+  limits: AppleHealthArchiveLimits;
+}): AsyncGenerator<AppleHealthArchiveMember> {
+  yield* streamMembers(input.archivePath, input.limits, {
+    label: "ECG",
+    matches: isEcgCsv,
+    maxMembers: input.limits.maxEcgMembers,
+    maxTotalBytes: input.limits.maxTotalEcgBytes,
+  });
+}
+
+/** Ceilings for the route members; the shared ones keep their meaning. */
+export interface AppleHealthRouteArchiveLimits {
+  maxMembers: number;
+  maxRouteMembers: number;
+  maxMemberBytes: number;
+  maxTotalRouteBytes: number;
+  maxCompressionRatio: number;
+}
+
+/**
+ * Yield the workout-route GPX members `wanted` names, one bounded buffer at
+ * a time: the caller parses and drops each before the next is inflated.
+ */
+export async function* streamAppleHealthRouteMembers(input: {
+  archivePath: string;
+  limits: AppleHealthRouteArchiveLimits;
+  wanted: (name: string) => boolean;
+}): AsyncGenerator<AppleHealthArchiveMember> {
+  const { limits } = input;
+  yield* streamMembers(
+    input.archivePath,
+    {
+      maxMembers: limits.maxMembers,
+      maxEcgMembers: limits.maxRouteMembers,
+      maxMemberBytes: limits.maxMemberBytes,
+      maxTotalEcgBytes: limits.maxTotalRouteBytes,
+      maxCompressionRatio: limits.maxCompressionRatio,
+    },
+    {
+      label: "route",
+      matches: isWorkoutRouteGpx,
+      maxMembers: limits.maxRouteMembers,
+      maxTotalBytes: limits.maxTotalRouteBytes,
+    },
+    input.wanted,
+  );
 }

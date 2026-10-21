@@ -156,6 +156,20 @@ const unitMap: Record<string, string> = {
   PAIN_NRS: "score",
   WAIST_CIRCUMFERENCE: "cm",
   WAIST_TO_HEIGHT: "ratio",
+  // ── v1.44 — activity rings, mindfulness, State of Mind, AFib burden ──
+  EXERCISE_MINUTES: "minutes",
+  STAND_MINUTES: "minutes",
+  // Stood hours, a whole-number tally of hours.
+  STAND_HOURS: "hours",
+  MINDFUL_MINUTES: "minutes",
+  // HealthKit's dimensionless −1..1 valence.
+  STATE_OF_MIND_VALENCE: "valence",
+  // Percent of the week after the ×100 scaling.
+  AFIB_BURDEN: "%",
+  // ── v1.44 — room climate ──
+  INDOOR_CO2: "ppm",
+  INDOOR_TEMPERATURE: "celsius",
+  INDOOR_HUMIDITY: "%",
 };
 
 export function getUnitForType(type: string): string {

@@ -15,6 +15,7 @@
  * `intake-slot-dedup-queue`, `tls-pin-monitor-queue`, and `geo-backfill`
  * guards read THIS module.
  */
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { PgBoss } from "pg-boss";
 import { GEO_BACKFILL_QUEUE, GEO_BACKFILL_CRON } from "@/lib/jobs/geo-backfill";
 import {
@@ -2166,4 +2167,31 @@ export async function enqueueMaintenanceBootDiscovery(): Promise<void> {
       err,
     );
   }
+
+  // v1.44 — one-time climb backfill for workouts stored with a track but no
+  // elevation (`climb-backfill.ts`). Detached: it reads one track at a time
+  // with a pause between batches and resumes from its cursor on the next
+  // boot, so it never holds the boot or the heap. A finished pass returns at
+  // once.
+  trackBackgroundTask(
+    (async () => {
+      const [{ prisma }, { runWorkoutClimbBackfill }] = await Promise.all([
+        import("@/lib/db"),
+        import("@/lib/workouts/climb-backfill"),
+      ]);
+      const result = await runWorkoutClimbBackfill({ prisma });
+      if (result.scanned > 0) {
+        workerLog(
+          "info",
+          `[workout-climb-backfill] scanned=${result.scanned} filled=${result.filled} done=${result.done}`,
+        );
+      }
+    })().catch((err) => {
+      workerLog(
+        "error",
+        "[workout-climb-backfill] failed; the next boot resumes from the cursor",
+        err,
+      );
+    }),
+  );
 }

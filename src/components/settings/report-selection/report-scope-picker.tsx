@@ -110,7 +110,7 @@ export function ReportScopePicker({
   return (
     <div className="space-y-3" data-testid={`report-scope-picker-${surface}`}>
       {/* The one-click way to a complete report. An inline action row
-          (UI-STANDARDS §11): the sentence wraps, the action stays beside it.
+          (ui-standards.md §11): the sentence wraps, the action stays beside it.
           It is offered, never applied — and it stays offered so a person can
           come back to the standard set after experimenting. On a phone the
           action's own label is wider than half the row, so beside it the

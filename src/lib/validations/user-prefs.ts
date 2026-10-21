@@ -41,6 +41,11 @@ export const labsLocalOcrPatchSchema = z.object({
   labsLocalOcrEnabled: z.boolean(),
 });
 
+/** `PATCH /api/auth/me/workout-routes` — keep workout GPS tracks (opt-in). */
+export const workoutRoutesPatchSchema = z.object({
+  storeWorkoutRoutes: z.boolean(),
+});
+
 /** `PATCH /api/auth/me/use-central-codex` — the operator's shared Codex. */
 export const useCentralCodexPatchSchema = z.object({
   useCentralCodex: z.boolean(),

@@ -221,34 +221,6 @@ export function summariseHrShape(
   };
 }
 
-/**
- * Total metres climbed, summed from a GeoJSON LineString's altitude channel.
- *
- * Only positive deltas count — this is climb, not net elevation change, which
- * is the figure a rider recognises. Returns null when the geometry carries no
- * altitude channel at all (Withings ships static GPX without one), so the
- * caller can fall back to the denormalised column instead of reporting a
- * confident zero.
- */
-export function routeClimbM(geometry: unknown): number | null {
-  if (!geometry || typeof geometry !== "object") return null;
-  const coords = (geometry as { coordinates?: unknown }).coordinates;
-  if (!Array.isArray(coords)) return null;
-
-  let climb = 0;
-  let previous: number | null = null;
-  let seen = 0;
-  for (const point of coords) {
-    if (!Array.isArray(point) || point.length < 3) continue;
-    const alt = point[2];
-    if (typeof alt !== "number" || !Number.isFinite(alt)) continue;
-    seen++;
-    if (previous !== null && alt > previous) climb += alt - previous;
-    previous = alt;
-  }
-  return seen >= 2 ? Math.round(climb) : null;
-}
-
 /** Slim row shape the own-history median reads. */
 export interface OwnHistoryRow {
   durationSec: number;
@@ -330,8 +302,6 @@ export interface BuildEvidenceInput {
   hrSeries: WorkoutHrSeries | null;
   /** Zones as the detail route computes them, or null. */
   zones: WorkoutZones | null;
-  /** `WorkoutRoute.geometry`, or null when the source shipped no route. */
-  routeGeometry: unknown;
   /** Same-sport sessions inside the lookback, excluding this workout. */
   history: readonly OwnHistoryRow[];
 }
@@ -412,7 +382,9 @@ export function buildWorkoutInsightEvidence(
     localDate: userDayKey(row.startedAt, input.tz),
     durationSec: row.durationSec,
     distanceM: row.totalDistanceM,
-    climbM: routeClimbM(input.routeGeometry) ?? row.elevationM,
+    // The stored column only. A kept GPS track already filled it at write
+    // time (`route-climb.ts`); the track itself never reaches this builder.
+    climbM: row.elevationM,
     activeEnergyKcal: row.totalEnergyKcal,
     avgHr: row.avgHeartRate,
     maxHr: row.maxHeartRate,

@@ -5,10 +5,6 @@ import {
   decryptRouteGeometry,
   encryptRouteGeometry,
 } from "@/lib/workouts/route-geometry-cipher";
-import {
-  openInsightsCachedText,
-  sealInsightsCachedText,
-} from "@/lib/insights/cached-text-cipher";
 
 // ── in-memory store backing a minimal prisma mock ──────────────────────────
 interface ConversationRow {
@@ -33,14 +29,6 @@ interface PractitionerRow {
   locationEncrypted: Uint8Array | null;
   updatedAt?: Date;
 }
-interface UserRow {
-  id: string;
-  /** The row is its own owner; mirrors the other delegates' owner field. */
-  userId: string;
-  insightsCachedText: string | null;
-  insightsCachedTextEncrypted: Uint8Array | null;
-  updatedAt?: Date;
-}
 interface RouteRow {
   id: string;
   /** The owning workout's user; the real table reaches it through the join. */
@@ -54,7 +42,6 @@ const store = vi.hoisted(() => ({
   entries: [] as EntryRow[],
   practitioners: [] as PractitionerRow[],
   routes: [] as RouteRow[],
-  users: [] as UserRow[],
 }));
 
 vi.mock("@/lib/jobs/boss-instance", () => ({ getGlobalBoss: () => null }));
@@ -131,33 +118,6 @@ vi.mock("@/lib/db", () => {
     customMetricEntry: delegate(() => store.entries, ["note"]),
     practitioner: delegate(() => store.practitioners, ["phone", "location"]),
     workoutRoute: delegate(() => store.routes, ["geometry"]),
-    user: (() => {
-      const base = delegate(() => store.users, ["insightsCachedText"]);
-      return {
-        ...base,
-        // The insights cache move also guards on the readable value it read,
-        // so a warm that sealed a newer payload meanwhile is not overwritten.
-        updateMany: async (args: {
-          where: { id: string; updatedAt?: Date; insightsCachedText?: string };
-          data: Partial<UserRow>;
-        }) => {
-          const row = store.users.find((x) => x.id === args.where.id);
-          if (
-            row &&
-            args.where.insightsCachedText !== undefined &&
-            row.insightsCachedText !== args.where.insightsCachedText
-          ) {
-            return { count: 0 };
-          }
-          // Prisma stamps `@updatedAt` on every write that does not set it.
-          const data =
-            "updatedAt" in args.data
-              ? args.data
-              : { ...args.data, updatedAt: new Date() };
-          return base.updateMany({ ...args, data });
-        },
-      };
-    })(),
   };
   return {
     prisma: {
@@ -178,9 +138,6 @@ import {
 } from "@/lib/jobs/free-text-encryption-backfill";
 
 const KEY = "a".repeat(64);
-const CACHE = JSON.stringify({
-  dailyBriefing: { paragraph: "Your pressure eased after the new tablets." },
-});
 const TRACK = {
   type: "LineString",
   coordinates: [
@@ -268,21 +225,6 @@ beforeEach(() => {
     },
     { id: "r3", userId: "u2", geometry: TRACK, geometryEncrypted: null },
   ];
-  store.users = [
-    {
-      id: "u1",
-      userId: "u1",
-      insightsCachedText: CACHE,
-      insightsCachedTextEncrypted: null,
-      updatedAt: new Date("2026-03-01T07:00:00.000Z"),
-    },
-    {
-      id: "u2",
-      userId: "u2",
-      insightsCachedText: "other user",
-      insightsCachedTextEncrypted: null,
-    },
-  ];
 });
 
 afterEach(() => {
@@ -300,7 +242,6 @@ describe("runFreeTextEncryptionBackfillForUser", () => {
       routeGeometriesMigrated: 1,
       appointmentAddressesCleared: 0,
       contactAuditRowsScrubbed: 0,
-      insightsCachesMigrated: 1,
     });
 
     const c1 = store.conversations.find((r) => r.id === "c1")!;
@@ -404,50 +345,10 @@ describe("runFreeTextEncryptionBackfillForUser", () => {
       routeGeometriesMigrated: 0,
       appointmentAddressesCleared: 0,
       contactAuditRowsScrubbed: 0,
-      insightsCachesMigrated: 0,
     });
     expect(store.conversations.find((r) => r.id === "c1")!.titleEncrypted).toBe(
       sealed,
     );
-  });
-
-  it("seals the cached insights payload, keeps updatedAt, and leaves another account's alone", async () => {
-    await runFreeTextEncryptionBackfillForUser("u1");
-    const u1 = store.users.find((r) => r.id === "u1")!;
-    expect(u1.insightsCachedText).toBeNull();
-    expect(u1.insightsCachedTextEncrypted).not.toBeNull();
-    // Sealed, not merely encoded: the bytes do not carry the prose.
-    expect(
-      Buffer.from(u1.insightsCachedTextEncrypted!).toString("utf8"),
-    ).not.toContain("pressure");
-    expect(openInsightsCachedText(u1)).toBe(CACHE);
-    // Profile forms use updatedAt as their concurrency token; a storage move
-    // must not invalidate an open form.
-    expect(u1.updatedAt).toEqual(new Date("2026-03-01T07:00:00.000Z"));
-    expect(store.users.find((r) => r.id === "u2")).toMatchObject({
-      insightsCachedText: "other user",
-      insightsCachedTextEncrypted: null,
-    });
-  });
-
-  it("does not overwrite a payload a warm sealed while the move was reading", async () => {
-    const newer = sealInsightsCachedText("newer");
-    const u1 = store.users.find((r) => r.id === "u1")!;
-    // The warm lands between the backfill's read and its write: the read
-    // returns the old readable value, the row then holds the newer sealed one.
-    const { prisma } = await import("@/lib/db");
-    const snapshot = { ...u1 };
-    const spy = vi.spyOn(prisma.user, "findUnique").mockImplementationOnce(((
-      _args: unknown,
-    ) => {
-      u1.insightsCachedText = null;
-      u1.insightsCachedTextEncrypted = newer;
-      return Promise.resolve(snapshot);
-    }) as never);
-    await runFreeTextEncryptionBackfillForUser("u1");
-    spy.mockRestore();
-    expect(u1.insightsCachedTextEncrypted).toBe(newer);
-    expect(openInsightsCachedText(u1)).toBe("newer");
   });
 
   it("is fail-closed: without a key every readable row stays intact", async () => {

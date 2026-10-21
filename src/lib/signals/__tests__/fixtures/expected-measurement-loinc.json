@@ -262,5 +262,59 @@
     "display": "Sleep Condition Indicator total score",
     "unit": "{score}",
     "category": "survey"
+  },
+  "EXERCISE_MINUTES": {
+    "loinc": "HKQuantityTypeIdentifierAppleExerciseTime",
+    "display": "Exercise time",
+    "unit": "min",
+    "category": "activity"
+  },
+  "STAND_MINUTES": {
+    "loinc": "HKQuantityTypeIdentifierAppleStandTime",
+    "display": "Stand time",
+    "unit": "min",
+    "category": "activity"
+  },
+  "STAND_HOURS": {
+    "loinc": "HKCategoryTypeIdentifierAppleStandHour",
+    "display": "Stand hours",
+    "unit": "h",
+    "category": "activity"
+  },
+  "MINDFUL_MINUTES": {
+    "loinc": "HKCategoryTypeIdentifierMindfulSession",
+    "display": "Mindful session",
+    "unit": "min",
+    "category": "activity"
+  },
+  "STATE_OF_MIND_VALENCE": {
+    "loinc": null,
+    "display": "State of mind valence",
+    "unit": "1",
+    "category": "survey"
+  },
+  "AFIB_BURDEN": {
+    "loinc": "HKQuantityTypeIdentifierAtrialFibrillationBurden",
+    "display": "Atrial fibrillation burden",
+    "unit": "%",
+    "category": "vital-signs"
+  },
+  "INDOOR_CO2": {
+    "loinc": null,
+    "display": "Indoor carbon dioxide",
+    "unit": "[ppm]",
+    "category": "activity"
+  },
+  "INDOOR_TEMPERATURE": {
+    "loinc": null,
+    "display": "Indoor air temperature",
+    "unit": "Cel",
+    "category": "activity"
+  },
+  "INDOOR_HUMIDITY": {
+    "loinc": null,
+    "display": "Indoor relative humidity",
+    "unit": "%",
+    "category": "activity"
   }
 }

@@ -404,7 +404,7 @@ describe("how a field says what is wrong with it", () => {
     // Announced, because it MOUNTS with the role rather than a class being
     // swapped onto a node that was already there.
     expect(alert).toContain('role="alert"');
-    // Content, not meta. UI-STANDARDS §3, and the same reasoning
+    // Content, not meta. ui-standards.md §3, and the same reasoning
     // `grant-action-error.tsx` spells out: a refusal rendered as muted is a
     // refusal nobody reads.
     expect(alert).toContain("text-destructive");
@@ -521,7 +521,7 @@ describe("ending a managed profile", () => {
     authRef.value = { accounts: [entry()], active: null };
     const html = renderGatedSection();
     expect(html).toContain('data-slot="managed-profile-delete"');
-    // The mobile tap floor UI-STANDARDS §11 asks of an inline action.
+    // The mobile tap floor ui-standards.md §11 asks of an inline action.
     expect(html).toMatch(
       /data-slot="managed-profile-delete"[^>]*class="[^"]*min-h-11/,
     );
@@ -629,7 +629,7 @@ describe("ending a managed profile", () => {
     const html = renderGatedSection();
     expect(html).toContain('data-slot="query-error-card"');
     expect(html).toContain("Could not load who looks after this record");
-    // And the way back is reachable, which is what UI-STANDARDS §6 asks of an
+    // And the way back is reachable, which is what ui-standards.md §6 asks of an
     // error state.
     expect(html).toContain('data-slot="query-error-retry"');
   });

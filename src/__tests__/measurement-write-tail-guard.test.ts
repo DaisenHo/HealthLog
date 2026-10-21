@@ -44,6 +44,7 @@ const WRITE_SITES: Record<string, string> = {
   "app/api/measurements/bulk-delete/route.ts": TAIL,
   "app/api/measurements/by-external-ids/route.ts": TAIL,
   "app/api/measurements/restore/route.ts": TAIL,
+  "app/api/measurements/batch/route.ts": TAIL,
   "app/api/measurements/route.ts": TAIL,
   "app/api/mental-health/assessments/route.ts": TAIL,
   "lib/insights/score-row.ts": TAIL,

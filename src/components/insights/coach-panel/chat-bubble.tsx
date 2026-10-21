@@ -520,7 +520,7 @@ function ChatBubbleImpl({
   // #781 — the persisted cancelled-turn marker (an EMPTY assistant row the
   // server writes when the client aborts mid-generation, e.g. navigating
   // away). Rendered as a quiet interrupted note — muted meta text per
-  // UI-STANDARDS §3, never an alarm colour: nothing failed, the user left —
+  // ui-standards.md §3, never an alarm colour: nothing failed, the user left —
   // plus a retry that resubmits the question that produced the turn (the
   // regenerate closure, so the resend runs through the normal send path and
   // every budget/rate gate). No provenance, feedback, copy, or token footer:
@@ -700,7 +700,7 @@ function ChatBubbleImpl({
           <p className="text-warning text-xs">{safeError}</p>
         )}
         {/* v1.32.14 — quiet grounding caveat when the guard withheld a figure.
-            Muted meta (UI-STANDARDS §3), never a warning colour — it is a
+            Muted meta (ui-standards.md §3), never a warning colour — it is a
             grounding caveat, not an error. Static single line, decorative icon,
             no interactivity. The `[…]` marks in the prose above point here. */}
         {showUnverifiedNotice && (

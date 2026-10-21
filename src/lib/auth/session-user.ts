@@ -17,8 +17,8 @@ import type { Prisma } from "@/generated/prisma/client";
  * flags, the small preference documents). Anything else is read by the one
  * route that needs it, with its own `select`, at the moment it needs it:
  *
- *   - bytes and large text: `avatarBytes`, `insightsCachedText`,
- *     `insightsCachedTextEncrypted`, `homeLocationEncrypted`,
+ *   - bytes and large text: `avatarBytes`, `insightsCachedTextEncrypted`,
+ *     `homeLocationEncrypted`,
  *     `environmentAqHistoryJson`, `dawarichPrefsEncrypted`;
  *   - credentials and secrets: `passwordHash`, `totpSecretEncrypted`,
  *     `totpLastStep`, `telegramBotToken`, every `*Encrypted` integration and

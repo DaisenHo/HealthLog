@@ -99,7 +99,7 @@ export function LabsChangesCard({
               </div>
               {/* The delta is CONTENT — the number the row exists to report —
                   so it takes the analyte's tier, not the meta tier of the
-                  line under it (UI-STANDARDS §3). At `text-xs` muted it wore
+                  line under it (ui-standards.md §3). At `text-xs` muted it wore
                   the sub-line's typography and optically attached itself to
                   that lower line, which is what made a row centred to the
                   pixel read as bottom-aligned. `self-center` states the row's

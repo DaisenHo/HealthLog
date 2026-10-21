@@ -129,4 +129,17 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
   PAIN_NRS: "bg-chart-3/10 text-chart-3 dark:bg-chart-3/20",
   WAIST_CIRCUMFERENCE: "bg-chart-4/10 text-chart-4 dark:bg-chart-4/20",
   WAIST_TO_HEIGHT: "bg-chart-4/10 text-chart-4 dark:bg-chart-4/20",
+  // ── v1.44 — the rings and mindful minutes join the activity family
+  // (chart-2), the valence the score family (chart-1), AFib burden the
+  // cardio family (chart-3).
+  EXERCISE_MINUTES: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  STAND_MINUTES: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  STAND_HOURS: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  MINDFUL_MINUTES: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  STATE_OF_MIND_VALENCE: "bg-chart-1/10 text-chart-1 dark:bg-chart-1/20",
+  AFIB_BURDEN: "bg-chart-3/10 text-chart-3 dark:bg-chart-3/20",
+  // Room climate takes the environment family of daylight (chart-2).
+  INDOOR_CO2: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  INDOOR_TEMPERATURE: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  INDOOR_HUMIDITY: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
 };

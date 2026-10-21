@@ -4,7 +4,7 @@
  * The read seam for the unified daily-value system (P3). Returns the
  * `DailyDigest` DTO the Today surface, the daily push, and a future iOS widget
  * all consume — assembled by `loadDailyDigest` from ALREADY-CACHED data (the
- * nightly briefing lifted read-only from `User.insightsCachedText`, the
+ * nightly briefing lifted read-only from `User.insightsCachedTextEncrypted`, the
  * dashboard-snapshot health score / meds-today / sleep freshness) plus two
  * light deterministic reads (broken integrations, overdue Vorsorge). No
  * provider call is reachable from this path, and nothing warms on mount.

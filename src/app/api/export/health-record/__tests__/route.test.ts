@@ -206,7 +206,7 @@ beforeEach(() => {
     fullName: null,
     insurerName: null,
     insuranceNumberEncrypted: null,
-    insightsCachedText: null,
+    insightsCachedTextEncrypted: null,
   } as never);
 });
 

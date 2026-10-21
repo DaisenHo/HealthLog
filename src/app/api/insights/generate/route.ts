@@ -153,7 +153,7 @@ export function resolveInsightsRateLimit(): number {
  * to mount against the POST handler, which generates inline on a cache miss
  * and blocks the page-load path on the full provider chain (up to the
  * client's 8 s abort). This read-only GET serves the cached payload from
- * `User.insightsCachedText` immediately — NEVER calling the provider — and,
+ * `User.insightsCachedTextEncrypted` immediately — NEVER calling the provider — and,
  * when the cache is stale / missing AND a provider is configured, enqueues
  * an out-of-band warm (the same `insight-pregenerate` queue the nightly
  * cron and the "prepare assessments" button use). The next read reflects

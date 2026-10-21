@@ -22,10 +22,13 @@
 import { prisma } from "@/lib/db";
 import { failureCondition } from "@/lib/jobs/failure-condition";
 import {
+  containerMemoryLimitMb,
   heapLimitMb,
+  isBelowMemoryFloor,
   isHeapLimitLow,
   lowHeapLimitAdvice,
   megabytes,
+  memoryFloorAdvice,
 } from "@/lib/support/heap-limit";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isOidcConfigured, isOidcOnly } from "@/lib/auth/oidc";
@@ -85,6 +88,8 @@ export interface SupportReportFacts {
     node: string;
     processType: string;
     heapLimitMb: number;
+    /** The container's memory limit; `null` when there is none or it cannot be read. */
+    containerMemoryLimitMb: number | null;
     uptimeSeconds: number;
   };
   database: {
@@ -617,6 +622,7 @@ export async function collectSupportReportFacts(
       node: process.version,
       processType: getProcessType(),
       heapLimitMb: heapLimitMb(),
+      containerMemoryLimitMb: containerMemoryLimitMb(),
       uptimeSeconds: Math.round(process.uptime()),
     },
     database,
@@ -730,6 +736,18 @@ export function renderSupportReport(facts: SupportReportFacts): string {
   row("Built at", facts.build.builtAt);
   row("Node", facts.build.node);
   row("Process type", facts.build.processType);
+  row(
+    "Container memory limit",
+    facts.build.containerMemoryLimitMb === null
+      ? "none or unreadable"
+      : `${facts.build.containerMemoryLimitMb} MB`,
+  );
+  if (isBelowMemoryFloor(facts.build.containerMemoryLimitMb)) {
+    row(
+      "Memory note",
+      `Below the supported floor. ${memoryFloorAdvice(facts.build.containerMemoryLimitMb as number)}`,
+    );
+  }
   row("Heap limit", `${facts.build.heapLimitMb} MB`);
   if (isHeapLimitLow(facts.build.heapLimitMb)) {
     row("Heap limit note", lowHeapLimitAdvice(facts.build.heapLimitMb));

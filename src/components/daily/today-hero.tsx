@@ -539,7 +539,7 @@ export function TodayHero({
           </div>
         )}
 
-        {/* Meta row — the hero's quiet tier (UI-STANDARDS §text: `text-xs
+        {/* Meta row — the hero's quiet tier (ui-standards.md §3: `text-xs
             text-muted-foreground` is the meta floor; never an accent, never an
             opacity modifier). Freshness note (plan §2.4) — provisional day,
             last night's sleep not yet folded in. Muted, non-blocking,

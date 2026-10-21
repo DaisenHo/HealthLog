@@ -73,6 +73,10 @@ const WRITERS: Record<string, Disposition> = {
     validatedIn: "lib/validations/measurement.ts",
   },
   "app/api/import/route.ts": { kind: "validator" },
+  // v1.44 — the set-based insert writes rows that already passed the
+  // route's `validateMeasurementRange` per entry; everything else goes
+  // through the reconciler, which gates itself.
+  "app/api/measurements/batch/route.ts": { kind: "validator" },
   "lib/mcp/writes.ts": { kind: "validator" },
   "lib/measurements/create-from-telegram.ts": { kind: "validator" },
   "lib/measurements/import-apple-health-export.ts": { kind: "validator" },

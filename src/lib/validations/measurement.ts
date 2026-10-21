@@ -145,6 +145,18 @@ export const measurementTypeEnum = z.enum([
   // percentage (raw sum × 4); SCI stores the 0–32 total.
   "WHO5_SCORE",
   "SCI_SCORE",
+  // ── v1.44 — Apple Health activity rings, mindfulness, State of Mind and
+  // AFib burden. See the enum comments in `prisma/schema.prisma`.
+  "EXERCISE_MINUTES",
+  "STAND_MINUTES",
+  "STAND_HOURS",
+  "MINDFUL_MINUTES",
+  "STATE_OF_MIND_VALENCE",
+  "AFIB_BURDEN",
+  // ── v1.44 — room climate pushed through the ingest token ──
+  "INDOOR_CO2",
+  "INDOOR_TEMPERATURE",
+  "INDOOR_HUMIDITY",
 ]);
 
 /**
@@ -440,6 +452,25 @@ export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   // SCI total 0–32 — both server-derived, higher = better.
   WHO5_SCORE: { min: 0, max: 100 },
   SCI_SCORE: { min: 0, max: 32 },
+  // ── v1.44 — the minute rings and mindful minutes are bounded by the day;
+  // a row is one sample or one day's total, never more than 1440 minutes.
+  EXERCISE_MINUTES: { min: 0, max: 1440 },
+  STAND_MINUTES: { min: 0, max: 1440 },
+  MINDFUL_MINUTES: { min: 0, max: 1440 },
+  // Stood hours: 1 per hour sample, at most 24 on a day's total.
+  STAND_HOURS: { min: 0, max: 24 },
+  // State of Mind valence: HealthKit's closed −1..1 scale.
+  STATE_OF_MIND_VALENCE: { min: -1, max: 1 },
+  // AFib burden as a percent of the week, after the ×100 scaling. A client
+  // that already scaled sends 2 for 2 %, which lands at 200 and is refused.
+  AFIB_BURDEN: { min: 0, max: 100 },
+  // ── v1.44 — room climate. CO2: outdoor air sits near 420 ppm and a closed
+  // bedroom can pass 3000; consumer sensors top out at 5000–10000 ppm.
+  INDOOR_CO2: { min: 0, max: 10000 },
+  // Indoor air °C: a cold cellar to an overheated attic.
+  INDOOR_TEMPERATURE: { min: -20, max: 60 },
+  // Relative humidity, percent.
+  INDOOR_HUMIDITY: { min: 0, max: 100 },
   // Grip strength kg — a child can read in the single digits, an elite athlete
   // tops ~90 kg; 120 is a generous ceiling that still rejects sensor noise.
   GRIP_STRENGTH: { min: 0, max: 120 },

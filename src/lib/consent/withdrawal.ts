@@ -66,7 +66,7 @@ export async function purgeRegenerableAiText(
         where: {
           id: userId,
           OR: [
-            ...INSIGHTS_CACHE_PRESENT_WHERE.OR,
+            INSIGHTS_CACHE_PRESENT_WHERE,
             { insightsCachedAt: { not: null } },
             { insightsSnapshotHash: { not: null } },
           ],

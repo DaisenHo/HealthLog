@@ -150,7 +150,7 @@ beforeEach(() => {
   findUnique.mockResolvedValue({
     insightsPrivacyMode: "aggregated",
     insightsCachedAt: null,
-    insightsCachedText: null,
+    insightsCachedTextEncrypted: null,
     insightsExcludeMetrics: [],
     insightsSnapshotHash: null,
     insightsBriefingRerollDate: null,

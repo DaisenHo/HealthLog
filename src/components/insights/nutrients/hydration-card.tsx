@@ -22,7 +22,7 @@ const WINDOW_DAYS = 30;
  * reference-intake meta line (omitted when the profile has no sex on
  * file — the catalog's own contract), a 30-day bar chart with a dashed
  * reference line. No ring, no attainment colour — the bar chart with a
- * reference line IS the context (UI-STANDARDS: value stays foreground,
+ * reference line IS the context (ui-standards.md: value stays foreground,
  * never coloured by attainment). Display only: water arrives by sync
  * (Apple Health etc.), there is no in-app water entry here.
  */

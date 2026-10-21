@@ -137,6 +137,18 @@ export const ALLOWED_CHART_TOKENS = [
   // continuous-series contract, higher = better.
   "metric:WHO5_SCORE",
   "metric:SCI_SCORE",
+  // v1.44 — Apple Health activity rings, mindfulness, State of Mind and
+  // AFib burden. Charted through the generic series renderer.
+  "metric:EXERCISE_MINUTES",
+  "metric:STAND_MINUTES",
+  "metric:STAND_HOURS",
+  "metric:MINDFUL_MINUTES",
+  "metric:STATE_OF_MIND_VALENCE",
+  "metric:AFIB_BURDEN",
+  // v1.44 — room climate from the ingest token.
+  "metric:INDOOR_CO2",
+  "metric:INDOOR_TEMPERATURE",
+  "metric:INDOOR_HUMIDITY",
   "metric:GRIP_STRENGTH",
   "metric:PAIN_NRS",
   "metric:WAIST_CIRCUMFERENCE",

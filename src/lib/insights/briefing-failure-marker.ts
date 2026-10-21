@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
  * Dated failure marker for the daily-briefing generation.
  *
  * The briefing keeps its last good payload on a failed refresh: the generator
- * writes NO `User.insightsCachedText` row when a provider times out or errors,
+ * writes NO `User.insightsCachedTextEncrypted` row when a provider times out or errors,
  * so the previous briefing stays intact and the surface never blanks. What was
  * missing is a signal the READ path can use to tell the difference between "no
  * refresh was due" and "the last refresh attempt failed" — without that, a

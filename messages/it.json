@@ -911,6 +911,15 @@
     "unitRating": "livello",
     "typeWho5Score": "Punteggio WHO-5",
     "typeSciScore": "Punteggio SCI",
+    "typeExerciseMinutes": "Minuti di esercizio",
+    "typeStandMinutes": "Minuti in piedi",
+    "typeStandHours": "Ore in piedi",
+    "typeMindfulMinutes": "Minuti di consapevolezza",
+    "typeStateOfMindValence": "Stato d’animo",
+    "typeAfibBurden": "Carico di FA",
+    "typeIndoorCo2": "CO₂ interna",
+    "typeIndoorTemperature": "Temperatura interna",
+    "typeIndoorHumidity": "Umidità interna",
     "durationReadAs": "Letto come {duration}",
     "durationHoursMinutes": "{hours} h {minutes} min",
     "durationHoursOnly": "{hours} h",
@@ -3565,6 +3574,7 @@
       "falls": "cadute",
       "years": "anni",
       "breathingEvents": "eventi",
+      "standHours": "ore",
       "respiratoryRate": "respiri/min"
     },
     "sleep": {
@@ -7155,6 +7165,12 @@
         "profile": "Il tuo profilo, l'anamnesi e i dati della cartella sanitaria",
         "modules": "Dati di ogni modulo: {list}"
       },
+      "workoutRoutes": {
+        "title": "Percorsi degli allenamenti",
+        "description": "Conserva il tracciato GPS dei nuovi allenamenti dall’app per iPhone e dall’esportazione di Apple Salute.",
+        "detail": "Disattivato di default. Un percorso mostra dove vivi, lavori e ti alleni, quindi viene conservato solo dopo averlo attivato. Gli allenamenti vengono conservati comunque e nessuna funzione IA legge mai un percorso. Disattivandolo si fermano i nuovi percorsi; quelli già conservati restano finché non elimini l’allenamento.",
+        "loadError": "Impossibile caricare l’impostazione dei percorsi."
+      },
       "retention": {
         "title": "Conservazione",
         "description": "Per quanto tempo i record a tempo vengono conservati prima della pulizia automatica.",
@@ -7600,6 +7616,7 @@
     "heapLimitLabel": "Limite heap",
     "heapLimitValue": "{mb} MB",
     "heapLimitLow": "{mb} MB, poco: imposta APP_MEMORY_LIMIT=1536m in .env",
+    "memoryBelowFloor": "Container {mb} MB, sotto il minimo supportato di {floor} MB: imposta APP_MEMORY_LIMIT={floor}m in .env",
     "offlineGeoOff": "Disattivato",
     "offlineGeoChosen": "Online ({host})",
     "apiGlobal": "Consentire endpoint API e token API.",

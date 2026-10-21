@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  * geometry and pushes everything the user came for below the fold — so this
  * shape stays, promoted to a primitive instead of being copied a third time.
  *
- * Pick by surface (UI-STANDARDS §6):
+ * Pick by surface (ui-standards.md §6):
  *  - primary / list surface → `QueryErrorCard`
  *  - dense metric strip or tile where the tall card would dominate →
  *    `QueryErrorRow`

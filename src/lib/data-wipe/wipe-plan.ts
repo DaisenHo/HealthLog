@@ -400,7 +400,6 @@ export const USER_RESET = {
   // Derived AI output cached on the row
   insightsPrivacyMode: "aggregated",
   insightsCachedAt: null,
-  insightsCachedText: null,
   insightsCachedTextEncrypted: null,
   insightsCachedLocale: null,
   insightsSnapshotHash: null,
@@ -428,6 +427,7 @@ export const USER_RESET = {
   coachLastSeenAt: null,
   documentsAutoAiRead: false,
   labsLocalOcrEnabled: false,
+  storeWorkoutRoutes: false,
   codexAccessTokenEncrypted: null,
   codexRefreshTokenEncrypted: null,
   codexTokenExpiresAt: null,

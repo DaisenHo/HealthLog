@@ -54,7 +54,7 @@ export function GrantRowItem({
   /**
    * Something the person has to read before they act on this row, rendered in
    * the content column rather than beside the button: consent copy is content
-   * (UI-STANDARDS §3), and a sentence squeezed into the action column would
+   * (ui-standards.md §3), and a sentence squeezed into the action column would
    * wrap into a stripe nobody reads.
    */
   notice?: ReactNode;

@@ -527,6 +527,7 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   coachPrefsJson: json("coachPrefsJson"),
   documentsAutoAiRead: plain("documentsAutoAiRead"),
   labsLocalOcrEnabled: plain("labsLocalOcrEnabled"),
+  storeWorkoutRoutes: plain("storeWorkoutRoutes"),
   onboardingCompletedAt: instant("onboardingCompletedAt"),
   onboardingTourCompleted: plain("onboardingTourCompleted"),
   onboardingTourProgressJson: json("onboardingTourProgressJson"),

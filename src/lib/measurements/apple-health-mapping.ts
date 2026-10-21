@@ -245,6 +245,12 @@ const UNIT_FIXED_AUDIO_SPL =
   "Sound-pressure level: Apple emits `dBASPL` only, and a decibel is logarithmic — a sibling unit would need its own formula, never a factor.";
 const UNIT_FIXED_COMPOSITE_VO2 =
   "Compound rate Apple emits verbatim as `mL/(kg*min)`; the Health app exposes no other spelling and the compound has no sibling unit to convert from.";
+const UNIT_FIXED_STAND_HOUR =
+  "Stand hours are a tally of hour samples: the importer maps `Stood` to 1 and drops `Idle`, and a daily row carries the count, so no record unit can rescale it.";
+const UNIT_FIXED_VALENCE =
+  "State of Mind valence is a dimensionless −1..1 self-report; HealthKit has no unit for it and nothing to convert from.";
+const UNIT_FIXED_AFIB_FRACTION =
+  "Apple writes the percent unit but the value rides as a 0..1 fraction, scaled ×100 in `convertToDbUnit`; branching on the record unit would double-scale it.";
 const UNIT_FIXED_SLEEP_CATEGORY =
   "Sleep samples carry a symbolic category value, not a quantity: the importer derives the duration in minutes from the sample's own dates, so the record's unit attribute (empty in Apple's archive) says nothing about the reading.";
 
@@ -477,6 +483,83 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     dbUnit: "minutes",
     convertToDbUnit: (v) => v,
     aggregation: "sum",
+  },
+
+  // ── v1.44 — activity rings, mindfulness, State of Mind, AFib burden ──
+  // The exercise and stand rings. Apple ships both as minute quantities;
+  // cumulative, so the daily SUM is the ring value (same posture as
+  // daylight minutes).
+  HKQuantityTypeIdentifierAppleExerciseTime: {
+    hkIdentifier: "HKQuantityTypeIdentifierAppleExerciseTime",
+    measurementType: "EXERCISE_MINUTES",
+    hkUnit: "min",
+    dbUnit: "minutes",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+  },
+  HKQuantityTypeIdentifierAppleStandTime: {
+    hkIdentifier: "HKQuantityTypeIdentifierAppleStandTime",
+    measurementType: "STAND_MINUTES",
+    hkUnit: "min",
+    dbUnit: "minutes",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+  },
+  // The stand ring's hours. A category sample per hour, `stood` (0) or
+  // `idle` (1); the wire `value` is the number of stood hours the row
+  // stands for: 1 for one stood-hour sample, the day's count on a
+  // `stats:` daily row. The archive importer turns `Stood` into 1 and
+  // skips `Idle`, so an idle hour is never a row.
+  HKCategoryTypeIdentifierAppleStandHour: {
+    hkIdentifier: "HKCategoryTypeIdentifierAppleStandHour",
+    measurementType: "STAND_HOURS",
+    hkUnit: "count",
+    unitFixedReason: UNIT_FIXED_STAND_HOUR,
+    dbUnit: "hours",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+  },
+  // Mindful sessions. A category sample with no quantity: the value is the
+  // session length in minutes, from the sample's own dates (the archive
+  // importer derives it; the batch client sends it), the sleep contract.
+  HKCategoryTypeIdentifierMindfulSession: {
+    hkIdentifier: "HKCategoryTypeIdentifierMindfulSession",
+    measurementType: "MINDFUL_MINUTES",
+    hkUnit: "min",
+    dbUnit: "minutes",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+    isPrivacySensitive: true,
+  },
+  // State of Mind (iOS 18+). The valence of a logged emotion or daily mood,
+  // −1 (very unpleasant) to 1 (very pleasant), stored as is. Labels and
+  // associations stay on the device.
+  HKDataTypeIdentifierStateOfMind: {
+    hkIdentifier: "HKDataTypeIdentifierStateOfMind",
+    measurementType: "STATE_OF_MIND_VALENCE",
+    hkUnit: "valence",
+    unitFixedReason: UNIT_FIXED_VALENCE,
+    dbUnit: "valence",
+    convertToDbUnit: (v) => v,
+    aggregation: "mean",
+    isPrivacySensitive: true,
+  },
+  // AFib burden (iOS 16+, AFib History): the weekly share of time the watch
+  // estimated in AFib. Apple ships a 0..1 fraction and the wire is pinned to
+  // it: scaled strictly ×100. `percentFromFraction` repairs shipped clients
+  // that pre-scale SpO2 and body fat; no client pre-scales this type, and a
+  // small burden is exactly where a pre-scaled value cannot be told from a
+  // fraction, so a value above 1 is refused by the range guard (it lands
+  // above 100) rather than guessed at.
+  HKQuantityTypeIdentifierAtrialFibrillationBurden: {
+    hkIdentifier: "HKQuantityTypeIdentifierAtrialFibrillationBurden",
+    measurementType: "AFIB_BURDEN",
+    hkUnit: "%",
+    unitFixedReason: UNIT_FIXED_AFIB_FRACTION,
+    dbUnit: "%",
+    convertToDbUnit: (v) => v * 100,
+    aggregation: "latest",
+    isPrivacySensitive: true,
   },
 
   // ── v1.4.30 R-F T1.4 + T1.5 Tier-1 additions ────────────────
@@ -818,6 +901,12 @@ export const CUMULATIVE_HK_TYPES: ReadonlySet<MeasurementType> =
     // daily total is the meaningful reduction (SUM), matching the other
     // cumulative HK counts.
     "FALL_COUNT",
+    // v1.44 — the exercise and stand rings and mindful minutes are day
+    // totals of partial-day increments, like daylight minutes.
+    "EXERCISE_MINUTES",
+    "STAND_MINUTES",
+    "STAND_HOURS",
+    "MINDFUL_MINUTES",
   ]);
 
 /**
@@ -1095,9 +1184,6 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // v1.10.0 — `HeartRateRecoveryOneMinute` + `AppleSleepingWristTemperature`
   // moved into the mapping table (CARDIO_RECOVERY + WRIST_TEMPERATURE).
   "HKQuantityTypeIdentifierBasalEnergyBurned",
-  "HKQuantityTypeIdentifierAppleExerciseTime", // implied by Workout rows
-  "HKQuantityTypeIdentifierAppleStandTime", // implied by Workout rows
-  "HKCategoryTypeIdentifierAppleStandHour", // implied by Workout rows
   // Running / walking form — v1.5+
   // v1.5.5 — `WalkingStepLength` + `WalkingSpeed` moved into the
   // mapping table (raw SI on the wire — metres and m/s respectively).
@@ -1152,9 +1238,6 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   "HKQuantityTypeIdentifierDietarySugar",
   "HKQuantityTypeIdentifierDietaryFiber",
   "HKQuantityTypeIdentifierDietarySodium",
-  // Mental-state / mindfulness — v1.5 (route to existing mood model)
-  "HKCategoryTypeIdentifierMindfulSession",
-  "HKDataTypeIdentifierStateOfMind",
   // Pregnancy bleeding — stays deferred (pregnancy-mode is a later
   // release). v1.15.0 promoted the cycle-tracking reproductive types
   // (MenstrualFlow / IntermenstrualBleeding / CervicalMucusQuality /
@@ -1183,7 +1266,6 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // Cardiovascular / clinical (iOS 16+) — no HealthLog counterpart yet;
   // clinical decision-support territory, defer behind a stricter user
   // opt-in than the existing Health-share prompt.
-  "HKQuantityTypeIdentifierAtrialFibrillationBurden",
   "HKQuantityTypeIdentifierPeripheralPerfusionIndex",
   // Mobility (iOS 15+) — `AppleWalkingSteadiness` moved into the
   // mapping table in v1.4.30 (R-F T1.5). In v1.10.0 both remaining

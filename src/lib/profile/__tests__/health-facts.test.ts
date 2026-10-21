@@ -93,7 +93,6 @@ describe("encrypted health profile fact revisions", () => {
       where: { id: "user-1" },
       data: {
         insightsCachedAt: null,
-        insightsCachedText: null,
         insightsCachedTextEncrypted: null,
         insightsCachedLocale: null,
       },
@@ -133,7 +132,6 @@ describe("encrypted health profile fact revisions", () => {
       where: { id: "user-1" },
       data: {
         insightsCachedAt: null,
-        insightsCachedText: null,
         insightsCachedTextEncrypted: null,
         insightsCachedLocale: null,
       },
@@ -199,7 +197,6 @@ describe("encrypted health profile fact revisions", () => {
       where: { id: "user-1" },
       data: {
         insightsCachedAt: null,
-        insightsCachedText: null,
         insightsCachedTextEncrypted: null,
         insightsCachedLocale: null,
       },
@@ -247,7 +244,6 @@ describe("encrypted health profile fact revisions", () => {
       where: { id: "user-1" },
       data: {
         insightsCachedAt: null,
-        insightsCachedText: null,
         insightsCachedTextEncrypted: null,
         insightsCachedLocale: null,
       },

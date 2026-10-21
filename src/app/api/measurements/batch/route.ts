@@ -66,7 +66,11 @@ import {
   oppositeMergeSource,
   type MergeCandidate,
 } from "@/lib/measurements/cross-source-merge";
-import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
+import {
+  lockMeasurementUser,
+  reconcileExternalMeasurement,
+  type MeasurementReconciliationVerdict,
+} from "@/lib/measurements/reconcile-external-measurement";
 import { classifyRangeRejection } from "@/lib/measurements/plausibility-gate";
 import {
   FOLDED_WINDOW_REASON,
@@ -133,6 +137,12 @@ const MAX_BATCH_ENTRIES = 500;
 // multi-megabyte payload before it reaches `JSON.parse` and the heap.
 // The cap is a DoS ceiling, not a tight bound.
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Rows per set-based insert statement. 500 entries fit two statements; each
+ * row binds about fifteen parameters, far under PostgreSQL's 65 535.
+ */
+const SET_INSERT_CHUNK = 250;
 
 // v1.4.25 (security H-2): cap batch ingest at 60
 // batches per user per minute. Healthy iOS sync drains its
@@ -635,6 +645,8 @@ async function postBatch(request: NextRequest): Promise<Response> {
   let updatedCount = 0;
   let duplicateCount = 0;
   let failedCount = 0;
+  // v1.44 — subset of `insertedCount` written by the set-based insert.
+  let setInsertedCount = 0;
   // v1.11.4 (iOS #2) — subset of `duplicateCount` collapsed by the
   // MANUAL↔APPLE_HEALTH same-reading merge (as opposed to a plain
   // composite-key duplicate). Surfaced as a dedicated wide-event count so
@@ -855,6 +867,188 @@ async function postBatch(request: NextRequest): Promise<Response> {
       [...foldedIndexes].map((index) => prepared[index]),
     );
 
+    /** The reconciler's input for one prepared row. */
+    const desiredFor = (p: Prepared) => {
+      const statsRow = isStatsExternalId(p.row.externalId as string);
+      return {
+        userId: user.id,
+        type: p.row.type as MeasurementType,
+        value: p.row.value as number,
+        valueMin: p.row.valueMin as number | null,
+        valueMax: p.row.valueMax as number | null,
+        unit: p.row.unit as string,
+        source: p.row
+          .source as Prisma.MeasurementUncheckedCreateInput["source"],
+        measuredAt: p.row.measuredAt as Date,
+        externalId: p.row.externalId as string,
+        externalSourceVersion: p.row.externalSourceVersion as string | null,
+        glucoseContext: p.row
+          .glucoseContext as Prisma.MeasurementUncheckedCreateInput["glucoseContext"],
+        sleepStage: p.row
+          .sleepStage as Prisma.MeasurementUncheckedCreateInput["sleepStage"],
+        rhythmClassification: p.row
+          .rhythmClassification as Prisma.MeasurementUncheckedCreateInput["rhythmClassification"],
+        deviceType: p.row.deviceType as string | null,
+        aggregationProvenance: statsRow
+          ? ("HEALTHKIT_STATISTICS" as const)
+          : null,
+      };
+    };
+
+    const pushMergeCandidate = (p: Prepared) => {
+      if (isMergeableSource(p.row.source as string)) {
+        inBatchCandidates.push({
+          type: p.row.type as MeasurementType,
+          source: p.row.source as string,
+          value: p.row.value as number,
+          measuredAt: p.row.measuredAt as Date,
+        });
+      }
+    };
+
+    /**
+     * Record one row's verdict. `candidate` is false for a row whose merge
+     * candidate was already pushed when it was buffered (see below).
+     */
+    const applyVerdict = (
+      p: Prepared,
+      verdict: Pick<MeasurementReconciliationVerdict, "status"> &
+        Partial<{
+          dirtyIdentities: Array<{ type: MeasurementType; measuredAt: Date }>;
+          error: { code?: string };
+        }>,
+      candidate: boolean,
+    ) => {
+      switch (verdict.status) {
+        case "inserted":
+          results[p.index] = { index: p.index, status: "inserted" };
+          insertedCount++;
+          insertedPrepared.push(p);
+          writtenIdentities.push({
+            type: p.row.type as MeasurementType,
+            measuredAt: p.row.measuredAt as Date,
+          });
+          break;
+        case "updated":
+        case "resurrected":
+          results[p.index] = { index: p.index, status: "updated" };
+          updatedCount++;
+          writtenIdentities.push(
+            {
+              type: p.row.type as MeasurementType,
+              measuredAt: p.row.measuredAt as Date,
+            },
+            ...(verdict.dirtyIdentities ?? []),
+          );
+          break;
+        case "duplicate":
+          results[p.index] = { index: p.index, status: "duplicate" };
+          duplicateCount++;
+          break;
+        case "failed":
+          results[p.index] = {
+            index: p.index,
+            status: "failed",
+            reason: verdict.error?.code ?? "write_failed",
+          };
+          failedCount++;
+          return;
+        case "rejected_range":
+          // The reconciler carries the same plausibility gate this route
+          // already applied above, so reaching here means the two disagreed —
+          // report it exactly as the earlier guard would have, and let the
+          // wide-event tally record which end refused.
+          results[p.index] = outOfRangeResult(
+            p.index,
+            p.row.type as string,
+            p.row.value as number,
+          );
+          return;
+      }
+      if (candidate) pushMergeCandidate(p);
+    };
+
+    const reconcileRow = (p: Prepared) =>
+      prisma.$transaction((tx) =>
+        reconcileExternalMeasurement(tx, desiredFor(p), {
+          exactExternalMatch: isStatsExternalId(p.row.externalId as string)
+            ? "update"
+            : "duplicate",
+        }),
+      );
+
+    // v1.44 — set-based inserts. A fresh sample used to cost one interactive
+    // transaction of about ten round trips (savepoint, three advisory locks,
+    // two candidate reads, the insert), so a 500-entry batch of new samples
+    // was 500 of those in a row: the 2–15 s outliers.
+    //
+    // The reconciler inserts exactly when no row, live or tombstoned, holds
+    // the entry's external identity `(type, source, externalId)` or its
+    // natural identity `(type, measuredAt, source, sleepStage)`. Both are
+    // full unique indexes (the natural one NULLS NOT DISTINCT), so
+    // `INSERT … ON CONFLICT DO NOTHING` inserts exactly those rows and skips
+    // every other; a skipped row then goes through the reconciler as before
+    // and gets its own verdict (update, resurrect, duplicate). The insert
+    // runs under the same per-account advisory lock the reconciler takes, so
+    // the two serialise like two reconcilers would.
+    //
+    // Only a row whose external and natural key each occur once in the batch
+    // is buffered, and the buffer is flushed before any other row reaches the
+    // reconciler. Such a row shares no identity with another entry, so no
+    // other entry's reconcile can create, move or retire a row at its
+    // identity, and inserting it out of turn changes nothing. Rows the insert
+    // skips are reconciled in their original order. A buffered row's merge
+    // candidate is pushed when it is buffered, as the sequential loop pushed
+    // it after a successful write; the only case that differs is a write that
+    // fails outright, where the candidate stays.
+    const pendingInserts: Prepared[] = [];
+    const flushPendingInserts = async () => {
+      if (pendingInserts.length === 0) return;
+      const batch = pendingInserts.splice(0, pendingInserts.length);
+      const landed = new Set<Prepared>();
+      try {
+        for (let i = 0; i < batch.length; i += SET_INSERT_CHUNK) {
+          const slice = batch.slice(i, i + SET_INSERT_CHUNK);
+          const rows = await prisma.$transaction(async (tx) => {
+            await lockMeasurementUser(tx, user.id);
+            return tx.measurement.createManyAndReturn({
+              data: slice.map((p) => ({
+                ...desiredFor(p),
+                sleepStage: (p.row.sleepStage ??
+                  null) as Prisma.MeasurementUncheckedCreateInput["sleepStage"],
+                deletedAt: null,
+              })),
+              skipDuplicates: true,
+              select: { type: true, source: true, externalId: true },
+            });
+          });
+          const keys = new Set(
+            rows.map((r) => `${r.type}::${r.source}::${r.externalId}`),
+          );
+          for (const p of slice) {
+            if (keys.has(`${p.row.type}::${p.row.source}::${p.row.externalId}`))
+              landed.add(p);
+          }
+        }
+      } catch (err) {
+        // Whatever did not land goes through the reconciler below, which
+        // turns a real database fault into a per-entry `failed` verdict.
+        annotate({
+          action: { name: "measurement.batch.set_insert_fallback" },
+          meta: {
+            error_class: err instanceof Error ? err.name : "unknown",
+            landed: landed.size,
+            pending: batch.length,
+          },
+        });
+      }
+      setInsertedCount += landed.size;
+      for (const p of batch) {
+        if (landed.has(p)) applyVerdict(p, { status: "inserted" }, false);
+        else applyVerdict(p, await reconcileRow(p), false);
+      }
+    };
+
     for (const p of prepared) {
       const externalId = p.row.externalId as string;
       const statsRow = isStatsExternalId(externalId);
@@ -895,101 +1089,29 @@ async function postBatch(request: NextRequest): Promise<Response> {
           : { index: p.index, status: "duplicate" };
         duplicateCount++;
         if (folded) foldedWindowCount++;
-        if (isMergeableSource(p.row.source as string)) {
-          inBatchCandidates.push({
-            type: p.row.type as MeasurementType,
-            source: p.row.source as string,
-            value: p.row.value as number,
-            measuredAt: p.row.measuredAt as Date,
-          });
-        }
+        pushMergeCandidate(p);
         continue;
       }
 
-      const verdict = await prisma.$transaction((tx) =>
-        reconcileExternalMeasurement(
-          tx,
-          {
-            userId: user.id,
-            type: p.row.type as MeasurementType,
-            value: p.row.value as number,
-            valueMin: p.row.valueMin as number | null,
-            valueMax: p.row.valueMax as number | null,
-            unit: p.row.unit as string,
-            source: p.row
-              .source as Prisma.MeasurementUncheckedCreateInput["source"],
-            measuredAt: p.row.measuredAt as Date,
-            externalId,
-            externalSourceVersion: p.row.externalSourceVersion as string | null,
-            glucoseContext: p.row
-              .glucoseContext as Prisma.MeasurementUncheckedCreateInput["glucoseContext"],
-            sleepStage: p.row
-              .sleepStage as Prisma.MeasurementUncheckedCreateInput["sleepStage"],
-            rhythmClassification: p.row
-              .rhythmClassification as Prisma.MeasurementUncheckedCreateInput["rhythmClassification"],
-            deviceType: p.row.deviceType as string | null,
-            aggregationProvenance: statsRow ? "HEALTHKIT_STATISTICS" : null,
-          },
-          { exactExternalMatch: statsRow ? "update" : "duplicate" },
-        ),
+      const naturalKey = naturalKeyOf(
+        p.row.type,
+        p.row.source,
+        p.row.measuredAt as Date,
+        p.row.sleepStage,
       );
-
-      switch (verdict.status) {
-        case "inserted":
-          results[p.index] = { index: p.index, status: "inserted" };
-          insertedCount++;
-          insertedPrepared.push(p);
-          writtenIdentities.push({
-            type: p.row.type as MeasurementType,
-            measuredAt: p.row.measuredAt as Date,
-          });
-          break;
-        case "updated":
-        case "resurrected":
-          results[p.index] = { index: p.index, status: "updated" };
-          updatedCount++;
-          writtenIdentities.push(
-            {
-              type: p.row.type as MeasurementType,
-              measuredAt: p.row.measuredAt as Date,
-            },
-            ...(verdict.dirtyIdentities ?? []),
-          );
-          break;
-        case "duplicate":
-          results[p.index] = { index: p.index, status: "duplicate" };
-          duplicateCount++;
-          break;
-        case "failed":
-          results[p.index] = {
-            index: p.index,
-            status: "failed",
-            reason: verdict.error.code ?? "write_failed",
-          };
-          failedCount++;
-          continue;
-        case "rejected_range":
-          // The reconciler carries the same plausibility gate this route
-          // already applied above, so reaching here means the two disagreed —
-          // report it exactly as the earlier guard would have, and let the
-          // wide-event tally record which end refused.
-          results[p.index] = outOfRangeResult(
-            p.index,
-            p.row.type as string,
-            p.row.value as number,
-          );
-          continue;
+      if (
+        externalKeyCounts.get(key) === 1 &&
+        naturalKeyCounts.get(naturalKey) === 1
+      ) {
+        pendingInserts.push(p);
+        pushMergeCandidate(p);
+        continue;
       }
 
-      if (isMergeableSource(p.row.source as string)) {
-        inBatchCandidates.push({
-          type: p.row.type as MeasurementType,
-          source: p.row.source as string,
-          value: p.row.value as number,
-          measuredAt: p.row.measuredAt as Date,
-        });
-      }
+      await flushPendingInserts();
+      applyVerdict(p, await reconcileRow(p), true);
     }
+    await flushPendingInserts();
   }
 
   // v1.43 — the hours, after the measurements. One write per slot: the last
@@ -1342,6 +1464,9 @@ async function postBatch(request: NextRequest): Promise<Response> {
       // v1.42 — duplicates refused because a live `stats:` row already
       // covers the sample's hour or day (`folded-window.ts`).
       folded_window: foldedWindowCount,
+      // v1.44 — inserts that took the set-based path rather than one
+      // reconciler transaction each.
+      set_inserted: setInsertedCount,
     },
   });
 

@@ -32,6 +32,7 @@ import { SettingsInfoTile } from "@/components/settings/_info-tile";
 import { SecuritySessionsCard } from "@/components/settings/security-sessions-card";
 import { SecurityActivityCard } from "@/components/settings/security-activity-card";
 import { TrustedDevicesCard } from "@/components/settings/trusted-devices-card";
+import { WorkoutRoutesCard } from "@/components/settings/workout-routes-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { MODULE_KEYS, MODULE_REGISTRY } from "@/lib/modules/registry";
@@ -129,6 +130,9 @@ export function PrivacySection() {
           <li>{t("settings.privacy.stored.security")}</li>
         </ul>
       </SettingsCard>
+
+      {/* Workout GPS tracks: kept only on opt-in. */}
+      <WorkoutRoutesCard />
 
       {/* Retention */}
       <SettingsCard>

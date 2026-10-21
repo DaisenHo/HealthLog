@@ -20,6 +20,7 @@ import {
   purgeRegenerableAiText,
   withdrawConsent,
 } from "@/lib/consent/withdrawal";
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
 
 const BYTES = Buffer.from("ciphertext-stand-in", "utf8");
 
@@ -33,7 +34,9 @@ async function seed(username: string, kinds: string[]) {
     data: {
       username,
       email: `${username}@example.test`,
-      insightsCachedText: JSON.stringify({ briefing: "model prose" }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ briefing: "model prose" }),
+      ),
       insightsCachedAt: new Date(),
       insightsSnapshotHash: "hash",
     },
@@ -153,7 +156,7 @@ async function snapshot(userId: string) {
     prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: {
-        insightsCachedText: true,
+        insightsCachedTextEncrypted: true,
         insightsCachedAt: true,
         insightsSnapshotHash: true,
       },
@@ -207,7 +210,7 @@ describe("withdrawing the analysis consent", () => {
 
     const after = await snapshot(user.id);
     expect(after.user).toEqual({
-      insightsCachedText: null,
+      insightsCachedTextEncrypted: null,
       insightsCachedAt: null,
       insightsSnapshotHash: null,
     });

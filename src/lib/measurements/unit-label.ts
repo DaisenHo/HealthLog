@@ -25,6 +25,7 @@ const TYPE_UNIT_LABEL_KEYS: Readonly<Record<string, string>> = {
   FALL_COUNT: "insights.units.falls",
   BREATHING_DISTURBANCES: "insights.units.breathingEvents",
   RESPIRATORY_RATE: "insights.units.respiratoryRate",
+  STAND_HOURS: "insights.units.standHours",
 };
 
 /** Word-shaped tokens that read the same whatever the type. */
@@ -52,6 +53,8 @@ const UNITLESS_UNIT_TOKENS: ReadonlySet<string> = new Set([
   "event",
   "level",
   "ratio",
+  // State of Mind valence: a bare −1..1 number.
+  "valence",
   "unknown",
 ]);
 

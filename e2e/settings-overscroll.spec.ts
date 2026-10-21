@@ -135,7 +135,7 @@ test.describe("settings + admin vertical over-scroll guard", () => {
         expect(dims, "main-content / wrapper present").not.toBeNull();
         if (!dims) return;
 
-        // One-scroll-floor (UI-STANDARDS §9), structural half. `<main>` may
+        // One-scroll-floor (ui-standards.md §9), structural half. `<main>` may
         // only be the ONLY vertical scroll surface if it also OWNS the
         // containing block of its absolutely-positioned descendants: an
         // abspos box with no positioned ancestor resolves against the

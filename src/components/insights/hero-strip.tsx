@@ -164,7 +164,7 @@ export function HeroStrip({
       >
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex items-center gap-2">
-            {/* Header glyph stays in the foreground tier — UI-STANDARDS §1
+            {/* Header glyph stays in the foreground tier — ui-standards.md §1
                   reserves primary/accent for actions, not decorative header
                   icons. */}
             <Sparkles

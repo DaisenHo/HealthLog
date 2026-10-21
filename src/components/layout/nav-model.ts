@@ -274,7 +274,7 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
  *
  * Settings and Notifications are account utilities, not feature destinations:
  * on desktop they live in the sidebar footer + avatar menu, on mobile in the
- * top-bar user menu (UI-STANDARDS §10; the More hub carries features only).
+ * top-bar user menu (ui-standards.md §10; the More hub carries features only).
  * They used to be a second hand-curated list on each bar — the exact drift the
  * one-model contract above set out to kill, just pushed down a level. This
  * list is the single source both bars consume, so the two surfaces can no

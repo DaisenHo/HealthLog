@@ -911,6 +911,15 @@
     "unitRating": "niveau",
     "typeWho5Score": "Score WHO-5",
     "typeSciScore": "Score SCI",
+    "typeExerciseMinutes": "Minutes d’exercice",
+    "typeStandMinutes": "Minutes debout",
+    "typeStandHours": "Heures debout",
+    "typeMindfulMinutes": "Minutes de pleine conscience",
+    "typeStateOfMindValence": "État d’esprit",
+    "typeAfibBurden": "Charge de FA",
+    "typeIndoorCo2": "CO₂ intérieur",
+    "typeIndoorTemperature": "Température intérieure",
+    "typeIndoorHumidity": "Humidité intérieure",
     "durationReadAs": "Compris comme {duration}",
     "durationHoursMinutes": "{hours} h {minutes} min",
     "durationHoursOnly": "{hours} h",
@@ -3565,6 +3574,7 @@
       "falls": "chutes",
       "years": "ans",
       "breathingEvents": "événements",
+      "standHours": "heures",
       "respiratoryRate": "respirations/min"
     },
     "sleep": {
@@ -7155,6 +7165,12 @@
         "profile": "Votre profil, vos antécédents médicaux et les informations du dossier de santé",
         "modules": "Données de chaque module : {list}"
       },
+      "workoutRoutes": {
+        "title": "Parcours d’entraînement",
+        "description": "Conserver le tracé GPS des nouveaux entraînements de l’app iPhone et de l’export Apple Santé.",
+        "detail": "Désactivé par défaut. Un parcours montre où vous habitez, travaillez et vous entraînez : il n’est donc conservé qu’une fois l’option activée. Les entraînements sont conservés dans tous les cas, et aucune fonction d’IA ne lit jamais un parcours. Désactiver l’option arrête les nouveaux parcours ; ceux déjà conservés restent jusqu’à la suppression de l’entraînement.",
+        "loadError": "Impossible de charger le réglage des parcours."
+      },
       "retention": {
         "title": "Conservation",
         "description": "Durée de conservation des enregistrements limités dans le temps avant le nettoyage automatique.",
@@ -7600,6 +7616,7 @@
     "heapLimitLabel": "Limite du tas",
     "heapLimitValue": "{mb} Mo",
     "heapLimitLow": "{mb} Mo, trop juste : définissez APP_MEMORY_LIMIT=1536m dans .env",
+    "memoryBelowFloor": "Conteneur {mb} Mo, sous le minimum pris en charge de {floor} Mo : définissez APP_MEMORY_LIMIT={floor}m dans .env",
     "offlineGeoOff": "Désactivé",
     "offlineGeoChosen": "En ligne ({host})",
     "apiGlobal": "Autoriser les points de terminaison d'API et les jetons d'API.",

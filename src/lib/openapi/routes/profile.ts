@@ -33,6 +33,7 @@ import {
   documentsAutoAiReadPatchSchema,
   injectionSitePrefsPatchSchema,
   labsLocalOcrPatchSchema,
+  workoutRoutesPatchSchema,
   unitPreferencePatchSchema,
   glucoseUnitPatchSchema,
   useCentralCodexPatchSchema,
@@ -999,6 +1000,16 @@ const labsLocalOcrPatchRequest = labsLocalOcrPatchSchema.meta({
 const labsLocalOcrResponse = z
   .object({ labsLocalOcrEnabled: z.boolean() })
   .meta({ id: "LabsLocalOcrResponse" });
+
+const workoutRoutesPatchRequest = workoutRoutesPatchSchema.meta({
+  id: "WorkoutRoutesPatchRequest",
+  description:
+    "Keep or stop keeping the GPS track of new workouts. Off by default.",
+});
+
+const workoutRoutesResponse = z
+  .object({ storeWorkoutRoutes: z.boolean() })
+  .meta({ id: "WorkoutRoutesResponse" });
 
 const useCentralCodexPatchRequest = useCentralCodexPatchSchema.meta({
   id: "UseCentralCodexPatchRequest",
@@ -2242,6 +2253,56 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 labsLocalOcrResponse,
                 "PatchLabsLocalOcrEnvelope",
+              ),
+            },
+          },
+        },
+        "413": {
+          description: "Request body exceeds 1024 bytes. Nothing was written.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/auth/me/workout-routes": {
+    get: {
+      tags: ["Auth"],
+      summary: "Read the workout-route opt-in",
+      description:
+        "Whether the GPS track of a workout is kept. Off by default. While it is off, `POST /api/workouts/batch` and the Apple Health export import keep every workout but drop its `route`; the per-entry status is the same as with the route stored. No AI path ever reads a stored track.",
+      responses: {
+        "200": {
+          description: "The current flag.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                workoutRoutesResponse,
+                "GetWorkoutRoutesEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+    patch: {
+      tags: ["Auth"],
+      summary: "Set the workout-route opt-in",
+      description:
+        "Hard-set, idempotent, audit-logged. Rate-limited 60 / min per user; body capped at 1 KB. Turning it off stops new tracks; tracks already stored stay until their workout is deleted.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: workoutRoutesPatchRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The resolved next flag.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                workoutRoutesResponse,
+                "PatchWorkoutRoutesEnvelope",
               ),
             },
           },

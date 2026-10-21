@@ -11,14 +11,16 @@ already installed, longer if a TLS-fronted public hostname is in scope
   pulls a multi-arch image from GitHub Container Registry (linux/amd64
   - linux/arm64), so a Raspberry Pi 5 or an x86 VPS both work
     unchanged.
-- **2 GB RAM, 10 GB free disk.** The Postgres data volume grows with
-  measurement history; the Apple Health import worker can briefly
-  hold a 1.5 GB upload in `/tmp` while it parses. The app container is
-  capped at `APP_MEMORY_LIMIT`, `1536m` by default (Node then sizes its
-  heap at about 792 MB). On a 2 GB host that leaves too little for
-  Postgres and the system, so set `APP_MEMORY_LIMIT=1g` in `.env`
-  (a heap of about 524 MB); a long-used account then runs closer to
-  that heap, and the support report and Admin > System status say so.
+- **3 GB RAM (4 GB recommended), 10 GB free disk.** The Postgres data
+  volume grows with measurement history; the Apple Health import worker
+  can briefly hold a 1.5 GB upload in `/tmp` while it parses. The app
+  container is capped at `APP_MEMORY_LIMIT`, `1536m` by default (Node
+  then sizes its heap at about 792 MB), and Postgres and the system need
+  the rest. 1536 MB is the supported floor for the app container: do not
+  lower it to fit a smaller host. Below it, a long-used account or a large
+  import can fill the heap and restart the app; the app still starts, but
+  the boot log, the support report and Admin > System status say it runs
+  below the supported floor. On a busy instance, raise it.
 - **Outbound HTTPS** to `ghcr.io` (image pulls) plus whichever
   integration endpoints you plan to enable (Withings, OpenAI, etc.).
   The opt-in environmental-context module additionally reaches
