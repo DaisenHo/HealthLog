@@ -13,6 +13,9 @@
  * A route removed without a redirect, a redirect pointing at a page that no
  * longer exists, or a forward whose target 404s fails here by name.
  */
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import nextConfig from "../../next.config";
@@ -160,6 +163,74 @@ describe("historical Settings addresses", () => {
   });
 });
 
+const SRC = join(process.cwd(), "src");
+
+/** The component file a Settings page renders from. */
+function entryFilesFor(page: string): string[] {
+  const parts = page.split("/").filter(Boolean);
+  if (parts.length === 2) {
+    const loader = readFileSync(
+      join(SRC, "components/settings/settings-section-loader.tsx"),
+      "utf8",
+    );
+    const match = new RegExp(
+      `(?:^|\\s)"?${parts[1]}"?:\\s*\\(\\)\\s*=>\\s*import\\("@/([^"]+)"\\)`,
+      "m",
+    ).exec(loader);
+    return match ? [resolveModule(match[1]!)].filter(isString) : [];
+  }
+  if (parts[1] === "modules") {
+    return [join(SRC, "components/settings/module-settings-pages.tsx")];
+  }
+  if (parts[1] === "layout") {
+    return [join(SRC, "components/settings/layout-section.tsx")];
+  }
+  return [];
+}
+
+function isString(value: string | null): value is string {
+  return value !== null;
+}
+
+function resolveModule(spec: string, from?: string): string | null {
+  const base = spec.startsWith(".")
+    ? join(dirname(from!), spec)
+    : join(SRC, spec.replace(/^@\//, ""));
+  for (const candidate of [
+    base,
+    `${base}.tsx`,
+    `${base}.ts`,
+    join(base, "index.tsx"),
+    join(base, "index.ts"),
+  ]) {
+    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
+  }
+  return null;
+}
+
+/**
+ * Does any component reachable from `entries` render `anchor`, as a card
+ * header's `anchor` prop or an element id? Walks the component imports only
+ * (`@/components/...` and relative), which is where a card's anchor lives.
+ */
+function anchorIsRendered(entries: string[], anchor: string): boolean {
+  const pattern = new RegExp(`(?:anchor|id)=["{]+"?${anchor}"`);
+  const seen = new Set<string>();
+  const queue = [...entries];
+  while (queue.length > 0 && seen.size < 600) {
+    const file = queue.shift()!;
+    if (seen.has(file)) continue;
+    seen.add(file);
+    const text = readFileSync(file, "utf8");
+    if (pattern.test(text)) return true;
+    for (const m of text.matchAll(/from\s+"((?:@\/components\/|\.)[^"]+)"/g)) {
+      const next = resolveModule(m[1]!, file);
+      if (next && !seen.has(next)) queue.push(next);
+    }
+  }
+  return false;
+}
+
 describe("anchors forwarded after a card moved", () => {
   const forwards = Object.entries(SETTINGS_ANCHOR_FORWARDS).flatMap(
     ([page, anchors]) =>
@@ -182,6 +253,26 @@ describe("anchors forwarded after a card moved", () => {
       expect(renders(target.split("#")[0]!), target).toBe(true);
     },
   );
+
+  it.each(forwards)(
+    "$target carries the anchor it is forwarded to",
+    ({ target }) => {
+      const [page, anchor] = target.split("#");
+      if (!anchor) return;
+      const entries = entryFilesFor(page!);
+      expect(entries.length, page).toBeGreaterThan(0);
+      expect(
+        anchorIsRendered(entries, anchor),
+        `${anchor} not found on ${page}`,
+      ).toBe(true);
+    },
+  );
+
+  it("the anchor search finds a known anchor and misses a made-up one", () => {
+    const entries = entryFilesFor("/settings/security");
+    expect(anchorIsRendered(entries, "sessions")).toBe(true);
+    expect(anchorIsRendered(entries, "no-such-anchor-anywhere")).toBe(false);
+  });
 
   it("leaves an anchor that did not move alone", () => {
     expect(forwardedAnchorTarget("/settings/privacy", "#retention")).toBeNull();

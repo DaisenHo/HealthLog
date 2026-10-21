@@ -7,7 +7,8 @@
  * moved while its page stayed cannot be: the `#anchor` never reaches the
  * server. Bookmarks, cross-links in older notifications and the docs point at
  * `/settings/privacy#sessions` and the like, so the shell forwards a known
- * anchor on a known page to the card's new home, once, on arrival.
+ * anchor on a known page to the card's new home, on arrival and when a
+ * same-page link changes only the hash.
  *
  * `SETTINGS_ANCHOR_FORWARDS` is also read by the legacy-routes guard, which
  * proves every target lands on a page that exists.
@@ -56,14 +57,34 @@ export function forwardedAnchorTarget(
   return SETTINGS_ANCHOR_FORWARDS[pathname]?.[anchor] ?? null;
 }
 
+/**
+ * Forward now, and again whenever only the hash changes: a same-page link to
+ * a moved anchor is no navigation, so an arrival check alone never sees it.
+ * Returns the unsubscribe.
+ */
+export function watchAnchorForwards(
+  pathname: string,
+  replace: (target: string) => void,
+  win: Pick<Window, "addEventListener" | "removeEventListener"> & {
+    location: { hash: string };
+  } = window,
+): () => void {
+  const forward = () => {
+    const target = forwardedAnchorTarget(pathname, win.location.hash);
+    if (target) replace(target);
+  };
+  forward();
+  win.addEventListener("hashchange", forward);
+  return () => win.removeEventListener("hashchange", forward);
+}
+
 export function SettingsAnchorForward() {
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
     if (!pathname) return;
-    const target = forwardedAnchorTarget(pathname, window.location.hash);
-    if (target) router.replace(target);
+    return watchAnchorForwards(pathname, (target) => router.replace(target));
   }, [pathname, router]);
 
   return null;
