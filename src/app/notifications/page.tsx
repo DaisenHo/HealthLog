@@ -17,6 +17,7 @@ import {
   eventTranslationKey,
 } from "@/lib/notifications/event-labels";
 import { queryKeys } from "@/lib/query-keys";
+import { preferenceCellEnabled } from "@/lib/notifications/event-default-rule";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import {
   Card,
@@ -48,7 +49,8 @@ interface PreferencesData {
    * What each event does on a channel with no stored row, resolved by the
    * server for this account with the function the dispatcher uses.
    */
-  eventDefaults: Record<string, boolean>;
+  /** Absent on a response cached by a build before the field. */
+  eventDefaults?: Record<string, boolean>;
 }
 
 export default function NotificationsPage() {
@@ -113,14 +115,11 @@ export default function NotificationsPage() {
   });
 
   function isEnabled(channelId: string, eventType: string): boolean {
-    const pref = data?.preferences?.find(
-      (p) => p.channelId === channelId && p.eventType === eventType,
-    );
-    if (pref) return pref.enabled;
     // No row: the server's resolved default for this account. Read, never
     // recomputed here: the mood reminder's follows the reminder card, and a
     // copy of the constant table showed it off while it was being delivered.
-    return data?.eventDefaults?.[eventType] === true;
+    // A cached payload without the map falls back to the shared rule.
+    return preferenceCellEnabled(data, channelId, eventType);
   }
 
   // Cross-links to the other two notification surfaces (reminder types +

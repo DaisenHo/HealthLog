@@ -15,51 +15,21 @@
  */
 import { prisma } from "@/lib/db";
 import {
+  ACCOUNT_DERIVED,
+  eventDefaultsFor,
+  isEventType,
+  type EventDefaultInputs,
+} from "@/lib/notifications/event-default-rule";
+import {
   EVENT_DEFAULT_ENABLED,
-  EVENT_TYPES,
   type EventType,
 } from "@/lib/notifications/types";
 
-/** The account settings a default can follow. */
-export interface EventDefaultInputs {
-  moodReminderEnabled: boolean;
-}
-
-/**
- * The events whose default is read off the account rather than the constant
- * table. Kept as a map so the account read below happens only for them.
- */
-const ACCOUNT_DERIVED: Partial<
-  Record<EventType, (inputs: EventDefaultInputs) => boolean>
-> = {
-  MOOD_REMINDER: (inputs) => inputs.moodReminderEnabled,
-};
-
-function isEventType(value: string): value is EventType {
-  return (EVENT_TYPES as readonly string[]).includes(value);
-}
-
-/** The no-row default for one event, given the account's settings. */
-export function eventDefaultFor(
-  eventType: string,
-  inputs: EventDefaultInputs,
-): boolean {
-  if (!isEventType(eventType)) return true;
-  const derived = ACCOUNT_DERIVED[eventType];
-  return derived ? derived(inputs) : EVENT_DEFAULT_ENABLED[eventType];
-}
-
-/** Every event's no-row default, given the account's settings. */
-export function eventDefaultsFor(
-  inputs: EventDefaultInputs,
-): Record<EventType, boolean> {
-  return Object.fromEntries(
-    EVENT_TYPES.map((eventType) => [
-      eventType,
-      eventDefaultFor(eventType, inputs),
-    ]),
-  ) as Record<EventType, boolean>;
-}
+export {
+  eventDefaultFor,
+  eventDefaultsFor,
+  type EventDefaultInputs,
+} from "@/lib/notifications/event-default-rule";
 
 async function readInputs(userId: string): Promise<EventDefaultInputs> {
   const user = await prisma.user.findUnique({

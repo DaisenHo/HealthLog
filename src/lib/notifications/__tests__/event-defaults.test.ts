@@ -25,6 +25,7 @@ import {
   resolveEventDefault,
   resolveEventDefaults,
 } from "../event-defaults";
+import { preferenceCellEnabled } from "../event-default-rule";
 
 const findUnique = vi.mocked(prisma.user.findUnique);
 
@@ -108,5 +109,36 @@ describe("no client keeps a copy of the table", () => {
       );
     expect(serverHolders.length).toBeGreaterThan(1);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("the matrix cell on a payload without eventDefaults", () => {
+  it("falls back to the shared rule, not to everything off", () => {
+    // A response cached by a build before the field carries preferences
+    // only. Reading an absent map as false drew every default-on event as
+    // off until the next refetch.
+    const cached = { preferences: [] };
+    const onByDefault = EVENT_TYPES.filter(
+      (type) => eventDefaultFor(type, { moodReminderEnabled: false }) === true,
+    );
+    expect(onByDefault.length).toBeGreaterThan(0);
+    for (const type of onByDefault) {
+      expect(preferenceCellEnabled(cached, "c1", type), type).toBe(true);
+    }
+    // The mood reminder follows a setting the screen does not hold.
+    expect(preferenceCellEnabled(cached, "c1", "MOOD_REMINDER")).toBe(false);
+  });
+
+  it("still prefers a stored row, then the server's map", () => {
+    const data = {
+      preferences: [
+        { channelId: "c1", eventType: "MOOD_REMINDER", enabled: true },
+      ],
+      eventDefaults: { MEDICATION_REMINDER: false },
+    };
+    expect(preferenceCellEnabled(data, "c1", "MOOD_REMINDER")).toBe(true);
+    expect(preferenceCellEnabled(data, "c2", "MEDICATION_REMINDER")).toBe(
+      false,
+    );
   });
 });
