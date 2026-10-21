@@ -3898,7 +3898,8 @@
         "fatigue": "Fatiga",
         "form": "Estado",
         "explainer": "La forma de base es tu impulso de entrenamiento por frecuencia cardiaca promediado en unas seis semanas, la fatiga en una semana, y el estado es la diferencia. Las cifras se comparan con tu propio pasado, no con otras personas ni otras apps.",
-        "warmingUp": "Con {days} días hasta ahora: hasta cubrir seis semanas, la forma de base aparece más baja de lo que es."
+        "warmingUp": "Con {days} días hasta ahora: hasta cubrir seis semanas, la forma de base aparece más baja de lo que es.",
+        "coverage": "{rated} de los últimos {days} días tienen datos de frecuencia cardiaca. Los días sin ellos se omiten en lugar de contar como descanso."
       }
     },
     "bloodGlucose": {

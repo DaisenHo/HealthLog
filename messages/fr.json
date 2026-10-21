@@ -3898,7 +3898,8 @@
         "fatigue": "Fatigue",
         "form": "Fraîcheur",
         "explainer": "La condition est ton impulsion d'entraînement par fréquence cardiaque moyennée sur environ six semaines, la fatigue sur environ une semaine, et la fraîcheur est la différence. Les chiffres se comparent à ton propre passé, pas à d'autres personnes ni à d'autres apps.",
-        "warmingUp": "Sur {days} jours pour l'instant : tant que six semaines ne sont pas couvertes, la condition paraît plus basse qu'elle ne l'est."
+        "warmingUp": "Sur {days} jours pour l'instant : tant que six semaines ne sont pas couvertes, la condition paraît plus basse qu'elle ne l'est.",
+        "coverage": "{rated} des {days} derniers jours ont des données de fréquence cardiaque. Les jours sans elles sont écartés au lieu de compter comme repos."
       }
     },
     "bloodGlucose": {

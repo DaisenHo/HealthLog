@@ -17,6 +17,8 @@ const OK: TrainingLoad = {
   tsb: -7.6,
   daysCovered: 30,
   trainingDays: 18,
+  recentRatedDays: 30,
+  recentDays: 30,
   warmingUp: true,
   series: [],
 };
@@ -36,6 +38,13 @@ describe("<TrainingLoadCard>", () => {
     expect(html).toMatch(/training-load-fatigue[^]*?>62</);
     expect(html).toContain("-8");
     expect(html).toContain("Based on 30 days so far");
+    expect(html).not.toContain('data-slot="training-load-coverage"');
+  });
+
+  it("says how many recent days were rated when some were not", () => {
+    const html = render({ ...OK, recentRatedDays: 25, recentDays: 42 });
+    expect(html).toContain('data-slot="training-load-coverage"');
+    expect(html).toContain("25 of the last 42 days have heart-rate data");
   });
 
   it("signs a positive form and drops the warm-up note once covered", () => {

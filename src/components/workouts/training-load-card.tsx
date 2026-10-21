@@ -47,6 +47,17 @@ export function TrainingLoadCard({
           ))}
         </dl>
         <p className="text-sm">{t("insights.workouts.load.explainer")}</p>
+        {trainingLoad.recentRatedDays < trainingLoad.recentDays ? (
+          <p
+            className="text-muted-foreground text-xs"
+            data-slot="training-load-coverage"
+          >
+            {t("insights.workouts.load.coverage", {
+              rated: trainingLoad.recentRatedDays,
+              days: trainingLoad.recentDays,
+            })}
+          </p>
+        ) : null}
         {trainingLoad.warmingUp ? (
           <p className="text-muted-foreground text-xs">
             {t("insights.workouts.load.warmingUp", {

@@ -3898,7 +3898,8 @@
         "fatigue": "Ermüdung",
         "form": "Form",
         "explainer": "Fitness ist dein Trainingsimpuls aus der Herzfrequenz, gemittelt über etwa sechs Wochen, Ermüdung über etwa eine Woche, und Form ist der Unterschied. Die Zahlen lassen sich mit deinen eigenen früheren vergleichen, nicht mit anderen Menschen oder Apps.",
-        "warmingUp": "Auf Basis von bisher {days} Tagen: Bis sechs Wochen abgedeckt sind, fällt die Fitness niedriger aus, als sie ist."
+        "warmingUp": "Auf Basis von bisher {days} Tagen: Bis sechs Wochen abgedeckt sind, fällt die Fitness niedriger aus, als sie ist.",
+        "coverage": "{rated} der letzten {days} Tage haben Herzfrequenzdaten. Tage ohne sie bleiben außen vor, statt als Ruhetag zu zählen."
       }
     },
     "bloodGlucose": {

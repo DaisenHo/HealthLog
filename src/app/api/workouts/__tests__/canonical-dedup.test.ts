@@ -461,6 +461,8 @@ describe("GET /api/workouts — training load (v1.44)", () => {
       asOf: yesterday,
       daysCovered: 50,
       trainingDays: 50,
+      recentRatedDays: 42,
+      recentDays: 42,
       warmingUp: false,
     });
     const later = await (await GET(makeRequest("?offset=100"))).json();
