@@ -449,7 +449,11 @@ export interface OuraDailyActivity {
   steps?: number | null;
   active_calories?: number | null;
   total_calories?: number | null;
-  /** Equivalent walking distance for the day, metres. */
+  /**
+   * Oura's activity-equivalent distance, metres: what a walk of the day's
+   * effort would have covered. Not distance travelled; never imported (see
+   * `mapDailyActivity`).
+   */
   equivalent_walking_distance?: number | null;
 }
 
@@ -972,8 +976,17 @@ export function mapDailySpo2(
   ];
 }
 
-/** Map one Oura daily-activity record: steps, active energy, and the
- * equivalent walking distance (B5 — the OURA distance ladder slot was dead). */
+/**
+ * Map one Oura daily-activity record: steps and active energy.
+ *
+ * `equivalent_walking_distance` is deliberately not mapped. Oura derives it
+ * from the day's whole activity (the distance a walk of the same effort would
+ * have covered), so an hour of cycling or yoga adds kilometres nobody walked.
+ * Stored as `WALKING_RUNNING_DISTANCE` it read as real distance, and on a day
+ * no other source covered it became the day's distance. The rows earlier
+ * syncs wrote under `activity:<day>:distance` are retired on their own
+ * (`./retire-distance`).
+ */
 export function mapDailyActivity(
   a: OuraDailyActivity,
   tz?: string,
@@ -997,20 +1010,6 @@ export function mapDailyActivity(
       unit: "kcal",
       measuredAt,
       fieldTag: "active_energy",
-    });
-  }
-  if (
-    typeof a.equivalent_walking_distance === "number" &&
-    a.equivalent_walking_distance >= 0
-  ) {
-    out.push({
-      type: "WALKING_RUNNING_DISTANCE",
-      // Oura reports the equivalent walking distance in metres — the canonical
-      // WALKING_RUNNING_DISTANCE unit (no conversion).
-      value: importValue(a.equivalent_walking_distance),
-      unit: "m",
-      measuredAt,
-      fieldTag: "distance",
     });
   }
   return out;

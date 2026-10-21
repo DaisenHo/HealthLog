@@ -471,7 +471,7 @@ describe("mapSleep", () => {
 });
 
 describe("mapDailyActivity", () => {
-  it("maps steps, active energy, and equivalent walking distance (m)", () => {
+  it("maps steps and active energy, and never the equivalent walking distance", () => {
     const a: OuraDailyActivity = {
       id: "1",
       day: "2026-06-10",
@@ -484,12 +484,12 @@ describe("mapDailyActivity", () => {
     expect(mapped.find((m) => m.type === "ACTIVE_ENERGY_BURNED")?.value).toBe(
       412,
     );
-    const dist = mapped.find((m) => m.type === "WALKING_RUNNING_DISTANCE");
-    expect(dist).toMatchObject({
-      value: 6543,
-      unit: "m",
-      fieldTag: "distance",
-    });
+    // An activity equivalent, not distance travelled: no distance row at all.
+    expect(mapped.map((m) => m.type).sort()).toEqual([
+      "ACTIVE_ENERGY_BURNED",
+      "ACTIVITY_STEPS",
+    ]);
+    expect(mapped.some((m) => m.fieldTag === "distance")).toBe(false);
   });
 });
 

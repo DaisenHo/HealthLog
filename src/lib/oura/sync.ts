@@ -4,7 +4,7 @@
  * Pulls daily readiness (→ RECOVERY_SCORE + BODY_TEMPERATURE_DEVIATION), sleep
  * (real per-segment hypnogram timeline when present, else per-stage totals;
  * efficiency, HRV, RHR, respiratory rate), daily activity (steps, active
- * energy, equivalent walking distance), the daily Sleep Score (→ SLEEP_SCORE),
+ * energy), the daily Sleep Score (→ SLEEP_SCORE),
  * daily SpO2 (→ OXYGEN_SATURATION), the dedicated vO2_max collection (→
  * VO2_MAX), and the daily cardiovascular-age estimate (→ VASCULAR_AGE) for one
  * connected user, mapping each into `Measurement` rows tagged `source = OURA`.
