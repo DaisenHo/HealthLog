@@ -75,6 +75,7 @@
 - **Imports from Apple Health insert large batches faster**, and the health
   check answers "starting" while the background jobs come up, so a slow
   boot no longer marks the container unhealthy.
+- **The metric pages load about 90 KB less JavaScript** on first visit.
 
 ### Fixed
 
