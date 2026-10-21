@@ -258,9 +258,52 @@ async function stravaGet<T>(
       classification: verdict.classification,
       httpStatus: verdict.httpStatus,
       reason: verdict.reason,
+      ...(res.status === 429
+        ? { retryAfterSeconds: stravaRateLimitRetryAfterSeconds(res.headers) }
+        : {}),
     });
   }
   return (await res.json().catch(() => null)) as T;
+}
+
+const QUARTER_HOUR_MS = 15 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * How long to wait after a 429, from the response's own headers. Strava sends
+ * no `Retry-After` (one is honoured should it appear); it sends
+ * `X-RateLimit-Limit` / `X-RateLimit-Usage` and, for reads,
+ * `X-ReadRateLimit-Limit` / `X-ReadRateLimit-Usage`, each `<15-min>,<daily>`.
+ * The 15-minute window resets at :00, :15, :30 and :45, the daily one at
+ * midnight UTC (developers.strava.com/docs/rate-limits). A spent daily count
+ * waits for midnight; anything else, the next quarter hour.
+ */
+export function stravaRateLimitRetryAfterSeconds(
+  headers: Headers,
+  now: Date = new Date(),
+): number {
+  const retryAfter = Number(headers.get("retry-after"));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return Math.ceil(retryAfter);
+  }
+  const pair = (name: string): [number, number] | null => {
+    const parts = (headers.get(name) ?? "").split(",").map(Number);
+    return parts.length === 2 && parts.every(Number.isFinite)
+      ? [parts[0]!, parts[1]!]
+      : null;
+  };
+  const dailySpent = (limitName: string, usageName: string): boolean => {
+    const limit = pair(limitName);
+    const usage = pair(usageName);
+    return limit !== null && usage !== null && usage[1] >= limit[1];
+  };
+  const nowMs = now.getTime();
+  const resetAt =
+    dailySpent("x-ratelimit-limit", "x-ratelimit-usage") ||
+    dailySpent("x-readratelimit-limit", "x-readratelimit-usage")
+      ? Math.floor(nowMs / DAY_MS) * DAY_MS + DAY_MS
+      : Math.floor(nowMs / QUARTER_HOUR_MS) * QUARTER_HOUR_MS + QUARTER_HOUR_MS;
+  return Math.max(1, Math.ceil((resetAt - nowMs) / 1000));
 }
 
 /** One page of the athlete's activities (newest first). */
@@ -312,6 +355,13 @@ export interface StravaWorkoutRow {
   maxHeartRate: number | null;
   elevationM: number | null;
   metadata: Prisma.InputJsonValue;
+  /**
+   * True when the row was mapped from the summary alone. The calories, the
+   * description and (when the summary lacks it) the heart rate exist only on
+   * the detail read, so an update from such a row must not write their
+   * absence over what an earlier detail read stored.
+   */
+  summaryOnly?: boolean;
 }
 
 function nonNegInt(n: number | null | undefined): number | null {
@@ -414,6 +464,7 @@ export function mapActivity(
       summary.total_elevation_gain ?? detail?.total_elevation_gain,
     ),
     metadata,
+    summaryOnly: detail == null,
   };
 }
 

@@ -93,7 +93,7 @@ export async function runStravaBackfillForUser(
   const { result, truncated } = await withPageWalkLedger(() =>
     syncStravaHistory(userId, before),
   );
-  const { imported, oldestStart } = result;
+  const { imported, oldestStart, retryAfterSeconds } = result;
   // A failure has already thrown; what is left to decide is whether the walk
   // reached the beginning of the history.
   if (backfillVerdict({ failed: false, truncated }) === "incomplete") {
@@ -111,7 +111,18 @@ export async function runStravaBackfillForUser(
         data: { stravaBackfillResumeBefore: resumeBefore },
       });
     }
-    const continued = progressed && (await sendNextRun(userId, slice));
+    // A run Strava's rate limit ended goes on once the window it named has
+    // reset, progress or not: the limit is the app's, and passes.
+    const continued =
+      (progressed || retryAfterSeconds !== undefined) &&
+      (await sendNextRun(
+        userId,
+        slice,
+        Math.max(
+          STRAVA_BACKFILL_CONTINUATION_DELAY_SECONDS,
+          retryAfterSeconds ?? 0,
+        ),
+      ));
     annotate({
       action: {
         name: "strava.backfill.truncated",
@@ -143,7 +154,11 @@ export async function runStravaBackfillForUser(
   return { imported, continued: false };
 }
 
-async function sendNextRun(userId: string, slice: number): Promise<boolean> {
+async function sendNextRun(
+  userId: string,
+  slice: number,
+  delaySeconds: number,
+): Promise<boolean> {
   const boss = getGlobalBoss();
   if (!boss) return false;
   const sent = await enqueueIntegrationBackfillAdmission(
@@ -152,7 +167,7 @@ async function sendNextRun(userId: string, slice: number): Promise<boolean> {
       kind: "strava-backfill",
       data: { userId, enqueuedAt: new Date().toISOString(), slice: slice + 1 },
     },
-    STRAVA_BACKFILL_CONTINUATION_DELAY_SECONDS,
+    delaySeconds,
   );
   return Boolean(sent);
 }
