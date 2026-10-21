@@ -98,7 +98,10 @@ import {
   mapWithingsSleepSummary,
   syncUserSleep,
 } from "../sync-sleep";
-import { SLEEP_STAGE_MAX_EMPTY_READS } from "../sleep-stage-reads";
+import {
+  SLEEP_STAGE_MAX_EMPTY_READS,
+  SLEEP_STAGE_MAX_FAILED_READS,
+} from "../sleep-stage-reads";
 
 interface FakeSegment {
   startdate: number;
@@ -1056,7 +1059,7 @@ describe("syncUserSleep — one stage read per night (Sleep v2 Get answers 24 h)
     return data.sleepStageReads.nights;
   }
 
-  it("keeps the nights read around a failing one and books the leg failed", async () => {
+  it("keeps the nights read around a failing recent one and books the leg failed", async () => {
     // One failing night used to throw out of the loop, so the nights read
     // before it and the summary vitals were never written.
     const nights = [0, 3, 9].map((n, i) => night(n, 200 + i));
@@ -1064,7 +1067,7 @@ describe("syncUserSleep — one stage read per night (Sleep v2 Get answers 24 h)
       nights.flatMap((x) => x.segments),
       nights.map((x) => ({ ...x.summary, data: { hr_average: 55 } })),
     );
-    failNight(fetchMock, nights[1]!.summary.startdate);
+    failNight(fetchMock, nights[0]!.summary.startdate);
 
     await expect(syncUserSleep("user-1")).rejects.toThrow(/293/);
 
@@ -1078,8 +1081,61 @@ describe("syncUserSleep — one stage read per night (Sleep v2 Get answers 24 h)
     expect(recordSyncFailure).toHaveBeenCalledWith(
       expect.objectContaining({ leg: "sleep" }),
     );
-    const failedKey = `${nights[1]!.summary.startdate}:${nights[1]!.summary.enddate}`;
-    expect(savedReads()[failedKey]).toEqual({ empty: 0, failed: true });
+    const failedKey = `${nights[0]!.summary.startdate}:${nights[0]!.summary.enddate}`;
+    expect(savedReads()[failedKey]).toEqual({
+      empty: 0,
+      failed: true,
+      failures: 1,
+    });
+  });
+
+  it("does not fail the leg when only an older night fails", async () => {
+    // A night days back that Withings answers with an error is that night's
+    // problem: the rest synced, and failing the leg every run would park the
+    // connection in an error state for as long as the night stays listed.
+    const nights = [0, 3, 9].map((n, i) => night(n, 300 + i));
+    const fetchMock = installSleepApi(
+      nights.flatMap((x) => x.segments),
+      nights.map((x) => x.summary),
+    );
+    failNight(fetchMock, nights[1]!.summary.startdate);
+
+    await expect(syncUserSleep("user-1")).resolves.toBe(4);
+
+    expect(recordSyncFailure).not.toHaveBeenCalled();
+    expect(recordSyncSuccess).toHaveBeenCalledWith("user-1", "withings", {
+      leg: "sleep",
+    });
+    const key = `${nights[1]!.summary.startdate}:${nights[1]!.summary.enddate}`;
+    expect(savedReads()[key]).toEqual({ empty: 0, failed: true, failures: 1 });
+  });
+
+  it("gives up a night that has failed SLEEP_STAGE_MAX_FAILED_READS times", async () => {
+    const failing = night(5, 41);
+    const key = `${failing.summary.startdate}:${failing.summary.enddate}`;
+    vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue({
+      scope: "user.metrics,user.activity",
+      sleepStageReads: {
+        v: 1,
+        nights: {
+          [key]: {
+            empty: 0,
+            failed: true,
+            failures: SLEEP_STAGE_MAX_FAILED_READS,
+          },
+        },
+      },
+    } as never);
+    const fetchMock = installSleepApi(failing.segments, [failing.summary]);
+
+    await syncUserSleep("user-1");
+
+    // Neither first in line nor read at all.
+    expect(stageReads(fetchMock)).toEqual([]);
+    // A full sync still asks for it.
+    fetchMock.mockClear();
+    await syncUserSleep("user-1", { fullSync: true });
+    expect(stageReads(fetchMock)).toHaveLength(1);
   });
 
   it("reads a night whose last read failed first on the next run", async () => {

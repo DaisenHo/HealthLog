@@ -11,6 +11,10 @@
  *     no longer read, except by a full sync or while Withings marks it
  *     changed.
  *   - `failed`: the night's last read errored. It is read first next run.
+ *   - `failures`: reads that errored. A night Withings answers with an error
+ *     every time is given up after {@link SLEEP_STAGE_MAX_FAILED_READS} of
+ *     them, like an unstaged one: otherwise it held the failed-first slot and
+ *     failed the leg on every run for as long as it stayed in the window.
  *
  * Versioned and validated on read: anything that is not the current shape
  * reads as no record at all, which is the behaviour before the record
@@ -18,10 +22,23 @@
  */
 
 export const SLEEP_STAGE_MAX_EMPTY_READS = 3;
+export const SLEEP_STAGE_MAX_FAILED_READS = 3;
 
 export interface SleepStageNightRecord {
   empty: number;
   failed: boolean;
+  failures: number;
+}
+
+/** A night the sync no longer reads outside a full sync. */
+export function isSleepNightGivenUp(
+  night: SleepStageNightRecord | undefined,
+): boolean {
+  return (
+    night !== undefined &&
+    (night.empty >= SLEEP_STAGE_MAX_EMPTY_READS ||
+      night.failures >= SLEEP_STAGE_MAX_FAILED_READS)
+  );
 }
 
 export type SleepStageReads = Map<string, SleepStageNightRecord>;
@@ -42,26 +59,35 @@ export function parseSleepStageReads(raw: unknown): SleepStageReads {
   for (const [key, value] of Object.entries(record.nights)) {
     if (!/^\d+:\d+$/.test(key)) continue;
     if (value === null || typeof value !== "object") continue;
-    const { empty, failed } = value as { empty?: unknown; failed?: unknown };
-    const count =
-      typeof empty === "number" && Number.isInteger(empty) && empty >= 0
-        ? empty
-        : 0;
-    out.set(key, { empty: count, failed: failed === true });
+    const { empty, failed, failures } = value as {
+      empty?: unknown;
+      failed?: unknown;
+      failures?: unknown;
+    };
+    const count = (n: unknown) =>
+      typeof n === "number" && Number.isInteger(n) && n >= 0 ? n : 0;
+    out.set(key, {
+      empty: count(empty),
+      failed: failed === true,
+      failures: count(failures),
+    });
   }
   return out;
 }
 
+type SerialisedNight = { empty: number; failed?: true; failures?: number };
+
 export function serialiseSleepStageReads(reads: SleepStageReads): {
   v: 1;
-  nights: Record<string, { empty: number; failed?: true }>;
+  nights: Record<string, SerialisedNight>;
 } {
-  const nights: Record<string, { empty: number; failed?: true }> = {};
+  const nights: Record<string, SerialisedNight> = {};
   for (const [key, night] of reads) {
-    if (night.empty === 0 && !night.failed) continue;
-    nights[key] = night.failed
-      ? { empty: night.empty, failed: true }
-      : { empty: night.empty };
+    if (night.empty === 0 && !night.failed && night.failures === 0) continue;
+    const out: SerialisedNight = { empty: night.empty };
+    if (night.failed) out.failed = true;
+    if (night.failures > 0) out.failures = night.failures;
+    nights[key] = out;
   }
   return { v: 1, nights };
 }
@@ -83,10 +109,15 @@ export function nextSleepStageReads(
     if (windowNightKeys.has(key)) next.set(key, { ...night });
   }
   for (const [key, outcome] of outcomes) {
-    const prior = next.get(key) ?? { empty: 0, failed: false };
+    const prior = next.get(key) ?? { empty: 0, failed: false, failures: 0 };
     if (outcome === "staged") next.delete(key);
-    else if (outcome === "failed") next.set(key, { ...prior, failed: true });
-    else next.set(key, { empty: prior.empty + 1, failed: false });
+    else if (outcome === "failed") {
+      next.set(key, {
+        ...prior,
+        failed: true,
+        failures: prior.failures + 1,
+      });
+    } else next.set(key, { ...prior, empty: prior.empty + 1, failed: false });
   }
   return next;
 }

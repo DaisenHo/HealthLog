@@ -64,7 +64,7 @@ import {
   nextSleepStageReads,
   parseSleepStageReads,
   serialiseSleepStageReads,
-  SLEEP_STAGE_MAX_EMPTY_READS,
+  isSleepNightGivenUp,
   sleepNightKey,
   type SleepStageReadOutcome,
   type SleepStageReads,
@@ -478,6 +478,7 @@ export async function syncUserSleep(
           startdate: endUnix - DAY_SECONDS,
           enddate: endUnix,
           wholeNight: false,
+          recent: true,
         },
       ];
 
@@ -507,16 +508,26 @@ export async function syncUserSleep(
         annotate({ meta: { withings_sleep_segments_skipped: "api_plan" } });
         break;
       }
-      stageFailure ??= err;
       if (window.nightKey) outcomes.set(window.nightKey, "failed");
+      const reauth =
+        err instanceof WithingsApiError &&
+        (err.withingsStatus === 403 ||
+          err.classification === "reauth_required");
+      // An older night that will not read is that night's problem, not the
+      // connection's: the rest synced, so it is a warning, and the record
+      // gives the night up after a few tries. A recent night, the blind
+      // slice, or a refused grant fails the leg.
+      if (window.recent || reauth) {
+        stageFailure ??= err;
+      } else {
+        getEvent()?.addWarning(
+          `withings sleep: stage read failed for an older night of ${userId}: ${err}`,
+        );
+        annotate({ meta: { withings_sleep_older_night_failed: true } });
+      }
       // A revoked grant or a missing scope refuses every night alike, so the
       // rest are not asked for.
-      if (
-        err instanceof WithingsApiError &&
-        (err.withingsStatus === 403 || err.classification === "reauth_required")
-      ) {
-        break;
-      }
+      if (reauth) break;
       continue;
     }
     let staged = false;
@@ -791,6 +802,11 @@ interface StageWindow {
   wholeNight: boolean;
   /** The summary night it reads (`sleepNightKey`), absent for the blind slice. */
   nightKey?: string;
+  /**
+   * The night ended, or Withings changed it, in the last 48 hours (the blind
+   * slice is always recent). Only a failed recent read fails the leg.
+   */
+  recent: boolean;
 }
 
 /**
@@ -824,18 +840,20 @@ async function stageWindowsToFetch(
     });
   }
   const all = [...nights.values()].sort((x, y) => y.enddate - x.enddate);
+  const nowUnix = Math.floor(now.getTime() / 1000);
   const toWindow = (n: {
     startdate: number;
     enddate: number;
+    changed: number;
   }): StageWindow => ({
     startdate: n.startdate,
     enddate: Math.min(n.enddate, n.startdate + DAY_SECONDS),
     wholeNight: n.enddate - n.startdate <= DAY_SECONDS,
     nightKey: sleepNightKey(n),
+    recent: n.changed >= nowUnix - RECENT_NIGHT_SECONDS,
   });
   if (opts.all || all.length === 0) return all.map(toWindow);
 
-  const nowUnix = Math.floor(now.getTime() / 1000);
   // Recent: ended, or was changed by Withings, within the last 48 hours.
   const recent = all.filter((n) => n.changed >= nowUnix - RECENT_NIGHT_SECONDS);
   const older = all.filter((n) => n.changed < nowUnix - RECENT_NIGHT_SECONDS);
@@ -865,7 +883,7 @@ async function stageWindowsToFetch(
     opts.reads.get(sleepNightKey(n));
   const missing = older
     .filter((n) => !endsAt.some((t) => t > n.startdate && t <= n.enddate))
-    .filter((n) => (record(n)?.empty ?? 0) < SLEEP_STAGE_MAX_EMPTY_READS)
+    .filter((n) => !isSleepNightGivenUp(record(n)))
     .sort((x, y) => x.enddate - y.enddate);
   const failed = missing.filter((n) => record(n)?.failed === true);
   const rest = missing.filter((n) => record(n)?.failed !== true);
