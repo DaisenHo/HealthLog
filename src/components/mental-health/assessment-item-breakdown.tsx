@@ -7,8 +7,9 @@
  * list payload.
  *
  * Grammar: the detail surface's label/value rows — official item text muted
- * (validated instrument copy via the SAME `mentalHealth.items.*` keys the
- * check-in wizard renders; never re-worded here), the chosen answer label +
+ * (validated instrument copy resolved through `instrumentText`, exactly as
+ * the check-in wizard does: the validated translation, or the English source
+ * for a language the instrument is not validated in; never re-worded here), the chosen answer label +
  * its value in foreground. The WHO-5 / SCI recall stems paint once above each
  * run of items, as on the source forms. PHQ-9 item 9 renders like every other
  * item — no alarm colour; the row's existing "support shown" marker is the
@@ -25,6 +26,12 @@ import {
   optionLabelKey,
   stemKey,
 } from "@/lib/mental-health/instruments";
+import {
+  FUNCTIONAL_TITLE_KEY,
+  functionalOptionKey,
+  instrumentText,
+  itemKey,
+} from "@/lib/mental-health/instrument-wording";
 
 import type { AssessmentDetail, InstrumentId } from "./types";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
@@ -36,8 +43,9 @@ export function AssessmentItemBreakdown({
   assessmentId: string;
   instrument: InstrumentId;
 }) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const def = INSTRUMENTS[instrument];
+  const wording = (k: string) => instrumentText(instrument, k, locale, t);
 
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: queryKeys.mentalHealthAssessmentDetail(assessmentId),
@@ -104,15 +112,15 @@ export function AssessmentItemBreakdown({
           <div key={index} className="flex flex-col gap-1">
             {caption && (
               <p className="text-muted-foreground pt-1 text-xs">
-                {t(`mentalHealth.stems.${caption}`)}
+                {wording(`mentalHealth.stems.${caption}`)}
               </p>
             )}
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-muted-foreground min-w-0 flex-1">
-                {t(`mentalHealth.items.${def.i18nKey}.${index + 1}`)}
+                {wording(itemKey(instrument, index))}
               </span>
               <span className="text-foreground shrink-0 text-right">
-                {t(optionLabelKey(instrument, index, value))}
+                {wording(optionLabelKey(instrument, index, value))}
                 {" · "}
                 <span className="tabular-nums">{value}</span>
               </span>
@@ -123,12 +131,12 @@ export function AssessmentItemBreakdown({
       {detail.functionalDifficulty !== null && (
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-muted-foreground min-w-0 flex-1">
-            {t("mentalHealth.functionalTitle")}
+            {wording(FUNCTIONAL_TITLE_KEY)}
           </span>
           {/* Unscored follow-up: the label alone, no value — it never counts
               into the total and a number would imply it does. */}
           <span className="text-foreground shrink-0 text-right">
-            {t(`mentalHealth.functional.${detail.functionalDifficulty}`)}
+            {wording(functionalOptionKey(detail.functionalDifficulty))}
           </span>
         </div>
       )}

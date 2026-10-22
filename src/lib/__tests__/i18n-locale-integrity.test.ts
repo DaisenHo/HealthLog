@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { requireFloor } from "@/__tests__/helpers/source-files";
+import { englishOnlyWordingKeys } from "@/lib/mental-health/instrument-wording";
 
 const ROOT = join(__dirname, "../../..");
 const MESSAGES_DIR = join(ROOT, "messages");
@@ -216,13 +217,25 @@ describe("i18n locale file integrity", () => {
       enArr.forEach((k) => enKeys.add(k));
       otherArr.forEach((k) => otherKeys.add(k));
 
-      const onlyInEn = [...enKeys].filter((k) => !otherKeys.has(k)).sort();
+      // The one sanctioned gap: questionnaire wording of an instrument whose
+      // validated set excludes this language. Those keys must be ABSENT —
+      // the surface shows the English source (`instrument-wording.ts`), so a
+      // translation here would be a self-made questionnaire waiting for a
+      // renderer to pick it up. The list is exact in both directions: a
+      // missing key outside it is drift, a carried key inside it fails too.
+      const englishOnly = englishOnlyWordingKeys(locale);
+      const englishOnlySet = new Set(englishOnly);
+      const onlyInEn = [...enKeys]
+        .filter((k) => !otherKeys.has(k) && !englishOnlySet.has(k))
+        .sort();
       const onlyInOther = [...otherKeys].filter((k) => !enKeys.has(k)).sort();
+      const carriedEnglishOnly = englishOnly.filter((k) => otherKeys.has(k));
 
       expect(
-        { onlyInEn, onlyInOther },
-        `Locale files drifted apart — every key in en.json must exist in ${locale}.json and vice versa.`,
-      ).toEqual({ onlyInEn: [], onlyInOther: [] });
+        { onlyInEn, onlyInOther, carriedEnglishOnly },
+        `Locale files drifted apart — every key in en.json must exist in ${locale}.json and vice versa, ` +
+          `except validated questionnaire wording, which ${locale}.json must not carry for an instrument not validated in it.`,
+      ).toEqual({ onlyInEn: [], onlyInOther: [], carriedEnglishOnly: [] });
     },
   );
 

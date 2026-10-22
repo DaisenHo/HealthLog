@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import en from "../../../../messages/en.json";
+import nl from "../../../../messages/nl.json";
 
 /**
  * Mental-wellbeing surface redesign (v1.25.3). The SSR-only convention
@@ -496,5 +497,68 @@ describe("instrument detail (v1.27.9 — opened from a card)", () => {
     expect(html).not.toContain(mh.band.PHQ9.minimal);
     // Required attribution line.
     expect(html).toContain("Sleepio Limited");
+  });
+});
+
+describe("unvalidated languages see the English instrument wording", () => {
+  function renderIn(
+    locale: "nl",
+    messages: Record<string, unknown>,
+    node: React.ReactNode,
+  ): string {
+    return renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <I18nProvider initialLocale={locale} initialMessages={messages}>
+          {node}
+        </I18nProvider>
+      </QueryClientProvider>,
+    );
+  }
+
+  it("the PHQ-9 wizard in Dutch shows the English item and answers under the honest note", () => {
+    // A bundle that still carries the self-made Dutch wording: the surface
+    // must not read it.
+    const drifted = structuredClone(nl) as Record<string, unknown>;
+    const mhDrifted = drifted.mentalHealth as Record<string, unknown>;
+    mhDrifted.items = {
+      phq9: { "1": "Weinig interesse in of plezier aan activiteiten" },
+    };
+    mhDrifted.options = { "0": "Helemaal niet", "3": "Bijna elke dag" };
+    const html = renderIn(
+      "nl",
+      drifted,
+      <CheckInWizard
+        instrument="PHQ9"
+        onSubmit={() => {}}
+        onBack={() => {}}
+        isPending={false}
+        isError={false}
+      />,
+    );
+    expect(html).toContain(mh.items.phq9["1"]);
+    for (const v of ["0", "1", "2", "3"] as const) {
+      expect(html).toContain(mh.options[v]);
+    }
+    expect(html).not.toContain("Weinig interesse");
+    expect(html).not.toContain("Helemaal niet");
+    expect(html).toContain('data-slot="check-in-validated-note"');
+    expect(html).toContain(nl.mentalHealth.validatedInEnglishNote);
+  });
+
+  it("the WHO-5 wizard in Dutch shows the English stem and anchors", () => {
+    const html = renderIn(
+      "nl",
+      nl as Record<string, unknown>,
+      <CheckInWizard
+        instrument="WHO5"
+        onSubmit={() => {}}
+        onBack={() => {}}
+        isPending={false}
+        isError={false}
+      />,
+    );
+    expect(html).toContain(mh.stems.who5.period);
+    expect(html).toContain(mh.items.who5["1"]);
+    expect(html).toContain(mh.who5Options["5"]);
   });
 });

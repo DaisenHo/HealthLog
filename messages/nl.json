@@ -10947,19 +10947,6 @@
       "who5": "Welzijnscheck, 5 vragen",
       "sci": "Slaapcheck, 8 vragen"
     },
-    "options": {
-      "0": "Helemaal niet",
-      "1": "Meerdere dagen",
-      "2": "Meer dan de helft van de dagen",
-      "3": "Bijna elke dag"
-    },
-    "functionalTitle": "Als je een of meer problemen hebt aangevinkt: hoe moeilijk was het door deze problemen om je werk te doen, voor je huishouden te zorgen of met andere mensen om te gaan?",
-    "functional": {
-      "0": "Helemaal niet moeilijk",
-      "1": "Enigszins moeilijk",
-      "2": "Erg moeilijk",
-      "3": "Extreem moeilijk"
-    },
     "functionalOptionalHint": "Optioneel: je kunt ook versturen zonder deze vraag te beantwoorden.",
     "result": {
       "title": "Je resultaat",
@@ -11005,45 +10992,6 @@
       "intro": "Je hebt aangegeven dat je gedachten hebt dat je beter dood zou kunnen zijn of dat je jezelf iets wilt aandoen. Er is nu meteen hulp beschikbaar, en contact zoeken is een teken van kracht.",
       "ifDanger": "Ben je in direct gevaar? Bel dan nu {emergency}.",
       "resourcesTitle": "Mensen die je kunnen helpen"
-    },
-    "items": {
-      "phq9": {
-        "1": "Weinig interesse in of plezier aan activiteiten",
-        "2": "Zich neerslachtig, depressief of hopeloos voelen",
-        "3": "Moeilijk in slaap vallen of doorslapen, of te veel slapen",
-        "4": "Zich moe voelen of weinig energie hebben",
-        "5": "Weinig eetlust of overmatig eten",
-        "6": "Een negatief beeld van uzelf hebben, of het gevoel hebben dat u een mislukkeling bent of dat u uzelf of uw familie teleurgesteld hebt",
-        "7": "Moeite met concentreren, bijvoorbeeld bij het lezen van de krant of het televisiekijken",
-        "8": "Zo traag bewegen of praten dat andere mensen het zouden kunnen opmerken. Of juist het tegenovergestelde: zo gejaagd of rusteloos zijn dat u veel meer beweegt dan gewoonlijk",
-        "9": "Gedachten dat u beter dood zou kunnen zijn of gedachten om uzelf op een of andere manier pijn te doen"
-      },
-      "gad7": {
-        "1": "Zich nerveus, angstig of gespannen voelen",
-        "2": "Niet in staat zijn om te stoppen met piekeren of om het piekeren onder controle te houden",
-        "3": "Zich te veel zorgen maken over verschillende dingen",
-        "4": "Moeite met ontspannen",
-        "5": "Zo rusteloos zijn dat het moeilijk is om stil te zitten",
-        "6": "Snel geërgerd of geïrriteerd zijn",
-        "7": "Bang zijn dat er iets vreselijks zou kunnen gebeuren"
-      },
-      "who5": {
-        "1": "… voelde ik me opgewekt en goedgehumeurd",
-        "2": "… voelde ik me rustig en ontspannen",
-        "3": "… voelde ik me actief en energiek",
-        "4": "… voelde ik me fris en uitgerust bij het wakker worden",
-        "5": "… was mijn dagelijks leven gevuld met dingen die mij interesseren"
-      },
-      "sci": {
-        "1": "… how long does it take you to fall asleep?",
-        "2": "… if you then wake up during the night … how long are you awake for in total? (add all the wakenings up)",
-        "3": "… how many nights a week do you have a problem with your sleep?",
-        "4": "… how would you rate your sleep quality?",
-        "5": "… affected your mood, energy, or relationships?",
-        "6": "… affected your concentration, productivity, or ability to stay awake?",
-        "7": "… troubled you in general?",
-        "8": "… how long have you had a problem with your sleep?"
-      }
     },
     "crisisResource": {
       "telefonSeelsorge": {
@@ -11096,61 +11044,6 @@
       "sci": "In het onderzoek achter deze vragenlijst hingen scores van 16 of lager samen met waarschijnlijke slapeloosheid. Blijf je last houden van slecht slapen, dan kan een gesprek met een zorgverlener helpen. Dit is geen diagnose."
     },
     "validatedInEnglishNote": "Deze vragenlijst is in het Engels gevalideerd; de vragen worden in de oorspronkelijke Engelse formulering getoond.",
-    "who5Options": {
-      "0": "Nooit",
-      "1": "Af en toe",
-      "2": "Minder dan de helft van de tijd",
-      "3": "Meer dan de helft van de tijd",
-      "4": "Meestal",
-      "5": "Altijd"
-    },
-    "sciOptions": {
-      "duration": {
-        "0": "≥ 61 min",
-        "1": "46–60 min",
-        "2": "31–45 min",
-        "3": "16–30 min",
-        "4": "0–15 min"
-      },
-      "nights": {
-        "0": "5–7",
-        "1": "4",
-        "2": "3",
-        "3": "2",
-        "4": "0–1"
-      },
-      "quality": {
-        "0": "Very poor",
-        "1": "Poor",
-        "2": "Average",
-        "3": "Good",
-        "4": "Very good"
-      },
-      "impact": {
-        "0": "Very much",
-        "1": "Much",
-        "2": "Somewhat",
-        "3": "A little",
-        "4": "Not at all"
-      },
-      "problemDuration": {
-        "0": "> 1 year",
-        "1": "7–12 months",
-        "2": "3–6 months",
-        "3": "1–2 months",
-        "4": "I don't have a problem / < 1 month"
-      }
-    },
-    "stems": {
-      "who5": {
-        "period": "In de afgelopen twee weken …"
-      },
-      "sci": {
-        "night": "Thinking about a typical night in the last month …",
-        "impact": "Thinking about the past month, to what extent has poor sleep …",
-        "finally": "Finally …"
-      }
-    },
     "openDetail": "Details tonen",
     "historyLoadError": "Je testgeschiedenis kon niet worden geladen",
     "historyLoadErrorHint": "Dit betekent niet dat je geen resultaten hebt; de lijst kon niet worden opgehaald. Probeer het opnieuw.",

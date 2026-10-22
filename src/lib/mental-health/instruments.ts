@@ -19,9 +19,11 @@
  *     HIGHER = better sleep; "a score of ≤16 … seems reasonable to detect
  *     possible insomnia disorder". Item text is validated in English; app
  *     locales without a validated translation present the English items.
- * This module owns the canonical NUMERIC contract; the human wording lives in
- * `messages/*.json` under `mentalHealth.items.*` (validated translations per
- * locale where they exist — re-wording invalidates the score). See
+ * This module owns the canonical NUMERIC contract. The human wording lives in
+ * `messages/*.json` under `mentalHealth.items.*` for the languages in an
+ * instrument's validated set, and in `instrument-wording.ts` as the English
+ * source every other language is shown (re-wording invalidates the score).
+ * Surfaces resolve it through `instrumentText`, never a bare `t()`. See
  * `.planning/research/screening-instruments-2026-07.md`.
  *
  * PHQ-9 item 9 (index 8) is the passive self-harm ideation screen and is the
@@ -101,10 +103,11 @@ export interface InstrumentDefinition {
 
 /**
  * The app languages whose PHQ-9 / GAD-7 / WHO-5 item wording is bundled from
- * a published validated version. `nl` and `pt-BR` are absent on purpose: their
- * bundles carry a wording that has not yet been read against the published
- * Dutch and Brazilian Portuguese PHQ-9, GAD-7 and WHO-5 forms, so those
- * readers get the English items plus the honest note until it has.
+ * a published validated version. `nl` and `pt-BR` are absent on purpose: no
+ * published Dutch or Brazilian Portuguese form has been read and bundled yet,
+ * so those readers get the English items, answers and stems plus the honest
+ * note, and their bundles carry none of that wording. Adding a language here
+ * means bundling its validated form verbatim in the same change.
  */
 const ALL_APP_LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko"] as const;
 

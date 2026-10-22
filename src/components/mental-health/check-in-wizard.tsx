@@ -36,6 +36,13 @@ import {
   optionLabelKey,
   stemKey,
 } from "@/lib/mental-health/instruments";
+import {
+  FUNCTIONAL_TITLE_KEY,
+  functionalOptionKey,
+  hasFunctionalItem,
+  instrumentText,
+  itemKey,
+} from "@/lib/mental-health/instrument-wording";
 
 import {
   isComplete,
@@ -67,6 +74,9 @@ export function CheckInWizard({
   const { t, locale } = useTranslations();
   const def = INSTRUMENTS[instrument];
   const key = def.i18nKey;
+  // Items, answers and stems: the validated translation, or the English
+  // source for a language the instrument has not been validated in.
+  const wording = (k: string) => instrumentText(instrument, k, locale, t);
   const itemCount = def.itemCount;
   // v1.27.8 — the PHQ-9 asks its validated functional-impairment
   // follow-up as a regular LAST question (10 of 10) instead of a
@@ -74,7 +84,7 @@ export function CheckInWizard({
   // (answering is not required to submit) and never scores into the
   // total — the value rides the existing `functionalDifficulty` API
   // field. The other instruments have no such item.
-  const hasFunctionalStep = instrument === "PHQ9";
+  const hasFunctionalStep = hasFunctionalItem(instrument);
   const totalSteps = itemCount + (hasFunctionalStep ? 1 : 0);
 
   const [step, setStep] = useState(1);
@@ -88,8 +98,8 @@ export function CheckInWizard({
   const questionIndex = step - 1; // 0-based item index for the current question
   const complete = isComplete(items);
   const questionLabel = onFunctionalStep
-    ? t("mentalHealth.functionalTitle")
-    : t(`mentalHealth.items.${key}.${step}`);
+    ? wording(FUNCTIONAL_TITLE_KEY)
+    : wording(itemKey(instrument, questionIndex));
   // Recall-stem caption above the question (WHO-5 / SCI fragments).
   const stem = onFunctionalStep ? null : stemKey(instrument, questionIndex);
   const scale = onFunctionalStep ? FUNCTIONAL_SCALE : def.optionOrder;
@@ -170,7 +180,7 @@ export function CheckInWizard({
             </p>
             {stem && (
               <p className="text-sm" data-slot="check-in-stem">
-                {t(`mentalHealth.stems.${stem}`)}
+                {wording(`mentalHealth.stems.${stem}`)}
               </p>
             )}
             <h2
@@ -206,8 +216,8 @@ export function CheckInWizard({
                     disabled={isPending}
                   >
                     {onFunctionalStep
-                      ? t(`mentalHealth.functional.${v}`)
-                      : t(optionLabelKey(instrument, questionIndex, v))}
+                      ? wording(functionalOptionKey(v))
+                      : wording(optionLabelKey(instrument, questionIndex, v))}
                   </Button>
                 );
               })}

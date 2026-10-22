@@ -151,6 +151,7 @@ What a reviewer checks on a translation pull request:
 - Medical terms are the ones the language's clinical guidelines use, and the register matches the rest of the locale (`du` in German, `você` in Brazilian Portuguese).
 - Words the app or the Telegram bot matches literally stay as they are: slash commands, `taken <name>`, and the unit symbols.
 - Machine translation is fine as a first draft, but someone who reads the language has gone through every string before the pull request is opened, and the description says so.
+- Validated questionnaire items (the PHQ-9, GAD-7, WHO-5 and SCI items, their answer options and their stems under `mentalHealth.items`, `mentalHealth.options`, `mentalHealth.who5Options`, `mentalHealth.sciOptions`, `mentalHealth.stems`, `mentalHealth.functional*`) are never translated freely, not even as a draft. A language gets them only from a published, licensed validated version, copied verbatim and named in `src/lib/mental-health/instruments.ts`; until then the app shows the English original and the bundle carries none of those keys, which the i18n tests enforce.
 
 To run the checks Fink shows on a local checkout: `npx @inlang/cli@3.4.4 check --project ./project.inlang`. It reads the files and changes nothing.
 
@@ -159,7 +160,7 @@ To run the checks Fink shows on a local checkout: `npx @inlang/cli@3.4.4 check -
 If you want to introduce a locale that isn't shipped (e.g. `sv`, `cs`):
 
 1. Open an issue first using the **Translation request** template. We'll confirm the locale is in scope and decide whether it joins the AI-initial-community-maintained tier or the maintained tier.
-2. Copy `messages/en.json` to `messages/<locale>.json`.
+2. Copy `messages/en.json` to `messages/<locale>.json`, then delete the questionnaire wording the new language has no validated version of (the test output lists the keys).
 3. Translate. AI assistance is welcome as a starting point but the PR description should note whether it's an AI-initial pass or a fully human-reviewed one — that information drives the banner state.
 4. Add the locale to `locales` in `src/lib/i18n/config.ts` and to `locales` in `project.inlang/settings.json`, then run `pnpm typecheck`. Every per-locale table that still lacks the new locale fails to compile, and that list is the work: date and number formatting, the reply-language footers of the Coach and insights prompts, the outbound safety banks, the prose-grounding patterns and the no-key fallback copy. Include those in the same PR.
 5. Run `pnpm test` before submitting. The i18n guards hold the new bundle to the English keys and placeholders.

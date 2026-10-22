@@ -10947,19 +10947,6 @@
       "who5": "Check de bem-estar, 5 perguntas",
       "sci": "Check de sono, 8 perguntas"
     },
-    "options": {
-      "0": "De forma alguma",
-      "1": "Vários dias",
-      "2": "Mais da metade dos dias",
-      "3": "Quase todos os dias"
-    },
-    "functionalTitle": "Se você marcou algum problema, quão difícil isso tornou fazer seu trabalho, cuidar das coisas em casa ou se dar bem com outras pessoas?",
-    "functional": {
-      "0": "Não difícil de forma alguma",
-      "1": "Um pouco difícil",
-      "2": "Muito difícil",
-      "3": "Extremamente difícil"
-    },
     "functionalOptionalHint": "Opcional: você pode enviar sem responder esta pergunta.",
     "result": {
       "title": "Seu resultado",
@@ -11005,45 +10992,6 @@
       "intro": "Você indicou pensamentos de que estaria melhor morto ou de se machucar. Há apoio disponível agora, e pedir ajuda é um sinal de força.",
       "ifDanger": "Se você está em perigo imediato, ligue para {emergency} agora.",
       "resourcesTitle": "Pessoas que podem ajudar"
-    },
-    "items": {
-      "phq9": {
-        "1": "Pouco interesse ou prazer em fazer coisas",
-        "2": "Sentir-se desanimado, deprimido ou sem esperança",
-        "3": "Dificuldade para adormecer ou permanecer dormindo, ou dormir demais",
-        "4": "Sentir-se cansado ou ter pouca energia",
-        "5": "Pouco apetite ou comer demais",
-        "6": "Sentir-se mal consigo mesmo — ou que é um fracasso ou decepcionou a si mesmo ou sua família",
-        "7": "Dificuldade para se concentrar em coisas, como ler o jornal ou assistir televisão",
-        "8": "Mover-se ou falar tão devagar que outras pessoas poderiam ter notado. Ou o oposto — estar tão agitado ou inquieto que se moveu muito mais que o usual",
-        "9": "Pensamentos de que estaria melhor morto, ou de se machucar de alguma forma"
-      },
-      "gad7": {
-        "1": "Sentir-se nervoso, ansioso ou tenso",
-        "2": "Não conseguir parar ou controlar a preocupação",
-        "3": "Preocupar-se demais com várias coisas",
-        "4": "Dificuldade para relaxar",
-        "5": "Estar tão inquieto que é difícil ficar parado",
-        "6": "Ficar facilmente irritado ou aborrecido",
-        "7": "Sentir medo como se algo terrível pudesse acontecer"
-      },
-      "who5": {
-        "1": "Senti-me alegre e de bom humor",
-        "2": "Senti-me calmo e relaxado",
-        "3": "Senti-me ativo e vigoroso",
-        "4": "Acordei sentindo-me fresco e descansado",
-        "5": "Minha vida diária esteve cheia de coisas que me interessam"
-      },
-      "sci": {
-        "1": "… quanto tempo você leva para adormecer?",
-        "2": "… se você então acorda durante a noite … quanto tempo fica acordado no total? (some todos os despertares)",
-        "3": "… quantas noites por semana você tem um problema com seu sono?",
-        "4": "… como você avaliaria a qualidade do seu sono?",
-        "5": "… afetou seu humor, energia ou relacionamentos?",
-        "6": "… afetou sua concentração, produtividade ou capacidade de permanecer acordado?",
-        "7": "… incomodou você em geral?",
-        "8": "… há quanto tempo você tem um problema com seu sono?"
-      }
     },
     "crisisResource": {
       "telefonSeelsorge": {
@@ -11096,61 +11044,6 @@
       "sci": "No estudo por trás deste questionário, pontuações de 16 ou abaixo foram associadas a provável insônia. Se o sono ruim continuar incomodando, conversar com um profissional de saúde pode ajudar. Isto não é um diagnóstico."
     },
     "validatedInEnglishNote": "Este questionário é validado em inglês; as perguntas são exibidas na redação original em inglês.",
-    "who5Options": {
-      "0": "Em nenhum momento",
-      "1": "Algum do tempo",
-      "2": "Menos da metade do tempo",
-      "3": "Mais da metade do tempo",
-      "4": "A maior parte do tempo",
-      "5": "Todo o tempo"
-    },
-    "sciOptions": {
-      "duration": {
-        "0": "≥ 61 min",
-        "1": "46–60 min",
-        "2": "31–45 min",
-        "3": "16–30 min",
-        "4": "0–15 min"
-      },
-      "nights": {
-        "0": "5–7",
-        "1": "4",
-        "2": "3",
-        "3": "2",
-        "4": "0–1"
-      },
-      "quality": {
-        "0": "Muito ruim",
-        "1": "Ruim",
-        "2": "Média",
-        "3": "Boa",
-        "4": "Muito boa"
-      },
-      "impact": {
-        "0": "Muito",
-        "1": "Muito",
-        "2": "Um pouco",
-        "3": "Um pouco",
-        "4": "De forma alguma"
-      },
-      "problemDuration": {
-        "0": "> 1 ano",
-        "1": "7–12 meses",
-        "2": "3–6 meses",
-        "3": "1–2 meses",
-        "4": "Não tenho um problema / < 1 mês"
-      }
-    },
-    "stems": {
-      "who5": {
-        "period": "Nas últimas duas semanas …"
-      },
-      "sci": {
-        "night": "Pensando em uma noite típica do último mês …",
-        "impact": "Pensando no último mês, em que medida o sono ruim …",
-        "finally": "Finalmente …"
-      }
-    },
     "openDetail": "Mostrar detalhes",
     "historyLoadError": "Não foi possível carregar seu histórico de avaliações",
     "historyLoadErrorHint": "Isso não significa que você não tem resultados; a lista não pôde ser buscada. Tente novamente.",
