@@ -20,11 +20,29 @@
   had set your own targets; they now draw yours, and the tile colours follow
   them. The oxygen saturation page uses your target too. Without your own
   targets nothing changes. (#1261)
+- **Local thinking models finish the briefing, and regenerate waits for
+  them.** A thinking model such as Gemma 4 on Ollama could spend a long
+  briefing thinking and hand back no answer, which was logged as a
+  connection problem and shown as a timeout. A reply with nothing but
+  thinking is now asked once more without thinking, and that model is asked
+  that way for the next hour, through the Local provider and an
+  OpenAI-compatible gateway alike. The regenerate button waits as long as
+  your AI response timeout allows instead of giving up after 45 seconds, and
+  so does saving your notes about yourself; a local model allowed more than
+  five minutes is no longer cut off at five. A failed call is logged with
+  what actually went wrong, such as a refused or dropped connection, an
+  empty reply or a timeout, and the briefing only suggests a longer timeout
+  when time really ran out. The provider's reasoning setting now says that
+  the daily briefing thinks at its own depth. (#1267)
 
 ### Thanks
 
 Thanks to @mills1975 for spotting that the targets never reached the chart
 (#1261).
+
+Thanks to @Tio61 for the precise report that traced the regenerate timeout
+to its line and ruled out the transport with their own requests from inside
+the container (#1267).
 
 ## [1.44.1] — 2026-10-22
 
