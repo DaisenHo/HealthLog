@@ -67,7 +67,7 @@ const DAY_MS = 86_400_000;
  */
 const BUDGET = {
   authMe: 13,
-  dashboardSummary: 84,
+  dashboardSummary: 28,
   dashboardSnapshot: 99,
   series30: 6,
   series365: 5,

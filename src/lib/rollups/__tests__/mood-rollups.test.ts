@@ -387,33 +387,39 @@ describe("recomputeUserMoodRollups replace (delete-then-refold, v1.32.12)", () =
       sd: 0.5,
     };
     queryRawUnsafe.mockResolvedValue([aggRow]);
-    upsert.mockResolvedValue({});
 
+    // The fold writes every bucket in one multi-row upsert; the values of
+    // that statement are the bucket key and the folded stats, in column
+    // order, with the run's computedAt last.
+    const writtenRows = () =>
+      executeRaw.mock.calls.map((call) =>
+        ((call[1] as { values: unknown[] }).values ?? []).slice(0, -1),
+      );
     await recomputeUserMoodRollups("user-1", {
       granularities: ["DAY"],
       replace: true,
     });
-    const first = upsert.mock.calls.map((c) => c[0] as Record<string, unknown>);
-    upsert.mockClear();
+    const first = writtenRows();
+    executeRaw.mockClear();
     await recomputeUserMoodRollups("user-1", {
       granularities: ["DAY"],
       replace: true,
     });
-    const second = upsert.mock.calls.map(
-      (c) => c[0] as Record<string, unknown>,
-    );
+    const second = writtenRows();
 
     expect(first).toHaveLength(1);
-    expect(second).toHaveLength(1);
-    // Same bucket key + same folded stats across both rebuilds (only the
-    // computedAt wall-clock differs, which we don't compare).
-    expect(first[0].where).toEqual(second[0].where);
-    expect((first[0].create as { count: number }).count).toBe(
-      (second[0].create as { count: number }).count,
-    );
-    expect((first[0].create as { mean: number }).mean).toBe(
-      (second[0].create as { mean: number }).mean,
-    );
+    expect(second).toEqual(first);
+    expect(first[0]).toEqual([
+      "user-1",
+      "DAY",
+      new Date("2026-05-10T00:00:00.000Z"),
+      3,
+      4.2,
+      3,
+      5,
+      0.5,
+    ]);
+    expect(upsert).not.toHaveBeenCalled();
   });
 });
 
