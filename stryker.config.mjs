@@ -34,6 +34,10 @@ const config = {
     "src/lib/measurements/display-transform.ts",
     "src/lib/glucose.ts",
     "src/lib/validations/backup.ts",
+    // The payload schema's slices, one per backup domain.
+    "src/lib/export/*-backup-schema.ts",
+    "src/lib/export/backup-schema-kit.ts",
+    "src/lib/cycle/backup-schema.ts",
   ],
   coverageAnalysis: "perTest",
   incremental: true,

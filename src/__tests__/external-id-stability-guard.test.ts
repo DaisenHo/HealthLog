@@ -91,6 +91,21 @@ const EXEMPT: Record<string, string> = {
 };
 
 /**
+ * The backup payload schema is composed from one slice per domain, each a
+ * part of the same server-written file, so every slice carries the payload's
+ * exemption and its reason.
+ */
+const BACKUP_SCHEMA_SLICE =
+  /^lib\/(?:export\/[\w-]+-backup-schema|cycle\/backup-schema)\.ts$/;
+
+function exemptionFor(rel: string): string | undefined {
+  if (rel in EXEMPT) return EXEMPT[rel];
+  return BACKUP_SCHEMA_SLICE.test(rel)
+    ? EXEMPT["lib/validations/backup.ts"]
+    : undefined;
+}
+
+/**
  * Trees where a stored identity is derived from input that never passes
  * through a Zod request schema — an uploaded file's row, or an MCP host's
  * tool argument. The declaration rule above cannot see those, so this one
@@ -174,8 +189,9 @@ describe("every client-supplied external id routes through the stability floor",
   it.each(declaringFiles())(
     "%s either applies the field check or names the per-entry checker",
     (rel) => {
-      if (rel in EXEMPT) {
-        expect(EXEMPT[rel].length).toBeGreaterThan(20);
+      const exemption = exemptionFor(rel);
+      if (exemption !== undefined) {
+        expect(exemption.length).toBeGreaterThan(20);
         return;
       }
 
@@ -197,7 +213,7 @@ describe("every client-supplied external id routes through the stability floor",
   it.each(declaringFiles())(
     "%s — every per-entry marker points at a file that really checks per entry",
     (rel) => {
-      if (rel in EXEMPT) return;
+      if (exemptionFor(rel) !== undefined) return;
       const source = read(rel);
       MARKER.lastIndex = 0;
       const targets = [...source.matchAll(new RegExp(MARKER, "g"))].map(

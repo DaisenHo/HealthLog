@@ -28,7 +28,39 @@
       "floor": 85
     },
     "backup-validation": {
-      "paths": ["src/lib/validations/backup.ts"],
+      "paths": [
+        "src/lib/validations/backup.ts",
+        "src/lib/export/account-settings-backup-schema.ts",
+        "src/lib/export/allergies-backup-schema.ts",
+        "src/lib/export/app-settings-backup-schema.ts",
+        "src/lib/export/awards-backup-schema.ts",
+        "src/lib/export/coach-backup-schema.ts",
+        "src/lib/export/document-filing-backup-schema.ts",
+        "src/lib/export/documents-backup-schema.ts",
+        "src/lib/export/ecg-backup-schema.ts",
+        "src/lib/export/environment-backup-schema.ts",
+        "src/lib/export/family-history-backup-schema.ts",
+        "src/lib/export/health-score-backup-schema.ts",
+        "src/lib/export/illness-backup-schema.ts",
+        "src/lib/export/intraday-profile-backup-schema.ts",
+        "src/lib/export/labs-backup-schema.ts",
+        "src/lib/export/life-events-backup-schema.ts",
+        "src/lib/export/measurements-backup-schema.ts",
+        "src/lib/export/medications-backup-schema.ts",
+        "src/lib/export/mood-backup-schema.ts",
+        "src/lib/export/nutrients-backup-schema.ts",
+        "src/lib/export/onboarding-backup-schema.ts",
+        "src/lib/export/profile-backup-schema.ts",
+        "src/lib/export/relation-links-backup-schema.ts",
+        "src/lib/export/reminders-backup-schema.ts",
+        "src/lib/export/sensitive-backup-schema.ts",
+        "src/lib/export/symptoms-backup-schema.ts",
+        "src/lib/export/vaccinations-backup-schema.ts",
+        "src/lib/export/visits-backup-schema.ts",
+        "src/lib/export/workouts-backup-schema.ts",
+        "src/lib/export/backup-schema-kit.ts",
+        "src/lib/cycle/backup-schema.ts"
+      ],
       "floor": 24
     }
   }

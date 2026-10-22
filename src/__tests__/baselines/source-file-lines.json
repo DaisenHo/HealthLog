@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 126,
-  "total": 150668,
+  "count": 125,
+  "total": 148250,
   "entries": {
     "app/api/dashboard/summary/route.ts": 1032,
     "app/api/documents/inbound/route.ts": 811,
@@ -123,7 +123,6 @@
     "lib/sharing/grants.ts": 1046,
     "lib/support/report.ts": 905,
     "lib/telegram-webhook-handlers.ts": 1384,
-    "lib/validations/backup.ts": 2418,
     "lib/validations/inbound-documents.ts": 1130,
     "lib/whoop/client.ts": 917,
     "lib/withings/sync-sleep.ts": 903,
