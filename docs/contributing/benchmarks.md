@@ -68,6 +68,42 @@ The output is `<label>.json` (every number, plus the commit, Node and Postgres v
 
 Run on a quiet machine; a parallel build or test run moves latency by tens of percent and leaves the statement counts alone. Compare statement counts across machines, latency only across runs on the same machine. A local number is only valid under the production heap ceiling, which the script sets.
 
+## Boot and idle-memory profile
+
+`scripts/bench/boot-profile.ts` profiles a production start the way production runs it: `next start` on the build, every role (web and worker), the production heap ceiling (`--max-old-space-size=792`, the heap Node derives in the 1.5 GB container), against the seeded benchmark database.
+
+```sh
+pnpm dlx tsx scripts/bench/boot-profile.ts --idle-seconds 300 --out scripts/bench/results/<label>-boot
+```
+
+It records:
+
+- the time to the first answer from `/api/health` and to the worker's `startup` line;
+- every `event_loop_stall` the process logs, with the uptime, startup phase, boot step and work in flight it names;
+- every `runtime.heap.sampled` line, and every full collection from `--trace-gc` (used heap before, live heap after);
+- a CPU profile of the start: the main thread's busy stretches over 50 ms without an idle sample, each with its self time per source module, resolved through the chunk source maps (`profile-analyze.ts`);
+- one heap snapshot after the idle wait, taken with `--heapsnapshot-signal` (after a full collection, so it is the live heap), summarised by node type, constructor, largest strings and the largest retained subtrees with a retaining path, and the number of parsed locale catalogs.
+
+The worker runs for the whole idle wait, and its boot passes fold and consolidate the seeded account (old dense readings into their `stats:` rows), roughly halving its row count. Reseed before the next request benchmark, or its numbers describe a different account.
+
+The raw `.cpuprofile` and `.heapsnapshot` go to a temporary directory and are deleted after the summary unless `--keep` is given. Only run it against the benchmark database: a snapshot holds whatever the process decrypted. `--no-snapshot` and `--no-cpu-prof` skip either part. The profiler itself costs memory, so read RSS from this run as an upper bound.
+
+### What the profile found (v1.44 runtime, October 2026)
+
+On the seeded account, idle, with the worker running and no requests (`results/v1.45.0-before-boot.md`):
+
+- **The boot stall is module evaluation.** The longest busy stretch of the main thread was 753 ms, 0.7 s into the start: the instrumentation hook importing the worker, whose five registrars pulled practically all of `src/lib` into one synchronous evaluation (`register-maintenance.ts` alone 280 ms inclusive), followed by the first `/api/health` request compiling its route. The event-loop monitor started after the key and time-zone checks, and a 250 ms tick measures a block by how late the next tick fires, so it reported less than the block or nothing. The beta's 718 ms and 671 ms stalls are this block on a slower machine.
+- **The live heap is about 165 MB, not 400.** Full collections brought the heap back to 162 to 172 MB every 15 to 20 s while idle; the used heap between them reached 190 MB. What a heap line shows above the live heap is garbage awaiting the next full collection, plus, on a server with users, the server caches (13 caches of up to 2,000 entries with stale windows of up to an hour). The beta's 400 MB plateau is therefore not a baseline the process cannot shed; it is what the heap grows to under a large limit before a collection, plus caches.
+- **What the live heap holds.** Of 172 MB: the query compiler about 50 MB (the engine object 34 MB, its WebAssembly base64 source twice at 4.4 MB, its chunk source twice at 5.6 MB); the locale catalogs about 33 MB (32 parsed catalog objects, eight locales in each of four server bundles, 14 MB, plus the eight-locale chunk source twice at 9.7 MB); module source strings over 50 KB about 44 MB in total (the catalog chunks included); compiled code 19 MB.
+
+### What changed (v1.45.0)
+
+- The event-loop monitor starts first in `register()`, and a stall line names the boot step, startup phase and work in flight (`src/lib/boot/boot-steps.ts`, one `boot.steps` line per boot with each step's duration).
+- The worker's registrars are imported one at a time after `boss.start()`, with a turn of the event loop between them.
+- The server reads a locale catalog from `messages/<locale>.json` on first use and keeps one parsed copy per process (`src/lib/i18n/server-catalogs.ts`); the seven matchers that index every locale build their index on first use.
+
+Result on the same machine (`results/v1.45.0-boot.md`): the worker graph loads in stretches of at most 246 ms instead of one of 753 ms (the longest application stretch left is the query compiler's start, 336 ms, unchanged); the live heap after five idle minutes went from 162 to 172 MB to 142 to 153 MB; two parsed catalogs (1.6 MB) instead of 32 (14.1 MB), and no catalog chunk sources.
+
 ## Statement budgets in the integration suite
 
 `tests/integration/query-budget-hot-routes.test.ts` seeds a small account (four months of the main types with overlapping sources, sleep, glucose, a medication, workouts and mood), and counts the statements of one request per hot route on a cache miss: `/api/auth/me`, the dashboard summary and snapshot, the pulse series over 30, 365 and 3650 days, the day view, insights health status, correlations, and a 500-row batch ingest.

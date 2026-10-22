@@ -64,8 +64,9 @@ export async function register() {
       // Without the mirror the process keeps the default method.
     }
 
-    // Every Node process watches its heap as it watches its event loop: a trend line, and one report naming the work in
-    // flight before the heap runs out (a heap-limit crash logs nothing else).
+    // Every Node process watches its heap as it watches its event loop: a
+    // trend line, and one report naming the work in flight before the heap
+    // runs out (a heap-limit crash logs nothing else).
     beginBootStep("monitors");
     try {
       const [{ startHttpInFlightTracking }, { startHeapMonitor }] =

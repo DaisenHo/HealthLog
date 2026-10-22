@@ -25,6 +25,9 @@
  * The raw `.cpuprofile` and `.heapsnapshot` are written to a temporary
  * directory and deleted after the summary unless `--keep` is given.
  *
+ * The worker's boot passes fold the seeded account while it idles; reseed
+ * before running `run.ts` again.
+ *
  * Output: `<out>.json` and `<out>.md`.
  */
 import { execSync, spawn } from "node:child_process";
@@ -285,8 +288,11 @@ async function main(): Promise<void> {
     stallMaxMs: Math.max(0, ...stalls.map((s) => Number(s.lag_ms ?? 0))),
   };
   mkdirSync(dirname(OUT), { recursive: true });
-  // Paths in frame and retainer names are made relative to the checkout.
+  // Paths in frame and retainer names are made relative to the checkout,
+  // before anything shortens them.
   const relative = (text: string) => text.split(`${process.cwd()}/`).join("");
+  if (heap) heap = JSON.parse(relative(JSON.stringify(heap))) as typeof heap;
+  tasks = JSON.parse(relative(JSON.stringify(tasks))) as typeof tasks;
   writeFileSync(
     `${OUT}.json`,
     relative(
