@@ -21,3 +21,7 @@ public/sw.js
 # writer's JSON layout is the canonical one, so a write-back never fails the
 # format check.
 src/__tests__/baselines
+
+# Benchmark results, written by scripts/bench/run.ts and committed as they
+# come out, so a re-run diffs cleanly against the last one.
+scripts/bench/results
