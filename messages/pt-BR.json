@@ -665,7 +665,7 @@
     "medications": "Medicamentos",
     "quickAddMeasurement": "Registrar medição",
     "quickAddMood": "Registrar humor",
-    "quickAddMedicationIntake": "Registrar dose de medicamento",
+    "quickAddMedicationIntake": "Registrar tomada de medicamento",
     "quickAddWorkout": "Registrar treino",
     "quickAddLifeEvent": "Registrar evento de vida",
     "customizeDashboard": "Personalizar painel",
@@ -675,11 +675,11 @@
       "medicationPlaceholder": "Selecione um medicamento",
       "doseLabel": "Dose",
       "dosePlaceholder": "ex.: 5 mg",
-      "doseHint": "Pré-preenchido com a dose padrão. Edite-o para registrar uma dose diferente apenas para esta dose.",
-      "timeLabel": "Horário da dose",
-      "saveError": "Não foi possível salvar a dose de medicamento.",
+      "doseHint": "Pré-preenchido com a dose padrão. Edite para registrar uma dose diferente apenas nesta tomada.",
+      "timeLabel": "Horário da tomada",
+      "saveError": "Não foi possível salvar a tomada do medicamento.",
       "emptyTitle": "Nenhum medicamento ainda",
-      "emptyDescription": "Crie um medicamento com um horário primeiro, depois volte aqui para registrar a dose.",
+      "emptyDescription": "Primeiro crie um medicamento com horários, depois volte aqui para registrar a tomada.",
       "emptyCta": "Adicionar medicamento",
       "noneActionableTitle": "Nada para tomar hoje",
       "noneActionableDescription": "Seus medicamentos estão pausados, mantidos como registro, ou seu curso não começou ou já terminou. Uma dose passada ainda pode ser adicionada no histórico de um medicamento.",
@@ -1324,12 +1324,12 @@
   },
   "medications": {
     "title": "Medicamentos",
-    "subtitle": "Medicamentos, cronogramas e doses",
+    "subtitle": "Medicamentos, cronogramas e tomadas",
     "loginRequired": "Entre para gerenciar medicamentos.",
     "addMedication": "Adicionar",
     "firstMedication": "Adicionar primeiro medicamento",
     "addChoice": {
-      "logIntake": "Registrar uma dose",
+      "logIntake": "Registrar uma tomada",
       "newMedication": "Novo medicamento"
     },
     "takeAllDue": {
@@ -1337,24 +1337,24 @@
       "dialogTitle": "Tomar medicamentos previstos",
       "dialogDescription": "Estes medicamentos estão previstos agora. Confirme para registrar todos como tomados.",
       "confirm": "Tomar todos ({count})",
-      "successToast": "{count} doses registradas",
+      "successToast": "{count} tomadas registradas",
       "partialToast": "{taken} registradas, {failed} falharam. Tente novamente",
-      "failedToast": "Nenhuma dose registrada. Tente novamente"
+      "failedToast": "Nenhuma tomada registrada. Tente novamente"
     },
     "logIntake": {
-      "dialogTitle": "Registrar uma dose",
+      "dialogTitle": "Registrar uma tomada",
       "dialogDescription": "Registre uma dose contra um medicamento existente. Você pode retrodatá-la para uma data e hora passadas.",
       "medicationLabel": "Medicamento",
       "slotLabel": "Horário do cronograma",
       "slotNone": "Sem horário específico",
       "doseLabel": "Dose",
-      "doseHint": "Pré-preenchida com a dose do medicamento ou horário. Edite-a para registrar uma dose diferente apenas para esta dose.",
+      "doseHint": "Pré-preenchida com a dose do medicamento ou do horário. Edite-a para registrar uma dose diferente apenas nesta tomada.",
       "takenAtLabel": "Data e hora",
       "takenAtHint": "Padrão é agora; escolha uma data e hora anteriores para registrar uma dose passada.",
       "skippedLabel": "Registrada como pulada",
-      "noMedications": "Adicione um medicamento primeiro, então você pode registrar doses contra ele.",
+      "noMedications": "Adicione um medicamento primeiro; depois você pode registrar tomadas dele.",
       "cancel": "Cancelar",
-      "submit": "Registrar dose",
+      "submit": "Registrar tomada",
       "slotError": "O horário selecionado não pôde ser correspondido a um horário. Escolha outro horário ou “Sem horário específico”."
     },
     "emptyTitle": "Nenhum medicamento ainda",
@@ -1362,11 +1362,11 @@
     "loadFailed": "Não foi possível carregar os medicamentos",
     "retryLoad": "Tentar novamente",
     "inactive": "Pausado",
-    "intakeHistory": "Histórico de doses",
+    "intakeHistory": "Histórico de tomadas",
     "openDetailPage": "Abrir página de detalhes do medicamento",
     "compliance": "Adesão",
-    "importIntakes": "Importar doses",
-    "importDescription": "Cole um array JSON com dados de doses. Formato esperado:",
+    "importIntakes": "Importar tomadas",
+    "importDescription": "Cole um array JSON com dados de tomadas. Formato esperado:",
     "importUploadFile": "Enviar arquivo JSON",
     "importPaste": "Cole o JSON aqui…",
     "importSelected": "Selecionado: {name}",
@@ -1405,13 +1405,13 @@
     "recordOnlyBadge": "Apenas registro",
     "courseEndedBadge": "Encerrado",
     "trackIntake": {
-      "title": "Acompanhamento de doses",
-      "label": "Acompanhar doses",
+      "title": "Acompanhamento de tomadas",
+      "label": "Acompanhar tomadas",
       "helperOn": "As doses ficam previstas neste cronograma, com lembretes e adesão.",
       "helperOff": "Mantido como registro: nada fica previsto, sem lembretes, sem adesão.",
-      "enabledToast": "Acompanhamento de doses ligado",
-      "disabledToast": "Acompanhamento de doses desligado",
-      "toggleFailed": "Não foi possível alterar o acompanhamento de doses."
+      "enabledToast": "Acompanhamento de tomadas ligado",
+      "disabledToast": "Acompanhamento de tomadas desligado",
+      "toggleFailed": "Não foi possível alterar o acompanhamento de tomadas."
     },
     "autoMarkTaken": {
       "label": "Registrar doses automaticamente",
@@ -1434,8 +1434,8 @@
     "complianceNotApplicableReason": "Nenhum cronograma local está armazenado no HealthLog.",
     "complianceInfo": "Parcela das doses esperadas que você registrou. Cronogramas semanais contam semana por semana.",
     "complianceInfoLabel": "O que significa adesão?",
-    "lastIntake": "Última dose:",
-    "nextIntake": "Próxima dose:",
+    "lastIntake": "Última tomada:",
+    "nextIntake": "Próxima tomada:",
     "nextIntakeOverdue": "Atrasada desde {time}, ainda pode ser tomada",
     "dayStreak": "dias seguidos",
     "dayStreakOne": "dia seguido",
@@ -1549,8 +1549,8 @@
           "monthly": "Mensalmente em um dia específico",
           "everyNMonths": "A cada N meses em um dia específico",
           "yearly": "Uma vez por ano",
-          "rolling": "A cada N dias a partir da última dose (flexível)",
-          "rollingExplainer": "Conta a partir da sua última dose registrada; pausa se você pular uma dose.",
+          "rolling": "A cada N dias a partir da última vez que tomei (flexível)",
+          "rollingExplainer": "Conta a partir da sua última tomada registrada; pausa se você pular uma dose.",
           "oneShot": "Dose única"
         },
         "weekdays": {
@@ -1695,7 +1695,7 @@
           "short": "Quando"
         },
         "step5": {
-          "title": "Com que frequência você dose?",
+          "title": "Com que frequência você o toma?",
           "subline": "Escolha a cadência. Os detalhes vêm na próxima etapa.",
           "short": "Cadência"
         },
@@ -1712,12 +1712,12 @@
           },
           "rollingDays": {
             "label": "A cada",
-            "suffix": "dias a partir da última dose"
+            "suffix": "dias a partir da última tomada"
           },
           "short": "Detalhe"
         },
         "step7": {
-          "title": "Quando você dose?",
+          "title": "Quando você o toma?",
           "subline": "Um ou mais horários do dia. Os lembretes seguem esta lista.",
           "presetsLabel": "Predefinições de horário",
           "presets": {
@@ -1787,7 +1787,7 @@
         },
         "asNeeded": {
           "label": "Conforme necessário",
-          "description": "Sem plano fixo. Registre uma dose sempre que precisar (ex.: alívio da dor)."
+          "description": "Sem plano fixo. Registre uma tomada sempre que precisar (ex.: alívio da dor)."
         }
       },
       "summary": {
@@ -1799,7 +1799,7 @@
           "monthly": "Mensalmente",
           "quarterly": "A cada três meses",
           "yearly": "Uma vez por ano",
-          "rolling": "A cada {n} dias a partir da sua última dose",
+          "rolling": "A cada {n} dias a partir da sua última tomada",
           "oneShot": "Uma dose única",
           "asNeeded": "Conforme necessário",
           "everyNWeeks": "A cada {n} semanas",
@@ -1879,16 +1879,16 @@
     "sourceAppleHealth": "Apple Health",
     "intakeSourceVia": "via {origin}",
     "intakeRecordedAutomatically": "Registrada automaticamente",
-    "intakeHistoryEmptyTitle": "Nenhuma dose registrada ainda",
-    "intakeHistoryEmptyDescription": "Registre uma dose na página de doses diárias para começar a construir o histórico.",
-    "intakeHistoryEmptyAction": "Abrir doses diárias",
+    "intakeHistoryEmptyTitle": "Nenhuma tomada registrada ainda",
+    "intakeHistoryEmptyDescription": "Registre uma dose na página de tomadas diárias para começar a construir o histórico.",
+    "intakeHistoryEmptyAction": "Abrir tomadas diárias",
     "intakeHistoryColTaken": "Tomada",
     "intakeHistoryColScheduled": "Programada",
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Fonte",
     "intakeHistoryStatusTaken": "Tomada",
     "intakeHistoryStatusSkipped": "Pulada",
-    "intakeHistorySortByTaken": "Ordenar por horário da dose",
+    "intakeHistorySortByTaken": "Ordenar por horário da tomada",
     "intakeHistorySortByScheduled": "Ordenar por horário programado",
     "intakeHistoryPageInfo": "Página {page} de {total}, {count} entradas",
     "intakeHistoryPrev": "Anterior",
@@ -1916,7 +1916,7 @@
       "chart": {
         "title": "Nível estimado do medicamento",
         "axisLabel": "Nível estimado (relativo)",
-        "emptyState": "Nenhum evento de dose ainda.",
+        "emptyState": "Nenhum evento de tomada ainda.",
         "emptyStateCta": "Registre uma dose para ver o nível estimado tomar forma.",
         "estimateNote": "Estimativa educacional a partir da farmacocinética populacional publicada pela EMA. Não é uma medição.",
         "unknownDrug": "{name} não está no catálogo de GLP-1 aprovado pela EMA, então o HealthLog não pode renderizar uma curva de PK populacional para ele."
@@ -1934,7 +1934,7 @@
         "asNeeded": "Conforme necessário, sem plano fixo."
       },
       "intake": {
-        "title": "Histórico de doses",
+        "title": "Histórico de tomadas",
         "importButton": "Importar",
         "rowActions": {
           "openMenu": "Abrir ações da linha",
@@ -1955,22 +1955,22 @@
           "failed": "Não foi possível excluir a seleção."
         },
         "edit": {
-          "dialogTitle": "Editar dose",
+          "dialogTitle": "Editar tomada",
           "takenAtLabel": "Tomada em",
           "scheduledForHint": "Programada: {dateTime}",
           "farFromScheduledWarning": "Isso está longe do horário programado. Verifique a data.",
           "skippedLabel": "Pulada",
           "save": "Salvar",
           "cancel": "Cancelar",
-          "savedToast": "Dose atualizada",
-          "failed": "Não foi possível atualizar a dose."
+          "savedToast": "Tomada atualizada",
+          "failed": "Não foi possível atualizar a tomada."
         },
         "deleteRow": {
-          "confirmTitle": "Excluir esta dose?",
+          "confirmTitle": "Excluir esta tomada?",
           "confirmBody": "A entrada é removida permanentemente.",
           "confirmAction": "Excluir",
-          "toast": "Dose excluída",
-          "failed": "Não foi possível excluir a dose."
+          "toast": "Tomada excluída",
+          "failed": "Não foi possível excluir a tomada."
         },
         "viewRecent90": "Últimos 90 dias",
         "viewAll": "Histórico completo",
@@ -1979,7 +1979,7 @@
       "verlauf": {
         "loading": "Carregando histórico…",
         "loadError": "Não foi possível carregar o histórico.",
-        "empty": "Nenhuma dose neste período ainda.",
+        "empty": "Nenhuma tomada neste período ainda.",
         "summaryEmpty": "Nenhuma dose para pontuar ainda.",
         "adherenceLabel": "Adesão",
         "adherenceBarLabel": "{onTime} no horário, {late} atrasadas, {missed} perdidas",
@@ -2001,7 +2001,7 @@
           "ad_hoc": "fora do cronograma"
         },
         "addDialog": {
-          "title": "Adicionar dose",
+          "title": "Adicionar tomada",
           "description": "Registre uma dose, incluindo uma retrodatada ou fora do cronograma.",
           "takenAtLabel": "Tomada em",
           "skippedLabel": "Pulada",
@@ -2011,7 +2011,7 @@
         },
         "nudge": {
           "title": "Atribuir a este horário?",
-          "body": "Esta dose cai logo fora da janela {slot}. Atribua a esse horário ou mantenha-a como uma entrada fora do cronograma?",
+          "body": "Esta tomada fica logo fora da janela {slot}. Atribuí-la a esse horário ou mantê-la como uma entrada fora do cronograma?",
           "keepAdHoc": "Fora do cronograma",
           "pin": "Atribuir"
         },
@@ -2019,11 +2019,11 @@
           "action": "Atribuir ao horário {time}",
           "release": "Liberar atribuição",
           "pinnedTag": "atribuída",
-          "pinnedToast": "Dose atribuída ao horário",
+          "pinnedToast": "Tomada atribuída ao horário",
           "unpinnedToast": "Atribuição liberada",
           "dueContext": "estava prevista: {time} ({delta})",
           "confirmTitle": "Atribuir ao horário {time}?",
-          "confirmBody": "A dose conta para este horário exatamente como contaria se tivesse sido registrada lá: no horário ou atrasada dependendo de quando foi tomada, então a taxa nunca é favorecida. Você pode liberar a atribuição a qualquer momento.",
+          "confirmBody": "A tomada conta para este horário exatamente como contaria se tivesse sido registrada nele: no horário ou atrasada, dependendo de quando foi tomada, então a taxa nunca é inflada. Você pode desfazer a atribuição a qualquer momento.",
           "confirmCancel": "Cancelar",
           "confirmAction": "Atribuir"
         }
@@ -2081,10 +2081,10 @@
         },
         "purge": {
           "title": "Excluir histórico",
-          "helper": "{count} eventos de dose estão armazenados para este medicamento.",
+          "helper": "{count} eventos de tomada estão armazenados para este medicamento.",
           "button": "Excluir histórico",
           "dialogTitle": "Realmente excluir o histórico?",
-          "dialogBody": "As {count} doses serão removidas permanentemente. O medicamento em si permanece.",
+          "dialogBody": "Os {count} eventos de tomada serão removidos permanentemente. O medicamento em si permanece.",
           "toast": "Histórico excluído",
           "failed": "Não foi possível excluir o histórico."
         },
@@ -2093,7 +2093,7 @@
           "helper": "Remove o medicamento e todos os registros relacionados.",
           "button": "Excluir",
           "dialogTitle": "Excluir {name}?",
-          "dialogBody": "O medicamento, seus cronogramas, histórico de doses, tokens de API, configuração de fases e lembretes serão removidos permanentemente.",
+          "dialogBody": "O medicamento, seus cronogramas, histórico de tomadas, tokens de API, configuração de fases e lembretes serão removidos permanentemente.",
           "toast": "Medicamento excluído",
           "failed": "Não foi possível excluir o medicamento."
         }
@@ -2117,20 +2117,20 @@
       "advanced": {
         "dataPortability": {
           "import": {
-            "title": "Importar doses",
-            "helper": "Carregue doses passadas de um arquivo JSON ou JSON colado.",
+            "title": "Importar tomadas",
+            "helper": "Carregue tomadas anteriores de um arquivo JSON ou de JSON colado.",
             "button": "Importar JSON"
           },
           "export": {
             "title": "Exportar medicamento",
             "helper": "Baixe este medicamento como um arquivo CSV.",
-            "includeIntake": "Incluir histórico de doses",
+            "includeIntake": "Incluir histórico de tomadas",
             "button": "Exportar CSV"
           }
         }
       },
       "header": {
-        "historyLabel": "Ver histórico de doses"
+        "historyLabel": "Ver histórico de tomadas"
       },
       "history": {
         "plannedSuffix": "prevista"
@@ -2201,7 +2201,7 @@
         "adjustSuccess": "Estoque atualizado",
         "adjustFailed": "O estoque não pôde ser atualizado.",
         "deleteTitle": "Excluir recipiente?",
-        "deleteDescription": "Remove permanentemente esta embalagem ou recipiente do estoque. As doses registradas permanecem inalteradas.",
+        "deleteDescription": "Remove permanentemente esta embalagem ou recipiente do estoque. As tomadas registradas permanecem inalteradas.",
         "deleteSuccess": "Entrada de estoque excluída",
         "deleteFailed": "A entrada de estoque não pôde ser excluída.",
         "containerTypeLabel": "Tipo de recipiente",
@@ -2306,7 +2306,7 @@
         "saved": "Cronograma salvo",
         "failed": "Não foi possível salvar o cronograma",
         "window": {
-          "intro": "Para cada dose, defina quando uma dose ainda conta como no horário: um horário preciso (±1h) ou sua própria janela, como 07:00–09:00.",
+          "intro": "Para cada dose, defina quando uma tomada ainda conta como no horário: um horário preciso (±1h) ou sua própria janela, como 07:00–09:00.",
           "explicitToggle": "Janela personalizada",
           "startLabel": "Início da janela",
           "endLabel": "Fim da janela",
@@ -2420,11 +2420,11 @@
       }
     },
     "import": {
-      "resultSuccess": "{imported} doses importadas",
+      "resultSuccess": "{imported} tomadas importadas",
       "resultPartial": "{imported} importadas, {skipped} puladas.",
       "resultNothing": "Nada foi importado: todas as {skipped} entradas foram puladas.",
-      "resultAlreadyRecorded": "{recorded} doses já estão registradas. Nada novo foi adicionado.",
-      "resultEmpty": "Esse arquivo não continha doses.",
+      "resultAlreadyRecorded": "{recorded} tomadas já estão registradas. Nada novo foi adicionado.",
+      "resultEmpty": "Esse arquivo não continha tomadas.",
       "showSkipDetails": "Mostrar linhas puladas ({count})",
       "skipDetailLine": "Linha {line}: {reason}",
       "skipDetailsOmitted": "{count} linhas puladas a mais não são exibidas.",
@@ -2432,7 +2432,7 @@
       "skipGroupFew": "{count} entradas puladas: {reason}",
       "skipGroupOther": "{count} entradas puladas: {reason}",
       "reasonDuplicateInFile": "outra entrada no mesmo arquivo tem a mesma data e hora",
-      "reasonAlreadyRecorded": "uma dose já está registrada para essa data e hora",
+      "reasonAlreadyRecorded": "já existe uma tomada registrada para essa data e hora",
       "reasonUnknown": "motivo não registrado",
       "reasonMedicationNotFound": "nenhum medicamento registrado corresponde ao nome no arquivo",
       "reasonMedicationAmbiguous": "o nome no arquivo corresponde a mais de um medicamento registrado",
@@ -3569,7 +3569,7 @@
         "bmiBody": "O IMC é seu peso dividido pelo quadrado da sua altura, dando um único número que o coloca em uma ampla categoria de peso. É uma triagem em nível populacional, não um diagnóstico, e não distingue músculo de gordura.",
         "sleepBody": "A duração do sono é quanto você realmente dormiu durante a noite, dividida em estágios leve, profundo e REM. A maioria dos adultos precisa de cerca de sete a nove horas; tanto a quantidade quanto a qualidade consistentes apoiam a recuperação, o humor e o metabolismo.",
         "moodBody": "O acompanhamento do humor registra como você se sente ao longo do tempo em uma escala simples. Registrá-lo regularmente revela padrões (como sono, atividade ou medicação se alinham com como você se sente) que um único dia nunca mostra.",
-        "medicationsBody": "A adesão é a confiabilidade com que você toma seu medicamento conforme prescrito, mostrada aqui como a parcela das doses esperadas que você realmente registrou. A ingestão constante costuma ser o que faz um tratamento funcionar como pretendido.",
+        "medicationsBody": "A adesão é a regularidade com que você toma seu medicamento conforme prescrito, mostrada aqui como a parcela das doses esperadas que você realmente registrou. Tomadas regulares costumam ser o que faz um tratamento funcionar como pretendido.",
         "restingHrBody": "A frequência cardíaca em repouso é sua frequência cardíaca quando você está completamente em repouso, geralmente medida durante a noite, distinta do seu pulso durante a atividade. Uma frequência em repouso mais baixa geralmente aponta para melhor aptidão cardiovascular, e uma tendência crescente pode ser um sinal precoce de estresse ou doença. Como orientação geral, a frequência em repouso normal de um adulto é 60–100 batimentos por minuto (AHA 2024); um coração treinado pode ficar benignamente entre 40–60.",
         "hrvBody": "A VFC é a pequena variação no tempo entre batimentos cardíacos consecutivos. Maior variabilidade geralmente reflete um sistema nervoso bem recuperado e adaptável, enquanto uma queda sustentada pode sinalizar fadiga, estresse ou recuperação insuficiente.",
         "oxygenSaturationBody": "A SpO₂ é a porcentagem das suas hemácias carregando oxigênio. Leituras de 95–100% são normais em repouso; valores que permanecem abaixo de 90% merecem atenção, embora quedas noturnas breves sejam comuns.",
@@ -5022,8 +5022,8 @@
           "body": "Medições mostra o histórico e a faixa alvo de cada métrica. Joia oculta: defina uma faixa alvo por valor para que desvios se destaquem em cor. Essas séries são a base para as correlações do Coach e o relatório médico."
         },
         "medications": {
-          "title": "Medicamentos e doses",
-          "body": "Medicamentos gerencia cronogramas, doses, estoque e titulação. Ocultos: planos recorrentes sincronizados de outros aplicativos (regras RRULE) e alertas de estoque baixo. Sua taxa de doses registradas alimenta o pilar de adesão no painel e o contexto da IA."
+          "title": "Medicamentos e tomadas",
+          "body": "Medicamentos gerencia cronogramas, tomadas, estoque e titulação. Ocultos: planos recorrentes (RRULE/contínuos) e alertas de estoque baixo. Sua taxa de tomadas alimenta o pilar de adesão no painel e o contexto da IA."
         },
         "labs": {
           "title": "Valores laboratoriais",
@@ -5716,8 +5716,8 @@
           },
           "medicationsCsv": {
             "title": "Medicamentos",
-            "description": "Sua lista de medicamentos com dosagem, cronogramas e (opcionalmente) o histórico completo de doses.",
-            "includeIntake": "Incluir histórico de doses"
+            "description": "Sua lista de medicamentos com dosagem, cronogramas e (opcionalmente) o histórico completo de tomadas.",
+            "includeIntake": "Incluir histórico de tomadas"
           },
           "moodCsv": {
             "title": "Humor",
@@ -6846,7 +6846,7 @@
     "fitbitViewData": "Ver seu sono",
     "googleHealthViewData": "Ver seus passos",
     "apiTokens": "Tokens de API",
-    "apiTokensDescription": "Revise e revogue tokens para medições, treinos, documentos e doses de medicamentos.",
+    "apiTokensDescription": "Revise e revogue tokens para medições, treinos, documentos e tomadas de medicamentos.",
     "measurementsToken": {
       "title": "Tokens de medição",
       "description": "Gere um token para que uma balança, uma ponte de relógio ou sua automação residencial possa adicionar leituras.",
@@ -7987,7 +7987,7 @@
     "reminderLateMinutes": "Limite de atraso (minutos)",
     "reminderLateMinutesDescription": "Minutos após o fim da janela até o selo mudar de amarelo para laranja.",
     "reminderMissedMinutes": "Limite de perda (minutos)",
-    "reminderMissedMinutesDescription": "Minutos após o fim da janela até a dose ser considerada perdida.",
+    "reminderMissedMinutesDescription": "Minutos após o fim da janela até a tomada ser considerada perdida.",
     "notificationTestSend": "Enviar teste",
     "notificationTestSuccess": "Notificação de teste enviada",
     "notificationTestFailed": "Falha ao enviar a notificação de teste",
@@ -8172,7 +8172,7 @@
         "restore": "Restaurar",
         "restoreAria": "Restaurar do backup para {username}",
         "restoreTitle": "Restaurar do backup",
-        "restoreDescription": "Isso substituirá TODOS os dados atuais de {username} pelo instantâneo de {when}. Medições, medicamentos, eventos de dose, registros de humor, canais de notificação, assinaturas push e exclusões do Telegram na fila serão excluídos.",
+        "restoreDescription": "Isso substituirá TODOS os dados atuais de {username} pelo instantâneo de {when}. Medições, medicamentos, eventos de tomada, registros de humor, canais de notificação, assinaturas push e exclusões do Telegram na fila serão excluídos.",
         "restoreInstanceSettingsLabel": "Restaurar também as configurações da instância",
         "restoreInstanceSettingsHint": "Registro, exigência de MFA, idioma padrão, disponibilidade de módulos e configuração de notificações e IA, extraídos do instantâneo e aplicados a todos nesta instalação. Deixe em branco para restaurar apenas esta conta.",
         "restorePromptLabel": "Digite RESTORE para continuar",
@@ -8183,7 +8183,7 @@
         "previewEmpty": "O arquivo não contém registros.",
         "previewOther": "Outros registros",
         "previewMeasurements": "Medições",
-        "previewMedications": "Medicamentos e doses",
+        "previewMedications": "Medicamentos e tomadas",
         "previewMood": "Registros de humor",
         "previewLabs": "Resultados de exames",
         "previewDocuments": "Documentos",
@@ -8584,23 +8584,23 @@
     "metricPercent": "{count}%",
     "badges": {
       "intakeTotal1": {
-        "title": "Primeira dose",
+        "title": "Primeira tomada",
         "description": "Registre seu primeiro evento de medicamento tomado."
       },
       "intakeTotal10": {
-        "title": "Iniciante de doses",
+        "title": "Iniciante nas tomadas",
         "description": "Registre 10 eventos de medicamento tomado."
       },
       "intakeTotal50": {
-        "title": "Rotina de doses",
+        "title": "Rotina de tomadas",
         "description": "Registre 50 eventos de medicamento tomado."
       },
       "intakeTotal150": {
-        "title": "Especialista em doses",
+        "title": "Especialista em tomadas",
         "description": "Registre 150 eventos de medicamento tomado."
       },
       "intakeTotal300": {
-        "title": "Lenda das doses",
+        "title": "Lenda das tomadas",
         "description": "Registre 300 eventos de medicamento tomado."
       },
       "passkeyCreated1": {
@@ -8902,7 +8902,7 @@
       "statusOff": "Desativado",
       "groupsLabel": "Tópicos",
       "groupMedication": "Medicamentos",
-      "groupMedicationDesc": "Doses irregulares na última semana.",
+      "groupMedicationDesc": "Tomadas irregulares na última semana.",
       "groupVitals": "Sinais vitais",
       "groupVitalsDesc": "Pressão arterial, recuperação, tendência de peso, sono.",
       "groupRoutine": "Rotina",
@@ -8963,7 +8963,7 @@
     "eventCoachNudgeDesc": "Lembrete ocasional do seu Coach quando suas tendências recentes justificam um check-in.",
     "eventMeasurementReminder": "Lembrete de medição",
     "eventMeasurementReminderDesc": "Enviado quando uma medição acompanhada está pendente.",
-    "eventMedicationIntakeSync": "Sincronização de dose",
+    "eventMedicationIntakeSync": "Sincronização de tomadas de medicamentos",
     "eventMedicationIntakeSyncDesc": "Atualização entre dispositivos quando uma dose é registrada, tomada ou pulada.",
     "eventDailyBriefing": "Resumo diário",
     "eventDailyBriefingDesc": "Um resumo calmo pela manhã da leitura do seu dia. Desativado até você ativá-lo.",
@@ -10256,7 +10256,7 @@
     },
     "medications": {
       "label": "Medicamentos",
-      "description": "Horários, doses e adesão."
+      "description": "Horários, tomadas e adesão."
     },
     "illness": {
       "label": "Diário de doenças",
