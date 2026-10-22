@@ -28,10 +28,9 @@
  * outside `app/api/`); a server-side `take` is not a fetch.
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -178,7 +177,7 @@ function findLimitHits(file: string, source: string): Hit[] {
 
 function allHits(): Hit[] {
   return clientFiles().flatMap((file) =>
-    findLimitHits(file, readFileSync(join(SRC, file), "utf8")),
+    findLimitHits(file, readSourceText(join(SRC, file))),
   );
 }
 

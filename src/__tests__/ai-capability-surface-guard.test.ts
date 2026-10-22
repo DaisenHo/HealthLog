@@ -26,14 +26,17 @@
  * another module would slip it; `AI_ROUTE_PATTERNS` lists the literal shapes
  * the tree uses today.
  */
-import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import type { AiCapabilityKey } from "@/lib/ai/capabilities/types";
 
-import { stripComments, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = path.resolve(__dirname, "..");
 
@@ -64,7 +67,7 @@ const FEATURE_FLAG_SWEEP = NON_TEST_FILES.filter(
 );
 
 const read = (rel: string) =>
-  stripComments(readFileSync(path.join(SRC, rel), "utf8"));
+  stripComments(readSourceText(path.join(SRC, rel)));
 
 /** Request literals of routes that call a model or serve model text. */
 const AI_ROUTE_PATTERNS: readonly RegExp[] = [

@@ -13,7 +13,7 @@
  * nothing in the client tree may derive the verdict, AND the surfaces that
  * show it must still be reading the published field.
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { join, relative as relativeTo } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -21,8 +21,10 @@ import { describe, expect, it } from "vitest";
 import {
   accessPaths,
   derivationFindings,
+  mayBeCycleContext,
   parse,
 } from "./helpers/cycle-verdict-derivation";
+import { readSourceText } from "./helpers/source-files";
 
 const ROOT = process.cwd();
 
@@ -61,7 +63,7 @@ function clientFiles(): string[] {
 }
 
 function parseFile(relative: string) {
-  return parse(relative, readFileSync(join(ROOT, relative), "utf8"));
+  return parse(relative, readSourceText(join(ROOT, relative)));
 }
 
 describe("the cycle verdict is decided in one place", () => {
@@ -70,9 +72,11 @@ describe("the cycle verdict is decided in one place", () => {
     // A guard over an empty file list proves nothing.
     expect(files.length).toBeGreaterThan(100);
 
-    const findings = files.flatMap((relative) =>
-      derivationFindings(parseFile(relative)),
-    );
+    const findings = files
+      .filter((relative) =>
+        mayBeCycleContext(readSourceText(join(ROOT, relative))),
+      )
+      .flatMap((relative) => derivationFindings(parseFile(relative)));
 
     expect(
       findings.map((f) => `${f.file}:${f.line} ${f.kind} — ${f.where}`),
@@ -83,7 +87,7 @@ describe("the cycle verdict is decided in one place", () => {
     // The specific constant that was copied. Named here so its return is loud
     // rather than merely structural.
     const offenders = clientFiles().filter((relative) =>
-      readFileSync(join(ROOT, relative), "utf8").includes("OVERDUE_GRACE_DAYS"),
+      readSourceText(join(ROOT, relative)).includes("OVERDUE_GRACE_DAYS"),
     );
     expect(offenders).toEqual([]);
   });
@@ -106,9 +110,8 @@ describe("the surfaces that show the verdict actually read it", () => {
     // The BBT chart used to walk the calendar itself to find the cycle start,
     // which was a second copy of the same walk. It now takes the resolved
     // value as a prop, and the cycle page feeds it from the verdict.
-    const chart = readFileSync(
+    const chart = readSourceText(
       join(ROOT, "src/components/cycle/bbt-chart.tsx"),
-      "utf8",
     );
     expect(chart).toContain("cycleStartDate");
 
@@ -119,10 +122,7 @@ describe("the surfaces that show the verdict actually read it", () => {
   it("the calendar response type declares the verdict as always present", () => {
     // An optional verdict is a plausible default that lets a client fall back
     // to deriving its own.
-    const types = readFileSync(
-      join(ROOT, "src/components/cycle/types.ts"),
-      "utf8",
-    );
+    const types = readSourceText(join(ROOT, "src/components/cycle/types.ts"));
     expect(types).toContain("verdict: CycleVerdict;");
     expect(types).not.toContain("verdict?:");
   });

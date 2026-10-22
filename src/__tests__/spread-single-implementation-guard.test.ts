@@ -16,11 +16,14 @@
  * `glucoseSD`) and is out of the matcher's reach by shape. Comments are
  * stripped first; the planted case proves the matcher fires.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { stripComments, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -51,7 +54,7 @@ function computesSpread(code: string): boolean {
 }
 
 function read(file: string): string {
-  return stripComments(readFileSync(join(SRC, file), "utf8"));
+  return stripComments(readSourceText(join(SRC, file)));
 }
 
 describe("one standard deviation", () => {

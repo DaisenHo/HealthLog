@@ -40,12 +40,11 @@
  * and asserts the sweep goes red without it, so every entry is shown to be
  * load-bearing, and the sweep is shown to find what it claims to find.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const SCOPE = "lib/jobs/";
@@ -257,9 +256,7 @@ const ALLOWED: Readonly<Record<string, { count: number; reason: string }>> = {
 function sweep(): Finding[] {
   return walkSourceFiles(join(SRC, SCOPE), { floor: 100 })
     .filter((p) => !p.includes("__tests__") && !p.endsWith(".test.ts"))
-    .flatMap((p) =>
-      scan(`${SCOPE}${p}`, readFileSync(join(SRC, SCOPE, p), "utf8")),
-    );
+    .flatMap((p) => scan(`${SCOPE}${p}`, readSourceText(join(SRC, SCOPE, p))));
 }
 
 function unallowed(

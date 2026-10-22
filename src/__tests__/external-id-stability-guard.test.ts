@@ -22,10 +22,9 @@
  * addition defeats them, and no test substitutes for that review.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const VALIDATOR_MODULE = "@/lib/validations/external-id";
@@ -39,7 +38,7 @@ function sourceFiles(): string[] {
 }
 
 function read(rel: string): string {
-  return readFileSync(join(SRC, rel), "utf8");
+  return readSourceText(join(SRC, rel));
 }
 
 /**
@@ -377,9 +376,8 @@ describe("the intake idempotency key is never read across users", () => {
   });
 
   it("the schema keeps the key unique per user, not globally", () => {
-    const schema = readFileSync(
+    const schema = readSourceText(
       join(process.cwd(), "prisma", "schema.prisma"),
-      "utf8",
     );
     expect(schema).toContain("@@unique([userId, idempotencyKey])");
     expect(schema).not.toMatch(

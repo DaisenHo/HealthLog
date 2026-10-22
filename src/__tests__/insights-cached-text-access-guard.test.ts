@@ -12,12 +12,15 @@
  * The readable name survives only as the snapshot builder's input field, which
  * carries the OPENED text, never the column.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { stripComments, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -45,9 +48,7 @@ function sourceFilesMatching(pattern: RegExp): string[] {
   return walkSourceFiles(SRC, { floor: 2000 })
     .filter((f) => !f.startsWith("generated/"))
     .filter((f) => !f.includes("__tests__/") && !/\.test\.tsx?$/.test(f))
-    .filter((f) =>
-      pattern.test(stripComments(readFileSync(join(SRC, f), "utf8"))),
-    )
+    .filter((f) => pattern.test(stripComments(readSourceText(join(SRC, f)))))
     .sort();
 }
 

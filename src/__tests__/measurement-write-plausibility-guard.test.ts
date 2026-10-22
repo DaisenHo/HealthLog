@@ -19,10 +19,9 @@
  * test substitutes for that review.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -164,14 +163,25 @@ function sourceFiles(): string[] {
 }
 
 function read(rel: string): string {
-  return readFileSync(join(SRC, rel), "utf8");
+  return readSourceText(join(SRC, rel));
 }
 
+let writers: string[] | null = null;
+
+/**
+ * Every file that writes a measurement, found once per run. A write names
+ * the `measurement` delegate or the bulk insert's `MeasurementRows`, so a
+ * file holding neither word is skipped before the expressions run.
+ */
 function discoveredWriters(): string[] {
-  return sourceFiles().filter((rel) => {
+  writers ??= sourceFiles().filter((rel) => {
     const text = read(rel);
+    if (!text.includes("measurement") && !text.includes("MeasurementRows")) {
+      return false;
+    }
     return MEASUREMENT_WRITE.test(text) || BULK_INSERT_CALL.test(text);
   });
+  return writers;
 }
 
 describe("every measurement writer declares how it meets the plausibility domain", () => {
@@ -195,9 +205,10 @@ describe("every measurement writer declares how it meets the plausibility domain
   });
 
   it("raw SQL inserts measurements in the bulk-insert module and nowhere else", () => {
-    const raw = sourceFiles().filter((rel) =>
-      RAW_MEASUREMENT_INSERT.test(read(rel)),
-    );
+    const raw = sourceFiles().filter((rel) => {
+      const text = read(rel);
+      return /insert/i.test(text) && RAW_MEASUREMENT_INSERT.test(text);
+    });
     expect(raw).toEqual([BULK_INSERT_MODULE]);
   });
 

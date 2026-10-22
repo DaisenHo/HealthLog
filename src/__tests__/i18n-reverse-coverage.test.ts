@@ -26,10 +26,11 @@
  * its keys report as orphans.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import { collectReferences, isReferenced } from "./helpers/i18n-reference";
+import { readSourceText } from "./helpers/source-files";
 
 const ROOT = join(__dirname, "../..");
 const SRC = join(ROOT, "src");
@@ -142,8 +143,16 @@ function isAllowlisted(leaf: string): boolean {
   );
 }
 
+let scanned: ReturnType<typeof scanOnce> | null = null;
+
+/** The bundle and the tree's references, worked out once per run. */
 function scan() {
-  const en = JSON.parse(readFileSync(EN_BUNDLE_PATH, "utf8"));
+  scanned ??= scanOnce();
+  return scanned;
+}
+
+function scanOnce() {
+  const en = JSON.parse(readSourceText(EN_BUNDLE_PATH));
   const leaves: string[] = [];
   leafPaths(en, "", leaves);
 
@@ -152,7 +161,7 @@ function scan() {
   const topNamespaces = new Set<string>(Object.keys(en));
 
   const allText = walk(SRC)
-    .map((f) => readFileSync(f, "utf8"))
+    .map((f) => readSourceText(f))
     .join("\n");
 
   return { leaves, ...collectReferences(allText, allNodes, topNamespaces) };
