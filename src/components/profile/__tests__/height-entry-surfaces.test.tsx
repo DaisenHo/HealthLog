@@ -28,6 +28,13 @@ vi.mock("@tanstack/react-query", () => ({
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
+// #1267 — the about-me save's abort reads the account payload; the
+// react-query mock above has no client to read it from.
+vi.mock("@/hooks/use-ai-capability", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/use-ai-capability")>()),
+  useAboutMeSaveTimeoutMs: () => 90_000,
+}));
+
 vi.mock("sonner", () => ({
   toast: { error: vi.fn(), success: vi.fn() },
 }));

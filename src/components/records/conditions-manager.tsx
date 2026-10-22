@@ -35,6 +35,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { useAboutMeSaveTimeoutMs } from "@/hooks/use-ai-capability";
 
 const FALLBACK_FIELD_MAX_CHARS = 500;
 
@@ -76,13 +77,18 @@ export function ConditionsManager() {
     value.conditions !== saved.conditions ||
     value.coachFocus !== saved.coachFocus;
 
+  const saveTimeoutMs = useAboutMeSaveTimeoutMs();
   const save = useMutation({
     mutationKey: queryKeys.coachAboutMe(),
     mutationFn: async (input: { conditions: string; coachFocus: string }) =>
-      apiPut<AboutMeData>("/api/coach/about-me", {
-        conditions: input.conditions,
-        coachFocus: input.coachFocus,
-      }),
+      apiPut<AboutMeData>(
+        "/api/coach/about-me",
+        {
+          conditions: input.conditions,
+          coachFocus: input.coachFocus,
+        },
+        { signal: AbortSignal.timeout(saveTimeoutMs) },
+      ),
     onSuccess: () => {
       toast.success(t("records.conditions.savedToast"));
       setDrafts({ conditions: null, coachFocus: null });

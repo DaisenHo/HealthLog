@@ -78,14 +78,22 @@ export const CLIENT_ABORT_MARGIN_MS = 30_000;
  * account payload published. Never recomputes the setting: an absent or
  * malformed value (a payload from before the field existed) reads as the
  * server's own default.
+ *
+ * `surfaceDefaultMs` is the route's own per-call default when it is longer
+ * than the provider default (the briefing's 180 s). The published value
+ * cannot say whether the person set it or it is the 60 s default, so the
+ * browser waits for the longer of the two: it may wait longer than the
+ * server needs, never shorter (#1267).
  */
 export function clientAbortMs(
   responseTimeoutMs: number | null | undefined,
   modelCalls: number,
+  surfaceDefaultMs?: number,
 ): number {
-  const perCall =
+  const published =
     typeof responseTimeoutMs === "number" && responseTimeoutMs > 0
       ? responseTimeoutMs
       : PROVIDER_DEFAULT_TIMEOUT_MS;
+  const perCall = Math.max(published, surfaceDefaultMs ?? 0);
   return perCall * modelCalls + CLIENT_ABORT_MARGIN_MS;
 }

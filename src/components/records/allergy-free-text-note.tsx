@@ -36,6 +36,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { useAboutMeSaveTimeoutMs } from "@/hooks/use-ai-capability";
 import { withBaseToken, isConflict } from "@/lib/api/optimistic-token";
 
 const FALLBACK_FIELD_MAX_CHARS = 500;
@@ -75,6 +76,7 @@ export function AllergyFreeTextNote({
   const value = draft ?? savedLine;
   const dirty = value !== savedLine;
 
+  const saveTimeoutMs = useAboutMeSaveTimeoutMs();
   const save = useMutation({
     mutationKey: queryKeys.coachAboutMe(),
     // Send only the allergies line — omitted fields are preserved server-side
@@ -84,6 +86,7 @@ export function AllergyFreeTextNote({
       return apiPut<AboutMeData>(
         "/api/coach/about-me",
         withBaseToken(input, query.data?.updatedAt ?? undefined),
+        { signal: AbortSignal.timeout(saveTimeoutMs) },
       );
     },
     onSuccess: () => {
