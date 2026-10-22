@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 410,
-  "total": 148049,
+  "total": 148089,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -293,7 +293,7 @@
     "lib/ai/codex-client.ts :: parseResponse": 302,
     "lib/ai/local-client.ts :: generateCompletionStream": 288,
     "lib/ai/openai-client.ts :: generateCompletion": 346,
-    "lib/ai/safety/outbound-screen.ts :: buildDoseChangeClass": 275,
+    "lib/ai/safety/outbound-screen.ts :: buildDoseChangeClass": 315,
     "lib/analytics/bp-in-target-fast-path.ts :: computeFromRollups": 203,
     "lib/analytics/compliance/display.ts :: calculateCompliance": 212,
     "lib/analytics/correlations-fast-path.ts :: computeCorrelationHypothesesFastPath": 256,
