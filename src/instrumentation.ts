@@ -13,6 +13,14 @@ export async function register() {
       ],
     );
     startEventLoopLagMonitor();
+
+    // Every locale falls back to the English message catalog, so a process
+    // without a readable `messages/en.json` cannot serve a page or a job.
+    // Refuse to start with the file named, rather than fail every request.
+    const { assertDefaultCatalogReadable } =
+      await import("@/lib/i18n/server-catalogs");
+    assertDefaultCatalogReadable();
+
     beginBootStep("readiness_summary");
 
     // First-boot readiness summary: a human-readable block on the core secrets
