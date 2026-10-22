@@ -66,16 +66,16 @@ const DAY_MS = 86_400_000;
  * the header for how to move one.
  */
 const BUDGET = {
-  authMe: 18,
-  dashboardSummary: 86,
-  dashboardSnapshot: 103,
+  authMe: 13,
+  dashboardSummary: 84,
+  dashboardSnapshot: 99,
   series30: 6,
-  series365: 6,
-  series3650: 6,
-  dayView: 48,
-  healthStatus: 60,
-  correlations: 44,
-  batchIngest500: 31,
+  series365: 5,
+  series3650: 5,
+  dayView: 47,
+  healthStatus: 59,
+  correlations: 43,
+  batchIngest500: 28,
 } as const;
 
 type Handler = (
