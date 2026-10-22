@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.44.1] — 2026-10-22
+
+### Security
+
+- **Next.js 16.4.2.** The framework fixed two critical advisories that
+  allow unauthenticated remote code execution, one in `use cache` functions
+  that return typed arrays (GHSA-673q-mjm6-r5xr) and one in the image
+  optimizer when it handles SVG (GHSA-2464-fhr4-w9xw), and a high-severity
+  denial of service through Server Actions (GHSA-p3m5-59mp-jv5r). HealthLog
+  uses neither `use cache` nor the image component, and it defines no Server
+  Actions and refuses requests that call one. Every instance runs the same
+  framework, though, so it updates anyway.
+- **The image optimizer is off.** Nothing in HealthLog renders through it,
+  so `/_next/image` now answers 404 instead of processing whatever image a
+  request names. Icons and logos load as before.
+- **nodemailer 10.1.7** fixes several advisories in how email addresses are
+  parsed (GHSA-8c8m-p3m8-cjg8 among them).
+
+### Fixed
+
+- **`[` and `]` move the open day on every press.** Pressed quickly in a
+  row, one press could be lost, because a step started from the day still
+  on screen rather than the one the previous press had already opened.
+
+### Upgrade notes
+
+- None. Pull the new image and restart.
+
 ## [1.44.0] — 2026-10-22
 
 ### Added
