@@ -236,6 +236,7 @@ describe("release container inputs", () => {
     const dockerfile = readRepoFile("Dockerfile");
     const packageJson = JSON.parse(readRepoFile("package.json")) as {
       packageManager: string;
+      dependencies: Record<string, string>;
     };
     expect(packageJson.packageManager).toBe("pnpm@11.15.1");
     expect(dockerfile).not.toContain("pnpm@latest");
@@ -249,7 +250,15 @@ describe("release container inputs", () => {
     expect(dockerfile).toContain(
       "ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx",
     );
-    expect(dockerfile).toContain("dotenv@18.0.6");
+    // The image's npm-installed Prisma CLI, its engines and dotenv are a second
+    // install of packages the app tree already declares; they move together or
+    // the image runs a CLI the tests never did. Drift is how the dotenv pin
+    // here trailed the app's by a patch.
+    const floor = (name: string) =>
+      packageJson.dependencies[name]!.replace(/^[\^~]/, "");
+    expect(dockerfile).toContain(`prisma@${floor("prisma")} `);
+    expect(dockerfile).toContain(`@prisma/engines@${floor("prisma")} `);
+    expect(dockerfile).toContain(`dotenv@${floor("dotenv")} `);
     expect(dockerfile).toContain(
       "ln -sfn /opt/prisma-cli/node_modules/dotenv /app/node_modules/dotenv",
     );

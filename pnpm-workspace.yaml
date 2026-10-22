@@ -103,6 +103,13 @@ overrides:
   "brace-expansion@>=4.0.0 <5.0.12": "^5.0.12"
   "undici@>=7.0.0 <7.29.1": "^7.29.1"
 
+  # GHSA-587h-7wmj-h5pm (HIGH), GHSA-rq7h-c2jc-7f22, GHSA-r825-w8mm-5pxw,
+  # GHSA-698v-4r3x-3vcv and GHSA-9jrq-w75r-8gcw: dev-server file serving,
+  # cross-origin middleware and the bundled launch-editor. Vite arrives only
+  # under vitest, never in the image; vitest asks for ^8, so a floor on the
+  # same major moves it and nothing else.
+  "vite@>=8.0.0 <8.1.6": "^8.1.6"
+
 allowBuilds:
   "@prisma/engines": true
   prisma: true

@@ -89,10 +89,12 @@ Every call is also a contract check. The status must be one the registry
 (`src/lib/openapi/routes/`) declares for that path and method, a JSON body
 must parse with the registered schema, and a key the schema does not declare
 fails the call: a client generated from the contract cannot see that field, so
-nobody promised to keep it. The one generic answer accepted without its own
-entry is the scope gate's 403 `auth.scope.insufficient`, which the shared 401
-documents for every authenticated operation. A test that calls an unregistered
-route on purpose passes `contract: { skip: "<reason>" }`.
+nobody promised to keep it. There is no generic answer the kit accepts on an
+operation's behalf: the scope gate's 403 `auth.scope.insufficient` is declared
+on every operation that passes the gate (`withScopeRefusal` in
+`src/lib/openapi/routes/shared.ts`), so it is checked like any other status. A
+test that calls an unregistered route on purpose passes
+`contract: { skip: "<reason>" }`.
 `tests/integration/routes/kit-contract.test.ts` proves the check can fail.
 
 Assert what a person or a client would notice: the stored row, the response,
@@ -119,7 +121,9 @@ Each Vitest worker clones it on its first file (`CREATE DATABASE … TEMPLATE`,
 see `tests/integration/worker-database.ts`), so files run in parallel without
 seeing each other's rows, advisory locks or queue schema. The worker count
 follows the host (half the cores, at most eight) unless
-`HEALTHLOG_INTEGRATION_WORKERS` pins it; CI uses three.
+`HEALTHLOG_INTEGRATION_WORKERS` pins it; CI uses three. To reproduce a CI runner's
+contention on a larger machine, cap the database container with
+`HEALTHLOG_INTEGRATION_PG_CPUS=2`.
 
 `truncateAllTables` empties every table the migrations created and puts back
 the rows they seed (the mood-tag and symptom catalogues), so a test starts

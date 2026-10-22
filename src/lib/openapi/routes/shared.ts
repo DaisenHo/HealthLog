@@ -351,6 +351,128 @@ export const stdResponses = {
   },
 };
 
+// ── The generic 403 ──────────────────────────────────────────────────
+
+/**
+ * The 403 the generic auth gates answer before a route's own body runs.
+ *
+ * `requireAuth` refuses a narrow Bearer token on a route that names no scope
+ * the token holds (`auth.scope.insufficient`), and `requireAdmin` refuses a
+ * session that is not an administrator's (`auth.admin.required`). The shared
+ * 401 described both in its prose and no operation declared the status, so a
+ * decoder generated from the contract had no typed branch for a refusal any
+ * authenticated route can send.
+ *
+ * Neither is a member of `stdResponses`, on purpose. That set is spread into
+ * several hundred operations, about three hundred of them declare a 403 of
+ * their own, and most spread the set AFTER their own entries — a shared 403
+ * in it would silently overwrite every module-off and sharing refusal in the
+ * document. `withScopeRefusal` adds them to the assembled table instead, where
+ * the order of a spread cannot decide it.
+ */
+export const scopeRefusalResponse = {
+  description:
+    "The credential is valid but its scope does not reach this operation. `meta.errorCode` = `auth.scope.insufficient`: a narrow Bearer token on a route that names no scope it holds, or a connector-bound token on a write. Retrying with the same token will not help; use a session, or a token minted with the scope the route names.",
+  content: { "application/json": { schema: errorEnvelope } },
+};
+
+/**
+ * The admin surfaces' variant. `requireAdmin` reads only the session cookie,
+ * so a Bearer caller never gets this far (it is a 401 there); the 403 is a
+ * signed-in account that is not an administrator.
+ */
+export const adminRefusalResponse = {
+  description:
+    "The session is valid but its account is not an administrator. `meta.errorCode` = `auth.admin.required`.",
+  content: { "application/json": { schema: errorEnvelope } },
+};
+
+const GATE_SENTENCE = {
+  scope:
+    "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the generic auth gate answers it before the route's own checks run. Otherwise: ",
+  admin:
+    "`meta.errorCode` = `auth.admin.required` when the session's account is not an administrator; the admin gate answers it before the route's own checks run. Otherwise: ",
+} as const;
+
+const GATE_CODE = {
+  scope: "auth.scope.insufficient",
+  admin: "auth.admin.required",
+} as const;
+
+/**
+ * Surfaces that authenticate by a credential of their own and never pass the
+ * generic gate, so they cannot answer its 403: a URL credential (the
+ * clinician share link, the notification quick answer) or the external ingest
+ * token, which runs its own scope check and documents its own 403.
+ */
+const OUTSIDE_THE_GENERIC_GATE = new Set([
+  "/api/c/{token}/unlock",
+  "/api/notifications/action/{token}",
+  "/api/ingest/medication",
+]);
+
+/**
+ * Declare the gate's 403 on every operation that passes the generic auth
+ * gate: one that declares a 401 and does not opt out of authentication with
+ * `security: []`. Under `/api/admin/` the gate is `requireAdmin`, everywhere
+ * else `requireAuth`. An operation without a 403 of its own gets the shared
+ * response; one with its own keeps it, and its description is prefixed with
+ * the gate's code, because a client branching on that 403 has to tell a
+ * module-off refusal from a gate refusal. Prefixed, not appended: the sharing
+ * refusal has to stay the description's closing sentence, byte for byte
+ * (`openapi-sharing-denial.test.ts`).
+ *
+ * Response objects shared between operations stay shared (one augmented copy
+ * per original), so the emitted document keeps its anchors.
+ */
+export function withScopeRefusal<T extends Record<string, unknown>>(
+  paths: T,
+): T {
+  const augmented = {
+    scope: new WeakMap<object, object>(),
+    admin: new WeakMap<object, object>(),
+  };
+  const out: Record<string, unknown> = {};
+  for (const [path, item] of Object.entries(paths)) {
+    if (!isPlainRecord(item) || OUTSIDE_THE_GENERIC_GATE.has(path)) {
+      out[path] = item;
+      continue;
+    }
+    const gate = path.startsWith("/api/admin/") ? "admin" : "scope";
+    const nextItem: Record<string, unknown> = { ...item };
+    for (const method of ["get", "put", "post", "patch", "delete"] as const) {
+      const op = item[method];
+      if (!isPlainRecord(op) || !isPlainRecord(op.responses)) continue;
+      if (Array.isArray(op.security) && op.security.length === 0) continue;
+      if (!op.responses["401"]) continue;
+      const own = op.responses["403"];
+      let forbidden: unknown =
+        gate === "admin" ? adminRefusalResponse : scopeRefusalResponse;
+      if (isPlainRecord(own)) {
+        forbidden = augmented[gate].get(own);
+        if (!forbidden) {
+          const description =
+            typeof own.description === "string" ? own.description : "";
+          forbidden = description.includes(GATE_CODE[gate])
+            ? own
+            : { ...own, description: GATE_SENTENCE[gate] + description };
+          augmented[gate].set(own, forbidden as object);
+        }
+      }
+      nextItem[method] = {
+        ...op,
+        responses: { ...op.responses, "403": forbidden },
+      };
+    }
+    out[path] = nextItem;
+  }
+  return out as T;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 /**
  * The 429 the shared single-record write bucket answers with.
  *

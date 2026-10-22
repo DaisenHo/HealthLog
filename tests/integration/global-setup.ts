@@ -44,7 +44,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = resolve(__dirname, "..", "..");
 
-let container: StartedPostgreSqlContainer | null = null;
+let started: StartedPostgreSqlContainer | null = null;
 
 declare module "vitest" {
   export interface ProvidedContext {
@@ -56,7 +56,7 @@ declare module "vitest" {
 export default async function setup(
   project: TestProject,
 ): Promise<() => Promise<void>> {
-  container = await new PostgreSqlContainer("postgres:16-alpine")
+  let container = new PostgreSqlContainer("postgres:16-alpine")
     .withDatabase(TEMPLATE_DATABASE)
     .withUsername("healthlog")
     .withPassword("healthlog")
@@ -74,10 +74,18 @@ export default async function setup(
       "full_page_writes=off",
       "-c",
       "max_connections=400",
-    ])
-    .start();
+    ]);
+  // A CPU quota for the database container, to reproduce a CI runner's
+  // contention on a larger machine: HEALTHLOG_INTEGRATION_PG_CPUS=2.
+  const cpus = Number.parseFloat(
+    process.env.HEALTHLOG_INTEGRATION_PG_CPUS ?? "",
+  );
+  if (Number.isFinite(cpus) && cpus > 0) {
+    container = container.withResourcesQuota({ cpu: cpus });
+  }
+  started = await container.start();
 
-  const url = container.getConnectionUri() + "?schema=public&pgbouncer=false";
+  const url = started.getConnectionUri() + "?schema=public&pgbouncer=false";
   process.env.DATABASE_URL = url;
 
   // The explicit child environment keeps Prisma CLI on the same container.
@@ -91,9 +99,9 @@ export default async function setup(
   project.provide("integrationDatabasePlan", await readTemplate(url));
 
   return async () => {
-    if (container) {
-      await container.stop({ remove: true });
-      container = null;
+    if (started) {
+      await started.stop({ remove: true });
+      started = null;
     }
   };
 }

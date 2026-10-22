@@ -2,27 +2,21 @@
  * The full-history admission lane against a real pg-boss on a real Postgres:
  * what happens to an import that runs past its job's expiry.
  *
- * pg-boss 12.34, measured with the lane's worker shape (localConcurrency 1,
+ * Up to 12.37, measured with the lane's worker shape (localConcurrency 1,
  * groupConcurrency 1, exclusive policy, retries with backoff), a two-second
  * expiry, a one-second retry delay and a handler that ignores the abort
- * signal and runs for eight seconds:
+ * signal and runs for eight seconds, pg-boss failed the job at the expiry,
+ * fired the signal, freed the worker and group slots, and started the retry
+ * in the same worker BESIDE the run it had given up on: two runs of one job
+ * at once, which the lane's lock existed to absorb.
  *
- *   +5ms     start #1 (job 1709c8a6…)   running=1
- *   +2008ms  abort signal #1
- *   +4051ms  start #2 (same job id)     running=2
- *   +6054ms  abort signal #2
- *   +8007ms  end #1                     running=1
- *   +9593ms  start #3 (same job id)     running=2
- *   +12053ms end #2
- *   +17595ms end #3
- *   +19166ms start #4 (same job id)     running=1
- *
- * At the expiry pg-boss fails the job, fires the signal, frees the worker and
- * group slots, and retries the job after its delay; the handler keeps going.
- * The retry then starts in the same worker beside the run it replaced, and
- * the lane's one-at-a-time holds for everything except the import too long
- * for its expiry. The first test keeps that as an executable statement about
- * pg-boss; the second runs the lane's own handler under the same conditions.
+ * 12.38 changed that. At the expiry it still fails the job and fires the
+ * signal, but the worker fetches nothing more until the handler returns (and
+ * records a `handler_overrun` warning). The retry starts after the overrun
+ * ends, in the same worker, so the lane's one-at-a-time now holds without the
+ * lock's help; the lock stays as the guard for a second worker or instance.
+ * The first test keeps that as an executable statement about pg-boss; the
+ * second runs the lane's own handler under the same conditions.
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { PgBoss, type Job } from "pg-boss";
@@ -84,18 +78,23 @@ afterAll(async () => {
 });
 
 describe("an import that outlives its expiry", () => {
-  it("pg-boss starts the retry of the same job beside the run it expired", async () => {
+  it("pg-boss retries the expired job only once the run it gave up on returns", async () => {
     const queue = `lane-expiry-raw-${suffix}`;
     await boss.createQueue(queue, { policy: "exclusive" });
-    const ids: string[] = [];
+    const runs: Array<{ id: string; start: number; end?: number }> = [];
     let running = 0;
     let maxRunning = 0;
     await boss.work(queue, WORK_OPTIONS, async ([job]: Job<object>[]) => {
-      ids.push(job!.id);
+      const run: { id: string; start: number; end?: number } = {
+        id: job!.id,
+        start: Date.now(),
+      };
+      runs.push(run);
       running += 1;
       maxRunning = Math.max(maxRunning, running);
       await sleep(8_000);
       running -= 1;
+      run.end = Date.now();
     });
     await boss.send(queue, payload, {
       ...integrationBackfillAdmissionSendOptions(payload),
@@ -105,12 +104,13 @@ describe("an import that outlives its expiry", () => {
     await sleep(12_000);
     await boss.offWork(queue);
 
-    expect(ids.length).toBeGreaterThanOrEqual(2);
-    expect(new Set(ids).size).toBe(1);
-    expect(maxRunning).toBeGreaterThanOrEqual(2);
+    expect(runs.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(runs.map((r) => r.id)).size).toBe(1);
+    expect(maxRunning).toBe(1);
+    expect(runs[1]!.start).toBeGreaterThanOrEqual(runs[0]!.end!);
   }, 60_000);
 
-  it("the lane's handler runs the import once while its retries find it running", async () => {
+  it("the lane's handler runs one import at a time while the expired run overruns", async () => {
     const queue = `lane-expiry-drain-${suffix}`;
     await boss.createQueue(queue, { policy: "exclusive" });
     const handler = runJob(queue, drainIntegrationBackfillAdmission);
@@ -128,14 +128,16 @@ describe("an import that outlives its expiry", () => {
       ...EXPIRY_OVERRIDE,
     });
 
-    // The run holds for eight seconds; its retries arrive while it does.
-    await sleep(7_000);
+    // The run holds for eight seconds, past its two-second expiry; the retry
+    // waits for it and starts after.
+    await sleep(12_000);
     await boss.offWork(queue);
-    await sleep(2_000);
+    await sleep(8_500);
 
     expect(deliveries.length).toBeGreaterThanOrEqual(2);
-    expect(runner.calls).toBe(1);
+    expect(new Set(deliveries).size).toBe(1);
     expect(runner.maxRunning).toBe(1);
+    expect(runner.calls).toBe(deliveries.length);
   }, 60_000);
 });
 
