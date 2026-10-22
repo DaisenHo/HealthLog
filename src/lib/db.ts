@@ -6,6 +6,7 @@ import {
   sessionOptionsDisabled,
   TIME_ZONE_OPTION,
 } from "@/lib/db-session";
+import { shouldRunWorker } from "@/lib/process-type";
 
 export {
   pinTimeZoneOnConnect,
@@ -21,7 +22,17 @@ const globalForPrisma = globalThis as unknown as {
 
 const DEFAULT_CONNECTION_BUDGET = 20;
 const DEFAULT_POOL_TIMEOUT_SECONDS = 20;
-const PG_BOSS_CONNECTIONS = 2;
+/**
+ * pg-boss connections. A web-only process only sends jobs, and two sockets
+ * carry that. A process that runs the worker polls: about a hundred bindings
+ * (two dozen of them every two seconds, several with two to five slots), the
+ * cron timekeeper, supervision, and every job's own start and completion
+ * writes, plus the web sends when web and worker share the process. On two
+ * sockets those queued behind each other; four keep a fetch from waiting on
+ * a completion. The connections come out of the same per-process budget.
+ */
+const PG_BOSS_PRODUCER_CONNECTIONS = 2;
+const PG_BOSS_WORKER_CONNECTIONS = 4;
 
 function positiveInteger(raw: string | undefined): number | null {
   if (!raw) return null;
@@ -53,8 +64,14 @@ export function getConnectionBudget(): number {
   return Math.max(2, configured);
 }
 
-export function getPgBossPoolMax(): number {
-  return Math.min(PG_BOSS_CONNECTIONS, getConnectionBudget() - 1);
+export function getPgBossPoolMax(
+  role: "worker" | "producer" = shouldRunWorker() ? "worker" : "producer",
+): number {
+  const wanted =
+    role === "worker"
+      ? PG_BOSS_WORKER_CONNECTIONS
+      : PG_BOSS_PRODUCER_CONNECTIONS;
+  return Math.min(wanted, getConnectionBudget() - 1);
 }
 
 export function getPrismaPoolMax(): number {
@@ -129,7 +146,13 @@ export function getWorkMem(): string {
  * session carries them from the first query.
  *
  * The timeouts are left out when disabled (timeout 0); `work_mem` is always
- * set. Up to v1.41 the whole string was `undefined` at timeout 0, which would
+ * set, and so is `jit=off`. Postgres compiles a statement to machine code
+ * once its estimated cost passes `jit_above_cost`, which every analytics
+ * fold over a year of readings does; on the benchmark account that
+ * compilation took 100 to 140 ms of a 220 ms statement and saved nothing,
+ * because these statements run once and are bound by reading rows, not by
+ * evaluating expressions. JIT changes how a plan runs, never what it
+ * returns. Up to v1.41 the whole string was `undefined` at timeout 0, which would
  * have taken `work_mem` with it. `undefined` now means exactly one thing:
  * the operator turned the startup options off for a connection pooler
  * ({@link sessionOptionsDisabled}).
@@ -141,7 +164,7 @@ export function buildSessionOptions(): string | undefined {
     timeoutMs > 0
       ? `-c statement_timeout=${timeoutMs} -c idle_in_transaction_session_timeout=${timeoutMs} `
       : "";
-  return `${timeouts}-c work_mem=${getWorkMem()} ${TIME_ZONE_OPTION}`;
+  return `${timeouts}-c work_mem=${getWorkMem()} -c jit=off ${TIME_ZONE_OPTION}`;
 }
 
 export function prismaPoolConfig(): PoolConfig {

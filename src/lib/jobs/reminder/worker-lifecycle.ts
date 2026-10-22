@@ -16,30 +16,55 @@ import { withBackgroundEvent } from "@/lib/logging/background";
 
 import { getWorkerPrisma, workerLog } from "./shared";
 
+/** How long running jobs get to finish on a stop signal. */
+export const SHUTDOWN_JOB_TIMEOUT_MS = 30_000;
+
 /**
  * Graceful shutdown: drain in-flight jobs on SIGTERM/SIGINT (sent by Docker
  * Compose `docker stop`, Kubernetes pod termination, Coolify redeploys).
- * Without this, pending handlers were force-killed and could either be lost
- * or replayed on next start. The listeners register once — re-entering the
- * worker boot (e.g. on hot-reload in dev) is a no-op for the handlers because
- * they capture `boss` by closure and the first signal stops everything.
+ *
+ * Next's own signal handler closes the HTTP server (finishing the requests
+ * in flight) and then calls `process.exit`. That exit used to win the race
+ * against `boss.stop`, so a running job was cut off mid-way and stayed
+ * `active` until its expiry, which kept an exclusive queue blocked. The
+ * handler therefore holds `process.exit` until the boss has stopped: both
+ * drains run side by side, the process leaves when the slower one is done,
+ * and never later than {@link SHUTDOWN_JOB_TIMEOUT_MS} plus a margin, so a
+ * stuck handler cannot block a deploy. Compose gives the container 45 s
+ * (`stop_grace_period`) for this.
+ *
+ * The listeners register once; re-entering the worker boot (hot reload in
+ * dev) is a no-op for them because the first signal stops everything.
  */
-export function registerShutdownHandlers(boss: PgBoss): void {
-  let shutdownInProgress = false;
-  const onSignal = async (signal: "SIGTERM" | "SIGINT") => {
-    if (shutdownInProgress) return;
-    shutdownInProgress = true;
+export function registerShutdownHandlers(
+  boss: Pick<PgBoss, "stop">,
+  proc: Pick<NodeJS.Process, "once" | "exit"> = process,
+): void {
+  let drained: Promise<void> | null = null;
+  const onSignal = (signal: "SIGTERM" | "SIGINT") => {
+    if (drained) return;
     workerLog("error", `received ${signal}, draining boss`);
-    try {
-      // graceful=true waits for active handlers to finish, then closes the
-      // pg connection pool. timeout cap so a stuck handler can't block deploys.
-      await boss.stop({ graceful: true, timeout: 30_000 });
-    } catch (err) {
-      workerLog("error", "boss.stop failed during shutdown", err);
-    }
+    // graceful=true waits for active handlers to finish, then closes the
+    // pg connection pool. The timeout caps it.
+    drained = boss
+      .stop({ graceful: true, timeout: SHUTDOWN_JOB_TIMEOUT_MS })
+      .catch((err: unknown) => {
+        workerLog("error", "boss.stop failed during shutdown", err);
+      });
+    const exit = proc.exit.bind(proc);
+    const deadline = new Promise<void>((resolve) =>
+      setTimeout(resolve, SHUTDOWN_JOB_TIMEOUT_MS + 5_000).unref(),
+    );
+    let exiting = false;
+    proc.exit = ((code?: number | string | null) => {
+      if (exiting) return undefined as never;
+      exiting = true;
+      void Promise.race([drained, deadline]).finally(() => exit(code));
+      return undefined as never;
+    }) as typeof proc.exit;
   };
-  process.once("SIGTERM", () => void onSignal("SIGTERM"));
-  process.once("SIGINT", () => void onSignal("SIGINT"));
+  proc.once("SIGTERM", () => onSignal("SIGTERM"));
+  proc.once("SIGINT", () => onSignal("SIGINT"));
 }
 
 /**

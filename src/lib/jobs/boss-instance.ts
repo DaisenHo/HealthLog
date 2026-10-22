@@ -74,10 +74,13 @@ export function getGlobalBoss(): PgBoss | null {
   return ((globalThis as Record<string, unknown>)[BOSS_KEY] as PgBoss) ?? null;
 }
 
-function databaseOptions(connectionString: string) {
+function databaseOptions(
+  connectionString: string,
+  role: "worker" | "producer",
+) {
   return {
     connectionString,
-    max: getPgBossPoolMax(),
+    max: getPgBossPoolMax(role),
     connectionTimeoutMillis: getPoolConnectionTimeoutMs(),
     // pg-boss keeps its own tables in `timestamptz`, so its queue math does
     // not depend on the zone; the pin keeps every HealthLog session alike.
@@ -86,12 +89,12 @@ function databaseOptions(connectionString: string) {
 }
 
 export function createWorkerBoss(connectionString: string): PgBoss {
-  return new PgBoss(databaseOptions(connectionString));
+  return new PgBoss(databaseOptions(connectionString, "worker"));
 }
 
 function producerOptions(connectionString: string) {
   return {
-    ...databaseOptions(connectionString),
+    ...databaseOptions(connectionString, "producer"),
     migrate: false,
     schedule: false,
     supervise: false,

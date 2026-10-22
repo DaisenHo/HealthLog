@@ -21,6 +21,51 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// The route's dense read is one statement (`dense-series-read.ts`, held to
+// the two statements it replaced by an integration parity test). Here it
+// issues those two statements again, so the route's shaping of buckets and
+// figures is pinned against the same queued results as before.
+vi.mock("@/lib/measurements/dense-series-read", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/lib/measurements/dense-series-read")
+    >();
+  const { usesHourlyMeanDay } =
+    await import("@/lib/measurements/day-statistic");
+  return {
+    ...actual,
+    readDenseSeries: async (args: {
+      userId: string;
+      type: Parameters<typeof usesHourlyMeanDay>[0];
+      grain: "day" | "hour";
+      userTz: string;
+      since: Date;
+      seriesRows: string;
+    }) => {
+      const { prisma } = await import("@/lib/db");
+      const hourWeighted = args.grain === "day" && usesHourlyMeanDay(args.type);
+      const bucketRows = await prisma.$queryRawUnsafe(
+        actual.denseBucketsSql(
+          hourWeighted,
+          `${args.seriesRows} WHERE m."measured_at" >= $4`,
+        ),
+        args.userId,
+        args.grain,
+        args.userTz,
+        args.since,
+      );
+      const [rawAgg] = (await prisma.$queryRawUnsafe(
+        `WITH src AS (SELECT m.* FROM ${args.seriesRows} WHERE m."measured_at" >= $4) ${actual.denseFiguresSql(usesHourlyMeanDay(args.type))}`,
+        args.userId,
+        args.grain,
+        args.userTz,
+        args.since,
+      )) as unknown[];
+      return { bucketRows, rawAgg };
+    },
+  };
+});
+
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 
 // v1.11.4 — the sleep branch resolves the user's tz to bucket per-night;

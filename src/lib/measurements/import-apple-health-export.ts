@@ -19,6 +19,10 @@
  *
  * Locks per `.planning/research/v1434-r-1-xml-import.md` §6.
  */
+import {
+  adoptNaturalKeyTwin,
+  storedUnchangedKeys,
+} from "@/lib/measurements/import-unchanged-rows";
 import { createReadStream } from "node:fs";
 import { createHash } from "node:crypto";
 import { StringDecoder } from "node:string_decoder";
@@ -856,6 +860,15 @@ export async function streamParseExportXml(
       else createdByKey.set(key, [created]);
     }
 
+    // Rows already stored as they are: counted, not written (see module).
+    const unchanged = await storedUnchangedKeys(
+      prisma,
+      userId,
+      chunk,
+      (r, i) =>
+        failedInsertIndexes.has(i) ||
+        createdByKey.has(`${r.type}::${r.externalId}`),
+    );
     for (let index = 0; index < chunk.length; index += 1) {
       const row = chunk[index];
       const stat = bumpStat(row.type);
@@ -868,6 +881,11 @@ export async function streamParseExportXml(
       }
 
       const key = `${row.type}::${row.externalId}`;
+      if (unchanged.has(key)) {
+        stat.updated += 1;
+        rowsUpserted += 1;
+        continue;
+      }
       const inserted = createdByKey.get(key)?.shift();
       if (inserted) {
         stat.inserted += 1;
@@ -906,38 +924,13 @@ export async function streamParseExportXml(
           err instanceof Prisma.PrismaClientKnownRequestError &&
           (err.code === "P2002" || err.code === "P2025")
         ) {
-          try {
-            const twin = await prisma.measurement.findFirst({
-              where: {
-                userId,
-                type: row.type,
-                source: "APPLE_HEALTH",
-                measuredAt: row.measuredAt,
-                sleepStage: row.sleepStage ?? null,
-              },
-              select: { id: true },
-            });
-            if (twin) {
-              await prisma.measurement.update({
-                where: { id: twin.id },
-                data: {
-                  value: row.value,
-                  unit: row.unit,
-                  externalId: row.externalId,
-                  externalSourceVersion: row.externalSourceVersion,
-                  deviceType: row.deviceType,
-                  deletedAt: null,
-                },
-              });
-              stat.updated += 1;
-              rowsUpserted += 1;
-            } else {
-              unknown[`${row.type}::natural_key_unresolved`] =
-                (unknown[`${row.type}::natural_key_unresolved`] ?? 0) + 1;
-            }
-          } catch {
-            unknown[`${row.type}::natural_key_rescue_failed`] =
-              (unknown[`${row.type}::natural_key_rescue_failed`] ?? 0) + 1;
+          const adopted = await adoptNaturalKeyTwin(prisma, userId, row);
+          if (adopted === "updated") {
+            stat.updated += 1;
+            rowsUpserted += 1;
+          } else {
+            unknown[`${row.type}::${adopted}`] =
+              (unknown[`${row.type}::${adopted}`] ?? 0) + 1;
           }
         } else {
           unknown[`${row.type}::upsert_failed`] =

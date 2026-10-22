@@ -1,5 +1,9 @@
+import { currentBootStep } from "@/lib/boot/boot-steps";
+import { startupPhase } from "@/lib/boot/startup-state";
 import { WideEventBuilder } from "@/lib/logging/event-builder";
 import { emitIfSampled } from "@/lib/logging/transports";
+
+import { inFlightRegistry } from "./in-flight";
 
 /**
  * Event-loop lag monitor — the instance-level "was the PROCESS stalled"
@@ -23,6 +27,13 @@ import { emitIfSampled } from "@/lib/logging/transports";
  * sampling timer races a sibling read-and-reset interval inside the
  * same timers phase, and the stall sample can vanish into the window
  * that was just reset (reproduced under vitest).
+ *
+ * Attribution: a stall line says what the process was doing. It carries the
+ * process uptime, the background role's startup phase, the boot step that
+ * was running (`boot-steps.ts`), and the oldest requests and jobs in flight
+ * with the routes most of them share, the same report the heap pressure line
+ * writes. The monitor is the first thing `register()` starts, so the loading
+ * of the database client and of the worker graph is inside its view.
  *
  * The snapshot is published on a `globalThis` slot rather than imported
  * by the event builder: the builder is bundled into the Edge-runtime
@@ -56,19 +67,52 @@ type GlobalSlots = {
   [STARTED]?: boolean;
 };
 
+/** What a stall line says. */
+export interface EventLoopStall {
+  lag_ms: number;
+  tick_interval_ms: number;
+  uptime_s: number;
+  startup_phase: string | null;
+  boot_step: string | null;
+  in_flight_oldest: unknown[];
+  in_flight_by_route: unknown[];
+}
+
 export interface EventLoopLagMonitorOptions {
   tickIntervalMs?: number;
   stallThresholdMs?: number;
   /** Test seam — replaces the wide-event emit. */
-  emitStall?: (stall: { lag_ms: number; tick_interval_ms: number }) => void;
+  emitStall?: (stall: EventLoopStall) => void;
 }
 
-function defaultEmitStall(stall: {
-  lag_ms: number;
-  tick_interval_ms: number;
-}): void {
+/** The attribution a stall carries; never throws. */
+export function stallAttribution(
+  now: number = Date.now(),
+): Omit<EventLoopStall, "lag_ms" | "tick_interval_ms"> {
+  let inFlight: { oldest: unknown[]; by_route: unknown[] } = {
+    oldest: [],
+    by_route: [],
+  };
+  try {
+    inFlight = inFlightRegistry().report(now, 5);
+  } catch {
+    // The report is a garnish.
+  }
+  return {
+    uptime_s: Math.round(process.uptime() * 10) / 10,
+    startup_phase: startupPhase(now),
+    boot_step: currentBootStep(),
+    in_flight_oldest: inFlight.oldest,
+    in_flight_by_route: inFlight.by_route,
+  };
+}
+
+function defaultEmitStall(stall: EventLoopStall): void {
   const evt = new WideEventBuilder("background");
-  evt.setBackground({ task_name: "event_loop_stall", result: stall });
+  evt.setBackground({
+    task_name: "event_loop_stall",
+    result: stall as unknown as Record<string, unknown>,
+  });
   evt.elevateLevel("warn");
   evt.finish();
   emitIfSampled(evt.toJSON());
@@ -110,6 +154,7 @@ export function startEventLoopLagMonitor(
       emitStall({
         lag_ms: Math.round(lagMs),
         tick_interval_ms: tickIntervalMs,
+        ...stallAttribution(),
       });
     }
 

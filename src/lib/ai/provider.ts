@@ -1,4 +1,5 @@
 import type { AIProvider, CompletionResult } from "./types";
+import { readOperatorRow } from "@/lib/settings/operator-row";
 import { bindResponseTimeout } from "./effective-timeout";
 import { bindReasoningEffort } from "./reasoning-effort";
 import { prisma } from "@/lib/db";
@@ -1145,16 +1146,6 @@ const PRESENCE_USER_SELECT = {
   aiResponseTimeoutSeconds: true,
 } as const;
 
-const PRESENCE_SETTINGS_SELECT = {
-  adminAiKeyEncrypted: true,
-  adminAiModel: true,
-  adminAiBaseUrl: true,
-  adminCodexConnectionStatus: true,
-  adminCodexAccessTokenEncrypted: true,
-  adminCodexRefreshTokenEncrypted: true,
-  adminCodexAccountIdEncrypted: true,
-} as const;
-
 const NO_PRESENCE: ProviderPresence = Object.freeze({
   entries: [],
   localOcrEnabled: false,
@@ -1217,10 +1208,7 @@ export function probeProviderChain(
           where: { id: recordId },
           select: PRESENCE_USER_SELECT,
         }),
-        prisma.appSettings.findUnique({
-          where: { id: "singleton" },
-          select: PRESENCE_SETTINGS_SELECT,
-        }),
+        readOperatorRow(),
       ]);
       if (!row) return NO_PRESENCE;
       const policy = providerCredentialPolicy(authority, row.managedProfileAt);

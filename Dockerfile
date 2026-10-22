@@ -108,6 +108,9 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # Copy built assets
 COPY --from=builder /app/public ./public
+# The server reads its message catalogs from here on first use, one locale at
+# a time (src/lib/i18n/server-catalogs.ts); they are not bundled.
+COPY --from=builder /app/messages ./messages
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Next's standalone output must carry the externalized worker dependencies.

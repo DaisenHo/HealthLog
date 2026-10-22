@@ -551,16 +551,14 @@ export async function metricStatusDiscoveryRows(userId: string): Promise<
 //
 // Every OTHER measurement type is still entered, value-less, because
 // ambiguity has to be judged over the whole label space rather than over the
-// exposed slice of it. French and Italian once called body fat and fat mass
-// by one phrase ("masse grasse" / "massa grassa") while only one of the two
-// was exposed, so an index that knew about the exposed one alone would have
-// seen no collision and answered kilograms to someone who asked for a
-// percentage. Those labels are distinct now; the whole-space check stays so a
-// future bundle cannot reintroduce the trap unseen.
-//
-// The alias tables stay as they are and stay English: `resting_hr`, `spo2`,
-// `vo2max` are protocol slugs, not translations of anything.
-const LOCALISED_METRIC_INDEX = (() => {
+// exposed slice of it: French and Italian once named body fat and fat mass
+// alike while only one was exposed, which answered kilograms to a question
+// about a percentage. The alias tables stay English (`resting_hr`, `spo2`
+// are protocol slugs). Built on first use: the index reads every catalog.
+let metricIndex: ReturnType<typeof buildLocalisedMetricIndex> | undefined;
+const localisedMetricIndex = () =>
+  (metricIndex ??= buildLocalisedMetricIndex());
+function buildLocalisedMetricIndex() {
   const exposed = new Map<MeasurementType, RichMetric>();
   const claim = (metric: RichMetric | null) => {
     if (metric && !exposed.has(metric.measurementType)) {
@@ -579,7 +577,7 @@ const LOCALISED_METRIC_INDEX = (() => {
     value: exposed.get(type as MeasurementType) ?? null,
   }));
   return buildLocalisedLabelIndex(entries);
-})();
+}
 
 /**
  * Words two different measurement types claim in some bundle, and which
@@ -587,8 +585,9 @@ const LOCALISED_METRIC_INDEX = (() => {
  * is empty: a NEW member is a regression to look at rather than something to
  * resolve by coin flip.
  */
-export const LOCALISED_METRIC_NAME_COLLISIONS: ReadonlySet<string> =
-  LOCALISED_METRIC_INDEX.ambiguous;
+export function localisedMetricNameCollisions(): ReadonlySet<string> {
+  return localisedMetricIndex().ambiguous;
+}
 
 /**
  * Resolve a free-text metric name to a single scalar series. Forgiving for an
@@ -632,7 +631,7 @@ export function resolveRichMetric(input: string): RichMetric | null {
   // on PULSE_WAVE_VELOCITY, because "pulse-wave velocity" contains "puls".
   // A value-less hit (a metric this surface does not expose) falls through
   // rather than short-circuiting, so the English behaviour below is untouched.
-  const localised = LOCALISED_METRIC_INDEX.index.get(foldLabel(raw));
+  const localised = localisedMetricIndex().index.get(foldLabel(raw));
   if (localised) return localised;
 
   // 5. English display-name substring match (e.g. "heart-rate variability").

@@ -67,6 +67,14 @@ import {
   type MergeCandidate,
 } from "@/lib/measurements/cross-source-merge";
 import {
+  externalKeyOf,
+  onceInBatch,
+  readStoredSampleIdentities,
+  readStoredStatsRows,
+  sampleIsStoredDuplicate,
+  statsWriteUnchanged,
+} from "@/lib/measurements/batch-stored-rows";
+import {
   lockMeasurementUser,
   reconcileExternalMeasurement,
   type MeasurementReconciliationVerdict,
@@ -643,6 +651,12 @@ async function postBatch(request: NextRequest): Promise<Response> {
 
   let insertedCount = 0;
   let updatedCount = 0;
+  /**
+   * `stats:` re-posts reported `updated` with nothing to write (see
+   * `isUnchangedStatsRow`). Counted in the response's `updated` like before,
+   * and in nothing that starts work.
+   */
+  let unchangedStatsCount = 0;
   let duplicateCount = 0;
   let failedCount = 0;
   // v1.44 — subset of `insertedCount` written by the set-based insert.
@@ -769,82 +783,52 @@ async function postBatch(request: NextRequest): Promise<Response> {
     // before this one is reached, and then the reconciler has to decide.
     // `stats:` rows are never prefiltered (overwrite semantics), and neither
     // is a value the reconciler's own plausibility gate would refuse.
-    const externalKeyCounts = new Map<string, number>();
-    const naturalKeyCounts = new Map<string, number>();
-    const naturalKeyOf = (
-      type: unknown,
-      source: unknown,
-      measuredAt: Date,
-      sleepStage: unknown,
-    ) => `${type}::${source}::${measuredAt.getTime()}::${sleepStage ?? "null"}`;
-    for (const p of prepared) {
-      const externalKey = `${p.row.type}::${p.row.source}::${p.row.externalId}`;
-      externalKeyCounts.set(
-        externalKey,
-        (externalKeyCounts.get(externalKey) ?? 0) + 1,
-      );
-      const naturalKey = naturalKeyOf(
-        p.row.type,
-        p.row.source,
-        p.row.measuredAt as Date,
-        p.row.sleepStage,
-      );
-      naturalKeyCounts.set(
-        naturalKey,
-        (naturalKeyCounts.get(naturalKey) ?? 0) + 1,
-      );
-    }
-    const sampleExternalIds = [
+    const onceInThisBatch = onceInBatch(prepared.map((p) => p.row));
+    const existingByExternalKey = await readStoredSampleIdentities(
+      prisma,
+      user.id,
+      [
+        ...new Set(
+          prepared
+            .map((p) => p.row.externalId as string)
+            .filter((externalId) => !isStatsExternalId(externalId)),
+        ),
+      ],
+    );
+    const isExactStoredDuplicate = (p: Prepared): boolean =>
+      sampleIsStoredDuplicate(
+        existingByExternalKey.get(
+          externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+        ),
+        p.row,
+      ) &&
+      onceInThisBatch(p.row) &&
+      classifyRangeRejection(
+        p.row.type as MeasurementType,
+        p.row.value as number,
+      ) === null;
+
+    // An unchanged `stats:` re-post is reported `updated` without a write
+    // (see `batch-stored-rows.ts`), under the same once-per-batch key rule.
+    const storedStats = await readStoredStatsRows(prisma, user.id, [
       ...new Set(
         prepared
           .map((p) => p.row.externalId as string)
-          .filter((externalId) => !isStatsExternalId(externalId)),
+          .filter((externalId) => isStatsExternalId(externalId)),
       ),
-    ];
-    const existingByExternalKey = new Map<
-      string,
-      { measuredAt: Date; sleepStage: unknown }
-    >();
-    if (sampleExternalIds.length > 0) {
-      const existing = await prisma.measurement.findMany({
-        where: { userId: user.id, externalId: { in: sampleExternalIds } },
-        select: {
-          type: true,
-          source: true,
-          externalId: true,
-          measuredAt: true,
-          sleepStage: true,
-        },
-      });
-      for (const row of existing) {
-        existingByExternalKey.set(
-          `${row.type}::${row.source}::${row.externalId}`,
-          { measuredAt: row.measuredAt, sleepStage: row.sleepStage },
-        );
-      }
-    }
-    function isExactStoredDuplicate(p: Prepared): boolean {
-      const externalKey = `${p.row.type}::${p.row.source}::${p.row.externalId}`;
-      const stored = existingByExternalKey.get(externalKey);
-      if (!stored) return false;
-      const measuredAt = p.row.measuredAt as Date;
-      const naturalKey = naturalKeyOf(
-        p.row.type,
-        p.row.source,
-        measuredAt,
-        p.row.sleepStage,
+    ]);
+    const isUnchangedStatsRow = (p: Prepared): boolean =>
+      onceInThisBatch(p.row) &&
+      classifyRangeRejection(
+        p.row.type as MeasurementType,
+        p.row.value as number,
+      ) === null &&
+      statsWriteUnchanged(
+        storedStats.get(
+          externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+        ),
+        desiredFor(p),
       );
-      return (
-        stored.measuredAt.getTime() === measuredAt.getTime() &&
-        (stored.sleepStage ?? null) === (p.row.sleepStage ?? null) &&
-        externalKeyCounts.get(externalKey) === 1 &&
-        naturalKeyCounts.get(naturalKey) === 1 &&
-        classifyRangeRejection(
-          p.row.type as MeasurementType,
-          p.row.value as number,
-        ) === null
-      );
-    }
 
     // v1.42 — the `folded_window` guard (`folded-window.ts`). A raw Apple
     // Health sample of a dense or mean type, old enough to have been folded,
@@ -1063,6 +1047,13 @@ async function postBatch(request: NextRequest): Promise<Response> {
         continue;
       }
 
+      if (statsRow && isUnchangedStatsRow(p)) {
+        results[p.index] = { index: p.index, status: "updated" };
+        unchangedStatsCount++;
+        pushMergeCandidate(p);
+        continue;
+      }
+
       if (!statsRow && hasSameReadingSibling(p)) {
         results[p.index] = {
           index: p.index,
@@ -1093,16 +1084,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
         continue;
       }
 
-      const naturalKey = naturalKeyOf(
-        p.row.type,
-        p.row.source,
-        p.row.measuredAt as Date,
-        p.row.sleepStage,
-      );
-      if (
-        externalKeyCounts.get(key) === 1 &&
-        naturalKeyCounts.get(naturalKey) === 1
-      ) {
+      if (onceInThisBatch(p.row)) {
         pendingInserts.push(p);
         pushMergeCandidate(p);
         continue;
@@ -1311,7 +1293,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     details: {
       processed: entries.length,
       inserted: insertedCount,
-      updated: updatedCount,
+      updated: updatedCount + unchangedStatsCount,
       duplicates: duplicateCount,
       skipped: skipped.length,
       failed: failedCount,
@@ -1449,7 +1431,8 @@ async function postBatch(request: NextRequest): Promise<Response> {
     meta: {
       processed: entries.length,
       inserted: insertedCount,
-      updated: updatedCount,
+      updated: updatedCount + unchangedStatsCount,
+      stats_unchanged: unchangedStatsCount,
       duplicates: duplicateCount,
       skipped: skipped.length,
       // v1.32.1 (issue #585) — per-reason skip breakdown; see the
@@ -1497,7 +1480,17 @@ async function postBatch(request: NextRequest): Promise<Response> {
       syncTrigger === "foreground" ||
       syncTrigger === "manual" ||
       wroteManualRow;
-    invalidateUserMeasurements(user.id, evict ? { evict: true } : undefined);
+    // Every row this batch created, changed or retired is in
+    // `writtenIdentities`, so its earliest `measuredAt` bounds what changed:
+    // closed blocks of older readings (the pre-fold remainder, the day
+    // view's past history blocks) stay cached across the sync.
+    const touchedFrom = new Date(
+      Math.min(...writtenIdentities.map((w) => w.measuredAt.getTime())),
+    );
+    invalidateUserMeasurements(user.id, {
+      ...(evict ? { evict: true } : {}),
+      ...(Number.isFinite(touchedFrom.getTime()) ? { touchedFrom } : {}),
+    });
 
     // v1.37.19 — shared post-mutation tail for every distinct
     // (type, day) the batch touched. Updates participate as well as
@@ -1563,7 +1556,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   const response = apiSuccess({
     processed: entries.length,
     inserted: insertedCount + hourInsertedCount,
-    updated: updatedCount + hourUpdatedCount,
+    updated: updatedCount + unchangedStatsCount + hourUpdatedCount,
     duplicates: duplicateCount,
     failed: failedCount,
     skipped,

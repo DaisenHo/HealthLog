@@ -16,6 +16,7 @@
  * out; the operator/CLI escape hatch (`scripts/disable-mfa.ts`, toggling the
  * policy off) is the recovery path of last resort.
  */
+import { readOperatorRow } from "@/lib/settings/operator-row";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
@@ -44,10 +45,7 @@ export async function resolveMfaEnrollmentRequired(
   // Already has a confirmed TOTP secret → enrolled, nothing required.
   if (user.totpConfirmedAt) return false;
 
-  const settings = await prisma.appSettings.findUnique({
-    where: { id: "singleton" },
-    select: { mfaRequired: true },
-  });
+  const settings = await readOperatorRow();
   const policyApplies = Boolean(settings?.mfaRequired) || user.mfaEnforced;
   if (!policyApplies) return false;
 

@@ -508,6 +508,11 @@ services:
     # support report and Admin > System status say so. On a busy instance,
     # raise it with APP_MEMORY_LIMIT in .env; do not lower it.
     mem_limit: "${APP_MEMORY_LIMIT:-1536m}"
+    # On `docker stop` (a redeploy) the app stops taking requests, lets the
+    # requests in flight finish and gives running jobs up to 30 s to end
+    # before it exits. Docker's default of 10 s cut that short and left
+    # jobs marked active until their expiry, holding exclusive queues.
+    stop_grace_period: 45s
     healthcheck:
       test:
         [
@@ -564,6 +569,7 @@ services:
   #       max-size: "10m"
   #       max-file: "3"
   #   mem_limit: "${WORKER_MEMORY_LIMIT:-1536m}"
+  #   stop_grace_period: 45s
 
   db:
     # Pinned to the concrete minor instead of the floating `16-alpine`

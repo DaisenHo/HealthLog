@@ -74,7 +74,7 @@ import {
 import { shiftDateKey } from "@/lib/tz/format";
 import {
   pickCanonicalWorkoutRows,
-  workoutDuplicateSlotKey,
+  workoutDuplicateClusterKeys,
   workoutSourceLadder,
   type WorkoutPickerRow,
 } from "@/lib/measurements/pick-canonical-workout-rows";
@@ -591,7 +591,7 @@ export function canonicalDayActiveEnergy<
  * one source's rows count: the best-ranked on the ladder, a source off the
  * ladder ranking below every listed one, and among sources off the ladder
  * the one with the largest impulse. Rows of that one source still add up
- * (two distinct sessions of the same sport in one five-minute slot).
+ * (two distinct sessions of the same sport in one duplicate cluster).
  * Returns the positive impulses, one per session. Pure; exported for tests.
  */
 export function canonicalWorkoutTrimps<
@@ -615,9 +615,9 @@ export function canonicalWorkoutTrimps<
     string,
     { picked: Map<string, number>; dropped: number }
   >();
-  for (const row of rows) {
-    const key = workoutDuplicateSlotKey(row);
-    const slot = slots.get(key) ?? { picked: new Map(), dropped: 0 };
+  const keys = workoutDuplicateClusterKeys(rows);
+  for (const [index, row] of rows.entries()) {
+    const slot = slots.get(keys[index]!) ?? { picked: new Map(), dropped: 0 };
     const trimp = trimpOf(row);
     if (trimp > 0) {
       if (picked.has(row.id)) {
@@ -626,7 +626,7 @@ export function canonicalWorkoutTrimps<
         slot.dropped = Math.max(slot.dropped, trimp);
       }
     }
-    slots.set(key, slot);
+    slots.set(keys[index]!, slot);
   }
   const out: number[] = [];
   for (const slot of slots.values()) {

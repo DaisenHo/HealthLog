@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2959,
-  "total": 10525,
+  "total": 10524,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1885,7 +1885,7 @@
     "lib/analytics/sleep-night.ts": 3,
     "lib/analytics/source-priority.ts": 2,
     "lib/analytics/source-rank-sql.ts": 3,
-    "lib/analytics/summaries-slice.ts": 37,
+    "lib/analytics/summaries-slice.ts": 36,
     "lib/analytics/trend-delta.ts": 1,
     "lib/analytics/trends.ts": 6,
     "lib/analytics/value-bands.ts": 1,

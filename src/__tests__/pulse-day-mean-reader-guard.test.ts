@@ -93,7 +93,6 @@ const HELPER: Entry = { helper: true };
 
 /** Files with a database mean over values. */
 const SQL_READERS: Record<string, Entry> = {
-  "app/api/measurements/series/route.ts": HELPER,
   "lib/ai/coach/tools/availability.ts": HELPER,
   "lib/analytics/summaries-slice.ts": HELPER,
   "lib/doctor-report/dense-buckets.ts": HELPER,
@@ -102,6 +101,8 @@ const SQL_READERS: Record<string, Entry> = {
   // The dry run's hour means, weighed by both methods through the helper.
   "lib/jobs/pulse-day-mean.ts": HELPER,
   "lib/measurements/daily-series-read.ts": HELPER,
+  // The series route's long-window dense read.
+  "lib/measurements/dense-series-read.ts": HELPER,
   "lib/rollups/measurement-rollups.ts": HELPER,
   "lib/rollups/tiered-context.ts": HELPER,
   "lib/insights/correlation-channel-series.ts": {

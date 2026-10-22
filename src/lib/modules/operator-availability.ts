@@ -36,7 +36,7 @@
  * 0343 folded the blob's `coach` key into the switch and removed it, and a
  * `coach` key that still turns up in the blob is ignored.
  */
-import { prisma } from "@/lib/db";
+import { readOperatorRow } from "@/lib/settings/operator-row";
 import { getAssistantFlags } from "@/lib/feature-flags";
 import { getEvent } from "@/lib/logging/context";
 import { memoizePerRequest } from "@/lib/request-cache";
@@ -84,10 +84,7 @@ export function resolveOperatorAvailability(
 /** The raw availability blob; a read error reads as "nothing disabled". */
 async function loadAvailabilityBlob(): Promise<unknown> {
   try {
-    const settings = await prisma.appSettings.findUnique({
-      where: { id: "singleton" },
-      select: { moduleAvailabilityJson: true },
-    });
+    const settings = await readOperatorRow();
     return settings?.moduleAvailabilityJson ?? null;
   } catch {
     getEvent()?.addWarning(

@@ -21,8 +21,10 @@ describe("per-process database connection budget", () => {
   const originalConnectionLimit = process.env.DB_CONNECTION_LIMIT;
   const originalPoolTimeout = process.env.DB_POOL_TIMEOUT;
   const originalLegacyPoolMax = process.env.DATABASE_POOL_MAX;
+  const originalProcessType = process.env.HEALTHLOG_PROCESS_TYPE;
 
   beforeEach(() => {
+    process.env.HEALTHLOG_PROCESS_TYPE = "web";
     process.env.DATABASE_URL =
       "postgresql://healthlog:test@db:5432/healthlog?connection_limit=20&pool_timeout=20";
     delete process.env.DB_CONNECTION_LIMIT;
@@ -39,6 +41,7 @@ describe("per-process database connection budget", () => {
     restore("DB_CONNECTION_LIMIT", originalConnectionLimit);
     restore("DB_POOL_TIMEOUT", originalPoolTimeout);
     restore("DATABASE_POOL_MAX", originalLegacyPoolMax);
+    restore("HEALTHLOG_PROCESS_TYPE", originalProcessType);
   });
 
   it("splits the URL connection_limit across Prisma and pg-boss", () => {
@@ -46,6 +49,17 @@ describe("per-process database connection budget", () => {
     expect(getPrismaPoolMax()).toBe(18);
     expect(getPgBossPoolMax()).toBe(2);
     expect(getPrismaPoolMax() + getPgBossPoolMax()).toBe(getConnectionBudget());
+  });
+
+  it("gives a process that runs the worker four pg-boss connections", () => {
+    for (const role of ["all", "worker"]) {
+      process.env.HEALTHLOG_PROCESS_TYPE = role;
+      expect(getPgBossPoolMax()).toBe(4);
+      expect(getPrismaPoolMax()).toBe(16);
+    }
+    process.env.DB_CONNECTION_LIMIT = "3";
+    expect(getPgBossPoolMax()).toBe(2);
+    expect(getPrismaPoolMax()).toBe(1);
   });
 
   it("uses the existing pool_timeout seconds for both pool constructors", () => {
@@ -138,14 +152,14 @@ describe("buildSessionOptions", () => {
   it("keeps work_mem when the timeout is disabled", () => {
     process.env.DATABASE_STATEMENT_TIMEOUT_MS = "0";
     delete process.env.DATABASE_WORK_MEM;
-    expect(buildSessionOptions()).toBe("-c work_mem=16MB -c TimeZone=UTC");
+    expect(buildSessionOptions()).toBe("-c work_mem=16MB -c jit=off -c TimeZone=UTC");
   });
 
   it("sets the default work_mem beside the timeouts", () => {
     delete process.env.DATABASE_STATEMENT_TIMEOUT_MS;
     delete process.env.DATABASE_WORK_MEM;
     expect(buildSessionOptions()).toBe(
-      "-c statement_timeout=60000 -c idle_in_transaction_session_timeout=60000 -c work_mem=16MB -c TimeZone=UTC",
+      "-c statement_timeout=60000 -c idle_in_transaction_session_timeout=60000 -c work_mem=16MB -c jit=off -c TimeZone=UTC",
     );
   });
 

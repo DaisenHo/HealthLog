@@ -127,6 +127,16 @@ function assertInterval(value: string): string {
  * is whitelisted and, when given, scopes both the inner pick and the outer
  * filter to a trailing window. `onlyType`, when given, scopes both halves to
  * that one metric.
+ *
+ * The pick groups before it sorts. Its order (rank, then source name) depends
+ * only on a row's `(type, source)`, so every reading of one source on one day
+ * sorts alike, and the distinct `(type, day, source)` triples carry the whole
+ * decision. A hash aggregate reduces the window's rows to those triples (a
+ * few thousand) and `DISTINCT ON` sorts only them; sorting every raw row by
+ * a CASE expression no index can supply spilled to disk on a large account.
+ * The picked source per day is the same by construction;
+ * `tests/integration/canonical-source-pick-parity.test.ts` holds the old
+ * statement as its reference.
  */
 export function canonicalMeasurementsCte(
   rankUnqualified: string,
@@ -152,16 +162,20 @@ export function canonicalMeasurementsCte(
         SELECT mm.*
         FROM measurements mm
         JOIN (
-          SELECT DISTINCT ON ("type", date_trunc('day', "measured_at"))
-            "type"                           AS t,
-            date_trunc('day', "measured_at") AS d,
-            "source"                         AS canon
-          FROM measurements
-          WHERE "user_id" = $1
-            AND "deleted_at" IS NULL
-            ${sinceInner}
-            ${typeInner}
-          ORDER BY "type", date_trunc('day', "measured_at"), (${rankUnqualified}), "source"::text
+          SELECT DISTINCT ON ("type", d)
+            "type"   AS t,
+            d,
+            "source" AS canon
+          FROM (
+            SELECT "type", date_trunc('day', "measured_at") AS d, "source"
+            FROM measurements
+            WHERE "user_id" = $1
+              AND "deleted_at" IS NULL
+              ${sinceInner}
+              ${typeInner}
+            GROUP BY "type", date_trunc('day', "measured_at"), "source"
+          ) g
+          ORDER BY "type", d, (${rankUnqualified}), "source"::text
         ) c
           ON c.t = mm."type"
           AND c.d = date_trunc('day', mm."measured_at")
