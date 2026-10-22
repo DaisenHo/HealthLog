@@ -7,6 +7,9 @@ import {
   LETTER,
   ENGINE,
   medicationExtras,
+  unlessDeferred,
+  WORD_START,
+  WORD_END,
   type LocaleBank,
 } from "../shared";
 
@@ -59,6 +62,9 @@ const RISK_VERDICT_DE = `(?:ist|liegt|erscheint|wirkt|bleibt|zeigt|deutet\\s+auf
 const DE_MED_CLASS =
   "\\S*(?:blutverdünner\\w*|gerinnungshemmer\\w*|antikoagul\\w*|statin\\w*|betablocker\\w*|diuretik\\w*|wassertablette\\w*|blutdrucksenker\\w*|antidepressiv\\w*|schlaftablette\\w*)";
 
+/** Signals that the number-free change shapes stand down for (`unlessDeferred`). */
+const DE_DEFERRAL = `\\?|${WORD_START}(?:nicht|kein\\w*|nie|niemals|nur\\s*,?\\s*(?:wenn|falls|nach)|erst\\s*,?\\s*(?:wenn|nach)|ohne|frag\\w*|besprich\\w*|sprich\\s+mit|rücksprache|ärzt\\w*|arzt\\w*|apothek\\w*|hausärzt\\w*|diabetolog\\w*|fachperson\\w*|praxis)${WORD_END}`;
+
 export const bank: LocaleBank = {
   vocabulary: (names) =>
     `(?:${DE_MED_NOUN}|${medicationExtras(DE_MED_CLASS, names)})`,
@@ -109,24 +115,36 @@ export const bank: LocaleBank = {
     // Hälfte", "nehmen Sie nur die halbe Dosis", "teilen Sie die Tablette in
     // zwei Hälften". "Teilen" alone also means "share", so the split needs
     // its "in Hälften".
-    new RegExp(
-      `\\b(?:reduzier(?:e|en)?|verringer(?:e|n)?|senk(?:e|en)?|kürz(?:e|en)?)(?:\\s+sie)?\\s+${DE_SLOT}${med}\\s+um\\s+(?:die\\s+)?hälfte`,
-      "i",
+    unlessDeferred(
+      DE_DEFERRAL,
+      new RegExp(
+        `\\b(?:reduzier(?:e|en)?|verringer(?:e|n)?|senk(?:e|en)?|kürz(?:e|en)?)(?:\\s+sie)?\\s+${DE_SLOT}${med}\\s+um\\s+(?:die\\s+)?hälfte`,
+        "i",
+      ),
     ),
-    new RegExp(
-      `\\b(?:nimm|nehmen\\s+sie|spritz|spritzen\\s+sie|injizier(?:e)?|injizieren\\s+sie)\\s+(?:nur\\s+)?(?:die\\s+|eine\\s+)?(?:halbe|hälfte\\s+(?:der|deiner|ihrer))\\s+${DE_SHORT}${med}`,
-      "i",
+    unlessDeferred(
+      DE_DEFERRAL,
+      new RegExp(
+        `\\b(?:nimm|nehmen\\s+sie|spritz|spritzen\\s+sie|injizier(?:e)?|injizieren\\s+sie)\\s+(?:nur\\s+)?(?:die\\s+|eine\\s+)?(?:halbe|hälfte\\s+(?:der|deiner|ihrer))\\s+${DE_SHORT}${med}`,
+        "i",
+      ),
     ),
-    new RegExp(
-      `\\bteil(?:e|en)?(?:\\s+sie)?\\s+${DE_SLOT}${med}\\s+(?:in\\s+(?:zwei\\s+)?hälften|in\\s+der\\s+mitte|durch\\s+zwei)`,
-      "i",
+    unlessDeferred(
+      DE_DEFERRAL,
+      new RegExp(
+        `\\bteil(?:e|en)?(?:\\s+sie)?\\s+${DE_SLOT}${med}\\s+(?:in\\s+(?:zwei\\s+)?hälften|in\\s+der\\s+mitte|durch\\s+zwei)`,
+        "i",
+      ),
     ),
     // A bare change imperative on a medication, no target: "reduzieren Sie
     // die Dosis.", "erhöhe dein Insulin etwas". The noun closes the clause or
     // meets a time or degree word; "reduziere die Dosis nicht" does neither.
-    new RegExp(
-      `\\b(?:erhöh(?:e|en)?|steiger(?:e|n)?|reduzier(?:e|en)?|senk(?:e|en)?|verringer(?:e|n)?)(?:\\s+sie)?\\s+${DE_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:jetzt|heute|morgen|etwas|leicht|langsam|schrittweise|ab\\s+sofort|für|bis)\\b)`,
-      "i",
+    unlessDeferred(
+      DE_DEFERRAL,
+      new RegExp(
+        `\\b(?:erhöh(?:e|en)?|steiger(?:e|n)?|reduzier(?:e|en)?|senk(?:e|en)?|verringer(?:e|n)?)(?:\\s+sie)?\\s+${DE_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:jetzt|heute|morgen|etwas|leicht|langsam|schrittweise|ab\\s+sofort|für|bis)\\b)`,
+        "i",
+      ),
     ),
   ],
   dose: [

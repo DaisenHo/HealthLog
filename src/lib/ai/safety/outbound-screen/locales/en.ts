@@ -6,6 +6,7 @@ import {
   TARGET,
   ENGINE,
   medicationExtras,
+  unlessDeferred,
   type LocaleBank,
 } from "../shared";
 
@@ -67,6 +68,9 @@ const RISK_VERDICT_EN = `(?:is|are|looks?|appears?|seems?|sits?|remains?|comes?\
 const EN_MED_CLASS =
   "(?:blood[- ]?thinners?|anti-?coagulants?|anti-?platelets?|statins?|beta[- ]?blockers?|diuretics?|water\\s+pills?|ace\\s+inhibitors?|steroids?|antidepressants?|sleeping\\s+pills?)\\b";
 
+/** Signals that the number-free change shapes stand down for (`unlessDeferred`). */
+const EN_DEFERRAL = `\\?|\\b(?:not|never|don'?t|doesn'?t|no|unless|only\\s+(?:if|when|after)|without|ask|discuss|talk\\s+to|check\\s+with|doctor|physician|gp|pharmacist|prescriber|clinician|nurse|specialist|care\\s+team|diabetes\\s+team)\\b`;
+
 export const bank: LocaleBank = {
   vocabulary: (names) =>
     `(?:${EN_MED_NOUN}|${medicationExtras(EN_MED_CLASS, names)})`,
@@ -117,21 +121,30 @@ export const bank: LocaleBank = {
     ),
     // Halving or a fraction with no number: "reduce your dose by half",
     // "take half a dose". A half hour or half your sugar names no medication.
-    new RegExp(
-      `${EN_LEAD}(?:reduce|cut|lower|decrease|drop|split|break|divide)\\s+${EN_SHORT}${med}\\s+(?:by|in)\\s+(?:a\\s+)?half\\b`,
-      "im",
+    unlessDeferred(
+      EN_DEFERRAL,
+      new RegExp(
+        `${EN_LEAD}(?:reduce|cut|lower|decrease|drop|split|break|divide)\\s+${EN_SHORT}${med}\\s+(?:by|in)\\s+(?:a\\s+)?half\\b`,
+        "im",
+      ),
     ),
-    new RegExp(
-      `${EN_LEAD}(?:take|use|inject|give\\s+yourself)\\s+(?:only\\s+|just\\s+)?half\\s+(?:of\\s+)?(?:(?:a|an|the|your)\\s+)?${EN_SHORT}${med}`,
-      "im",
+    unlessDeferred(
+      EN_DEFERRAL,
+      new RegExp(
+        `${EN_LEAD}(?:take|use|inject|give\\s+yourself)\\s+(?:only\\s+|just\\s+)?half\\s+(?:of\\s+)?(?:(?:a|an|the|your)\\s+)?${EN_SHORT}${med}`,
+        "im",
+      ),
     ),
     // A bare change imperative on a medication, no target: "reduce your
     // dose.", "increase your insulin slightly". The medication noun has to
     // close the clause or meet a time or degree word, so "reduce your dose of
     // stress" and "cut your medication costs" are not read as one.
-    new RegExp(
-      `${EN_LEAD}(?:increase|raise|up|boost|bump|reduce|lower|decrease|cut|drop)\\s+${EN_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:now|today|tonight|tomorrow|a\\s+(?:bit|little)|slightly|gradually|somewhat|this\\s+week|for|until|from\\s+now)\\b)`,
-      "im",
+    unlessDeferred(
+      EN_DEFERRAL,
+      new RegExp(
+        `${EN_LEAD}(?:increase|raise|up|boost|bump|reduce|lower|decrease|cut|drop)\\s+${EN_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:now|today|tonight|tomorrow|a\\s+(?:bit|little)|slightly|gradually|somewhat|this\\s+week|for|until|from\\s+now)\\b)`,
+        "im",
+      ),
     ),
   ],
   dose: [

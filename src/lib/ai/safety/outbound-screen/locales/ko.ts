@@ -5,6 +5,7 @@ import {
   UNIT_END,
   ENGINE,
   medicationExtras,
+  unlessDeferred,
   type LocaleBank,
 } from "../shared";
 
@@ -50,6 +51,9 @@ const RISK_VERDICT_KO = `(?:은|는|이|가)\\s*[^.?!]{0,10}${RISK_LEVEL_KO}`;
 const KO_MED_CLASS =
   "(?:혈액\\s*희석제|항응고제|항혈소판제|스타틴|베타\\s*차단제|이뇨제|항우울제)";
 
+/** Signals that the number-free change shapes stand down for (`unlessDeferred`). */
+const KO_DEFERRAL = `\\?|의사|약사|전문의|주치의|상의|라고|지\\s*마`;
+
 export const bank: LocaleBank = {
   vocabulary: (names) =>
     `(?:${KO_MED_NOUN}|(?:${medicationExtras(KO_MED_CLASS, names, false)})\\S{0,3})`,
@@ -74,8 +78,11 @@ export const bank: LocaleBank = {
     // "복용량을 늘리세요", "인슐린 용량을 낮추세요". No digit may sit between,
     // so "약 2주 동안 걷는 시간을 늘리세요" ("약" = about) passes, and the
     // prohibitive "줄이지 마세요" never meets an imperative ending.
-    new RegExp(
-      `${med}[^.?!\\d]{0,8}?(?:(?:늘리|올리|높이|줄이|내리|낮추|증량하|감량하)(?:세요|십시오)|(?:늘려|올려|높여|줄여|내려|낮춰)\\s*(?:보세요|주세요|보십시오))`,
+    unlessDeferred(
+      KO_DEFERRAL,
+      new RegExp(
+        `${med}[^.?!\\d]{0,8}?(?:(?:늘리|올리|높이|줄이|내리|낮추|증량하|감량하)(?:세요|십시오)|(?:늘려|올려|높여|줄여|내려|낮춰)\\s*(?:보세요|주세요|보십시오))`,
+      ),
     ),
   ],
   // Korean is verb-final: the dose comes first and the change verb closes the
@@ -106,7 +113,12 @@ export const bank: LocaleBank = {
     ),
     // Both a medication object AND a trial cue are required, as in the EN bank,
     // so "걸음 수를 두 배로 늘려 2주간 해보세요" never trips.
-    /(?:약|알|정|인슐린|주사|복용|용량)[^.?!]{0,25}(?:절반|반으로|두\s?배|건너뛰|중단|끊)[^.?!]{0,40}(?:주간|주 동안|일 동안|달 동안|보세요|보십시오|보자|해 ?보)/,
+    // Number-free too, so it stands down where a pharmacist or doctor is
+    // asked ("약사에게 … 물어보세요" ends on the same "보세요").
+    unlessDeferred(
+      KO_DEFERRAL,
+      /(?:약|알|정|인슐린|주사|복용|용량)[^.?!]{0,25}(?:절반|반으로|두\s?배|건너뛰|중단|끊)[^.?!]{0,40}(?:주간|주 동안|일 동안|달 동안|보세요|보십시오|보자|해 ?보)/,
+    ),
   ],
   risk: [
     new RegExp(`${RISK_NOUN_KO}[^.?!]{0,15}${QUAL_NUM_KO}`, "i"),

@@ -9,6 +9,8 @@ import {
   ENGINE,
   WORD_START,
   medicationExtras,
+  unlessDeferred,
+  WORD_END,
   type LocaleBank,
 } from "../shared";
 
@@ -49,6 +51,9 @@ const RISK_VERDICT_NL = `(?:is|ligt|lijkt|blijft|wijst\\s+op|komt\\s+uit\\s+op)\
 
 const NL_MED_CLASS =
   "\\S*(?:bloedverdunner\\w*|antistolling\\w*|anticoagul\\w*|plaatjesremmer\\w*|statine\\w*|b[eè]tablokker\\w*|plastablet\\w*|diuretic\\w*|diuretica|antidepressiv\\w*|antidepressiva|slaappil\\w*|slaapmiddel\\w*|bloeddrukverlager\\w*|ace-remmer\\w*)";
+
+/** Signals that the number-free change shapes stand down for (`unlessDeferred`). */
+const NL_DEFERRAL = `\\?|${WORD_START}(?:niet|geen|nooit|alleen\\s*,?\\s*(?:als|wanneer|na)|pas\\s*,?\\s*(?:als|na)|zonder|vraag|overleg\\w*|bespreek|arts|artsen|huisarts|apothe\\w*|specialist|dokter|zorgverlener\\w*)${WORD_END}`;
 
 export const bank: LocaleBank = {
   vocabulary: (names) =>
@@ -113,19 +118,28 @@ export const bank: LocaleBank = {
     ),
     // Halving or a fraction with no number: "verlaag je dosis met de helft",
     // "neem een halve dosis", "snijd de tablet doormidden".
-    new RegExp(
-      `(?<!\\b(?:niet|nooit)\\s)\\b(?:verlaag|verminder|deel|breek|snijd)\\s+${NL_SLOT}${med}\\s+(?:met\\s+de\\s+helft|door\\s+(?:twee|2)|doormidden|in\\s+twee)`,
-      "i",
+    unlessDeferred(
+      NL_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:niet|nooit)\\s)\\b(?:verlaag|verminder|deel|breek|snijd)\\s+${NL_SLOT}${med}\\s+(?:met\\s+de\\s+helft|door\\s+(?:twee|2)|doormidden|in\\s+twee)`,
+        "i",
+      ),
     ),
-    new RegExp(
-      `(?<!\\b(?:niet|nooit)\\s)\\b(?:neem|slik|spuit|injecteer)\\s+(?:alleen\\s+|maar\\s+)?(?:een\\s+halve|de\\s+helft\\s+van)\\s+${NL_SHORT}${med}`,
-      "i",
+    unlessDeferred(
+      NL_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:niet|nooit)\\s)\\b(?:neem|slik|spuit|injecteer)\\s+(?:alleen\\s+|maar\\s+)?(?:een\\s+halve|de\\s+helft\\s+van)\\s+${NL_SHORT}${med}`,
+        "i",
+      ),
     ),
     // A bare change imperative on a medication, no target: "verlaag je
     // dosis.", "verhoog je insuline wat". "Verlaag je dosis niet" is a warning.
-    new RegExp(
-      `(?<!\\b(?:niet|nooit)\\s)\\b(?:verhoog|verlaag|verminder)\\s+${NL_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:nu|vandaag|morgen|vanavond|iets|wat|een\\s+beetje|geleidelijk|vanaf)\\b)`,
-      "i",
+    unlessDeferred(
+      NL_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:niet|nooit)\\s)\\b(?:verhoog|verlaag|verminder)\\s+${NL_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:nu|vandaag|morgen|vanavond|iets|wat|een\\s+beetje|geleidelijk|vanaf)\\b)`,
+        "i",
+      ),
     ),
   ],
   dose: [

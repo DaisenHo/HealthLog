@@ -290,7 +290,7 @@ describe("screenModelOutput — dose continuation-exclusion (D7)", () => {
 
   it("PASSES an adherence-supporting continuation of the planned dose", () => {
     const d = screenModelOutput(
-      "You should keep taking your prescribed 7.5 mg exactly as directed.",
+      "You should keep taking your prescribed semaglutide 7.5 mg exactly as directed.",
       "en",
       CONVERSATIONAL_CONTRACTS,
       { dosePlan: PLAN },
@@ -343,7 +343,7 @@ describe("screenModelOutput — dose continuation-exclusion (D7)", () => {
     // "du solltest … 7,5 mg" trips the DE consider/should dose pattern; the
     // "weiterhin … wie verordnet" maintenance anchor exempts it.
     const d = screenModelOutput(
-      "Du solltest weiterhin deine 7,5 mg wie verordnet einnehmen.",
+      "Du solltest weiterhin dein Semaglutid 7,5 mg wie verordnet einnehmen.",
       "de",
       CONVERSATIONAL_CONTRACTS,
       { dosePlan: PLAN },
@@ -796,7 +796,7 @@ describe("screenModelOutput — the dose-change class, every locale", () => {
     // On schedule: the maintenance anchor exempts it.
     expect(
       screenModelOutput(
-        "Take your 1000 mg as usual.",
+        "Take your metformin 1000 mg as usual.",
         "en",
         CONVERSATIONAL_CONTRACTS,
         { dosePlan: [{ name: "Metformin", dose: 1000 }] },
@@ -805,7 +805,7 @@ describe("screenModelOutput — the dose-change class, every locale", () => {
     // Off schedule: the same phrasing names a dose the user is not on.
     expect(
       screenModelOutput(
-        "Take your 2000 mg as usual.",
+        "Take your metformin 2000 mg as usual.",
         "en",
         CONVERSATIONAL_CONTRACTS,
         { dosePlan: [{ name: "Metformin", dose: 1000 }] },

@@ -6,6 +6,9 @@ import {
   TARGET,
   ENGINE,
   medicationExtras,
+  unlessDeferred,
+  WORD_START,
+  WORD_END,
   type LocaleBank,
 } from "../shared";
 
@@ -34,6 +37,9 @@ const RESULT_VERB_PL =
 const PL_MED_CLASS =
   "(?:lek\\S*\\s+przeciwzakrzepow\\S*|antykoagulant\\S*|statyn\\S*|beta-?bloker\\S*|diuretyk\\S*|lek\\S*\\s+moczopędn\\S*|antydepresant\\S*)";
 
+/** Signals that the number-free change shapes stand down for (`unlessDeferred`). */
+const PL_DEFERRAL = `\\?|${WORD_START}(?:nie|bez|tylko\\s+(?:jeśli|gdy|jeżeli)|zapytaj|skonsultuj|porozmawiaj|lekarz\\w*|farmaceut\\w*|aptek\\w*|specjalist\\w*)${WORD_END}`;
+
 export const bank: LocaleBank = {
   vocabulary: (names) =>
     `(?:${PL_MED_NOUN}|${medicationExtras(PL_MED_CLASS, names)})`,
@@ -61,20 +67,29 @@ export const bank: LocaleBank = {
     ),
     // Halving or a fraction with no number: "zmniejsz dawkę o połowę",
     // "weź połowę dawki", "przyjmij pół dawki".
-    new RegExp(
-      `(?<!\\bnie\\s)\\b(?:zmniejsz|obni[żz]|zredukuj|podziel|przetnij|przełam)(?:cie)?\\s+${PL_SLOT}${med}\\s+(?:o\\s+połowę|na\\s+pół|na\\s+połowę|na\\s+dwie\\s+części)`,
-      "i",
+    unlessDeferred(
+      PL_DEFERRAL,
+      new RegExp(
+        `(?<!\\bnie\\s)\\b(?:zmniejsz|obni[żz]|zredukuj|podziel|przetnij|przełam)(?:cie)?\\s+${PL_SLOT}${med}\\s+(?:o\\s+połowę|na\\s+pół|na\\s+połowę|na\\s+dwie\\s+części)`,
+        "i",
+      ),
     ),
-    new RegExp(
-      `(?:(?<!\\bnie\\s)\\b(?:we[źz]|bierz|przyjmij|przyjmuj|wstrzyknij)|\\b(?:proszę|należy)\\s+(?:wzi[ąa][ćc]|przyj[ąa][ćc]|przyjmowa[ćc]))\\s+(?:tylko\\s+)?(?:pół|połowę|połowy)\\s+${PL_SHORT}${med}`,
-      "i",
+    unlessDeferred(
+      PL_DEFERRAL,
+      new RegExp(
+        `(?:(?<!\\bnie\\s)\\b(?:we[źz]|bierz|przyjmij|przyjmuj|wstrzyknij)|\\b(?:proszę|należy)\\s+(?:wzi[ąa][ćc]|przyj[ąa][ćc]|przyjmowa[ćc]))\\s+(?:tylko\\s+)?(?:pół|połowę|połowy)\\s+${PL_SHORT}${med}`,
+        "i",
+      ),
     ),
     // A bare change imperative on a medication, no target: "zmniejsz
     // dawkę.", "zwiększ dawkę insuliny.". The noun closes the clause, or one
     // genitive word does ("dawkę insuliny"), or a time or degree word follows.
-    new RegExp(
-      `(?<!\\bnie\\s)\\b(?:zwi[ęe]ksz|zmniejsz|obni[żz]|podnie[śs]|podwy[żz]sz|zredukuj)(?:cie)?\\s+${PL_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+[^\\s\\d.?!,;:]+\\s*(?:[.!?;:)]|$)|\\s+(?:teraz|dziś|dzisiaj|jutro|trochę|nieco|stopniowo|od\\s+jutra|przez)(?=[\\s.,;:!?]|$))`,
-      "i",
+    unlessDeferred(
+      PL_DEFERRAL,
+      new RegExp(
+        `(?<!\\bnie\\s)\\b(?:zwi[ęe]ksz|zmniejsz|obni[żz]|podnie[śs]|podwy[żz]sz|zredukuj)(?:cie)?\\s+${PL_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?!(?:kofein|cukr|cukier|ruch|sol|sól|alkohol|kalori|białk|wod|kaw|herbat|tłuszcz|węglowodan|aktywnoś|ćwicze|snu|sen|błonnik)[^\\s]*\\s*(?:[.!?;:)]|$))[^\\s\\d.?!,;:]+\\s*(?:[.!?;:)]|$)|\\s+(?:teraz|dziś|dzisiaj|jutro|trochę|nieco|stopniowo|od\\s+jutra|przez)(?=[\\s.,;:!?]|$))`,
+        "i",
+      ),
     ),
   ],
   dose: [

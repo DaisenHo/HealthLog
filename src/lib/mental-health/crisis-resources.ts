@@ -99,9 +99,10 @@ const US: CrisisResourceSet = {
 };
 
 /**
- * Brazil (an explicit region signal: a bare "br" or "pt_BR"-style tag a
- * native client sends from the device region) — CVV by phone and chat, SAMU
- * as the emergency number. Both numbers are free and answer around the clock
+ * Brazil, reached only by the bare region code "br". "pt-BR" and "pt_BR"
+ * are not a region signal: the web folds every Portuguese reader into that
+ * one bundle, so they get PT_BR_AMBIGUOUS. CVV by phone and chat, SAMU as
+ * the emergency number. Both numbers are free and answer around the clock
  * (cvv.org.br; the Ministry of Health's SAMU 192 page).
  */
 const BR: CrisisResourceSet = {
