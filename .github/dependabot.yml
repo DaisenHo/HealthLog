@@ -14,9 +14,10 @@ updates:
       # single bumps: patch and minor updates travel together and pass the
       # same checks once. Majors stay single so each gets its own review.
       #
-      # The Next.js line travels alone: while a 16.4 patch is still being
-      # re-measured, a red Next bump inside the group holds every harmless
-      # update in it red as well.
+      # The Next.js line travels alone. Its bumps are the ones that move
+      # URL state after history traversal (see the note on 16.4 below), and a
+      # red Next bump inside the group would hold every harmless update in
+      # it red as well.
       production-weekly:
         dependency-type: "production"
         update-types:
@@ -32,19 +33,18 @@ updates:
         exclude-patterns:
           - "eslint-config-next"
           - "@next/bundle-analyzer"
-    ignore:
-      # Next 16.4.0 breaks URL state after history traversal: with a sheet
-      # opened through `?doc=`, Back leaves it open, and `[` / `]` sometimes
-      # do not move `?day=`. Reproduced in three end-to-end journeys (3 of 40
-      # repeated runs on 16.4.0, 0 of 80 on 16.3.8 with everything else
-      # equal). 16.3.8 carries every published security fix, so the line
-      # waits for a 16.4 patch; the two packages that move with it wait too.
-      - dependency-name: "next"
-        versions: ["16.4.0"]
-      - dependency-name: "eslint-config-next"
-        versions: ["16.4.0"]
-      - dependency-name: "@next/bundle-analyzer"
-        versions: ["16.4.0"]
+    # No ignore for the Next.js line any more. 16.4.0 lost URL state after
+    # history traversal: with a sheet opened through `?doc=`, Back left it
+    # open, and `[` / `]` sometimes did not move `?day=` (3 of 40 repeated
+    # runs of three end-to-end journeys, 0 of 80 on 16.3.8). 16.4.2 does the
+    # same (the day keys lost a step in 2 of 20 runs locally, the `?doc=`
+    # journey failed once in CI). Both were ours to fix: the sheet followed
+    # `useSearchParams`, which 16.4 updates after the write it copies, and a
+    # day step wrote the URL before Next had adopted the previous step, whose
+    # late adoption then put the older URL back. The sheet now follows the
+    # address bar and a step waits for the layer. Measured after both fixes:
+    # 200 of 200 repeated runs of the three journeys, and another 80 of 80
+    # each for the `?doc=` and day-key journeys.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
