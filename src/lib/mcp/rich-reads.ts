@@ -551,21 +551,13 @@ export async function metricStatusDiscoveryRows(userId: string): Promise<
 //
 // Every OTHER measurement type is still entered, value-less, because
 // ambiguity has to be judged over the whole label space rather than over the
-// exposed slice of it. French and Italian once called body fat and fat mass
-// by one phrase ("masse grasse" / "massa grassa") while only one of the two
-// was exposed, so an index that knew about the exposed one alone would have
-// seen no collision and answered kilograms to someone who asked for a
-// percentage. Those labels are distinct now; the whole-space check stays so a
-// future bundle cannot reintroduce the trap unseen.
-//
-// The alias tables stay as they are and stay English: `resting_hr`, `spo2`,
-// `vo2max` are protocol slugs, not translations of anything.
-let localisedMetricIndexCache:
-  ReturnType<typeof buildLocalisedMetricIndex> | undefined;
-/** Built on first use, not at module load: it reads every shipped catalog. */
-function localisedMetricIndex(): ReturnType<typeof buildLocalisedMetricIndex> {
-  return (localisedMetricIndexCache ??= buildLocalisedMetricIndex());
-}
+// exposed slice of it: French and Italian once named body fat and fat mass
+// alike while only one was exposed, which answered kilograms to a question
+// about a percentage. The alias tables stay English (`resting_hr`, `spo2`
+// are protocol slugs). Built on first use: the index reads every catalog.
+let metricIndex: ReturnType<typeof buildLocalisedMetricIndex> | undefined;
+const localisedMetricIndex = () =>
+  (metricIndex ??= buildLocalisedMetricIndex());
 function buildLocalisedMetricIndex() {
   const exposed = new Map<MeasurementType, RichMetric>();
   const claim = (metric: RichMetric | null) => {
