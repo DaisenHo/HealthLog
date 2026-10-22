@@ -1,12 +1,13 @@
 {
   "$comment": "tests that read a source file by path, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 365,
-  "total": 365,
+  "count": 367,
+  "total": 367,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 1,
     "__tests__/admin-data-wipe-completeness.test.ts": 1,
     "__tests__/aging-fixture-dates-guard.test.ts": 1,
     "__tests__/ai-call-timeout-guard.test.ts": 1,
+    "__tests__/ai-client-abort-guard.test.ts": 1,
     "__tests__/ai-consent-enforcement-guard.test.ts": 1,
     "__tests__/ai-egress-capability-guard.test.ts": 1,
     "__tests__/ai-reasoning-admin-guard.test.ts": 1,
@@ -87,6 +88,7 @@
     "__tests__/mood-backup-completeness.test.ts": 1,
     "__tests__/mood-prediction-write-surface-guard.test.ts": 1,
     "__tests__/moodlog-removal-guard.test.ts": 1,
+    "__tests__/next-image-optimizer-guard.test.ts": 1,
     "__tests__/no-server-actions-guard.test.ts": 1,
     "__tests__/oidc-native-error-reasons-documented.test.ts": 1,
     "__tests__/openapi-account-sharing-components.test.ts": 1,
