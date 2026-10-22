@@ -32,12 +32,22 @@ interface Drag {
   steps?: number;
   /** Rest before lifting the finger, ms (a slow, deliberate release). */
   holdMs?: number;
+  /**
+   * After the rest, keep the finger down until the page has rendered this
+   * many frames. The sheet writes its position once per animation frame, and
+   * WebKit in the CI container can go a second or more without rendering a
+   * frame while timers and events run on (the trace shows the More sheet
+   * still sliding in 1.5 s after its animation reported finished). A check
+   * on where the sheet was drawn needs those frames; a check on where it
+   * ends up does not, because the release is decided from the touch alone.
+   */
+  holdFrames?: number;
 }
 
 /** A touch drag from (x, y), dispatched as WebKit delivers one. */
 async function touchDrag(page: Page, x: number, y: number, drag: Drag) {
   await page.evaluate(
-    async ({ x, y, dx, dy, ms, steps, holdMs }) => {
+    async ({ x, y, dx, dy, ms, steps, holdMs, holdFrames }) => {
       const target = document.elementFromPoint(x, y);
       if (!target) throw new Error(`nothing under ${x},${y}`);
       const id = 11;
@@ -117,6 +127,9 @@ async function touchDrag(page: Page, x: number, y: number, drag: Drag) {
         fire("pointermove", x + (dx * i) / steps, y + (dy * i) / steps);
       }
       if (holdMs) await wait(holdMs);
+      for (let i = 0; i < holdFrames; i += 1) {
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+      }
       fire("pointerup", x + dx, y + dy);
     },
     {
@@ -127,6 +140,7 @@ async function touchDrag(page: Page, x: number, y: number, drag: Drag) {
       ms: drag.ms,
       steps: drag.steps ?? Math.max(4, Math.round(drag.ms / 16)),
       holdMs: drag.holdMs ?? 0,
+      holdFrames: drag.holdFrames ?? 0,
     },
   );
 }
@@ -173,6 +187,16 @@ async function settled(locator: Locator) {
       ),
     )
     .toBe(true);
+  // A finished animation is not a drawn one: WebKit can report the slide
+  // done while it has not rendered a frame of it yet. Two frames, then rest.
+  await locator
+    .page()
+    .evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
   await locator.page().waitForTimeout(300);
 }
 
@@ -255,7 +279,14 @@ test.describe("the bottom sheet", () => {
       };
       requestAnimationFrame(tick);
     });
-    await touchDrag(page, x, y, { dy: 60, ms: 300, holdMs: 200 });
+    // Two rendered frames with the finger still down: the first paints the
+    // sheet where the finger is, the second lets the recorder read it.
+    await touchDrag(page, x, y, {
+      dy: 60,
+      ms: 300,
+      holdMs: 200,
+      holdFrames: 2,
+    });
     const seen = await page.evaluate(() => {
       const w = window as unknown as {
         __sheetDrag: { moved: number; opacity: number; on: boolean };
