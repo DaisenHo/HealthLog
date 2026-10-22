@@ -10,9 +10,6 @@
  * record leaves; the static CapabilityStatement carries no user data and
  * stays reachable. The module is switched the way the settings switch it,
  * through the stored per-account preferences.
- *
- * The registry declares no 403 for these operations; the refusals below skip
- * the contract check for that reason.
  */
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -45,9 +42,6 @@ import { getPrismaClient, truncateAllTables } from "../setup";
 const prisma = getPrismaClient();
 
 const INSURANCE_NUMBER = "A123456789";
-const MODULE_OFF_SKIP =
-  "the FHIR operations declare no 403; the module gate's module.disabled envelope is undocumented on them";
-
 type Handler = Parameters<typeof callRoute>[0];
 
 /** Every data route, by the path a caller hits; the reads name a held id. */
@@ -135,7 +129,7 @@ async function seedOwner(doctorReport: boolean) {
   return user;
 }
 
-async function callEach(auth: RouteAuth, skip: boolean) {
+async function callEach(auth: RouteAuth) {
   const results = [];
   for (const { handler, route, params } of DATA_ROUTES) {
     const res = await callRoute(handler, {
@@ -143,7 +137,6 @@ async function callEach(auth: RouteAuth, skip: boolean) {
       route,
       params,
       auth,
-      contract: skip ? { skip: MODULE_OFF_SKIP } : undefined,
     });
     results.push({ route, res });
   }
@@ -158,7 +151,7 @@ describe("/api/fhir/* and the doctorReport module", () => {
       await makeToken(owner, { permissions: [FHIR_READ_SCOPE] }),
       await makeSession(owner),
     ]) {
-      for (const { route, res } of await callEach(auth, true)) {
+      for (const { route, res } of await callEach(auth)) {
         expect(res.status, route).toBe(403);
         expect(res.data, route).toBeNull();
         expect(res.meta, route).toMatchObject({
@@ -177,7 +170,7 @@ describe("/api/fhir/* and the doctorReport module", () => {
     const owner = await seedOwner(true);
     const auth = await makeToken(owner, { permissions: [FHIR_READ_SCOPE] });
 
-    for (const { route, res } of await callEach(auth, false)) {
+    for (const { route, res } of await callEach(auth)) {
       expect(res.status, route).toBe(200);
       expect(res.headers.get("content-type"), route).toContain(
         "application/fhir+json",

@@ -1124,9 +1124,6 @@ describe("every setting a person can choose", () => {
         route: "/api/admin/backups/upload",
         body: exported.body,
         auth: operator,
-        contract: {
-          skip: "the operator's backup routes are not in the published contract",
-        },
       });
       expect(
         uploaded.status,

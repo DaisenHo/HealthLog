@@ -15,8 +15,9 @@
  * Token model: Strava ROTATES its refresh token on every refresh. The schema
  * has no expiry column, so the sync refreshes REACTIVELY — the first read that
  * 401s triggers one refresh (persisting BOTH rotated tokens via a compare-and-
- * set) and a single retry. A failed refresh (`invalid_grant`) records
- * `reauth_required` on the `strava` ledger.
+ * set) and a single retry. A refresh Strava refuses for a dead token (a 400
+ * whose fault names `RefreshToken`) records `reauth_required` on the `strava`
+ * ledger; any other refusal is classified by its status.
  *
  * Rate limits: 200 req / 15 min + 2000 / day per app. The walk is page-bounded
  * (`walkPages`, which reports a walk cut off at its ceiling instead of

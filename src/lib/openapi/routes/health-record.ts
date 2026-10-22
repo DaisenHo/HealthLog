@@ -15,9 +15,43 @@ import {
 import {
   dataEnvelope,
   errorEnvelope,
+  moduleDisabledResponse,
   recordRefusal,
   stdResponses,
 } from "./shared";
+
+// The FHIR face answers its own refusals as FHIR: a 400, 404 or 429 raised
+// by a `/api/fhir/*` handler is an `OperationOutcome` served as
+// `application/fhir+json` (`operationOutcome` in `@/lib/fhir/rest`), which is
+// what a FHIR client parses on any non-2xx. The refusals that run before the
+// handler's own body are the API's: the generic 401 / 403 envelopes and the
+// 403 `module.disabled`, which keeps the errorCode every client already
+// branches on for a disabled module. Declared here after `...stdResponses`,
+// so the FHIR shapes replace the generic JSON ones.
+const fhirOutcomeContent = {
+  "application/fhir+json": {
+    schema: z.string().meta({ format: "binary" }),
+  },
+};
+
+const fhirDataRefusals = {
+  ...moduleDisabledResponse,
+  "429": {
+    description:
+      "Rate limit exceeded: the per-account `fhir:<accountId>` bucket, 120 requests per hour, shared by every `/api/fhir/*` data route. The body is an `OperationOutcome` (`issue[0].code` = `throttled`) served as `application/fhir+json`, not the JSON error envelope. The `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers describe the bucket; back off on `Retry-After`.",
+    content: fhirOutcomeContent,
+    headers: stdResponses["429"].headers,
+  },
+};
+
+const fhirSearchRefusals = {
+  ...fhirDataRefusals,
+  "400": {
+    description:
+      "A search parameter the server cannot honour, such as an `_offset` above 9007199254740991. The body is an `OperationOutcome` (`issue[0].code` = `invalid`, the reason in `diagnostics`) served as `application/fhir+json`.",
+    content: fhirOutcomeContent,
+  },
+};
 
 // The two request bodies this module publishes. `.meta()` CLONES in Zod 4
 // rather than annotating in place, so the returned schema has to be captured
@@ -394,6 +428,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirSearchRefusals,
       },
     },
   },
@@ -426,6 +461,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirSearchRefusals,
       },
     },
   },
@@ -456,6 +492,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirSearchRefusals,
       },
     },
   },
@@ -486,6 +523,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirSearchRefusals,
       },
     },
   },
@@ -516,6 +554,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirSearchRefusals,
       },
     },
   },
@@ -546,6 +585,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirDataRefusals,
       },
     },
   },
@@ -576,6 +616,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirDataRefusals,
       },
     },
   },
@@ -606,6 +647,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirDataRefusals,
       },
     },
   },
@@ -636,6 +678,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirDataRefusals,
       },
     },
   },
@@ -666,6 +709,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirDataRefusals,
       },
     },
   },
@@ -696,6 +740,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
         ...stdResponses,
+        ...fhirSearchRefusals,
       },
     },
   },

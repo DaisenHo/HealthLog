@@ -37,11 +37,6 @@ type ModulesResponse = {
   updatedAt?: string;
 };
 
-const NO_400 =
-  "the registry declares no 400 for PATCH /api/auth/me/modules although the handler answers one for a body that is not JSON";
-const NO_409 =
-  "the registry declares no 409 for PATCH /api/auth/me/modules although the handler answers modules_conflict for a stale base token";
-
 beforeEach(() => truncateAllTables(prisma));
 
 async function storedPrefs(userId: string): Promise<unknown> {
@@ -63,14 +58,12 @@ async function storedUpdatedAt(userId: string): Promise<Date> {
 async function patch(
   auth: Awaited<ReturnType<typeof makeSession>>,
   body: Record<string, unknown>,
-  contract?: { skip: string },
 ) {
   return callRoute<ModulesResponse>(PATCH, {
     method: "PATCH",
     route: ROUTE,
     body,
     auth,
-    contract,
   });
 }
 
@@ -229,7 +222,6 @@ describe("PATCH /api/auth/me/modules", () => {
       route: ROUTE,
       headers: { "content-type": "application/json" },
       auth: await makeSession(user),
-      contract: { skip: NO_400 },
     });
     expect(res.status).toBe(400);
     expect(res.error).toBe("Invalid JSON body");
@@ -281,11 +273,10 @@ describe("PATCH /api/auth/me/modules evicts the cached score", () => {
     const user = await makeUser();
     caches.analytics.set(`${user.id}|score`, { score: 71 });
 
-    const res = await patch(
-      await makeSession(user),
-      { sleep: false, baseUpdatedAt: "2020-01-01T00:00:00.000Z" },
-      { skip: NO_409 },
-    );
+    const res = await patch(await makeSession(user), {
+      sleep: false,
+      baseUpdatedAt: "2020-01-01T00:00:00.000Z",
+    });
     expect(res.status).toBe(409);
     expect(caches.analytics.get(`${user.id}|score`)).toEqual({ score: 71 });
   });
@@ -320,11 +311,7 @@ describe("PATCH /api/auth/me/modules optimistic concurrency", () => {
     const first = await patch(session, { mood: false, baseUpdatedAt: base });
     expect(first.status).toBe(200);
 
-    const second = await patch(
-      session,
-      { sleep: false, baseUpdatedAt: base },
-      { skip: NO_409 },
-    );
+    const second = await patch(session, { sleep: false, baseUpdatedAt: base });
     expect(second.status).toBe(409);
     expect(second.meta?.errorCode).toBe("modules_conflict");
     expect(await storedPrefs(user.id)).toEqual({ mood: false });

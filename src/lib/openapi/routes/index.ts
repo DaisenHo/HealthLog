@@ -96,9 +96,9 @@ import { settingsPaths } from "./settings";
 import { symptomPaths } from "./symptoms";
 import { syncPaths } from "./sync";
 import { workoutPaths } from "./workouts";
-import { coachPrefsSchema } from "./shared";
+import { coachPrefsSchema, withScopeRefusal } from "./shared";
 
-export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...cyclePaths,
   ...metaPaths,
   ...healthRecordPaths,
@@ -213,6 +213,11 @@ export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   // order is load-bearing).
   ...retiredPaths,
 };
+
+// The generic auth gate's 403 is declared on the assembled table, not spread
+// from `stdResponses`; `scopeRefusalResponse` in `./shared` says why.
+export const openApiPaths: NonNullable<ZodOpenApiObject["paths"]> =
+  withScopeRefusal(registeredPaths);
 
 export const openApiComponents: NonNullable<ZodOpenApiObject["components"]> = {
   // Schemas listed here are forced into `components.schemas` even when no

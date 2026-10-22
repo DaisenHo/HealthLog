@@ -1141,6 +1141,29 @@ const profileSummaryResponse = z
       "The bounded profile view a record viewer gets: allergies, family history and current lifestyle facts. Structurally incapable of becoming a Settings or AI surface.",
   });
 
+/**
+ * What the single-value `/api/auth/me/*` writes answer for a body they refuse
+ * to read. Each reads through `safeJson` with a 1 KB cap, so the three
+ * refusals are the cap's, not the route's: a wrong content type is 415, a body
+ * over the cap 413, and one that does not parse 400. All three are answered
+ * before validation, and nothing is written.
+ */
+const cappedScalarBodyRefusals = {
+  "400": {
+    description: "The request body is not parseable JSON. Nothing was written.",
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+  "413": {
+    description: "Request body exceeds 1024 bytes. Nothing was written.",
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+  "415": {
+    description:
+      "The request did not carry `Content-Type: application/json`. Nothing was read and nothing was written.",
+    content: { "application/json": { schema: errorEnvelope } },
+  },
+};
+
 export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/profile/summary": {
     get: {
@@ -1863,10 +1886,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "413": {
-          description: "Request body exceeds 1024 bytes. Nothing was written.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...cappedScalarBodyRefusals,
         ...stdResponses,
       },
     },
@@ -1917,10 +1937,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "413": {
-          description: "Request body exceeds 1024 bytes. Nothing was written.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...cappedScalarBodyRefusals,
         ...stdResponses,
       },
     },
@@ -1971,10 +1988,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "413": {
-          description: "Request body exceeds 1024 bytes. Nothing was written.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...cappedScalarBodyRefusals,
         ...stdResponses,
       },
     },
@@ -2257,10 +2271,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "413": {
-          description: "Request body exceeds 1024 bytes. Nothing was written.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...cappedScalarBodyRefusals,
         ...stdResponses,
       },
     },
@@ -2307,10 +2318,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "413": {
-          description: "Request body exceeds 1024 bytes. Nothing was written.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...cappedScalarBodyRefusals,
         ...stdResponses,
       },
     },
@@ -2360,10 +2368,7 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
             },
           },
         },
-        "413": {
-          description: "Request body exceeds 1024 bytes. Nothing was written.",
-          content: { "application/json": { schema: errorEnvelope } },
-        },
+        ...cappedScalarBodyRefusals,
         ...stdResponses,
       },
     },

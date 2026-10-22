@@ -207,20 +207,10 @@ interface ResponseObject {
   $ref?: string;
 }
 
-/**
- * The generic scope gate answers 403 `auth.scope.insufficient` on any route a
- * narrow Bearer token does not reach. The registry documents that refusal in
- * the prose of the shared 401 (`stdResponses`) rather than as a 403 entry on
- * every operation, so an operation that declares the shared 401 is taken to
- * declare this 403 as well, and nothing else is.
- */
-const SCOPE_REFUSAL_CODE = "auth.scope.insufficient";
-
 function lookupResponse(
   method: HttpMethod,
   route: string,
   status: number,
-  body: unknown,
 ): ResponseObject {
   const pathItem = (openApiPaths as Record<string, unknown>)[route];
   if (!isRecord(pathItem)) {
@@ -235,17 +225,7 @@ function lookupResponse(
     );
   }
   const responses = isRecord(operation.responses) ? operation.responses : {};
-  let declared = responses[String(status)] ?? responses.default;
-  if (
-    !isRecord(declared) &&
-    status === 403 &&
-    isRecord(responses["401"]) &&
-    isRecord(body) &&
-    isRecord(body.meta) &&
-    body.meta.errorCode === SCOPE_REFUSAL_CODE
-  ) {
-    declared = responses["401"];
-  }
+  const declared = responses[String(status)] ?? responses.default;
   if (!isRecord(declared)) {
     throw new ContractViolation(
       `${method} ${route} answered ${status}, which the contract does not declare (declared: ${Object.keys(responses).join(", ")}).`,
@@ -274,7 +254,7 @@ function checkContract(
   body: unknown,
   isJson: boolean,
 ): void {
-  const declared = lookupResponse(method, route, status, body);
+  const declared = lookupResponse(method, route, status);
   const content = declared.content ?? {};
   const mediaTypes = Object.keys(content);
   if (!isJson) {

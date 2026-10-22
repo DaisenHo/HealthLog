@@ -758,9 +758,6 @@ describe("FHIR paging", () => {
       route: "/api/fhir/Observation",
       query: { _offset: "1e20" },
       auth,
-      contract: {
-        skip: "the registry declares no 400 on the FHIR searches, though the description names the 400 OperationOutcome",
-      },
     });
 
     expect(res.status).toBe(400);
@@ -784,12 +781,11 @@ describe("FHIR paging", () => {
       method: "GET",
       route: "/api/fhir/Patient",
       auth,
-      contract: {
-        skip: "the registry declares the shared 429 as an application/json error envelope; the FHIR routes answer an application/fhir+json OperationOutcome",
-      },
     });
 
     expect(res.status).toBe(429);
+    expect(res.headers.get("content-type")).toContain("application/fhir+json");
+    expect(Number(res.headers.get("retry-after"))).toBeGreaterThanOrEqual(1);
     expect(outcomeSchema.parse(res.body).issue[0].code).toBe("throttled");
     expect(JSON.stringify(res.body)).not.toContain("Sample Patient");
   });
