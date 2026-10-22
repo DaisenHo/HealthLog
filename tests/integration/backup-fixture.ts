@@ -1374,17 +1374,6 @@ export async function seedAdminSession(prisma: PrismaClient) {
 export const COLUMN_EXCLUSIONS: Readonly<Record<string, string>> = {
   "MeasurementReminder.lastNotifiedAt":
     "operational repeat cursor, documented on the column as not in the backup: a restored reminder re-reminds at most once, on its next notify hour",
-  // When a join row was written. Nothing reads these: the links are read for
-  // which tag, symptom or context applies, never for when the row appeared,
-  // and the parent entry carries its own timestamps, which do travel.
-  "MoodContext.createdAt":
-    "insert stamp of the per-entry context row; no reader, the mood entry's own timestamps travel",
-  "MoodEntryTagLink.createdAt":
-    "insert stamp of a tag link; no reader, the mood entry's own timestamps travel",
-  "CycleSymptomLink.createdAt":
-    "insert stamp of a symptom link; no reader, the day log's own timestamps travel",
-  "IllnessSymptomLink.createdAt":
-    "insert stamp of a symptom link; no reader, the illness day log's own timestamps travel",
 };
 
 /**

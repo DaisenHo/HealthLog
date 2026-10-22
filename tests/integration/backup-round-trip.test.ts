@@ -1924,14 +1924,26 @@ describe("every model the plan claims two-ended survives a real restore", () => 
         Unfiled: "OTHER",
         Tamiflu: ROUND_TRIP_CATEGORY_KEY,
       });
+      // A portable file carries the label readable; a disaster-recovery file
+      // carries its ciphertext, like every other sealed column.
       expect(payload.customMedicationCategories).toEqual([
-        {
-          key: ROUND_TRIP_CATEGORY_KEY,
-          label: "Travel kit",
-          sortOrder: 0,
-          isActive: false,
-          createdAt: expect.any(String),
-        },
+        purpose === "disaster-recovery"
+          ? {
+              key: ROUND_TRIP_CATEGORY_KEY,
+              label: null,
+              labelEncrypted: expect.any(String),
+              sortOrder: 0,
+              isActive: false,
+              createdAt: expect.any(String),
+              updatedAt: expect.any(String),
+            }
+          : {
+              key: ROUND_TRIP_CATEGORY_KEY,
+              label: "Travel kit",
+              sortOrder: 0,
+              isActive: false,
+              createdAt: expect.any(String),
+            },
       ]);
 
       await prisma.user.delete({ where: { id: OWNER_ID } });

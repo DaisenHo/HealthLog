@@ -29,5 +29,8 @@ export const nutrientDaySchema = z
     // Absent from files written before v1.39.7.
     externalSourceVersion: z.string().nullable().optional(),
     createdAt: isoDateTime.optional(),
+    // Disaster-recovery files only; without it the day is stamped with the
+    // restore, as before.
+    updatedAt: isoDateTime.optional(),
   })
   .passthrough();

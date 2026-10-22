@@ -77,10 +77,18 @@ async function restoreCustomCategories(
       data: {
         userId: ownerId,
         key,
-        labelEncrypted: encryptCategoryLabel(c.label),
+        // The ciphertext verbatim when the file carries it (a
+        // disaster-recovery file), the readable label sealed here otherwise
+        // (a portable file, or a recovery file written before the label
+        // travelled sealed).
+        labelEncrypted:
+          c.labelEncrypted !== undefined
+            ? decodeEncryptedBytes(c.labelEncrypted)
+            : encryptCategoryLabel(c.label ?? ""),
         sortOrder: c.sortOrder,
         isActive: c.isActive,
         ...(c.createdAt ? { createdAt: new Date(c.createdAt) } : {}),
+        ...(c.updatedAt ? { updatedAt: new Date(c.updatedAt) } : {}),
       },
     });
   }
@@ -254,6 +262,7 @@ function medicationChildrenData(m: BackupMedication, ownerId: string) {
         enteredUnit: i.enteredUnit ?? null,
         source: i.source,
         ...(i.createdAt ? { createdAt: new Date(i.createdAt) } : {}),
+        ...(i.updatedAt ? { updatedAt: new Date(i.updatedAt) } : {}),
       })),
     },
     // `resumedAt` passes through as null when the era is open. It is not
@@ -341,14 +350,20 @@ async function restoreCourses(
     startsOn: Date;
     endsOn: Date | null;
     note: string | null;
+    noteEncrypted?: string | null;
     createdAt?: Date;
+    updatedAt?: Date;
   }> =
     m.courses !== undefined
       ? m.courses.map((c) => ({
           startsOn: dateOfDayKey(c.startsOn),
           endsOn: c.endsOn ? dateOfDayKey(c.endsOn) : null,
           note: c.note ?? null,
+          ...(c.noteEncrypted !== undefined
+            ? { noteEncrypted: c.noteEncrypted }
+            : {}),
           ...(c.createdAt ? { createdAt: new Date(c.createdAt) } : {}),
+          ...(c.updatedAt ? { updatedAt: new Date(c.updatedAt) } : {}),
         }))
       : (() => {
           const derived = courseFromWindow(
@@ -365,8 +380,18 @@ async function restoreCourses(
       userId: ownerId,
       startsOn: c.startsOn,
       endsOn: c.endsOn,
-      noteEncrypted: c.note ? encryptToBytes(c.note) : null,
+      // Ciphertext verbatim from a disaster-recovery file; the readable note
+      // of a portable or older file sealed here.
+      noteEncrypted:
+        c.noteEncrypted !== undefined
+          ? c.noteEncrypted === null
+            ? null
+            : decodeEncryptedBytes(c.noteEncrypted)
+          : c.note
+            ? encryptToBytes(c.note)
+            : null,
       ...(c.createdAt ? { createdAt: c.createdAt } : {}),
+      ...(c.updatedAt ? { updatedAt: c.updatedAt } : {}),
     })),
   });
   const window = projectCourseWindow(courseRows);
@@ -589,6 +614,12 @@ export async function restoreMedications(ctx: RestoreContext): Promise<void> {
         categoryKeyRemap.get(m.category) ?? m.category,
         tx,
       );
+      if (m.categoryUpdatedAt) {
+        await tx.medicationCategoryAssignment.update({
+          where: { medicationId: created.id },
+          data: { updatedAt: new Date(m.categoryUpdatedAt) },
+        });
+      }
     }
     await restoreCourses(tx, ownerId, m, created, restoreTz);
     await restoreScheduleRevisions(
@@ -598,6 +629,14 @@ export async function restoreMedications(ctx: RestoreContext): Promise<void> {
       medicationIndex,
       unresolvedRevisionLinks,
     );
+    // The writes above (the course window) moved the row's `updatedAt` to
+    // now; a file that carries the row's own last write puts it back.
+    if (m.updatedAt) {
+      await tx.medication.update({
+        where: { id: created.id },
+        data: { updatedAt: new Date(m.updatedAt) },
+      });
+    }
     for (const target of m.efficacyTargets) {
       links.pendingEfficacyTargets.push({ medicationId: created.id, target });
     }

@@ -1391,6 +1391,7 @@
         "externalSource": null,
         "externalId": null,
         "updatedAt": "<now>",
+        "categoryUpdatedAt": null,
         "name": "Ramipril",
         "dose": "5 mg",
         "active": true,
@@ -1454,6 +1455,7 @@
         "externalSource": null,
         "externalId": null,
         "updatedAt": "<now>",
+        "categoryUpdatedAt": null,
         "name": "Vitamin D",
         "dose": "1000 IU",
         "active": true,
@@ -1471,6 +1473,8 @@
             "startsOn": "2026-07-01",
             "endsOn": "2026-08-01",
             "note": null,
+            "noteEncrypted": null,
+            "updatedAt": "<now>",
             "createdAt": "<now>"
           }
         ],
@@ -1534,6 +1538,7 @@
         "syncVersion": 0,
         "createdAt": "<now>",
         "updatedAt": "<now>",
+        "linkCreatedAt": [],
         "id": "<id:10>",
         "date": "2026-07-03",
         "mood": "OKAY",
@@ -1560,6 +1565,7 @@
         "syncVersion": 0,
         "createdAt": "<now>",
         "updatedAt": "<now>",
+        "linkCreatedAt": [],
         "id": "<id:11>",
         "date": "2026-07-02",
         "mood": "GOOD",
@@ -1624,7 +1630,8 @@
         "upperBound": 400,
         "panel": "Iron",
         "hidden": false,
-        "context": "fasted",
+        "context": null,
+        "contextEncrypted": "<sealed:v2:fasted>",
         "analyteKey": null,
         "aliases": []
       }
@@ -1802,7 +1809,8 @@
         "unit": "mL",
         "source": "MANUAL",
         "externalSourceVersion": null,
-        "createdAt": "<now>"
+        "createdAt": "<now>",
+        "updatedAt": "<now>"
       }
     ]
   }

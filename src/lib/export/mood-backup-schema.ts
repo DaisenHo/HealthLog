@@ -81,6 +81,12 @@ export const moodEntrySchema = z
     // RATED-only meaning, so every file written before this one parses
     // unchanged and restores identically: absent reads as none.
     structuredTags: z.array(z.string().min(1)).default([]),
+    // When each link (rated or not) was written, by tag key. Disaster-recovery
+    // files only; a file without it restores the links stamped with the
+    // restore, as before.
+    linkCreatedAt: z
+      .array(z.object({ key: z.string().min(1), createdAt: isoDateTime }))
+      .optional(),
     // The day context, when the entry had one. Optional and nullable at the
     // top: a file written before this existed carries no `context` key at all
     // and must parse and restore exactly as it did. Every field inside is
@@ -116,6 +122,9 @@ export const moodEntrySchema = z
         // plain text, a disaster-recovery file the ciphertext.
         note: z.string().nullable().optional(),
         notesEncrypted: base64BytesSchema.nullable().optional(),
+        // The context row's own stamps, disaster-recovery files only.
+        createdAt: isoDateTime.optional(),
+        updatedAt: isoDateTime.optional(),
       })
       .passthrough()
       .nullable()

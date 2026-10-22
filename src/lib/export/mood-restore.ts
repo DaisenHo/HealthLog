@@ -256,6 +256,9 @@ async function restoreMoodContext(
         context.notesEncrypted == null
           ? encryptNote(context.note ?? null)
           : decodeEncryptedBytes(context.notesEncrypted),
+      // The row's own stamps when the file carries them (disaster recovery).
+      ...(context.createdAt ? { createdAt: new Date(context.createdAt) } : {}),
+      ...(context.updatedAt ? { updatedAt: new Date(context.updatedAt) } : {}),
     },
   });
 }
@@ -320,7 +323,16 @@ async function restoreMoodEntry(
       ? [{ moodEntryId: restored.id, moodTagId, rating: null }]
       : [];
   });
-  const links = [...factorLinks, ...tagLinks];
+  // Each link's own write time, when the file carries it.
+  const linkCreatedAt = new Map(
+    (entry.linkCreatedAt ?? []).map((link) => [link.key, link.createdAt]),
+  );
+  const keyOfTag = new Map<string, string>();
+  for (const [key, id] of [...factorByKey, ...tagByKey]) keyOfTag.set(id, key);
+  const links = [...factorLinks, ...tagLinks].map((link) => {
+    const createdAt = linkCreatedAt.get(keyOfTag.get(link.moodTagId) ?? "");
+    return createdAt ? { ...link, createdAt: new Date(createdAt) } : link;
+  });
   if (links.length > 0) {
     await tx.moodEntryTagLink.createMany({ data: links });
   }

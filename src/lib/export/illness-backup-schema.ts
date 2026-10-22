@@ -18,6 +18,9 @@ export const illnessSymptomBackupSchema = z
   .object({
     key: z.string().min(1),
     severity: z.number().int().nullable().optional(),
+    // When the link was written. Disaster-recovery files only; without it the
+    // link is stamped with the restore, as before.
+    createdAt: isoDateTime.optional(),
   })
   .passthrough();
 export const illnessDayLogBackupSchema = z

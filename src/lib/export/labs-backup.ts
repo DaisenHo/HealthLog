@@ -103,6 +103,11 @@ export interface BiomarkerBackupEntry {
   panel: string | null;
   hidden: boolean;
   context: string | null;
+  /**
+   * The context's ciphertext as base64, disaster-recovery files only, where
+   * `context` is null. A file without it carries the readable context.
+   */
+  contextEncrypted?: string | null;
   /** The catalogue key the marker's name and unit resolve to. */
   analyteKey?: string | null;
   /**
@@ -259,11 +264,22 @@ export async function buildLabsBackupSlice(
     upperBound: b.upperBound,
     panel: b.panel,
     hidden: b.hidden,
-    context: readForExport(
-      b.contextEncrypted,
-      "biomarker context",
-      decryptContextFromBytes,
-    ),
+    // Ciphertext verbatim in a disaster-recovery file, like every other
+    // sealed column; the readable context in a portable one.
+    ...(disasterRecovery
+      ? {
+          context: null,
+          contextEncrypted: b.contextEncrypted
+            ? Buffer.from(b.contextEncrypted).toString("base64")
+            : null,
+        }
+      : {
+          context: readForExport(
+            b.contextEncrypted,
+            "biomarker context",
+            decryptContextFromBytes,
+          ),
+        }),
     analyteKey: b.analyteKey,
     aliases: aliasesByMarker.get(b.id) ?? [],
   }));
@@ -347,9 +363,13 @@ export async function restoreLabMarkers(ctx: RestoreContext): Promise<void> {
         panel: biomarker.panel ?? null,
         hidden: biomarker.hidden ?? false,
         contextEncrypted:
-          biomarker.context == null
-            ? null
-            : encryptContextToBytes(biomarker.context),
+          biomarker.contextEncrypted !== undefined
+            ? biomarker.contextEncrypted === null
+              ? null
+              : decodeEncryptedBytes(biomarker.contextEncrypted)
+            : biomarker.context == null
+              ? null
+              : encryptContextToBytes(biomarker.context),
         analyteKey: biomarker.analyteKey ?? null,
         ...(biomarker.createdAt
           ? { createdAt: new Date(biomarker.createdAt) }

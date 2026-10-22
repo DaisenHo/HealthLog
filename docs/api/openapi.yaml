@@ -40862,6 +40862,11 @@ components:
               category:
                 type: string
                 maxLength: 64
+              categoryUpdatedAt:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
               deliveryForm:
                 type: string
                 enum:
@@ -41136,6 +41141,9 @@ components:
                         - MANUAL
                         - LABEL_AI
                     createdAt:
+                      type: string
+                      minLength: 1
+                    updatedAt:
                       type: string
                       minLength: 1
                   required:
@@ -41492,7 +41500,15 @@ components:
                         - type: string
                           maxLength: 280
                         - type: "null"
+                    noteEncrypted:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                        - type: "null"
                     createdAt:
+                      type: string
+                      minLength: 1
+                    updatedAt:
                       type: string
                       minLength: 1
                   required:
@@ -41522,9 +41538,14 @@ components:
                 type: string
                 pattern: ^custom:[0-9a-f-]{36}$
               label:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                    maxLength: 40
+                  - type: "null"
+              labelEncrypted:
                 type: string
                 minLength: 1
-                maxLength: 40
               sortOrder:
                 default: 0
                 type: integer
@@ -41536,9 +41557,11 @@ components:
               createdAt:
                 type: string
                 minLength: 1
+              updatedAt:
+                type: string
+                minLength: 1
             required:
               - key
-              - label
               - sortOrder
               - isActive
             additionalProperties: {}
@@ -41749,6 +41772,21 @@ components:
                 items:
                   type: string
                   minLength: 1
+              linkCreatedAt:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                      minLength: 1
+                    createdAt:
+                      type: string
+                      minLength: 1
+                  required:
+                    - key
+                    - createdAt
+                  additionalProperties: false
               context:
                 anyOf:
                   - type: object
@@ -41851,6 +41889,12 @@ components:
                           - type: string
                             minLength: 1
                           - type: "null"
+                      createdAt:
+                        type: string
+                        minLength: 1
+                      updatedAt:
+                        type: string
+                        minLength: 1
                     additionalProperties: {}
                   - type: "null"
             required:
@@ -42214,6 +42258,21 @@ components:
                   required:
                     - key
                   additionalProperties: {}
+              symptomLinkCreatedAt:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                      minLength: 1
+                    createdAt:
+                      type: string
+                      minLength: 1
+                  required:
+                    - key
+                    - createdAt
+                  additionalProperties: false
             required:
               - date
               - symptomKeys
@@ -42515,6 +42574,11 @@ components:
                 type:
                   - string
                   - "null"
+              contextEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
               aliases:
                 type: array
                 items:
@@ -42705,6 +42769,9 @@ components:
                                 minimum: -9007199254740991
                                 maximum: 9007199254740991
                               - type: "null"
+                          createdAt:
+                            type: string
+                            minLength: 1
                         required:
                           - key
                         additionalProperties: {}
@@ -43379,6 +43446,9 @@ components:
                   - string
                   - "null"
               createdAt:
+                type: string
+                minLength: 1
+              updatedAt:
                 type: string
                 minLength: 1
             required:

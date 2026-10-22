@@ -1047,7 +1047,7 @@
         "bodySiteEncrypted": null,
         "laterality": null,
         "createdAt": "2026-05-02T17:31:03.000Z",
-        "updatedAt": "<now>",
+        "updatedAt": "2026-05-02T17:32:03.000Z",
         "deletedAt": null
       },
       {
@@ -2959,7 +2959,7 @@
         "bodySite": null,
         "laterality": null,
         "createdAt": "2026-05-02T17:31:03.000Z",
-        "updatedAt": "<now>",
+        "updatedAt": "2026-05-02T17:32:03.000Z",
         "dayLogs": []
       },
       {

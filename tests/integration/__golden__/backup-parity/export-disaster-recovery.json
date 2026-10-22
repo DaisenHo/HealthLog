@@ -295,10 +295,12 @@
     "customMedicationCategories": [
       {
         "key": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
-        "label": "Heart and circulation",
+        "label": null,
+        "labelEncrypted": "<sealed:v1:Heart and circulation>",
         "sortOrder": 2,
         "isActive": false,
-        "createdAt": "2026-05-01T23:06:00.000Z"
+        "createdAt": "2026-05-01T23:06:00.000Z",
+        "updatedAt": "2026-05-01T23:07:00.000Z"
       }
     ],
     "medications": [
@@ -329,6 +331,7 @@
         "externalSource": "WEB",
         "externalId": "rt-Medication-externalId",
         "updatedAt": "2026-05-01T11:51:00.000Z",
+        "categoryUpdatedAt": "2026-05-01T21:22:00.000Z",
         "name": "Round-trip tablet",
         "dose": "5 mg",
         "active": false,
@@ -406,6 +409,7 @@
         "ingredients": [
           {
             "id": "<id:12>",
+            "updatedAt": "2026-05-02T02:30:00.000Z",
             "nutrient": "vitamin_d",
             "amountPerUnit": 25,
             "unit": "ug",
@@ -419,13 +423,17 @@
           {
             "startsOn": "2026-03-01",
             "endsOn": "2026-03-07",
-            "note": "the March flu",
+            "note": null,
+            "noteEncrypted": "<sealed:v1:the March flu>",
+            "updatedAt": "2026-05-02T00:47:00.000Z",
             "createdAt": "2026-05-02T00:46:00.000Z"
           },
           {
             "startsOn": "2026-06-10",
             "endsOn": "2026-06-16",
             "note": null,
+            "noteEncrypted": null,
+            "updatedAt": "2026-05-02T00:47:01.000Z",
             "createdAt": "2026-05-02T00:46:01.000Z"
           }
         ],
@@ -623,6 +631,7 @@
         "syncVersion": 0,
         "createdAt": "2026-05-02T04:18:01.000Z",
         "updatedAt": "2026-05-02T04:19:01.000Z",
+        "linkCreatedAt": [],
         "id": "<id:26>",
         "date": "2026-07-03",
         "mood": "SCHLECHT",
@@ -649,6 +658,12 @@
         "syncVersion": 3,
         "createdAt": "2026-05-02T04:18:00.000Z",
         "updatedAt": "2026-05-02T04:19:00.000Z",
+        "linkCreatedAt": [
+          {
+            "key": "round_trip_factor",
+            "createdAt": "2026-05-02T07:22:00.000Z"
+          }
+        ],
         "id": "<id:27>",
         "date": "2026-07-01",
         "mood": "GUT",
@@ -673,6 +688,8 @@
         "structuredTags": [],
         "context": {
           "notesEncrypted": "<sealed:v1:rt-MoodContext-notesEncrypted>",
+          "createdAt": "2026-05-02T06:00:00.000Z",
+          "updatedAt": "2026-05-02T06:01:00.000Z",
           "workStatus": "regular",
           "workMinutes": 3,
           "overtimeMinutes": 3,
@@ -827,6 +844,12 @@
             "key": "custom:round-trip-cramps",
             "severity": 3
           }
+        ],
+        "symptomLinkCreatedAt": [
+          {
+            "key": "custom:round-trip-cramps",
+            "createdAt": "2026-05-03T13:23:00.000Z"
+          }
         ]
       },
       {
@@ -857,7 +880,8 @@
         "externalId": null,
         "tz": null,
         "symptomKeys": [],
-        "symptomSeverities": []
+        "symptomSeverities": [],
+        "symptomLinkCreatedAt": []
       }
     ],
     "customSymptoms": [
@@ -933,7 +957,8 @@
         "upperBound": 2.5,
         "panel": "rt-Biomarker-panel",
         "hidden": true,
-        "context": "fasted, morning draw",
+        "context": null,
+        "contextEncrypted": "<sealed:v1:fasted, morning draw>",
         "analyteKey": "rt-Biomarker-analyteKey",
         "aliases": [
           {
@@ -1007,7 +1032,8 @@
             "symptoms": [
               {
                 "key": "round_trip_cough",
-                "severity": 2
+                "severity": 2,
+                "createdAt": "2026-05-02T20:43:00.000Z"
               }
             ]
           },
@@ -2275,7 +2301,8 @@
         "unit": "ml",
         "source": "MANUAL",
         "externalSourceVersion": "rt-NutrientIntakeDay-externalSourceVersion",
-        "createdAt": "2026-05-03T23:27:00.000Z"
+        "createdAt": "2026-05-03T23:27:00.000Z",
+        "updatedAt": "2026-05-03T23:28:00.000Z"
       }
     ]
   },
@@ -2718,6 +2745,7 @@
         "autoMarkTaken": true,
         "autoMarkTakenSince": "2026-06-30T12:34:56.789Z",
         "category": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
+        "categoryUpdatedAt": "2026-05-01T21:22:00.000Z",
         "deliveryForm": "INJECTION",
         "trackInjectionSites": true,
         "allowedInjectionSites": [
@@ -2809,7 +2837,8 @@
             "enteredAmount": 1000,
             "enteredUnit": "IU",
             "source": "LABEL_AI",
-            "createdAt": "2026-05-02T02:29:00.000Z"
+            "createdAt": "2026-05-02T02:29:00.000Z",
+            "updatedAt": "2026-05-02T02:30:00.000Z"
           }
         ],
         "doseChanges": [
@@ -2954,14 +2983,18 @@
           {
             "startsOn": "2026-03-01",
             "endsOn": "2026-03-07",
-            "note": "the March flu",
-            "createdAt": "2026-05-02T00:46:00.000Z"
+            "note": null,
+            "noteEncrypted": "<sealed:v1:the March flu>",
+            "createdAt": "2026-05-02T00:46:00.000Z",
+            "updatedAt": "2026-05-02T00:47:00.000Z"
           },
           {
             "startsOn": "2026-06-10",
             "endsOn": "2026-06-16",
             "note": null,
-            "createdAt": "2026-05-02T00:46:01.000Z"
+            "noteEncrypted": null,
+            "createdAt": "2026-05-02T00:46:01.000Z",
+            "updatedAt": "2026-05-02T00:47:01.000Z"
           }
         ]
       }
@@ -2969,10 +3002,12 @@
     "customMedicationCategories": [
       {
         "key": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
-        "label": "Heart and circulation",
+        "label": null,
+        "labelEncrypted": "<sealed:v1:Heart and circulation>",
         "sortOrder": 2,
         "isActive": false,
-        "createdAt": "2026-05-01T23:06:00.000Z"
+        "createdAt": "2026-05-01T23:06:00.000Z",
+        "updatedAt": "2026-05-01T23:07:00.000Z"
       }
     ],
     "intakeEvents": [
@@ -3046,6 +3081,7 @@
         "updatedAt": "2026-05-02T04:19:01.000Z",
         "factors": [],
         "structuredTags": [],
+        "linkCreatedAt": [],
         "context": null
       },
       {
@@ -3077,6 +3113,12 @@
           }
         ],
         "structuredTags": [],
+        "linkCreatedAt": [
+          {
+            "key": "round_trip_factor",
+            "createdAt": "2026-05-02T07:22:00.000Z"
+          }
+        ],
         "context": {
           "workStatus": "regular",
           "workMinutes": 3,
@@ -3095,7 +3137,9 @@
           "eventType": "rt-MoodContext-eventType",
           "eventValence": 3,
           "eventAt": "2026-06-30T12:34:56.789Z",
-          "notesEncrypted": "<sealed:v1:rt-MoodContext-notesEncrypted>"
+          "notesEncrypted": "<sealed:v1:rt-MoodContext-notesEncrypted>",
+          "createdAt": "2026-05-02T06:00:00.000Z",
+          "updatedAt": "2026-05-02T06:01:00.000Z"
         }
       }
     ],
@@ -3200,6 +3244,12 @@
             "key": "custom:round-trip-cramps",
             "severity": 3
           }
+        ],
+        "symptomLinkCreatedAt": [
+          {
+            "key": "custom:round-trip-cramps",
+            "createdAt": "2026-05-03T13:23:00.000Z"
+          }
         ]
       },
       {
@@ -3230,7 +3280,8 @@
         "createdAt": "2026-05-03T10:25:01.000Z",
         "updatedAt": "2026-05-03T10:26:01.000Z",
         "symptomKeys": [],
-        "symptomSeverities": []
+        "symptomSeverities": [],
+        "symptomLinkCreatedAt": []
       }
     ],
     "customSymptoms": [
@@ -3338,7 +3389,8 @@
         "panel": "rt-Biomarker-panel",
         "hidden": true,
         "analyteKey": "rt-Biomarker-analyteKey",
-        "context": "fasted, morning draw",
+        "context": null,
+        "contextEncrypted": "<sealed:v1:fasted, morning draw>",
         "aliases": [
           {
             "id": "<id:40>",
@@ -3407,7 +3459,8 @@
             "symptoms": [
               {
                 "key": "round_trip_cough",
-                "severity": 2
+                "severity": 2,
+                "createdAt": "2026-05-02T20:43:00.000Z"
               }
             ],
             "note": null,
@@ -3702,7 +3755,8 @@
         "unit": "ml",
         "source": "MANUAL",
         "externalSourceVersion": "rt-NutrientIntakeDay-externalSourceVersion",
-        "createdAt": "2026-05-03T23:27:00.000Z"
+        "createdAt": "2026-05-03T23:27:00.000Z",
+        "updatedAt": "2026-05-03T23:28:00.000Z"
       }
     ],
     "healthProfile": {
