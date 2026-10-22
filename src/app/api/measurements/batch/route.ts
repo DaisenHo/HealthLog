@@ -643,6 +643,12 @@ async function postBatch(request: NextRequest): Promise<Response> {
 
   let insertedCount = 0;
   let updatedCount = 0;
+  /**
+   * `stats:` re-posts reported `updated` with nothing to write (see
+   * `isUnchangedStatsRow`). Counted in the response's `updated` like before,
+   * and in nothing that starts work.
+   */
+  let unchangedStatsCount = 0;
   let duplicateCount = 0;
   let failedCount = 0;
   // v1.44 — subset of `insertedCount` written by the set-based insert.
@@ -843,6 +849,105 @@ async function postBatch(request: NextRequest): Promise<Response> {
           p.row.type as MeasurementType,
           p.row.value as number,
         ) === null
+      );
+    }
+
+    // An unchanged `stats:` re-post. The phone re-sends the same daily
+    // totals on every sync, and each used to go through the reconciler
+    // (about ten round trips in its own transaction) only to write the same
+    // values back, and then counted as `updated`, which started the whole
+    // tail: the DAY refold, rollup jobs, PR detection and a cache stale for
+    // the account. Such a row is still reported `updated`, exactly as
+    // before, but nothing is written and it starts nothing.
+    //
+    // "Unchanged" is the reconciler's own update with nothing to change: a
+    // live row holds the entry's external key AND its natural identity
+    // (both indexes are unique, so that row is the only candidate), already
+    // carries the HealthKit-statistics provenance, and every column the
+    // update would write already has the value it would write. Like the
+    // sample prefilter above, it applies only where neither key occurs a
+    // second time in the batch, and never to a value the plausibility gate
+    // would refuse. A concurrent writer is no different from one that ran a
+    // moment later: its write lands after this no-op either way.
+    const statsExternalIds = [
+      ...new Set(
+        prepared
+          .map((p) => p.row.externalId as string)
+          .filter((externalId) => isStatsExternalId(externalId)),
+      ),
+    ];
+    const storedStatsByExternalKey = new Map<
+      string,
+      Record<string, unknown> & { measuredAt: Date }
+    >();
+    if (statsExternalIds.length > 0) {
+      const stored = await prisma.measurement.findMany({
+        where: {
+          userId: user.id,
+          externalId: { in: statsExternalIds },
+          deletedAt: null,
+        },
+        select: {
+          type: true,
+          source: true,
+          externalId: true,
+          measuredAt: true,
+          sleepStage: true,
+          value: true,
+          valueMin: true,
+          valueMax: true,
+          unit: true,
+          externalSourceVersion: true,
+          glucoseContext: true,
+          rhythmClassification: true,
+          deviceType: true,
+          aggregationProvenance: true,
+        },
+      });
+      for (const row of stored) {
+        storedStatsByExternalKey.set(
+          `${row.type}::${row.source}::${row.externalId}`,
+          row,
+        );
+      }
+    }
+    function isUnchangedStatsRow(p: Prepared): boolean {
+      const externalKey = `${p.row.type}::${p.row.source}::${p.row.externalId}`;
+      const stored = storedStatsByExternalKey.get(externalKey);
+      if (!stored) return false;
+      const measuredAt = p.row.measuredAt as Date;
+      const naturalKey = naturalKeyOf(
+        p.row.type,
+        p.row.source,
+        measuredAt,
+        p.row.sleepStage,
+      );
+      if (
+        !(stored.measuredAt instanceof Date) ||
+        stored.measuredAt.getTime() !== measuredAt.getTime() ||
+        externalKeyCounts.get(externalKey) !== 1 ||
+        naturalKeyCounts.get(naturalKey) !== 1 ||
+        stored.aggregationProvenance !== "HEALTHKIT_STATISTICS" ||
+        classifyRangeRejection(
+          p.row.type as MeasurementType,
+          p.row.value as number,
+        ) !== null
+      ) {
+        return false;
+      }
+      const desired = desiredFor(p);
+      const same = (column: keyof typeof desired) =>
+        (stored[column] ?? null) === (desired[column] ?? null);
+      return (
+        same("value") &&
+        same("valueMin") &&
+        same("valueMax") &&
+        same("unit") &&
+        same("sleepStage") &&
+        same("externalSourceVersion") &&
+        same("glucoseContext") &&
+        same("rhythmClassification") &&
+        same("deviceType")
       );
     }
 
@@ -1060,6 +1165,13 @@ async function postBatch(request: NextRequest): Promise<Response> {
           reason: "superseded_in_batch",
         };
         duplicateCount++;
+        continue;
+      }
+
+      if (statsRow && isUnchangedStatsRow(p)) {
+        results[p.index] = { index: p.index, status: "updated" };
+        unchangedStatsCount++;
+        pushMergeCandidate(p);
         continue;
       }
 
@@ -1311,7 +1423,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     details: {
       processed: entries.length,
       inserted: insertedCount,
-      updated: updatedCount,
+      updated: updatedCount + unchangedStatsCount,
       duplicates: duplicateCount,
       skipped: skipped.length,
       failed: failedCount,
@@ -1449,7 +1561,8 @@ async function postBatch(request: NextRequest): Promise<Response> {
     meta: {
       processed: entries.length,
       inserted: insertedCount,
-      updated: updatedCount,
+      updated: updatedCount + unchangedStatsCount,
+      stats_unchanged: unchangedStatsCount,
       duplicates: duplicateCount,
       skipped: skipped.length,
       // v1.32.1 (issue #585) — per-reason skip breakdown; see the
@@ -1563,7 +1676,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   const response = apiSuccess({
     processed: entries.length,
     inserted: insertedCount + hourInsertedCount,
-    updated: updatedCount + hourUpdatedCount,
+    updated: updatedCount + unchangedStatsCount + hourUpdatedCount,
     duplicates: duplicateCount,
     failed: failedCount,
     skipped,
