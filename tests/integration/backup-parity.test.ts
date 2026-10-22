@@ -397,8 +397,12 @@ async function fillDefaultedColumns(prisma: PrismaClient): Promise<string[]> {
   const enumValues = enumValuesFromSchema();
   const unfillable: string[] = [];
   for (const model of models) {
+    // In key order, so the row that takes the fill is the same on every run:
+    // a table read without an order comes back in whatever order its last
+    // updates left on disk.
     const rows = await delegateOf(prisma, model).findMany({
       where: ownerWhere(byName, prisma, model.name, OWNER_ID),
+      orderBy: model.primaryKey.map((key) => ({ [key]: "asc" as const })),
     });
     if (rows.length === 0) continue;
     for (const column of model.columns) {
@@ -624,7 +628,6 @@ async function runRestore(
   effects.unitRefresh.length = 0;
   effects.foldRepair.length = 0;
   effects.annotations.length = 0;
-  const auditFrom = new Date();
   const progress: Array<Record<string, unknown>> = [];
   const raw = await restoreBackup({
     backup,
@@ -645,7 +648,12 @@ async function runRestore(
     },
   });
   const audit = await prisma.auditLog.findMany({
-    where: { createdAt: { gte: auditFrom }, action: { startsWith: "admin." } },
+    // By the copy's id rather than by time: the database clock and this
+    // process's clock do not agree to the millisecond.
+    where: {
+      action: { startsWith: "admin." },
+      details: { contains: backup.id },
+    },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: { action: true, userId: true, details: true },
   });

@@ -533,7 +533,7 @@
         "source": "WITHINGS",
         "measuredAt": "2026-06-15T14:22:00.000Z",
         "notes": null,
-        "notesEncrypted": "<sealed:rt-Measurement-notesEncrypted>",
+        "notesEncrypted": null,
         "externalId": null,
         "externalSourceVersion": null,
         "aggregationProvenance": null,
@@ -581,7 +581,7 @@
         "source": "MANUAL",
         "measuredAt": "2026-07-01T07:00:00.000Z",
         "notes": null,
-        "notesEncrypted": null,
+        "notesEncrypted": "<sealed:rt-Measurement-notesEncrypted>",
         "externalId": null,
         "externalSourceVersion": null,
         "aggregationProvenance": null,
@@ -2519,7 +2519,7 @@
         "unit": "kg",
         "measuredAt": "2026-07-01T07:00:00.000Z",
         "source": "MANUAL",
-        "notes": null,
+        "notes": "rt-Measurement-notesEncrypted",
         "deletedAt": null
       },
       {
@@ -2529,7 +2529,7 @@
         "unit": "event",
         "measuredAt": "2026-06-15T14:22:00.000Z",
         "source": "WITHINGS",
-        "notes": "rt-Measurement-notesEncrypted",
+        "notes": null,
         "deletedAt": null
       }
     ],

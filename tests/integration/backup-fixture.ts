@@ -1484,6 +1484,7 @@ export async function seedColumnShapes(prisma: PrismaClient): Promise<void> {
 export type Delegate = {
   findMany(args: {
     where: Record<string, unknown>;
+    orderBy?: Record<string, "asc" | "desc">[];
   }): Promise<Record<string, unknown>[]>;
   update(args: {
     where: Record<string, unknown>;
