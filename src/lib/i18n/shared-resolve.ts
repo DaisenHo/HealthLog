@@ -9,38 +9,27 @@
  * Since the i18n bundle split, `allMessages` is SERVER-ONLY: the root
  * layout picks the active locale's bundle out of it for the RSC handoff
  * and `getServerTranslator()` resolves against it. Do NOT import this
- * module from client code — the seven static JSON imports would drag
- * every locale back into the client chunk (the ~1.4 MiB regression the
- * split removed). Client code uses `./load-locale` (static EN fallback
- * floor + dynamic per-locale imports) and `./resolve-key` instead.
+ * module from client code: it reads the catalogs from disk. Client code
+ * uses `./load-locale` (dynamic per-locale imports) and `./resolve-key`
+ * instead.
  */
-import deMessages from "../../../messages/de.json";
-import enMessages from "../../../messages/en.json";
-import frMessages from "../../../messages/fr.json";
-import esMessages from "../../../messages/es.json";
-import itMessages from "../../../messages/it.json";
-import plMessages from "../../../messages/pl.json";
-import koMessages from "../../../messages/ko.json";
-import nlMessages from "../../../messages/nl.json";
 import { locales, type Locale } from "./config";
 import { resolveKey } from "./resolve-key";
+import { lazyServerCatalogs } from "./server-catalogs";
 
 export { resolveKey };
 
 /**
  * Single source of truth for the per-locale message bundle on the
- * server (layout RSC handoff, server translator, jobs).
+ * server (layout RSC handoff, server translator, jobs). Each entry is read
+ * from `messages/<locale>.json` the first time it is indexed and shared by
+ * every bundle in the process (`server-catalogs.ts`), so a process holds the
+ * locales its users read, not all of them.
  */
-export const allMessages: Record<Locale, Record<string, unknown>> = {
-  de: deMessages,
-  en: enMessages,
-  fr: frMessages,
-  es: esMessages,
-  it: itMessages,
-  pl: plMessages,
-  ko: koMessages,
-  nl: nlMessages,
-};
+export const allMessages: Record<
+  Locale,
+  Record<string, unknown>
+> = lazyServerCatalogs();
 
 /**
  * Every shipped translation of one key, in `locales` order, deduplicated and

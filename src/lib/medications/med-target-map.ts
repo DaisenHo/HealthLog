@@ -28,7 +28,7 @@
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 import { findDrugIdByBrand } from "@/lib/medications/glp1-knowledge";
-import { foldLabel } from "@/lib/i18n/localised-label-index";
+import { foldLabel } from "@/lib/i18n/fold-label";
 
 /** The medication classes the storyline can reason about (closed set). */
 export type MedTargetClass = "antihypertensive" | "antidiabetic" | "glp1";
