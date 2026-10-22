@@ -146,7 +146,13 @@ export function getWorkMem(): string {
  * session carries them from the first query.
  *
  * The timeouts are left out when disabled (timeout 0); `work_mem` is always
- * set. Up to v1.41 the whole string was `undefined` at timeout 0, which would
+ * set, and so is `jit=off`. Postgres compiles a statement to machine code
+ * once its estimated cost passes `jit_above_cost`, which every analytics
+ * fold over a year of readings does; on the benchmark account that
+ * compilation took 100 to 140 ms of a 220 ms statement and saved nothing,
+ * because these statements run once and are bound by reading rows, not by
+ * evaluating expressions. JIT changes how a plan runs, never what it
+ * returns. Up to v1.41 the whole string was `undefined` at timeout 0, which would
  * have taken `work_mem` with it. `undefined` now means exactly one thing:
  * the operator turned the startup options off for a connection pooler
  * ({@link sessionOptionsDisabled}).
@@ -158,7 +164,7 @@ export function buildSessionOptions(): string | undefined {
     timeoutMs > 0
       ? `-c statement_timeout=${timeoutMs} -c idle_in_transaction_session_timeout=${timeoutMs} `
       : "";
-  return `${timeouts}-c work_mem=${getWorkMem()} ${TIME_ZONE_OPTION}`;
+  return `${timeouts}-c work_mem=${getWorkMem()} -c jit=off ${TIME_ZONE_OPTION}`;
 }
 
 export function prismaPoolConfig(): PoolConfig {
