@@ -8,6 +8,12 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { emitSignal } from "@/lib/logging/signal";
 import {
+  isTimeoutFailure,
+  providerFailureKind,
+  type ProviderFailure,
+  type ProviderFailureKind,
+} from "./failure-kind";
+import {
   isOperatorFundedProvider,
   readDailySpend,
   resolveDailyCapFor,
@@ -174,6 +180,11 @@ export interface FallbackHop {
   attempt: number;
   failureReason: string;
   httpStatus: number | null;
+  /**
+   * #1267 — what the call ran into (`failure-kind.ts`). Absent on a hop that
+   * never called the provider (the operator cost cap).
+   */
+  failureKind?: ProviderFailureKind;
 }
 
 /**
@@ -404,6 +415,7 @@ function hopCause(
   error: unknown,
   status: number | null,
   bodyClass: string | null,
+  failure: ProviderFailureKind,
 ): string {
   const err = error as {
     credentialExpired?: unknown;
@@ -414,14 +426,22 @@ function hopCause(
   if (bodyClass?.startsWith("classified:")) {
     return bodyClass.slice("classified:".length);
   }
-  if (status === null || status <= 0) return "network";
+  if (status === null || status <= 0) {
+    // #1267 — a 200 without an answer is not a transport failure, and only a
+    // deadline is a timeout. `failure` on the same line says which one.
+    if (failure === "empty_response" || failure === "reasoning_only") {
+      return "empty_response";
+    }
+    if (isTimeoutFailure(failure)) return "timeout";
+    return "network";
+  }
   if (status === 401 || status === 403) return "auth_rejected";
   if (status === 429) return "rate_limited";
   if (status >= 500) return "upstream_5xx";
   return "upstream_4xx";
 }
 
-interface HopSignal {
+interface HopSignal extends ProviderFailure {
   provider: ProviderChainType;
   attempt: number;
   status: number | null;
@@ -450,6 +470,9 @@ function signalFailedHops(
         attempt: hop.attempt,
         status: hop.status,
         cause: hop.cause,
+        // #1267 — closed vocabulary plus a code-shaped string, never a message.
+        failure: hop.failure,
+        code: hop.code,
         recovered,
         surface,
       },
@@ -584,11 +607,18 @@ async function runRawChain(
         throw error;
       }
       const summary = summariseError(error);
+      const failure = providerFailureKind(error);
       failedHops.push({
         provider: candidate.providerType,
         attempt: i + 1,
         status: summary.status,
-        cause: hopCause(error, summary.status, summary.bodyExcerpt),
+        cause: hopCause(
+          error,
+          summary.status,
+          summary.bodyExcerpt,
+          failure.failure,
+        ),
+        ...failure,
       });
       void ledger.recordFailure(userId, candidate.providerType, summary.status);
       const hop: FallbackHop = {
@@ -596,6 +626,7 @@ async function runRawChain(
         attempt: i + 1,
         failureReason: summary.reason,
         httpStatus: summary.status,
+        failureKind: failure.failure,
       };
       hops.push(hop);
       annotate({
@@ -604,6 +635,7 @@ async function runRawChain(
           [`ai_chain_hop_${i + 1}_status`]: summary.status,
           [`ai_chain_hop_${i + 1}_reason`]: summary.reason.slice(0, 240),
           [`ai_chain_hop_${i + 1}_body`]: summary.bodyExcerpt,
+          [`ai_chain_hop_${i + 1}_failure`]: failure.failure,
         },
       });
     }

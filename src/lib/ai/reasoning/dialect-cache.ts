@@ -38,6 +38,15 @@ export interface ReasoningDialectKey {
   model: string;
 }
 
+/**
+ * #1267 — the learned value for an endpoint and model that answered a
+ * reasoning request with reasoning alone (Ollama's Gemma 4 on
+ * `/v1/chat/completions`): ask them with `reasoning_effort: "none"`. Shared by
+ * the Local and the OpenAI-compatible gateway clients. Distinct from
+ * `"none"`, which both clients read as "send no reasoning field at all".
+ */
+export const ANSWERS_ONLY_UNREASONED = "off";
+
 /** How long a learned downgrade holds before the full request is tried again. */
 export const DIALECT_TTL_MS = 60 * 60 * 1000;
 

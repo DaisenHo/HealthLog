@@ -9,6 +9,7 @@ import {
   type OpenAIChatCompletionsCapabilities,
 } from "./openai-capabilities";
 import {
+  ANSWERS_ONLY_UNREASONED,
   annotateReasoningDowngrade,
   isReasoningParameterRejection,
   learnedReasoningDialect,
@@ -193,6 +194,10 @@ export class OpenAIClient implements AIProvider {
       this.config.model,
     );
     const reasoningWire = this.planReasoning(params, hasTools, capabilities);
+    // #1126 — the gateway entry's own setting, for a call without a resolved
+    // level (sent below unless the wire already carries `none`).
+    const entryEffort =
+      !params.reasoning && this.isGateway ? this.reasoningEffort : null;
     // Reasoning tokens count against the completion budget on every one of
     // these wires, so the thinking budget rides on top of the answer budget
     // (a ceiling, not a charge). Without it a 600-token Coach round spends
@@ -248,7 +253,12 @@ export class OpenAIClient implements AIProvider {
           // #1126 — the gateway entry's reasoning setting; Default sends
           // nothing. `api.openai.com` and Codex never get it. v1.41 — a call
           // that carries its own resolved level (`params.reasoning`) wins.
-          ...(!params.reasoning && this.isGateway && this.reasoningEffort
+          // #1267 — once a model answered nothing while reasoning, the wire
+          // below carries `none` instead (`planReasoning`).
+          ...(!params.reasoning &&
+          this.isGateway &&
+          this.reasoningEffort &&
+          reasoningWire.kind === "none"
             ? { reasoning_effort: this.reasoningEffort }
             : {}),
           ...(reasoningWire.kind === "reasoning_effort"
@@ -423,6 +433,41 @@ export class OpenAIClient implements AIProvider {
     // A reply with tool calls and no prose is valid (F1 tool loop); only an
     // empty reply with neither content NOR tool calls is an error.
     if (!content && !toolCalls) {
+      // #1267 — a gateway in front of a thinking model (Ollama serving
+      // Gemma 4, say) can answer with the thought in `reasoning` and no
+      // content. Asked with `none`, the same model answers; learn that once
+      // and ask again. Same rule as the Local client.
+      const sentEffort =
+        reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
+      const message = (choice?.message ?? {}) as Record<string, unknown>;
+      const hadReasoning = [message.reasoning, message.reasoning_content].some(
+        (v) => typeof v === "string" && v.trim().length > 0,
+      );
+      if (
+        this.isGateway &&
+        sentEffort !== "none" &&
+        (hadReasoning || sentEffort !== null)
+      ) {
+        rememberReasoningDialect(
+          this.reasoningDialectKey(),
+          ANSWERS_ONLY_UNREASONED,
+        );
+        annotateReasoningDowngrade(this.type, sentEffort ?? "default", "none");
+        emitSignal({
+          action: "ai.gateway.reasoning_answerless",
+          level: "warn",
+          meta: {
+            effort: sentEffort ?? "default",
+            finish:
+              choice?.finish_reason === "length" ||
+              choice?.finish_reason === "stop"
+                ? choice.finish_reason
+                : "other",
+            reasoning: hadReasoning,
+          },
+        });
+        return this.generateCompletion(params);
+      }
       // v1.20.1 — tag the empty-reply throw with a sentinel `httpStatus: 0` +
       // `kind` so the provider-chain classifier can tell an empty 200-OK reply
       // apart from a genuine transport failure (ECONNRESET, DNS, timeout) in
@@ -434,7 +479,7 @@ export class OpenAIClient implements AIProvider {
       );
       Object.assign(err, {
         httpStatus: 0,
-        kind: "empty_response",
+        kind: hadReasoning ? "reasoning_only" : "empty_response",
         upstream: this.isGateway ? "openai-compatible" : "openai",
       });
       throw err;
@@ -529,10 +574,16 @@ export class OpenAIClient implements AIProvider {
     capabilities: OpenAIChatCompletionsCapabilities,
   ): OpenAIReasoningWire {
     const reasoning = params.reasoning;
-    if (!reasoning) return { kind: "none" };
-    if (learnedReasoningDialect(this.reasoningDialectKey()) === "none") {
-      return { kind: "none" };
+    const learned = learnedReasoningDialect(this.reasoningDialectKey());
+    // #1267 — a gateway model that answered a reasoning request with
+    // reasoning alone is asked with `none`, with or without a call level.
+    if (this.isGateway && learned === ANSWERS_ONLY_UNREASONED) {
+      return isOpenRouterEndpoint(this.config.baseUrl)
+        ? { kind: "openrouter", effort: "none" }
+        : { kind: "reasoning_effort", effort: "none" };
     }
+    if (!reasoning) return { kind: "none" };
+    if (learned === "none") return { kind: "none" };
     const level = reasoning.effort;
     if (this.isGateway) {
       const effort = level === "off" ? "none" : level;
