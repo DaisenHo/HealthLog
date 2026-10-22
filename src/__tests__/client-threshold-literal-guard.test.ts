@@ -75,14 +75,23 @@ function clientFiles(): ClientFile[] {
   return out;
 }
 
+const parsed = new Map<string, ts.SourceFile>();
+
+/** One parse per file and source, however many rules read it. */
 function parse(name: string, source: string): ts.SourceFile {
-  return ts.createSourceFile(
-    name,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    name.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-  );
+  const key = `${name}\0${source}`;
+  let file = parsed.get(key);
+  if (file === undefined) {
+    file = ts.createSourceFile(
+      name,
+      source,
+      ts.ScriptTarget.Latest,
+      true,
+      name.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    );
+    parsed.set(key, file);
+  }
+  return file;
 }
 
 /** The literal text a JSX attribute initialiser carries, if it is one. */
@@ -218,6 +227,11 @@ function resolverImports(name: string, source: string): string[] {
 interface Rule {
   name: string;
   find: (name: string, source: string) => string[];
+  /**
+   * Text a file must contain for `find` to have anything to report, tested
+   * before any parse. Every shape the rule matches carries one of these.
+   */
+  markers: readonly string[];
   /** Sources that must produce at least one hit, proving the matcher. */
   samples: Array<{ name: string; source: string }>;
   /** File → exact hit count it may have, with the reason. */
@@ -228,6 +242,7 @@ const RULES: Rule[] = [
   {
     name: "a literal directionSentiment",
     find: literalDirections,
+    markers: ["directionSentiment"],
     samples: [
       {
         name: "sample.tsx",
@@ -249,6 +264,7 @@ const RULES: Rule[] = [
   {
     name: "a reference line at a literal",
     find: literalLines,
+    markers: [...LINE_TAGS],
     samples: [
       {
         name: "sample.tsx",
@@ -280,12 +296,14 @@ const RULES: Rule[] = [
   {
     name: "a polarity table",
     find: polarityTables,
+    markers: ["up-good", "up-bad", "UP_GOOD_", "UP_BAD_", "Sentiment"],
     samples: POLARITY_SAMPLES.map((source) => ({ name: "sample.ts", source })),
     allow: {},
   },
   {
     name: "a server resolver imported into the browser",
     find: resolverImports,
+    markers: SERVER_RESOLVERS,
     samples: [
       {
         name: "sample.ts",
@@ -299,12 +317,19 @@ const RULES: Rule[] = [
 
 const FILES = clientFiles();
 
+const ruleHits = new Map<Rule, Map<string, string[]>>();
+
+/** Each rule's hits across the client tree, found once per run. */
 function hitsFor(rule: Rule): Map<string, string[]> {
-  const out = new Map<string, string[]>();
+  let out = ruleHits.get(rule);
+  if (out !== undefined) return out;
+  out = new Map<string, string[]>();
   for (const { rel, source } of FILES) {
+    if (!rule.markers.some((marker) => source.includes(marker))) continue;
     const hits = rule.find(rel, source);
     if (hits.length > 0) out.set(rel, hits);
   }
+  ruleHits.set(rule, out);
   return out;
 }
 
@@ -321,6 +346,12 @@ describe("client threshold literal guard", () => {
             rule.find(sample.name, sample.source).length,
             `no hit on: ${sample.source}`,
           ).toBeGreaterThan(0);
+          // The pre-filter has to let every sample through, or it would hide
+          // the shape before the matcher saw it.
+          expect(
+            rule.markers.some((marker) => sample.source.includes(marker)),
+            `the markers skip: ${sample.source}`,
+          ).toBe(true);
         }
       });
 
