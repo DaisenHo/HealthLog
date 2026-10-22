@@ -162,6 +162,22 @@ const NORMATIVE_KEYWORDS: Record<Locale, readonly string[]> = {
     "초과",
     "미만",
   ],
+  // "meta" alone would also open "metabolismo" and "metade", so the goal noun
+  // is spelled with its preposition.
+  "pt-BR": [
+    "meta de",
+    "metas de",
+    "alvo",
+    "objetivo",
+    "deveria",
+    "deve ser",
+    "devem ser",
+    "faixa normal",
+    "acima d",
+    "abaixo d",
+    "superior a",
+    "inferior a",
+  ],
 };
 
 /**

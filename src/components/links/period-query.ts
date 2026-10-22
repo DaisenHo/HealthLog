@@ -52,6 +52,7 @@ export interface PeriodQuery {
 const CONNECTORS: Record<string, readonly string[]> = {
   es: ["de", "del"],
   it: ["del"],
+  pt: ["de", "do"],
 };
 
 const nameCache = new Map<string, ReadonlyArray<[string, number]>>();

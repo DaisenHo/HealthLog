@@ -23,7 +23,7 @@ import type {
   ChannelType,
   NotificationPayload,
 } from "@/lib/notifications/types";
-import { defaultLocale, type Locale } from "@/lib/i18n/config";
+import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 
 export const dynamic = "force-dynamic";
@@ -109,19 +109,6 @@ function failedSend(
     ...(upstreamStatus !== undefined ? { upstreamStatus } : {}),
     ...(smtpCode !== undefined ? { smtpCode } : {}),
   };
-}
-
-function isLocale(value: string | null | undefined): value is Locale {
-  return (
-    value === "de" ||
-    value === "en" ||
-    value === "fr" ||
-    value === "es" ||
-    value === "it" ||
-    value === "pl" ||
-    value === "ko" ||
-    value === "nl"
-  );
 }
 
 export const POST = apiHandler(async () => {

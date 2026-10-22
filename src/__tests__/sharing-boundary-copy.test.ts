@@ -38,7 +38,17 @@ import {
  * it — which is the part that rots silently.
  */
 const ROOT = process.cwd();
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
+const LOCALES = [
+  "de",
+  "en",
+  "es",
+  "fr",
+  "it",
+  "pl",
+  "ko",
+  "nl",
+  "pt-BR",
+] as const;
 
 /** The published description of the level, off the Zod schema itself. */
 function accessDescription(): string {

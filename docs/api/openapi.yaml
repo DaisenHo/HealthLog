@@ -27541,6 +27541,7 @@ components:
             - pl
             - ko
             - nl
+            - pt-BR
         practiceName:
           type: string
           maxLength: 120
@@ -30039,14 +30040,15 @@ components:
           description: Optional UI locale hint for the model.
           type: string
           enum:
-            - en
             - de
-            - es
+            - en
             - fr
+            - es
             - it
             - pl
             - ko
             - nl
+            - pt-BR
         today:
           description: "Optional override of the reference date used to resolve relative phrases (\"tomorrow\", \"next Monday\").
             Format: `YYYY-MM-DD`. Defaults to the account's own day in its time zone."
@@ -31015,6 +31017,7 @@ components:
             - pl
             - ko
             - nl
+            - pt-BR
           description: One of the interface locales this build ships.
       required:
         - locale
@@ -36349,12 +36352,13 @@ components:
           enum:
             - de
             - en
-            - es
             - fr
+            - es
             - it
             - pl
             - ko
             - nl
+            - pt-BR
         timezone:
           type: string
           minLength: 1
@@ -36404,12 +36408,13 @@ components:
           enum:
             - de
             - en
-            - es
             - fr
+            - es
             - it
             - pl
             - ko
             - nl
+            - pt-BR
         timezone:
           type: string
           minLength: 1
@@ -36622,12 +36627,13 @@ components:
               enum:
                 - de
                 - en
-                - es
                 - fr
+                - es
                 - it
                 - pl
                 - ko
                 - nl
+                - pt-BR
             - type: "null"
         timezone:
           type: string
@@ -59173,6 +59179,7 @@ components:
                 - pl
                 - ko
                 - nl
+                - pt-BR
           required:
             - locale
           additionalProperties: false
@@ -87488,12 +87495,13 @@ components:
               enum:
                 - de
                 - en
-                - es
                 - fr
+                - es
                 - it
                 - pl
                 - ko
                 - nl
+                - pt-BR
             - type: "null"
         timezone:
           type: string

@@ -117,4 +117,10 @@ describe("parseYesNo", () => {
     expect(parseYesNo("")).toBeNull();
     expect(parseYesNo("maybe")).toBeNull();
   });
+
+  it("reads Portuguese, with or without the accent", () => {
+    expect(parseYesNo("Sim")).toBe(true);
+    expect(parseYesNo("Não")).toBe(false);
+    expect(parseYesNo("nao")).toBe(false);
+  });
 });

@@ -26,7 +26,17 @@ import { readSource } from "@/__tests__/helpers/source-files";
 
 const ROOT = path.resolve(__dirname, "../..");
 
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
+const LOCALES = [
+  "de",
+  "en",
+  "es",
+  "fr",
+  "it",
+  "pl",
+  "ko",
+  "nl",
+  "pt-BR",
+] as const;
 
 /** Every path the retired bridge occupied. */
 const REMOVED_PATHS = [

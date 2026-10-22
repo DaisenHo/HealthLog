@@ -38,7 +38,7 @@
  */
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
-import { defaultLocale, type Locale } from "@/lib/i18n/config";
+import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import type { EventType, NotificationPayload } from "@/lib/notifications/types";
@@ -70,19 +70,6 @@ interface DispatchLocalisedOptions {
    * gracefully to whatever channels are configured.
    */
   urgent?: boolean;
-}
-
-function isLocale(value: string | null | undefined): value is Locale {
-  return (
-    value === "de" ||
-    value === "en" ||
-    value === "fr" ||
-    value === "es" ||
-    value === "it" ||
-    value === "pl" ||
-    value === "ko" ||
-    value === "nl"
-  );
 }
 
 /**

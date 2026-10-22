@@ -46,6 +46,7 @@ import { SettingsCardActions } from "./_card-actions";
 import { SettingsCardHeader } from "./_card-header";
 import { SettingsCard } from "./settings-card";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { locales } from "@/lib/i18n/config";
 
 interface ManagedRecordSettingsResponse {
   recordId: string;
@@ -411,7 +412,7 @@ function ProfileSettingsForm({
           <option value="">
             {t("settings.sharedRecord.managedSettings.profile.systemDefault")}
           </option>
-          {["de", "en", "es", "fr", "it", "pl", "ko", "nl"].map((locale) => (
+          {locales.map((locale) => (
             <option key={locale} value={locale}>
               {locale}
             </option>

@@ -7,6 +7,7 @@ export const locales = [
   "pl",
   "ko",
   "nl",
+  "pt-BR",
 ] as const;
 export type Locale = (typeof locales)[number];
 
@@ -22,6 +23,29 @@ export const defaultLocale: Locale = "en";
  * bundles were complete. Route every such coercion through here so adding a
  * locale to `locales` is the only edit a new language needs.
  */
+export function isLocale(value: unknown): value is Locale {
+  return (
+    typeof value === "string" && (locales as readonly string[]).includes(value)
+  );
+}
+
+/**
+ * Map a BCP-47 language tag (`navigator.language`, one Accept-Language entry)
+ * to a shipped locale: an exact match first, case-insensitive so `pt-br`
+ * finds `pt-BR`, then the primary subtag, so `de-AT` reads German and `pt-PT`
+ * reads the one Portuguese bundle rather than English.
+ */
+export function localeFromLanguageTag(
+  tag: string | null | undefined,
+): Locale | null {
+  const lower = tag?.trim().toLowerCase();
+  if (!lower) return null;
+  const exact = locales.find((l) => l.toLowerCase() === lower);
+  if (exact) return exact;
+  const primary = lower.split("-")[0];
+  return locales.find((l) => l.toLowerCase().split("-")[0] === primary) ?? null;
+}
+
 export function coerceLocale(locale: string | null | undefined): Locale {
   return locales.includes(locale as Locale)
     ? (locale as Locale)
@@ -43,6 +67,7 @@ export const localeLanguageNames: Record<Locale, string> = {
   pl: "Polish",
   ko: "Korean",
   nl: "Dutch",
+  "pt-BR": "Brazilian Portuguese",
 };
 
 export const localeLabels: Record<Locale, string> = {
@@ -54,6 +79,7 @@ export const localeLabels: Record<Locale, string> = {
   pl: "Polski",
   ko: "한국어",
   nl: "Nederlands",
+  "pt-BR": "Português (Brasil)",
 };
 
 /**

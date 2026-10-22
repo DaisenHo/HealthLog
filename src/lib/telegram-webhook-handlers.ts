@@ -72,6 +72,7 @@ const HELP_WORDS: readonly string[] = [
   "ayuda",
   "aiuto",
   "pomoc",
+  "ajuda",
 ];
 
 /** Greetings the bot answers with a wave, in every language the app ships. */
@@ -90,6 +91,9 @@ const GREETING_WORDS: readonly string[] = [
   "czesc",
   "witaj",
   "dzien dobry",
+  "oi",
+  "ola",
+  "bom dia",
 ];
 
 /**

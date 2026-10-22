@@ -26,6 +26,7 @@ import {
   AUDIT_C_ITEMS,
   AUDIT_C_STANDARD_DRINK,
 } from "@/lib/mental-health/instruments";
+import { localeFromLanguageTag } from "@/lib/i18n/config";
 
 export type AuditCCutoffSource =
   "S3_ALCOHOL_DE" | "KNHANES_KR" | "BRADLEY_2007";
@@ -110,15 +111,15 @@ export function auditCTotal(items: readonly number[]): number {
   return items.reduce((sum, item) => sum + item, 0);
 }
 
-/** The app languages; anything else is read as English. */
-const APP_LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
-
-/** Normalise a requested or stored locale onto the app languages. */
+/**
+ * Normalise a requested or stored locale onto the app languages; anything
+ * else is read as English. A region tag keeps its region where the app ships
+ * one (`pt-BR`), so the lookups below do not cut it down to a bare `pt`.
+ */
 export function normaliseAuditCLocale(
   locale: string | null | undefined,
 ): string {
-  const base = (locale ?? "en").slice(0, 2).toLowerCase();
-  return (APP_LOCALES as readonly string[]).includes(base) ? base : "en";
+  return localeFromLanguageTag(locale) ?? "en";
 }
 
 /** Whether `locale` has a validated translation of the three items. */

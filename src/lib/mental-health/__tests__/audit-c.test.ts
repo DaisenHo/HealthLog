@@ -9,6 +9,7 @@ import {
   isValidatedAuditCLocale,
   normaliseAuditCLocale,
 } from "../audit-c";
+import { locales } from "@/lib/i18n/config";
 import { AUDIT_C_ITEMS, AUDIT_C_STANDARD_DRINK } from "../instruments";
 
 describe("AUDIT-C cut-offs", () => {
@@ -75,12 +76,16 @@ describe("AUDIT-C instrument", () => {
   it("knows which languages are validated", () => {
     expect(["de", "en", "ko", "pl"].every(isValidatedAuditCLocale)).toBe(true);
     expect(["es", "fr", "it"].some(isValidatedAuditCLocale)).toBe(false);
-    expect(normaliseAuditCLocale("pt-BR")).toBe("en");
+    expect(normaliseAuditCLocale("sv-SE")).toBe("en");
     expect(normaliseAuditCLocale("de-AT")).toBe("de");
+    // A shipped region tag keeps its region instead of collapsing to "pt".
+    expect(normaliseAuditCLocale("pt-BR")).toBe("pt-BR");
+    expect(normaliseAuditCLocale("pt-PT")).toBe("pt-BR");
+    expect(isValidatedAuditCLocale("pt-BR")).toBe(false);
   });
 
   it("carries a standard-drink sentence for every app language", () => {
-    for (const locale of ["de", "en", "es", "fr", "it", "pl", "ko", "nl"]) {
+    for (const locale of locales) {
       expect(AUDIT_C_STANDARD_DRINK[locale]?.length).toBeGreaterThan(20);
     }
   });

@@ -55,6 +55,7 @@ const loaders: Record<Locale, () => Promise<{ default: MessageBundle }>> = {
   pl: () => import("../../../messages/pl.json"),
   ko: () => import("../../../messages/ko.json"),
   nl: () => import("../../../messages/nl.json"),
+  "pt-BR": () => import("../../../messages/pt-BR.json"),
 };
 
 function initialCache(): Partial<Record<Locale, MessageBundle>> {

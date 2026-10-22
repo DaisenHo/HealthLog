@@ -994,6 +994,8 @@ const INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK: Record<
   pl: "\n\nREPLY LANGUAGE: render all user-facing strings in Polish. Use natural Polish health vocabulary with formal Pan/Pani register for medical-adjacent topics. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
   nl: "\n\nREPLY LANGUAGE: render all user-facing strings in Dutch, in the informal je/jij register throughout (never formal u). Use natural Dutch health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
   ko: "\n\nREPLY LANGUAGE: render all user-facing strings in Korean, in the 해요체 register throughout (never 합쇼체 or plain 한다체). Use natural Korean health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
+  "pt-BR":
+    "\n\nREPLY LANGUAGE: render all user-facing strings in Brazilian Portuguese (pt-BR, never European Portuguese), addressing the user as você throughout. Use natural Brazilian health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
 };
 
 /**
@@ -1003,9 +1005,9 @@ const INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK: Record<
 export function getStrictInsightsSystemPrompt(locale: Locale): string {
   if (locale === "de") return SYSTEM_PROMPT_DE;
   if (locale === "en") return SYSTEM_PROMPT_EN;
-  // ko and nl ship no safety-contract matrix, so they are not a
+  // ko, nl and pt-BR ship no safety-contract matrix, so they are not a
   // NativeCoachLocale.
-  if (locale === "ko" || locale === "nl") {
+  if (locale === "ko" || locale === "nl" || locale === "pt-BR") {
     return SYSTEM_PROMPT_EN + INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK[locale];
   }
   try {

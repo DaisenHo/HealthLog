@@ -22,22 +22,9 @@ import {
 } from "@/lib/auth/device-fingerprint";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
-import { defaultLocale, type Locale } from "@/lib/i18n/config";
+import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { getEvent } from "@/lib/logging/context";
 import { isP2002 } from "@/lib/prisma-errors";
-
-function isLocale(value: string | null | undefined): value is Locale {
-  return (
-    value === "de" ||
-    value === "en" ||
-    value === "fr" ||
-    value === "es" ||
-    value === "it" ||
-    value === "pl" ||
-    value === "ko" ||
-    value === "nl"
-  );
-}
 
 export interface RecordSignInResult {
   known: boolean;

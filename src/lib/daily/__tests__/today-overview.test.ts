@@ -630,7 +630,7 @@ describe("appointments", () => {
 });
 
 describe("locales", () => {
-  it.each(["de", "es", "fr", "it", "pl", "ko", "nl"] as Locale[])(
+  it.each(["de", "es", "fr", "it", "pl", "ko", "nl", "pt-BR"] as Locale[])(
     "resolves every %s string from its own bundle",
     (locale) => {
       const tl = getServerTranslator(locale).t;

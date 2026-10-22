@@ -42,7 +42,17 @@ import { describe, expect, it } from "vitest";
 import { consentNeededForProviders } from "@/lib/ai/capabilities/resolve";
 
 const MESSAGES = join(__dirname, "../../messages");
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
+const LOCALES = [
+  "de",
+  "en",
+  "es",
+  "fr",
+  "it",
+  "pl",
+  "ko",
+  "nl",
+  "pt-BR",
+] as const;
 
 function bundle(locale: string): Record<string, unknown> {
   return JSON.parse(readFileSync(join(MESSAGES, `${locale}.json`), "utf8"));

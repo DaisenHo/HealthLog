@@ -12,7 +12,12 @@ import {
   type ReactNode,
 } from "react";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
-import { locales, defaultLocale, type Locale } from "./config";
+import {
+  locales,
+  defaultLocale,
+  localeFromLanguageTag,
+  type Locale,
+} from "./config";
 import {
   makeFormatters,
   type Formatters,
@@ -66,10 +71,7 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 
 function detectSystemLocale(): Locale {
   if (typeof window === "undefined") return defaultLocale;
-  const browserLang = navigator.language.split("-")[0];
-  return (locales as readonly string[]).includes(browserLang)
-    ? (browserLang as Locale)
-    : defaultLocale;
+  return localeFromLanguageTag(navigator.language) ?? defaultLocale;
 }
 
 function readLocaleCookie(): Locale | null {
