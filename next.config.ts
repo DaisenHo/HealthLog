@@ -35,6 +35,16 @@ const nextConfig: NextConfig = {
   // still covers the full program.
   typescript: { tsconfigPath: "tsconfig.build.json" },
   poweredByHeader: false,
+  // The image optimizer is off. Nothing renders through `next/image`: logos,
+  // icons and avatars are plain `<img>` elements served from `public/` or
+  // from an authenticated route. With the optimizer on, `/_next/image` still
+  // fetched, decoded and re-encoded whatever local path a request named,
+  // which is surface this app has no use for and where the framework has
+  // shipped critical advisories. Off, Next answers that route with 404
+  // before it reads a single parameter. `next-image-optimizer-guard.test.ts`
+  // holds this: it fails when `next/image` is imported while the optimizer
+  // is off, and when the optimizer comes back with SVG input allowed.
+  images: { unoptimized: true },
   // v1.4.38.4 — expose the package.json version to the client bundle
   // so the `<VersionPoller>` can compare the shell-baked version
   // against the live `/api/version` response and trigger a self-heal
