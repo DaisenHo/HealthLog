@@ -64,7 +64,14 @@ function buildIndex(): Map<string, Glp1SideEffectTag> {
   return index;
 }
 
-const TAG_INDEX = buildIndex();
+let tagIndexCache: ReturnType<typeof tagIndexBuild> | undefined;
+/** Built on first use, not at module load: it reads every shipped catalog. */
+function tagIndex(): ReturnType<typeof tagIndexBuild> {
+  return (tagIndexCache ??= tagIndexBuild());
+}
+function tagIndexBuild() {
+  return buildIndex();
+}
 
 /**
  * Test seam: the guard suite asserts the index covers every locale and that no
@@ -74,7 +81,7 @@ export function glp1SideEffectTagIndex(): ReadonlyMap<
   string,
   Glp1SideEffectTag
 > {
-  return TAG_INDEX;
+  return tagIndex();
 }
 
 /**
@@ -89,7 +96,7 @@ export function glp1SideEffectTagIndex(): ReadonlyMap<
 export function resolveGlp1SideEffectTag(
   raw: string,
 ): Glp1SideEffectTag | null {
-  return TAG_INDEX.get(normaliseSideEffectTag(raw)) ?? null;
+  return tagIndex().get(normaliseSideEffectTag(raw)) ?? null;
 }
 
 /** What one `MoodEntry.tags` column contributed. */

@@ -388,7 +388,17 @@ function buildDerivedHealthTokens(): ReadonlySet<string> {
   return tokens;
 }
 
-const DERIVED_HEALTH_TOKENS = buildDerivedHealthTokens();
+let memoDerivedHealthTokensCache:
+  ReturnType<typeof memoDerivedHealthTokensBuild> | undefined;
+/** Built on first use, not at module load: it reads every shipped catalog. */
+function memoDerivedHealthTokens(): ReturnType<
+  typeof memoDerivedHealthTokensBuild
+> {
+  return (memoDerivedHealthTokensCache ??= memoDerivedHealthTokensBuild());
+}
+function memoDerivedHealthTokensBuild() {
+  return buildDerivedHealthTokens();
+}
 
 /**
  * Test seam: the guard suite asserts the derived set is non-empty and that
@@ -396,13 +406,13 @@ const DERIVED_HEALTH_TOKENS = buildDerivedHealthTokens();
  * metric labels fails the suite rather than quietly narrowing the allow-list.
  */
 export function derivedHealthTokens(): ReadonlySet<string> {
-  return DERIVED_HEALTH_TOKENS;
+  return memoDerivedHealthTokens();
 }
 
 /** True when any whole word of the message is a health noun from the bundles. */
 function matchesDerivedHealthToken(message: string): boolean {
   for (const word of healthWordTokens(message)) {
-    if (DERIVED_HEALTH_TOKENS.has(word)) return true;
+    if (memoDerivedHealthTokens().has(word)) return true;
   }
   return false;
 }

@@ -42,7 +42,7 @@ import {
   getLabHistory,
   resolveRichMetric,
   MCP_METRIC_STATUS_DISCOVERY,
-  LOCALISED_METRIC_NAME_COLLISIONS,
+  localisedMetricNameCollisions,
   metricStatusDiscoveryRows,
 } from "../rich-reads";
 import { locales } from "@/lib/i18n/config";
@@ -292,7 +292,7 @@ describe("resolveRichMetric — localised metric names", () => {
   // the set is empty and pinned empty: a NEW collision fails here instead of
   // silently resolving to whichever entry happened to be built first.
   it("refuses a word two different metrics claim, and only those words", () => {
-    expect([...LOCALISED_METRIC_NAME_COLLISIONS].sort()).toEqual([]);
+    expect([...localisedMetricNameCollisions()].sort()).toEqual([]);
   });
 
   // The property, not a sample: over every metric and every shipped locale,
