@@ -335,5 +335,12 @@ describe("dashboard all-time counts — parity with the live count", () => {
     expect(legacy.get("PULSE")).toBeGreaterThan(500_000);
     expect(legacy.get("WEIGHT")).toBe(5);
     expect(legacy.get("BLOOD_GLUCOSE")).toBe(2);
-  });
+    // Over half a million rows written and folded into DAY buckets: about
+    // 35 s on a CI runner when the file ran alone. With three files sharing
+    // the runner's Postgres it took 1.7 times as long (measured with the
+    // database capped at two CPUs, HEALTHLOG_INTEGRATION_PG_CPUS=2: 14.6 s
+    // alone, 25.3 s beside the sharing matrix and the restore memory test),
+    // past the suite's 60 s default. The work is the point of the case, so
+    // the budget is sized to it: twice the contended estimate.
+  }, 150_000);
 });
