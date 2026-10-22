@@ -22,15 +22,29 @@
  *   5. Hand the restore malformed and unresolvable files and pin each refusal
  *      and each skip report, and the schema's issue list for a bad file.
  *
+ * The account carries a tombstone of every model that keeps them and both
+ * self-references (a flare under its condition, a superseded profile fact),
+ * so the second restore pass has something to resolve. Every timestamp the
+ * database stamped while the fixture ran is pinned to a fixed historical
+ * value, and the seeded account is asserted to hold none of this run's: a
+ * restore that drops a row's `createdAt` then shows up as `<now>` against a
+ * historical value instead of hiding behind a seeded `<now>`. The fixture is
+ * sealed under the legacy key `v1`, and a second key is active from the
+ * export on, so a value the restore re-encrypts instead of carrying over
+ * comes back under `v2`.
+ *
  * Values that legitimately differ between two runs are normalised, never
  * dropped: ids become `<id:N>` in order of first appearance, ciphertext
- * becomes the text it opens to (or its length when no codec opens it), and a
- * timestamp written during the run becomes `<now>`. Key order is kept, so a
- * file that carries the same values in another order differs.
+ * becomes the key id it names and the text it opens to (or its length when no
+ * codec opens it), and a timestamp written during the run becomes `<now>`.
+ * Key order is kept, so a file that carries the same values in another order
+ * differs.
  *
  * `BACKUP_PARITY_WRITE=1` rewrites the golden copies. Only do that for a
  * change that means to alter the backup, and review the diff of
- * `tests/integration/__golden__/backup-parity/` as part of it.
+ * `tests/integration/__golden__/backup-parity/` as part of it. A change to
+ * this harness itself writes them from the backup code as it was before the
+ * change under test, never from the code being checked.
  */
 import { Buffer } from "node:buffer";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -39,8 +53,16 @@ import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { PrismaClient } from "@/generated/prisma/client";
-import { decrypt, decryptBytes, encrypt } from "@/lib/crypto";
-import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
+import {
+  _resetCryptoCacheForTests,
+  decrypt,
+  decryptBytes,
+  encrypt,
+  encryptBytes,
+  extractKeyId,
+  extractKeyIdFromBytes,
+} from "@/lib/crypto";
+import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { openDayCountry } from "@/lib/dawarich/connection";
 import { openLocation } from "@/lib/environment/location-cipher";
 import { decryptFactData, decryptFactProvenance } from "@/lib/documents/store";
@@ -68,6 +90,7 @@ import {
   syntheticValue,
 } from "./backup-column-audit";
 import {
+  AT,
   COLUMN_PRESENCE_ONLY,
   FILL_OVERRIDES,
   OWNER_ID,
@@ -187,6 +210,34 @@ function openBytes(value: Uint8Array): string | null {
   return null;
 }
 
+/**
+ * The key id of a sealed byte value: the header of the binary codec, or the
+ * `<id>.` prefix of a string-codec ciphertext stored as its UTF-8 bytes.
+ * `-` for neither.
+ */
+function bytesKeyId(value: Uint8Array): string {
+  const buffer = Buffer.from(value);
+  return (
+    extractKeyIdFromBytes(buffer) ??
+    extractKeyId(buffer.toString("utf8")) ??
+    "-"
+  );
+}
+
+/**
+ * The key id of a sealed string: the `<id>.` prefix of the string codec, or
+ * the header of a sealed byte value carried as base64. `-` for neither (the
+ * unversioned legacy string form, or another codec).
+ */
+function stringKeyId(value: string): string {
+  const id = extractKeyId(value);
+  if (id !== null) return id;
+  if (value.length % 4 === 0 && BASE64.test(value)) {
+    return bytesKeyId(Buffer.from(value, "base64"));
+  }
+  return "-";
+}
+
 function openString(value: string): string | null {
   try {
     return decrypt(value);
@@ -234,11 +285,18 @@ class Normaliser {
     return DAY.test(out) && this.days.has(out) ? "<today>" : out;
   }
 
+  /**
+   * A sealed string, as the key it was sealed under and the text it opens to.
+   * The key id is part of the comparison: a restore that re-encrypted a value
+   * the file carried as ciphertext opens to the same text under another key,
+   * and only the id shows it.
+   */
   sealed(value: string): string {
     const opened = openString(value);
+    const kid = stringKeyId(value);
     return opened === null
-      ? `<sealed:${value.length}>`
-      : `<sealed:${this.text(opened)}>`;
+      ? `<sealed:${kid}:${value.length}>`
+      : `<sealed:${kid}:${this.text(opened)}>`;
   }
 
   /** A JSON value, key order kept. */
@@ -267,7 +325,7 @@ class Normaliser {
       const opened = openBytes(value);
       return opened === null
         ? `<bytes:${Buffer.from(value).toString("base64")}>`
-        : `<sealed:${this.text(opened)}>`;
+        : `<sealed:${bytesKeyId(value)}:${this.text(opened)}>`;
     }
     if (typeof value === "bigint") return `bigint:${value}`;
     if (
@@ -515,7 +573,369 @@ async function seedMaximalAccount(prisma: PrismaClient) {
       acceptedAt: new Date("2026-07-02T09:00:00.000Z"),
     },
   });
-  return { admin, unfillable: unfillable.sort() };
+  await seedTombstones(prisma);
+  await seedSelfReferences(prisma);
+  const unpinned = await pinRunTimeTimestamps(prisma);
+  rotateActiveKey();
+  return { admin, unfillable: unfillable.sort(), unpinned };
+}
+
+/**
+ * One soft-deleted row of every model that keeps tombstones, beside the live
+ * rows the fixture seeds. A disaster-recovery file carries the tombstones a
+ * device sync needs to keep a deleted row deleted, and the golden copies pin
+ * which models' tombstones the file carries and that each comes back deleted.
+ * Seeded after the column fill so the fill still lands on the live rows.
+ */
+async function seedTombstones(prisma: PrismaClient) {
+  const deletedAt = AT(TOMBSTONE_DELETED_AT);
+  const userId = OWNER_ID;
+  const medication = await prisma.medication.findFirstOrThrow({
+    where: { userId, name: "Round-trip tablet" },
+  });
+  const episode = await prisma.illnessEpisode.findFirstOrThrow({
+    where: { userId, label: "Cold" },
+  });
+  const cycle = await prisma.menstrualCycle.findFirstOrThrow({
+    where: { userId, startDate: "2026-06-01" },
+  });
+  const metric = await prisma.customMetric.findFirstOrThrow({
+    where: { userId, name: "Grip strength" },
+  });
+  const thread = await prisma.coachConversation.findFirstOrThrow({
+    where: { userId, documentScoped: false },
+  });
+
+  await prisma.medicationIntakeEvent.create({
+    data: {
+      userId,
+      medicationId: medication.id,
+      scheduledFor: AT("2026-07-02T08:00:00.000Z"),
+      takenAt: AT("2026-07-02T08:03:00.000Z"),
+      deletedAt,
+    },
+  });
+  await prisma.mentalHealthAssessment.create({
+    data: {
+      userId,
+      instrument: "GAD7",
+      locale: "en",
+      version: "standard",
+      responsesEncrypted: encryptToBytes(
+        JSON.stringify({ items: [1, 1, 0, 1, 0, 1, 0], schema: 1 }),
+      ),
+      totalScore: 4,
+      severityBand: "minimal",
+      takenAt: AT("2026-06-05T18:00:00.000Z"),
+      tz: "Europe/Berlin",
+      source: "WEB",
+      deletedAt,
+    },
+  });
+  await prisma.moodEntry.create({
+    data: {
+      userId,
+      date: "2026-07-03",
+      mood: "SCHLECHT",
+      score: 2,
+      moodLoggedAt: AT("2026-07-03T20:00:00.000Z"),
+      deletedAt,
+    },
+  });
+  await prisma.measurementReminder.create({
+    data: {
+      userId,
+      label: "Gewicht (deleted)",
+      measurementType: "WEIGHT",
+      intervalDays: 14,
+      deletedAt,
+    },
+  });
+  await prisma.labResult.create({
+    data: {
+      userId,
+      analyte: "TSH",
+      value: 2.1,
+      unit: "mU/L",
+      takenAt: AT("2026-05-30T09:00:00.000Z"),
+      deletedAt,
+    },
+  });
+  await prisma.customMetric.create({
+    data: { userId, name: "Plank (deleted)", unit: "s", deletedAt },
+  });
+  await prisma.customMetricEntry.create({
+    data: {
+      userId,
+      customMetricId: metric.id,
+      value: 40,
+      unit: "kg",
+      measuredAt: AT("2026-06-28T18:00:00.000Z"),
+      deletedAt,
+    },
+  });
+  await prisma.coachFact.create({
+    data: {
+      userId,
+      factEncrypted: encryptToBytes("a fact the person deleted"),
+      category: "preference",
+      sourceConversationId: thread.id,
+      source: "user",
+      deletedAt,
+    },
+  });
+  const plan = await prisma.coachPlan.create({
+    data: {
+      userId,
+      metric: "WEIGHT",
+      ifCueEncrypted: encryptToBytes("if the scale reads over 75"),
+      thenActionEncrypted: encryptToBytes("then skip the second helping"),
+      status: "active",
+      deletedAt,
+    },
+  });
+  await prisma.coachReminder.create({
+    data: {
+      userId,
+      noteEncrypted: encryptToBytes("a reminder the person deleted"),
+      relatedPlanId: plan.id,
+      triggerKind: "date",
+      dueAt: AT("2026-09-15T07:00:00.000Z"),
+      status: "active",
+      source: "extractor",
+      deletedAt,
+    },
+  });
+  await prisma.menstrualCycle.create({
+    data: { userId, startDate: "2026-05-04", deletedAt },
+  });
+  await prisma.cycleDayLog.create({
+    data: {
+      userId,
+      cycleId: cycle.id,
+      date: "2026-06-03",
+      flow: "LIGHT",
+      deletedAt,
+    },
+  });
+  await prisma.illnessEpisode.create({
+    data: {
+      userId,
+      label: "Sprained ankle (deleted)",
+      type: "INJURY",
+      onsetAt: AT("2026-04-10T00:00:00.000Z"),
+      deletedAt,
+    },
+  });
+  await prisma.illnessDayLog.create({
+    data: { userId, episodeId: episode.id, date: "2026-06-22", deletedAt },
+  });
+  await prisma.allergy.create({
+    data: { userId, substance: "Latex (deleted)", deletedAt },
+  });
+  await prisma.familyHistoryEntry.create({
+    data: {
+      userId,
+      relationship: "FATHER",
+      condition: "Hypertension (deleted)",
+      notesEncrypted: encryptToBytes("diagnosed at fifty"),
+      deletedAt,
+    },
+  });
+  const bytes = encryptBytes(Buffer.from("a page the person deleted"));
+  const contentEncrypted = new Uint8Array(new ArrayBuffer(bytes.byteLength));
+  contentEncrypted.set(bytes);
+  await prisma.inboundDocument.create({
+    data: {
+      userId,
+      kind: "OTHER",
+      title: "Deleted scan",
+      filename: "deleted-scan.pdf",
+      mimeType: "application/pdf",
+      byteSize: bytes.byteLength,
+      contentEncrypted,
+      contentCodec: "binary2",
+      deletedAt,
+    },
+  });
+  const practitioner = await prisma.practitioner.create({
+    data: { userId, name: "Closed practice (deleted)", deletedAt },
+  });
+  await prisma.encounter.create({
+    data: {
+      userId,
+      occurredAt: AT("2026-04-02T08:00:00.000Z"),
+      status: "DONE",
+      kind: "ROUTINE",
+      practitionerId: practitioner.id,
+      deletedAt,
+    },
+  });
+  await prisma.customVaccine.create({
+    data: { userId, name: "Deleted combo", components: ["rabies"], deletedAt },
+  });
+  await prisma.vaccinationRecord.create({
+    data: {
+      userId,
+      occurredAt: AT("2026-04-14T00:00:00.000Z"),
+      antigenSlug: "influenza",
+      vaccineName: "Influenza (deleted)",
+      deletedAt,
+    },
+  });
+  await prisma.lifeEvent.create({
+    data: {
+      userId,
+      category: "OTHER",
+      startDate: "2025-12-01",
+      precision: "DAY",
+      titleEncrypted: encryptToBytes("an event the person deleted"),
+      deletedAt,
+    },
+  });
+}
+
+/**
+ * The two models that point at another row of themselves. The restore writes
+ * those pointers in a second pass once every row of the model is back; with
+ * the pointers null, nothing in the file exercised it.
+ */
+async function seedSelfReferences(prisma: PrismaClient) {
+  const userId = OWNER_ID;
+  const chronic = await prisma.illnessEpisode.findFirstOrThrow({
+    where: { userId, label: "Iron deficiency" },
+  });
+  await prisma.illnessEpisode.create({
+    data: {
+      userId,
+      label: "Iron deficiency flare",
+      type: "CHRONIC",
+      lifecycle: "FLARE",
+      onsetAt: AT("2026-06-25T00:00:00.000Z"),
+      parentConditionId: chronic.id,
+    },
+  });
+  const first = await prisma.healthProfileFactRevision.findFirstOrThrow({
+    where: { userId, kind: "SMOKING_STATUS" },
+  });
+  const correction = await prisma.healthProfileFactRevision.create({
+    data: {
+      userId,
+      kind: "SMOKING_STATUS",
+      valueEncrypted: encryptToBytes("former"),
+      validFrom: AT("2026-02-01T00:00:00.000Z"),
+      provenance: "USER_REPORTED",
+    },
+  });
+  await prisma.healthProfileFactRevision.update({
+    where: { id: first.id },
+    data: { supersededByRevisionId: correction.id },
+  });
+}
+
+/**
+ * Give every timestamp the database stamped while the fixture ran a fixed
+ * historical value. A restore that loses a row's `createdAt` writes the
+ * restore's own time; while the seeded value was itself "now", both read as
+ * `<now>` after normalisation and the loss could not show. Pinned, the seeded
+ * account holds no run-time timestamp at all (asserted below), so a `<now>` in
+ * a restored row is the restore's own doing and is pinned as such. Returns the
+ * columns that would not take a value.
+ */
+async function pinRunTimeTimestamps(prisma: PrismaClient): Promise<string[]> {
+  const from = RUN_STARTED - 5 * 60_000;
+  const runTime = (value: unknown) =>
+    value instanceof Date && value.getTime() >= from;
+  const base = Date.UTC(2026, 4, 1, 8, 0, 0);
+  const unpinned: string[] = [];
+  const pin = async (
+    model: AuditModel,
+    rows: Record<string, unknown>[],
+    modelIndex: number,
+  ) => {
+    for (const [rowIndex, row] of rows.entries()) {
+      const data: Record<string, Date> = {};
+      model.columns.forEach((column, columnIndex) => {
+        if (column.type !== "DateTime" || !runTime(row[column.name])) return;
+        data[column.name] = new Date(
+          base + (modelIndex * 100 + columnIndex) * 60_000 + rowIndex * 1000,
+        );
+      });
+      if (Object.keys(data).length === 0) continue;
+      try {
+        await delegateOf(prisma, model).update({
+          where: primaryKeyWhere(model, row),
+          data,
+        });
+      } catch {
+        unpinned.push(`${model.name}:${Object.keys(data).join(",")}`);
+      }
+    }
+  };
+  const models = auditModels(prisma);
+  const byName = new Map(models.map((m) => [m.name, m]));
+  for (const [index, model] of models.entries()) {
+    const rows = await delegateOf(prisma, model).findMany({
+      where: ownerWhere(byName, prisma, model.name, OWNER_ID),
+      orderBy: model.primaryKey.map((key) => ({ [key]: "asc" as const })),
+    });
+    await pin(model, rows, index);
+  }
+  const extra = readAuditModels(prisma, [
+    "User",
+    "AppSettings",
+    "AccountGrant",
+  ]);
+  const [user, settings, grant] = extra;
+  await pin(
+    user,
+    [await prisma.user.findUniqueOrThrow({ where: { id: OWNER_ID } })],
+    models.length,
+  );
+  await pin(
+    settings,
+    [
+      await prisma.appSettings.findUniqueOrThrow({
+        where: { id: "singleton" },
+      }),
+    ],
+    models.length + 1,
+  );
+  await pin(
+    grant,
+    (await prisma.accountGrant.findMany({
+      where: { grantorId: OWNER_ID },
+      orderBy: { id: "asc" },
+    })) as Record<string, unknown>[],
+    models.length + 2,
+  );
+  return unpinned.sort();
+}
+
+/**
+ * Everything above was sealed under the legacy key, which the environment
+ * names `v1`. From here on a second key is the active one, so a value the
+ * restore re-encrypts instead of carrying over comes back under `v2`, and the
+ * key id in the normalised copies shows it.
+ */
+const ORIGINAL_KEY_ENV = {
+  keys: process.env.ENCRYPTION_KEYS,
+  active: process.env.ENCRYPTION_ACTIVE_KEY_ID,
+};
+function rotateActiveKey() {
+  process.env.ENCRYPTION_KEYS = JSON.stringify({ v2: "11".repeat(32) });
+  process.env.ENCRYPTION_ACTIVE_KEY_ID = "v2";
+  _resetCryptoCacheForTests();
+}
+function restoreKeyEnv() {
+  for (const [name, value] of [
+    ["ENCRYPTION_KEYS", ORIGINAL_KEY_ENV.keys],
+    ["ENCRYPTION_ACTIVE_KEY_ID", ORIGINAL_KEY_ENV.active],
+  ] as const) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+  _resetCryptoCacheForTests();
 }
 
 /** Every row the account holds, model by model, normalised. */
@@ -705,15 +1125,20 @@ describe("backup parity", () => {
   }, SLOW);
 
   afterAll(async () => {
+    restoreKeyEnv();
     await truncateAllTables(prisma);
   }, SLOW);
 
   it(
     "exports the maximal account as it did",
     async () => {
-      const { admin, unfillable } = await seedMaximalAccount(prisma);
+      const { admin, unfillable, unpinned } = await seedMaximalAccount(prisma);
       adminId = admin.id;
       const before = await snapshotAccount(prisma, OWNER_ID);
+      // The seeded account holds no timestamp of this run, so every `<now>`
+      // further down is one a restore or an export wrote.
+      expect(unpinned).toEqual([]);
+      expect(JSON.stringify(before)).not.toContain("<now>");
       const dr = await exportFile(prisma, "disaster-recovery");
       const portable = await exportFile(prisma, "portable-export");
       drJson = dr.json;
