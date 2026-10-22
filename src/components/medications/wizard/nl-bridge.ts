@@ -16,8 +16,8 @@ import { isoStringToDate } from "@/components/medications/scheduling/course-wind
 import {
   DEFAULT_SUB_CONTROLS,
   type CadenceSubControls,
-  type WeekdayToken,
 } from "@/components/medications/scheduling/types";
+import { type WeekdayToken } from "@/lib/medications/scheduling/weekday-tokens";
 import type { WizardPayload as ExtractorPayload } from "@/components/medications/scheduling/natural-language-extractor";
 
 import type { WizardPayload } from "./wizard-payload";

@@ -17,6 +17,8 @@
  * structured values; the wizard / form maps them to the wire format.
  */
 
+import type { WeekdayToken } from "@/lib/medications/scheduling/weekday-tokens";
+
 /**
  * The eight cadence kinds the wizard exposes. Maps to the engine's
  * dispatch tiers in `src/lib/medications/scheduling/recurrence.ts`:
@@ -70,18 +72,6 @@ export interface CadenceSubControls {
   /** Rolling cadence interval in days (1..365). */
   rollingDays: number;
 }
-
-/** RFC 5545 BYDAY tokens — the order the chip row renders. */
-export const WEEKDAY_TOKENS = [
-  "MO",
-  "TU",
-  "WE",
-  "TH",
-  "FR",
-  "SA",
-  "SU",
-] as const;
-export type WeekdayToken = (typeof WEEKDAY_TOKENS)[number];
 
 /** Sensible defaults so a brand-new picker has valid sub-controls. */
 export const DEFAULT_SUB_CONTROLS: CadenceSubControls = {

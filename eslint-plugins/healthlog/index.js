@@ -21,6 +21,8 @@
  *                              toLocaleString().
  *   - `no-raw-card-shell`    — a card surface is a <Card> or a shell
  *                              primitive, not bg-card + border + rounded-xl.
+ *   - `import-boundaries`    — src/lib never imports components or app, and
+ *                              a "use client" file imports no server module.
  */
 
 "use strict";
@@ -36,6 +38,7 @@ const noUtcDayKey = require("./no-utc-day-key.js");
 const noPlanningTags = require("./no-planning-tags.js");
 const noUnlocalisedDecimal = require("./no-unlocalised-decimal.js");
 const noRawCardShell = require("./no-raw-card-shell.js");
+const importBoundaries = require("./import-boundaries.js");
 
 module.exports = {
   rules: {
@@ -55,5 +58,6 @@ module.exports = {
     "no-planning-tags": noPlanningTags,
     "no-unlocalised-decimal": noUnlocalisedDecimal,
     "no-raw-card-shell": noRawCardShell,
+    "import-boundaries": importBoundaries,
   },
 };

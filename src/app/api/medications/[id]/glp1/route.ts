@@ -34,7 +34,7 @@ import {
   estimateRunwayDays,
   lowStockTriggerDays,
   type RunwaySchedule,
-} from "@/components/medications/detail/supply-runway";
+} from "@/lib/medications/supply-runway";
 import {
   resolveLowStockRunwayDays,
   resolveReorderLeadDays,

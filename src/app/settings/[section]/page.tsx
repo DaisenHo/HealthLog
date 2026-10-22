@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import {
   SETTINGS_SECTION_SLUGS,
   isSettingsSectionSlug,
-} from "@/components/settings/section-slugs";
+} from "@/lib/settings/section-slugs";
 import { SettingsShell } from "@/components/settings/settings-shell";
 import {
   SettingsSectionLoader,

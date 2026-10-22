@@ -11,7 +11,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { isSettingsSectionSlug } from "@/components/settings/section-slugs";
+import { isSettingsSectionSlug } from "@/lib/settings/section-slugs";
 
 describe("sleep-overview empty-state CTA href", () => {
   it("links to /settings/integrations (a real settings slug)", () => {

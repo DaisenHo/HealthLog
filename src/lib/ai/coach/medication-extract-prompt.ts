@@ -29,7 +29,7 @@
 
 import { z } from "zod/v4";
 
-import { WEEKDAY_TOKENS } from "@/components/medications/scheduling/types";
+import { WEEKDAY_TOKENS } from "@/lib/medications/scheduling/weekday-tokens";
 
 /** Closed list — matches the design-synthesis dose-unit dropdown. */
 export const DOSE_UNITS = [

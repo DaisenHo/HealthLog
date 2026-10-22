@@ -38,7 +38,7 @@ import {
   estimateDailyDoseCount,
   estimateRunwayDays,
   lowStockTriggerDays,
-} from "@/components/medications/detail/supply-runway";
+} from "@/lib/medications/supply-runway";
 import { useAuth } from "@/hooks/use-auth";
 import { useMedicationComplianceSummary } from "@/lib/queries/use-medication-compliance-summary";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";

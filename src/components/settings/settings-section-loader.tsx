@@ -5,7 +5,7 @@ import { useEffect, type ComponentType } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { SettingsCard } from "@/components/settings/settings-card";
-import type { SettingsSectionSlug } from "@/components/settings/section-slugs";
+import type { SettingsSectionSlug } from "@/lib/settings/section-slugs";
 import type { IntegrationCallbackUrls } from "@/lib/integrations/callback-urls";
 
 /**

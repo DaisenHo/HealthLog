@@ -54,7 +54,7 @@ import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import {
   effectiveUnitsPerDose,
   estimateUnitsRunwayDays,
-} from "@/components/medications/detail/supply-runway";
+} from "@/lib/medications/supply-runway";
 import { serializeScheduleUnitsPerDose } from "@/lib/medications/schedule-units-dto";
 import { hhmmToMinutesOrNull } from "@/lib/medications/scheduling/hhmm";
 import { getUserTodayBounds } from "@/lib/tz/local-day";

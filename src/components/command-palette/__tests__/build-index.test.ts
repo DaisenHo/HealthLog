@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildPaletteIndex,
   type PaletteIndexInput,
-} from "@/lib/command-palette/build-index";
+} from "@/components/command-palette/build-index";
 
 const t = (key: string) => key;
 

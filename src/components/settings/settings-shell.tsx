@@ -55,7 +55,7 @@ import {
   SETTINGS_SECTION_SLUGS,
   isSettingsSectionSlug,
   type SettingsSectionSlug,
-} from "./section-slugs";
+} from "@/lib/settings/section-slugs";
 import { SettingsHubBackLink } from "./settings-hub-back-link";
 import { SettingsMobileNav } from "./settings-mobile-nav";
 import { SettingsAnchorForward } from "./settings-anchor-forward";

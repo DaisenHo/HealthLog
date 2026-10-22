@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { Activity, Moon, Plus, Smile } from "lucide-react";
 
 import { I18nProvider } from "@/lib/i18n/context";
-import type { PaletteEntry } from "@/lib/command-palette/build-index";
+import type { PaletteEntry } from "@/components/command-palette/build-index";
 import type { SearchResponse } from "@/lib/search/contract";
 
 vi.mock("next/navigation", () => ({

@@ -11,7 +11,7 @@ import { classifySettingsDestination } from "@/lib/record-settings/classificatio
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ManagedIntegrationStatus } from "@/components/settings/managed-integration-status";
 import { SettingsCard } from "@/components/settings/settings-card";
-import type { SettingsSectionSlug } from "@/components/settings/section-slugs";
+import type { SettingsSectionSlug } from "@/lib/settings/section-slugs";
 
 // The two record-scoped surfaces load on demand. Both are forms that validate
 // with Zod (the managed settings patch, the allergy and family-history

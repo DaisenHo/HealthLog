@@ -24,8 +24,8 @@ import {
   SETTINGS_CARDS,
   SETTINGS_LAYOUT_PAGES,
   SETTINGS_MODULE_PAGES,
-} from "./settings-cards";
-import { PALETTE_SYNONYMS } from "./synonyms";
+} from "@/lib/command-palette/settings-cards";
+import { PALETTE_SYNONYMS } from "@/lib/command-palette/synonyms";
 
 /**
  * The command palette's index: every place and action this session may

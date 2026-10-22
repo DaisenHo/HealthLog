@@ -12,7 +12,7 @@
 import { describe, expect, it } from "vitest";
 import en from "../../../../messages/en.json" with { type: "json" };
 import de from "../../../../messages/de.json" with { type: "json" };
-import { SETTINGS_SECTION_SLUGS } from "../section-slugs";
+import { SETTINGS_SECTION_SLUGS } from "@/lib/settings/section-slugs";
 
 type Bag = Record<string, unknown>;
 

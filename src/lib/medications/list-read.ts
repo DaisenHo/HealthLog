@@ -24,7 +24,7 @@ import {
 import {
   effectiveUnitsPerDose,
   estimateUnitsRunwayDays,
-} from "@/components/medications/detail/supply-runway";
+} from "@/lib/medications/supply-runway";
 import { serializeScheduleUnitsPerDose } from "@/lib/medications/schedule-units-dto";
 import {
   computeDisplayDue,

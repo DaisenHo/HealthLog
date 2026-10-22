@@ -1,6 +1,6 @@
 /**
  * Server-safe constants for the v1.5 admin split. Mirrors the pattern in
- * `src/components/settings/section-slugs.ts` so server-rendered code paths
+ * `src/lib/settings/section-slugs.ts` so server-rendered code paths
  * (`generateStaticParams()`, the page guard, route-existence tests) can
  * import the slug list without dragging the `<AdminShell>` client bundle
  * into the server graph.
