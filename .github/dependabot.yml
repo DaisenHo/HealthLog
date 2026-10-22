@@ -36,12 +36,15 @@ updates:
     # No ignore for the Next.js line any more. 16.4.0 lost URL state after
     # history traversal: with a sheet opened through `?doc=`, Back left it
     # open, and `[` / `]` sometimes did not move `?day=` (3 of 40 repeated
-    # runs of three end-to-end journeys, 0 of 80 on 16.3.8). Measured on
-    # 16.4.2: the `?doc=` and dashboard journeys passed 80 of 80, the day keys
-    # still lost a step in 2 of 20, because a step started from the day the
-    # layer had last rendered and 16.4 lets that trail the URL. A step now
-    # starts from the URL itself; after that the three journeys passed 200 of
-    # 200 repeated runs and the day keys alone another 80 of 80.
+    # runs of three end-to-end journeys, 0 of 80 on 16.3.8). 16.4.2 does the
+    # same (the day keys lost a step in 2 of 20 runs locally, the `?doc=`
+    # journey failed once in CI). Both were ours to fix: the sheet followed
+    # `useSearchParams`, which 16.4 updates after the write it copies, and a
+    # day step wrote the URL before Next had adopted the previous step, whose
+    # late adoption then put the older URL back. The sheet now follows the
+    # address bar and a step waits for the layer. Measured after both fixes:
+    # 200 of 200 repeated runs of the three journeys, and another 80 of 80
+    # each for the `?doc=` and day-key journeys.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

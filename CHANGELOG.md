@@ -21,8 +21,12 @@
 ### Fixed
 
 - **`[` and `]` move the open day on every press.** Pressed quickly in a
-  row, one press could be lost, because a step started from the day still
-  on screen rather than the one the previous press had already opened.
+  row, one press could be lost and the day ended one short. A step now
+  starts from the day in the address bar and waits until the previous one
+  is shown.
+- **Back closes a document opened from the vault.** Pressed right after
+  opening a document, Back could leave its sheet open. The sheet now follows
+  the address bar directly.
 
 ### Upgrade notes
 
