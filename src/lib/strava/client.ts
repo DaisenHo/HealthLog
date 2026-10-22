@@ -25,7 +25,11 @@ import { getEvent } from "@/lib/logging/context";
 import { safeFetch } from "@/lib/safe-fetch";
 import { parseRetryAfterMs } from "@/lib/integrations/oauth-kit/retry-after";
 import type { Prisma } from "@/generated/prisma/client";
-import { StravaApiError, classifyStravaResponse } from "./response-classifier";
+import {
+  StravaApiError,
+  classifyStravaResponse,
+  stravaFaultSummary,
+} from "./response-classifier";
 import { mapStravaSportType } from "./sport-map";
 import type { WorkoutSportType } from "@/lib/validations/workout";
 import { envOr, envValue } from "@/lib/env";
@@ -128,8 +132,9 @@ async function postToken(
       classification: verdict.classification,
       httpStatus: verdict.httpStatus,
       reason: verdict.reason,
-      upstreamError:
-        typeof json?.message === "string" ? json.message : undefined,
+      // Strava's `Fault`, reduced to the resource it names; the classifier
+      // tells a dead refresh token from a misconfigured app by it.
+      upstreamError: stravaFaultSummary(json),
     });
   }
   return json as StravaTokenResponse;

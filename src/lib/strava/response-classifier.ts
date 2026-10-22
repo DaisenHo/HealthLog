@@ -7,8 +7,9 @@
  *   - `success`         → HTTP 2xx
  *   - `transient`       → 429 (rate-limited — respect X-RateLimit headers),
  *                         5xx, 3xx, unknown.
- *   - `reauth_required` → 401 / 403 — token rejected / grant revoked, plus an
- *                         `invalid_grant` on the refresh endpoint.
+ *   - `reauth_required` → 401 / 403 — token rejected / grant revoked, plus a
+ *                         dead refresh token on the token endpoint (see
+ *                         `isStravaDeadRefreshToken`).
  *   - `persistent`      → any other 4xx — malformed request / contract drift.
  */
 
@@ -55,16 +56,72 @@ export function isStravaRateLimited(err: unknown): err is StravaApiError {
 }
 
 /**
- * True when a caught error is an OAuth `invalid_grant` on the token endpoint —
- * the canonical revoked / rotated-away refresh-token signal. Lifts a 400
- * carrying `invalid_grant` from `persistent` to `reauth_required` so the
- * connection surfaces the reconnect prompt.
+ * Strava's token endpoint does not answer in RFC 6749 form. A refusal is the
+ * API's generic `Fault` (developers.strava.com/docs/reference, "Fault" and
+ * "Error"): `{"message":"Bad Request","errors":[{"resource":"RefreshToken",
+ * "field":"refresh_token","code":"invalid"}]}`, with no `error` member at all,
+ * so an `invalid_grant` check never matches it. This reduces the fault to one
+ * stable token for the error message — `<resource>.<field>:<code>` of the first
+ * entry, e.g. `RefreshToken.refresh_token:invalid` or `Application:invalid` —
+ * and falls back to an RFC 6749 `error` code, then to `message`. Nothing of
+ * the body beyond those names reaches the message.
  */
-function isInvalidGrant(err: unknown): boolean {
-  return isOAuthInvalidGrant(err, "Strava");
+export function stravaFaultSummary(body: unknown): string | undefined {
+  if (typeof body !== "object" || body === null) return undefined;
+  const fault = body as {
+    message?: unknown;
+    errors?: unknown;
+    error?: unknown;
+  };
+  // A standards-shaped body (`{"error":"invalid_grant"}`) keeps its code.
+  if (typeof fault.error === "string" && /^[a-z_]{1,40}$/.test(fault.error)) {
+    return fault.error;
+  }
+  const first = Array.isArray(fault.errors) ? fault.errors[0] : undefined;
+  if (typeof first === "object" && first !== null) {
+    const { resource, field, code } = first as Record<string, unknown>;
+    if (typeof resource === "string" && /^[A-Za-z]{1,40}$/.test(resource)) {
+      const at =
+        typeof field === "string" && /^[A-Za-z_]{1,40}$/.test(field)
+          ? `.${field}`
+          : "";
+      const why =
+        typeof code === "string" && /^[A-Za-z_]{1,40}$/.test(code)
+          ? `:${code}`
+          : "";
+      return `${resource}${at}${why}`;
+    }
+  }
+  return typeof fault.message === "string"
+    ? fault.message.slice(0, 120)
+    : undefined;
+}
+
+/**
+ * True for a refresh token Strava no longer honours: a 400 whose fault names
+ * the `RefreshToken` resource. That is what the token endpoint answers once the
+ * athlete revoked the app or the token was rotated away, and the only way back
+ * is a new authorisation, so it lifts the verdict to `reauth_required`. A
+ * standards-shaped `invalid_grant` is accepted too, in case Strava ever sends
+ * one.
+ *
+ * Robust to a lost prototype across a pg-boss retry, like
+ * `isOAuthInvalidGrant`: it falls back to the
+ * `"Strava <verb> error: 400 - RefreshToken…"` message shape.
+ */
+export function isStravaDeadRefreshToken(err: unknown): boolean {
+  if (isOAuthInvalidGrant(err, "Strava")) return true;
+  if (err instanceof IntegrationApiError) {
+    return (
+      err.httpStatus === 400 &&
+      (err.upstreamError?.startsWith("RefreshToken") ?? false)
+    );
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  return /Strava\s+\w+\s+error:\s*400\s+-\s+RefreshToken\b/.test(msg);
 }
 
 export function classifyStravaError(err: unknown): IntegrationClassification {
-  if (isInvalidGrant(err)) return "reauth_required";
+  if (isStravaDeadRefreshToken(err)) return "reauth_required";
   return classifyIntegrationError(err, "Strava");
 }
