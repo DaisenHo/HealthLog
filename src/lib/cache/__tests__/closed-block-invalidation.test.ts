@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import {
-  closedBlockKeyPart,
-  closedBlockUntouched,
-  invalidateUserMeasurements,
-} from "../invalidate";
+import { closedBlockKeyPart, closedBlockUntouched } from "../closed-block";
+import { invalidateUserMeasurements } from "../invalidate";
 import { caches, type ServerCache } from "../server-cache";
 
 const analytics = caches.analytics as ServerCache<{ v: number }>;

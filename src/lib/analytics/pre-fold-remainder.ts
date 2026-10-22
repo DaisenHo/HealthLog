@@ -28,7 +28,7 @@
 import { createHash } from "node:crypto";
 
 import { Prisma } from "@/generated/prisma/client";
-import { closedBlockKeyPart } from "@/lib/cache/invalidate";
+import { closedBlockKeyPart } from "@/lib/cache/closed-block";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
 import { prisma } from "@/lib/db";
 import { dayWeightedRowsSql, foldMeanSql } from "@/lib/measurements/day-mean";

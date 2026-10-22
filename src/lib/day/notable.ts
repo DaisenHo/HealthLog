@@ -31,7 +31,7 @@ import type { MeasurementType } from "@/generated/prisma/enums";
 
 import type { DayNotable } from "@/lib/day/contract";
 import { readLocalDailyStats, type DailyStats } from "@/lib/day/daily-stats";
-import { closedBlockKeyPart } from "@/lib/cache/invalidate";
+import { closedBlockKeyPart } from "@/lib/cache/closed-block";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
 import { prisma } from "@/lib/db";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
