@@ -112,7 +112,7 @@ export function CoachFeedbackSection() {
           title={t("admin.coachFeedback.empty")}
         />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full text-sm" data-slot="coach-feedback-table">
             <thead>
               <tr className="text-muted-foreground border-border border-b text-left text-xs tracking-wider uppercase">

@@ -98,7 +98,9 @@ describe("LoginOverviewSection — pagination lives outside the scroll wrapper",
     );
     expect(paginationIdx).toBeGreaterThan(-1);
     const before = html.slice(0, paginationIdx);
-    const lastScrollOpen = before.lastIndexOf('class="overflow-x-auto"');
+    const lastScrollOpen = before.lastIndexOf(
+      'class="relative overflow-x-auto"',
+    );
     expect(lastScrollOpen).toBeGreaterThan(-1);
     // Between the scroll-wrapper opening and the pagination opening
     // there must be at least one `</div>` closing the wrapper.
@@ -114,7 +116,7 @@ describe("LoginOverviewSection — pagination lives outside the scroll wrapper",
     // same depth — naively by grabbing up to `</table></div>`, which
     // matches the structure produced by the current implementation.
     const wrapper = html.match(
-      /<div class="overflow-x-auto"[^>]*>[\s\S]*?<\/table><\/div>/,
+      /<div class="relative overflow-x-auto"[^>]*>[\s\S]*?<\/table><\/div>/,
     );
     expect(wrapper).not.toBeNull();
     expect(wrapper![0]).not.toContain("admin.section.auditLog.next");

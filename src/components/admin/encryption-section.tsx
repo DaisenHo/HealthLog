@@ -457,7 +457,7 @@ export function ColumnCoverage({
                sideways, and a keyboard user has to be able to reach it
                (axe scrollable-region-focusable). */
               <div
-                className="overflow-x-auto"
+                className="relative overflow-x-auto"
                 tabIndex={0}
                 role="region"
                 aria-label={t("admin.section.encryption.columnsTitle")}

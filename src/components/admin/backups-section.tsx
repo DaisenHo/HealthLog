@@ -1286,7 +1286,7 @@ export function BackupsSection() {
           {/* Wide layout: the canonical table. Hidden below `md`, where the
               five columns push Download / Restore off-screen behind a
               horizontal scroll; the card list below takes over there. */}
-          <div className="hidden overflow-x-auto md:block">
+          <div className="relative hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-muted-foreground border-b text-xs">

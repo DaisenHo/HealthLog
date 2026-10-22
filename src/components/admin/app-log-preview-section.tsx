@@ -279,7 +279,7 @@ export function AppLogPreviewSection() {
         // the table is scrolled horizontally. The refresh control was
         // already in the header above the table wrapper.
         <>
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-muted-foreground border-b text-xs">

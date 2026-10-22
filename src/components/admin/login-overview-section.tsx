@@ -404,7 +404,7 @@ export function LoginOverviewSection() {
           // back to its starting offset. The CSV-export button was
           // already in the toolbar row above the table wrapper.
           <>
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-muted-foreground border-b text-xs">

@@ -348,7 +348,7 @@ export function UserManagementSection() {
               `md:block hidden` swaps it out for the card-list below at
               `< md`. Hiding the table-only wrapper (instead of just
               the cells) saves DOM weight on mobile too. */}
-            <div className="hidden overflow-x-auto md:block">
+            <div className="relative hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-muted-foreground border-b text-xs">
