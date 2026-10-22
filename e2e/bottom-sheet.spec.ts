@@ -223,26 +223,46 @@ test.describe("the bottom sheet", () => {
     await expect(more(page)).toBeVisible();
     const before = await topOf(more(page));
     const { x, y } = await centre(more(page).getByRole("heading").first());
-    // Dragging: the sheet follows the finger and the backdrop lightens.
-    const during = page.evaluate(
-      () =>
-        new Promise<{ moved: number; opacity: number }>((resolve) => {
-          setTimeout(() => {
-            const sheet = document.querySelector(
-              '[data-testid="bottom-nav-more-sheet"]',
-            ) as HTMLElement;
-            const overlay = document.querySelector(
-              '[data-slot="sheet-overlay"]',
-            ) as HTMLElement;
-            resolve({
-              moved: new DOMMatrix(getComputedStyle(sheet).transform).f,
-              opacity: Number(getComputedStyle(overlay).opacity),
-            });
-          }, 380);
-        }),
-    );
+    // Dragging: the sheet follows the finger and the backdrop lightens. A
+    // frame loop records the furthest the sheet travelled and the lightest
+    // the backdrop got for the whole gesture, so a slow runner cannot make
+    // a single fixed-time sample land before the drag has begun.
+    await page.evaluate(() => {
+      const w = window as unknown as {
+        __sheetDrag?: { moved: number; opacity: number; on: boolean };
+      };
+      w.__sheetDrag = { moved: 0, opacity: 1, on: true };
+      const tick = () => {
+        const rec = w.__sheetDrag!;
+        if (!rec.on) return;
+        const sheet = document.querySelector(
+          '[data-testid="bottom-nav-more-sheet"]',
+        ) as HTMLElement | null;
+        const overlay = document.querySelector(
+          '[data-slot="sheet-overlay"]',
+        ) as HTMLElement | null;
+        if (sheet) {
+          const moved = new DOMMatrix(getComputedStyle(sheet).transform).f;
+          rec.moved = Math.max(rec.moved, moved);
+        }
+        if (overlay) {
+          rec.opacity = Math.min(
+            rec.opacity,
+            Number(getComputedStyle(overlay).opacity),
+          );
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
     await touchDrag(page, x, y, { dy: 60, ms: 300, holdMs: 200 });
-    const seen = await during;
+    const seen = await page.evaluate(() => {
+      const w = window as unknown as {
+        __sheetDrag: { moved: number; opacity: number; on: boolean };
+      };
+      w.__sheetDrag.on = false;
+      return { moved: w.__sheetDrag.moved, opacity: w.__sheetDrag.opacity };
+    });
     expect(seen.moved).toBeGreaterThan(40);
     expect(seen.opacity).toBeLessThan(1);
     await settled(more(page));
