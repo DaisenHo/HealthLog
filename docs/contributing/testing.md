@@ -121,7 +121,9 @@ Each Vitest worker clones it on its first file (`CREATE DATABASE … TEMPLATE`,
 see `tests/integration/worker-database.ts`), so files run in parallel without
 seeing each other's rows, advisory locks or queue schema. The worker count
 follows the host (half the cores, at most eight) unless
-`HEALTHLOG_INTEGRATION_WORKERS` pins it; CI uses three.
+`HEALTHLOG_INTEGRATION_WORKERS` pins it; CI uses three. To reproduce a CI runner's
+contention on a larger machine, cap the database container with
+`HEALTHLOG_INTEGRATION_PG_CPUS=2`.
 
 `truncateAllTables` empties every table the migrations created and puts back
 the rows they seed (the mood-tag and symptom catalogues), so a test starts

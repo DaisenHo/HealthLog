@@ -145,6 +145,47 @@ async function holdLock(): Promise<Client> {
   return holder;
 }
 
+/** Sessions of this database queued behind a lock, other than the holder. */
+async function lockWaiters(db: Client, holderPid: number): Promise<number> {
+  const { rows } = await db.query<{ n: string }>(
+    `SELECT count(*) AS n FROM pg_stat_activity
+      WHERE datname = current_database()
+        AND wait_event_type = 'Lock'
+        AND pid <> $1`,
+    [holderPid],
+  );
+  return Number(rows[0]?.n ?? 0);
+}
+
+/**
+ * Let go of the held lock once a migration attempt has queued behind it and
+ * given up. Resolves false when no attempt queued within the budget, so the
+ * test reports that instead of passing on a run that never met the lock.
+ */
+async function releaseAfterFirstTimeout(holder: Client): Promise<boolean> {
+  const { rows } = await holder.query<{ pid: number }>(
+    "SELECT pg_backend_pid() AS pid",
+  );
+  const holderPid = rows[0].pid;
+  const watcher = await connect();
+  const until = async (predicate: (n: number) => boolean) => {
+    const deadline = Date.now() + 60_000;
+    while (Date.now() < deadline) {
+      if (predicate(await lockWaiters(watcher, holderPid))) return true;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return false;
+  };
+  try {
+    const queued = await until((n) => n > 0);
+    if (queued) await until((n) => n === 0);
+    await holder.query("ROLLBACK");
+    return queued;
+  } finally {
+    await watcher.end();
+  }
+}
+
 async function state(db: Client) {
   const rows = await db.query(
     `SELECT migration_name, finished_at IS NOT NULL AS finished,
@@ -181,14 +222,22 @@ describe("migration 0412 under a held lock", () => {
     add0412(dir, { marked: true });
     const holder = await holdLock();
     // The first attempt meets the lock; the holder lets go during the backoff.
-    const release = setTimeout(() => {
-      void holder.query("ROLLBACK");
-    }, 2_500);
+    // The release follows the migration rather than a clock: it waits until
+    // the first attempt is seen queued behind the lock and then gone again
+    // (its one-second timeout fired), and lets go before the retry. A fixed
+    // delay raced the CLI's own start-up, which on a loaded runner outlasted
+    // the delay, so the first attempt found the lock already free.
+    const released = releaseAfterFirstTimeout(holder);
     const startedAt = Date.now();
     const result = await migrateDeploy(dir);
-    clearTimeout(release);
+    const releasedInTime = await released;
     await holder.query("ROLLBACK").catch(() => {});
     await holder.end();
+
+    expect(
+      releasedInTime,
+      "the first attempt never queued behind the held lock",
+    ).toBe(true);
 
     expect(result.code, result.stderr).toBe(0);
     expect(result.stderr).toContain("Database error code: 55P03");
