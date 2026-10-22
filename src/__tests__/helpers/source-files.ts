@@ -123,34 +123,6 @@ export function readSourceText(path: string): string {
   return text;
 }
 
-/**
- * The files under `root` (as `walkSourceFiles` lists them) whose text holds
- * at least one of `markers`, with that text. The substring test runs before
- * any regular expression or parse the caller applies, which is where most of
- * a sweep's time used to go. The floor applies to the files walked, as in
- * `walkSourceFiles`; a caller that expects matches states its own floor over
- * the result.
- */
-export function sourcesContaining(
-  root: string,
-  markers: string | readonly string[],
-  options: {
-    floor: number;
-    extensions?: readonly string[];
-    include?: (rel: string) => boolean;
-  },
-): Array<[rel: string, text: string]> {
-  const wanted = typeof markers === "string" ? [markers] : markers;
-  const out: Array<[string, string]> = [];
-  for (const rel of walkSourceFiles(root, options).filter(
-    options.include ?? (() => true),
-  )) {
-    const text = readSourceText(join(root, rel));
-    if (wanted.some((marker) => text.includes(marker))) out.push([rel, text]);
-  }
-  return out;
-}
-
 export function walkSourceFiles(
   root: string,
   options: { floor: number; extensions?: readonly string[] },

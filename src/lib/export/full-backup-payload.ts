@@ -49,7 +49,7 @@ import type { VaccinationsBackupCounts } from "@/lib/export/vaccinations-backup"
 import type { VisitsBackupCounts } from "@/lib/export/visits-backup";
 import { BACKUP_SCHEMA_VERSION } from "@/lib/validations/backup-summary";
 
-export { isDeferredRows, type DeferredRows } from "@/lib/export/deferred-rows";
+export { isDeferredRows } from "@/lib/export/deferred-rows";
 
 export interface FullBackupCounts
   extends
