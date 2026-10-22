@@ -31,6 +31,7 @@ import {
   CONVERSATIONAL_CONTRACTS,
   type OutboundReason,
 } from "@/lib/ai/safety/outbound-screen";
+import type { ScheduledDose } from "@/lib/medications/scheduled-doses";
 
 /**
  * Why the outbound reply was blocked, for the Wide-Event annotation. The Coach
@@ -53,11 +54,10 @@ export interface CoachOutboundDecision {
  * Screen an assembled assistant reply against the conversational contracts in
  * the reader's locale.
  *
- * v1.32.9 (Coach Guard II / G3) — `scheduleDoses` optionally gates the dose
- * continuation exemption on the user's actual schedule: a "keep taking your
- * N mg" is trusted only when N is a dose the user is on. Omitted by the
- * non-Coach callers (nudge / reaction-line), which keep the phrase-anchored
- * Guard I behaviour.
+ * `dosePlan` gates the dose continuation exemption on the user's actual
+ * plan: a "keep taking your N mg" is trusted only when N is the dose of the
+ * medication the sentence names. Without it (the nudge and reaction-line
+ * callers) no stated amount is exempt.
  *
  * `medicationNames` optionally makes the person's own medication names count
  * as medication nouns in the dose-change class, so "skip the Eliquis" or
@@ -68,11 +68,11 @@ export interface CoachOutboundDecision {
 export function screenCoachReply(
   reply: string,
   locale: Locale,
-  scheduleDoses?: readonly number[],
+  dosePlan?: readonly ScheduledDose[],
   medicationNames?: readonly string[],
 ): CoachOutboundDecision {
   const decision = screenModelOutput(reply, locale, CONVERSATIONAL_CONTRACTS, {
-    scheduleDoses,
+    dosePlan,
     medicationNames,
   });
   return {

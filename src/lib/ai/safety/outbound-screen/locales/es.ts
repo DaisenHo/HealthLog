@@ -65,6 +65,22 @@ export const bank: LocaleBank = {
       `(?<!\\b(?:no|nunca)\\s)\\b(?:deje|pare|abandone)\\s+${ES_SHORT}${med}`,
       "i",
     ),
+    // Halving or a fraction with no number: "reduzca la dosis a la mitad",
+    // "tome media dosis", "tome la mitad de la dosis".
+    new RegExp(
+      `(?<!\\b(?:no|nunca)\\s)\\b(?:reduzca|reduce|baje|disminuya|corte|parta|divida)\\s+${ES_SLOT}${med}\\s+(?:a|en|por)\\s+la\\s+mitad`,
+      "i",
+    ),
+    new RegExp(
+      `(?<!\\b(?:no|nunca)\\s)\\b(?:tome|tómese|inyecte|inyéctese|use)\\s+(?:s[óo]lo\\s+|solamente\\s+)?(?:media\\s+|la\\s+mitad\\s+de\\s+)${ES_SHORT}${med}`,
+      "i",
+    ),
+    // A bare change imperative on a medication, no target: "reduzca la
+    // dosis.", "aumente la insulina un poco".
+    new RegExp(
+      `(?<!\\b(?:no|nunca)\\s)\\b(?:aumente|suba|incremente|reduzca|baje|disminuya)\\s+${ES_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:ahora|hoy|mañana|esta\\s+noche|un\\s+poco|ligeramente|gradualmente|durante|desde)(?![\\w\\u00C0-\\u024F]))`,
+      "i",
+    ),
   ],
   dose: [
     // aumente / suba / pase a|en N unit

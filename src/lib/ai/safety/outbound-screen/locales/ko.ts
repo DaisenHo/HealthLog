@@ -70,6 +70,13 @@ export const bank: LocaleBank = {
     new RegExp(
       `${med}[^.?!]{0,12}(?:(?:(?:한|두|세|\\d+)\\s*(?:알|정|캡슐|번|단위)?\\s*)?더|추가로)\\s*(?:드세요|드십시오|복용하세요|복용하십시오|투여하세요|맞으세요|맞으십시오|주사하세요)`,
     ),
+    // A medication object raised or lowered by imperative with no amount:
+    // "복용량을 늘리세요", "인슐린 용량을 낮추세요". No digit may sit between,
+    // so "약 2주 동안 걷는 시간을 늘리세요" ("약" = about) passes, and the
+    // prohibitive "줄이지 마세요" never meets an imperative ending.
+    new RegExp(
+      `${med}[^.?!\\d]{0,8}?(?:(?:늘리|올리|높이|줄이|내리|낮추|증량하|감량하)(?:세요|십시오)|(?:늘려|올려|높여|줄여|내려|낮춰)\\s*(?:보세요|주세요|보십시오))`,
+    ),
   ],
   // Korean is verb-final: the dose comes first and the change verb closes the
   // clause ("2.4mg으로 늘려 보세요"), the mirror image of the Latin banks. A

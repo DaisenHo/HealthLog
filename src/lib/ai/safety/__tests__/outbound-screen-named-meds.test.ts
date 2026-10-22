@@ -318,13 +318,14 @@ describe("screenModelOutput — a brand name needs the schedule", () => {
 });
 
 describe("screenCoachReply — passes the schedule's names through", () => {
+  const PLAN = [{ name: "Eliquis", dose: 5 }];
   it("blocks a named-drug skip when the names are supplied", () => {
     expect(
-      screenCoachReply("Skip the Eliquis tomorrow.", "en", [5], ["Eliquis"])
+      screenCoachReply("Skip the Eliquis tomorrow.", "en", PLAN, ["Eliquis"])
         .block,
     ).toBe(true);
     expect(
-      screenCoachReply("Skip the Eliquis tomorrow.", "en", [5]).block,
+      screenCoachReply("Skip the Eliquis tomorrow.", "en", PLAN).block,
     ).toBe(false);
   });
 });

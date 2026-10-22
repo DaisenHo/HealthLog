@@ -61,6 +61,22 @@ export const bank: LocaleBank = {
       `(?<!\\b(?:non|mai)\\s)\\b(?:prenda|assuma|inietti|aggiunga)\\s+${IT_SHORT}(?:(?:un|una|uno|due|tre|\\d+)\\s+${IT_SHORT}${med}[^.?!]{0,30}?(?:\\bin\\s+più|\\bextra\\b|\\baggiuntiv[aoei]\\b|\\bin\\s+aggiunta\\b)|(?:un['’]altra|un\\s+altro|altr[eio])\\s*${IT_SHORT}${med})`,
       "i",
     ),
+    // Halving or a fraction with no number: "riduca la dose della metà",
+    // "prenda mezza dose", "prenda metà della dose".
+    new RegExp(
+      `(?<!\\b(?:non|mai)\\s)\\b(?:riduca|ridurre|diminuisca|abbassi|tagli|divida)\\s+${IT_SLOT}${med}\\s+(?:della|alla|a|per)\\s+met[àa]`,
+      "i",
+    ),
+    new RegExp(
+      `(?<!\\b(?:non|mai)\\s)\\b(?:prenda|assuma|inietti)\\s+(?:solo\\s+|soltanto\\s+)?(?:mezz[ao]\\s+|(?:la\\s+)?met[àa]\\s+(?:della|del|dell['’]|di)\\s*)${IT_SHORT}${med}`,
+      "i",
+    ),
+    // A bare change imperative on a medication, no target: "riduca la
+    // dose.", "aumenti l'insulina un po'".
+    new RegExp(
+      `(?<!\\b(?:non|mai)\\s)\\b(?:aumenti|incrementi|riduca|abbassi|diminuisca)\\s+${IT_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:ora|oggi|domani|stasera|un\\s+po|leggermente|gradualmente|per|da\\s+subito)(?![\\w\\u00C0-\\u024F]))`,
+      "i",
+    ),
   ],
   dose: [
     // aumenti / salga / passi a|di N unit

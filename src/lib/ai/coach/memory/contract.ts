@@ -33,6 +33,7 @@ import type {
   CoachMemoryNote,
   CoachPlanProposal,
 } from "@/lib/ai/coach/types";
+import type { ScheduledDose } from "@/lib/medications/scheduled-doses";
 
 export * from "./shared";
 
@@ -149,10 +150,10 @@ export interface ProposePlanArgs {
   /** The person's locale, which the outbound screen reads the plan text in. */
   locale: Locale;
   /**
-   * The turn's scheduled doses and medication names, which the screen reads
+   * The turn's dose plan and medication names, which the screen reads
    * the plan text against; loaded for the person when absent.
    */
-  scheduleDoses?: readonly number[];
+  dosePlan?: readonly ScheduledDose[];
   medicationNames?: readonly string[];
   call: ProposePlanCall;
 }

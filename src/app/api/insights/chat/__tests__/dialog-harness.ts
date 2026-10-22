@@ -543,7 +543,7 @@ export const modules = {
   }),
   aboutMe: () => ({ getSelfContextTextForUser: async () => null }),
   snapshot: () => ({ buildCoachSnapshot: async () => snapshotFor() }),
-  scheduledDoses: () => ({ getScheduledDoseValues: async () => [] }),
+  scheduledDoses: () => ({ getScheduledDosePlan: async () => [] }),
   workoutEvidence: () => ({
     buildWorkoutEvidenceSection: async () => null,
   }),

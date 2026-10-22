@@ -105,6 +105,29 @@ export const bank: LocaleBank = {
       `\\bverzichte(?:n\\s+sie)?\\s+${DE_SHORT}auf\\s+${DE_SHORT}${med}`,
       "i",
     ),
+    // Halving or a fraction with no number: "reduzieren Sie die Dosis um die
+    // Hälfte", "nehmen Sie nur die halbe Dosis", "teilen Sie die Tablette in
+    // zwei Hälften". "Teilen" alone also means "share", so the split needs
+    // its "in Hälften".
+    new RegExp(
+      `\\b(?:reduzier(?:e|en)?|verringer(?:e|n)?|senk(?:e|en)?|kürz(?:e|en)?)(?:\\s+sie)?\\s+${DE_SLOT}${med}\\s+um\\s+(?:die\\s+)?hälfte`,
+      "i",
+    ),
+    new RegExp(
+      `\\b(?:nimm|nehmen\\s+sie|spritz|spritzen\\s+sie|injizier(?:e)?|injizieren\\s+sie)\\s+(?:nur\\s+)?(?:die\\s+|eine\\s+)?(?:halbe|hälfte\\s+(?:der|deiner|ihrer))\\s+${DE_SHORT}${med}`,
+      "i",
+    ),
+    new RegExp(
+      `\\bteil(?:e|en)?(?:\\s+sie)?\\s+${DE_SLOT}${med}\\s+(?:in\\s+(?:zwei\\s+)?hälften|in\\s+der\\s+mitte|durch\\s+zwei)`,
+      "i",
+    ),
+    // A bare change imperative on a medication, no target: "reduzieren Sie
+    // die Dosis.", "erhöhe dein Insulin etwas". The noun closes the clause or
+    // meets a time or degree word; "reduziere die Dosis nicht" does neither.
+    new RegExp(
+      `\\b(?:erhöh(?:e|en)?|steiger(?:e|n)?|reduzier(?:e|en)?|senk(?:e|en)?|verringer(?:e|n)?)(?:\\s+sie)?\\s+${DE_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:jetzt|heute|morgen|etwas|leicht|langsam|schrittweise|ab\\s+sofort|für|bis)\\b)`,
+      "i",
+    ),
   ],
   dose: [
     new RegExp(

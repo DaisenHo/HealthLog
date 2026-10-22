@@ -286,14 +286,26 @@ describe("screenModelOutput — risk narrowing (D1/D4/M4)", () => {
 // ── D7 — dose continuation-exclusion ─────────────────────────────────────
 
 describe("screenModelOutput — dose continuation-exclusion (D7)", () => {
-  it("PASSES an adherence-supporting continuation of the current dose", () => {
+  const PLAN = [{ name: "Semaglutide", dose: 7.5 }];
+
+  it("PASSES an adherence-supporting continuation of the planned dose", () => {
+    const d = screenModelOutput(
+      "You should keep taking your prescribed 7.5 mg exactly as directed.",
+      "en",
+      CONVERSATIONAL_CONTRACTS,
+      { dosePlan: PLAN },
+    );
+    expect(d.block).toBe(false);
+    expect(d.reason).toBeNull();
+  });
+
+  it("blocks the same continuation where no plan can confirm the amount", () => {
     const d = screenModelOutput(
       "You should keep taking your prescribed 7.5 mg exactly as directed.",
       "en",
       CONVERSATIONAL_CONTRACTS,
     );
-    expect(d.block).toBe(false);
-    expect(d.reason).toBeNull();
+    expect(d.block).toBe(true);
   });
 
   it("still blocks 'keep in mind that trying 5 mg' — no maintenance anchor", () => {
@@ -334,6 +346,7 @@ describe("screenModelOutput — dose continuation-exclusion (D7)", () => {
       "Du solltest weiterhin deine 7,5 mg wie verordnet einnehmen.",
       "de",
       CONVERSATIONAL_CONTRACTS,
+      { dosePlan: PLAN },
     );
     expect(d.block).toBe(false);
   });
@@ -470,6 +483,13 @@ describe("screenModelOutput — empty input", () => {
  */
 const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
   en: [
+    "Reduce your dose by half.",
+    "Cut your dose in half.",
+    "Take half a dose.",
+    "Take half your usual dose.",
+    "Reduce your dose.",
+    "Increase your insulin.",
+    "Lower your ramipril a little.",
     "Increase your metformin to 2000 mg daily.",
     "Raise your insulin by 4 units tonight.",
     "Up your metformin to 1500 mg.",
@@ -490,6 +510,13 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "You should stop taking your lisinopril.",
   ],
   de: [
+    "Reduzieren Sie die Dosis um die Hälfte.",
+    "Reduziere deine Dosis um die Hälfte.",
+    "Nehmen Sie nur die halbe Dosis.",
+    "Teilen Sie die Tablette in zwei Hälften.",
+    "Reduzieren Sie die Dosis.",
+    "Erhöhe dein Insulin.",
+    "Senken Sie die Dosis etwas.",
     "Erhöhe dein Metformin auf 2000 mg täglich.",
     "Reduzieren Sie Ihr Insulin um 4 Einheiten.",
     "Nimm 2 Tabletten am Abend.",
@@ -499,6 +526,12 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "Du solltest das Metformin absetzen.",
   ],
   fr: [
+    "Réduisez la dose de moitié.",
+    "Prenez une demi-dose.",
+    "Prenez la moitié de votre dose.",
+    "Coupez le comprimé en deux.",
+    "Diminuez votre dose.",
+    "Augmentez votre insuline.",
     "Augmentez votre metformine à 2000 mg.",
     "Réduisez votre insuline de 4 unités.",
     "Prenez 2 comprimés le soir.",
@@ -506,6 +539,12 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "Arrêtez de prendre la metformine.",
   ],
   es: [
+    "Reduzca la dosis a la mitad.",
+    "Tome media dosis.",
+    "Tome la mitad de la dosis.",
+    "Parta la pastilla por la mitad.",
+    "Reduzca la dosis.",
+    "Aumente la insulina.",
     "Aumente su metformina a 2000 mg.",
     "Reduzca la insulina en 4 unidades.",
     "Tome 2 pastillas por la noche.",
@@ -513,6 +552,12 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "Deje de tomar la metformina.",
   ],
   it: [
+    "Riduca la dose della metà.",
+    "Riduca la dose a metà.",
+    "Prenda mezza dose.",
+    "Prenda metà della dose.",
+    "Riduca la dose.",
+    "Aumenti l'insulina.",
     "Aumenti la metformina a 2000 mg.",
     "Riduca l'insulina di 4 unità.",
     "Prenda 2 compresse la sera.",
@@ -520,6 +565,14 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "Smetta di prendere la metformina.",
   ],
   pl: [
+    "Zmniejsz dawkę o połowę.",
+    "Weź pół tabletki.",
+    "Weź połowę dawki.",
+    "Przyjmij pół dawki.",
+    "Zmniejsz dawkę.",
+    "Zwiększ dawkę insuliny.",
+    "Odstaw ramipryl.",
+    "Odstaw enalapryl.",
     "Zwiększ metforminę do 2000 mg.",
     "Zmniejsz insulinę o 4 jednostki.",
     "Proszę przyjąć 2 tabletki wieczorem.",
@@ -527,6 +580,10 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "Przestań brać metforminę.",
   ],
   nl: [
+    "Verlaag je dosis met de helft.",
+    "Neem een halve dosis.",
+    "Verlaag je dosis.",
+    "Verhoog je insuline.",
     "Verhoog je metformine naar 2000 mg per dag.",
     "Verlaag je insuline met 4 eenheden.",
     "Neem 's avonds 2 tabletten.",
@@ -537,6 +594,13 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "Bouw je dosis af naar 5 mg.",
   ],
   "pt-BR": [
+    "Reduza a dose pela metade.",
+    "Tome meia dose.",
+    "Tome metade da dose.",
+    "Corte o comprimido ao meio.",
+    "Diminua a dose.",
+    "Reduza a dose.",
+    "Aumente a insulina.",
     "Aumente sua metformina para 2000 mg por dia.",
     "Reduza sua insulina em 4 unidades.",
     "Tome 2 comprimidos à noite.",
@@ -549,6 +613,11 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "Aplique 12 UI de insulina antes do jantar.",
   ],
   ko: [
+    "복용량을 늘리세요.",
+    "복용량을 줄이세요.",
+    "인슐린 용량을 낮추세요.",
+    "반 알만 드세요.",
+    "용량을 늘려 보세요.",
     "메트포르민을 2000mg으로 증량하세요.",
     "하루 2정 드세요.",
     "저녁 인슐린 용량을 건너뛰세요.",
@@ -565,6 +634,16 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
  */
 const DOSE_CLASS_CLEAN: Record<Locale, readonly string[]> = {
   en: [
+    "Reduce your sugar intake by half.",
+    "Cut your screen time in half.",
+    "Take half an hour to walk.",
+    "Reduce your salt.",
+    "Ask your doctor whether to reduce your dose.",
+    "Your dose was reduced by half in May.",
+    "Don't reduce your dose.",
+    "Increase your activity.",
+    "Lower your blood pressure with walks.",
+    "Take your medication as prescribed.",
     "You take 1000 mg twice daily.",
     "Your log shows 2000 mg.",
     "Your log shows you take 1000 mg twice daily, and you haven't missed a dose.",
@@ -583,6 +662,12 @@ const DOSE_CLASS_CLEAN: Record<Locale, readonly string[]> = {
     "Aim to bring your LDL down to 100 mg/dL with your doctor.",
   ],
   de: [
+    "Reduzieren Sie den Zucker um die Hälfte.",
+    "Reduziere deinen Salzkonsum.",
+    "Deine Dosis wurde im Mai halbiert.",
+    "Reduziere die Dosis nicht.",
+    "Nimm dir eine halbe Stunde Zeit.",
+    "Teilen Sie Ihre Medikamentenliste mit der Ärztin.",
     "Du nimmst 1000 mg zweimal täglich.",
     "Dein Protokoll zeigt 2000 mg.",
     "Setz dein Metformin nicht ab.",
@@ -590,23 +675,42 @@ const DOSE_CLASS_CLEAN: Record<Locale, readonly string[]> = {
     "Frag deine Ärztin, ob du die Dosis erhöhen sollst.",
   ],
   fr: [
+    "Réduisez le sel de moitié.",
+    "Prenez une demi-heure pour marcher.",
+    "Ne réduisez pas votre dose.",
+    "Augmentez votre activité.",
     "Vous prenez 1000 mg deux fois par jour.",
     "Ne sautez pas votre dose du soir.",
     "N'arrêtez pas de prendre la metformine.",
   ],
   es: [
+    "Reduzca el azúcar a la mitad.",
+    "Tome media hora para caminar.",
+    "No reduzca la dosis.",
+    "Aumente su actividad.",
     "Usted toma 1000 mg dos veces al día.",
     "No deje de tomar la metformina.",
   ],
   it: [
+    "Riduca lo zucchero della metà.",
+    "Prenda mezz'ora per camminare.",
+    "Non riduca la dose.",
+    "Aumenti l'attività.",
     "Lei prende 1000 mg due volte al giorno.",
     "Non smetta di prendere la metformina.",
   ],
   pl: [
+    "Zmniejsz spożycie soli o połowę.",
+    "Nie zmniejszaj dawki.",
+    "Odstaw telefon przed snem.",
+    "Zwiększ aktywność.",
     "Przyjmuje Pan 1000 mg dwa razy dziennie.",
     "Nie przestawaj brać leków.",
   ],
   nl: [
+    "Verlaag je suiker met de helft.",
+    "Verlaag je dosis niet.",
+    "Neem een half uur de tijd.",
     "Je neemt 1000 mg twee keer per dag.",
     "Je logboek laat 2000 mg zien.",
     "Sla je avonddosis niet over.",
@@ -618,6 +722,11 @@ const DOSE_CLASS_CLEAN: Record<Locale, readonly string[]> = {
     "Vraag je arts voordat je stopt met metformine.",
   ],
   "pt-BR": [
+    "Reduza o açúcar pela metade.",
+    "Tome meia hora para caminhar.",
+    "Corte o pão ao meio.",
+    "Não reduza a dose.",
+    "Aumente sua atividade.",
     "Você toma 1000 mg duas vezes ao dia.",
     "Seu registro mostra 2000 mg.",
     "Não pule a dose da noite.",
@@ -632,6 +741,10 @@ const DOSE_CLASS_CLEAN: Record<Locale, readonly string[]> = {
     "Converse com seu médico antes de parar de tomar a metformina.",
   ],
   ko: [
+    "걸음 수를 늘리세요.",
+    "용량을 줄이지 마세요.",
+    "약 2주 동안 걷는 시간을 늘리세요.",
+    "물 섭취를 늘리세요.",
     "하루 두 번 1000mg을 복용하고 계세요.",
     "저녁 용량을 건너뛰지 마세요.",
     "용량을 늘릴지 의사와 상담하세요.",
@@ -686,7 +799,7 @@ describe("screenModelOutput — the dose-change class, every locale", () => {
         "Take your 1000 mg as usual.",
         "en",
         CONVERSATIONAL_CONTRACTS,
-        { scheduleDoses: [1000] },
+        { dosePlan: [{ name: "Metformin", dose: 1000 }] },
       ).block,
     ).toBe(false);
     // Off schedule: the same phrasing names a dose the user is not on.
@@ -695,7 +808,7 @@ describe("screenModelOutput — the dose-change class, every locale", () => {
         "Take your 2000 mg as usual.",
         "en",
         CONVERSATIONAL_CONTRACTS,
-        { scheduleDoses: [1000] },
+        { dosePlan: [{ name: "Metformin", dose: 1000 }] },
       ).block,
     ).toBe(true);
   });

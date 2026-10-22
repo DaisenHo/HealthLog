@@ -59,6 +59,23 @@ export const bank: LocaleBank = {
       `(?:(?<!\\bnie\\s)\\b(?:we[źz]|bierz|przyjmij|wstrzyknij|dodaj)|\\b(?:proszę|należy|warto)\\s+(?:wzi[ąa][ćc]|przyj[ąa][ćc]|wstrzykn[ąa][ćc]|doda[ćc]))(?=\\s)\\s+${PL_SHORT}(?:(?:dodatkow\\S*|kolejn\\S*|jeszcze\\s+jedn\\S*)\\s+${PL_SHORT}${med}|(?:jedn\\S*|dwie|dwa|trzy|\\d+)\\s+${PL_SHORT}${med}\\s+więcej(?=[\\s.,;:!?]|$))`,
       "i",
     ),
+    // Halving or a fraction with no number: "zmniejsz dawkę o połowę",
+    // "weź połowę dawki", "przyjmij pół dawki".
+    new RegExp(
+      `(?<!\\bnie\\s)\\b(?:zmniejsz|obni[żz]|zredukuj|podziel|przetnij|przełam)(?:cie)?\\s+${PL_SLOT}${med}\\s+(?:o\\s+połowę|na\\s+pół|na\\s+połowę|na\\s+dwie\\s+części)`,
+      "i",
+    ),
+    new RegExp(
+      `(?:(?<!\\bnie\\s)\\b(?:we[źz]|bierz|przyjmij|przyjmuj|wstrzyknij)|\\b(?:proszę|należy)\\s+(?:wzi[ąa][ćc]|przyj[ąa][ćc]|przyjmowa[ćc]))\\s+(?:tylko\\s+)?(?:pół|połowę|połowy)\\s+${PL_SHORT}${med}`,
+      "i",
+    ),
+    // A bare change imperative on a medication, no target: "zmniejsz
+    // dawkę.", "zwiększ dawkę insuliny.". The noun closes the clause, or one
+    // genitive word does ("dawkę insuliny"), or a time or degree word follows.
+    new RegExp(
+      `(?<!\\bnie\\s)\\b(?:zwi[ęe]ksz|zmniejsz|obni[żz]|podnie[śs]|podwy[żz]sz|zredukuj)(?:cie)?\\s+${PL_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+[^\\s\\d.?!,;:]+\\s*(?:[.!?;:)]|$)|\\s+(?:teraz|dziś|dzisiaj|jutro|trochę|nieco|stopniowo|od\\s+jutra|przez)(?=[\\s.,;:!?]|$))`,
+      "i",
+    ),
   ],
   dose: [
     // zwiększ / podnieś / przejdź do|o N unit

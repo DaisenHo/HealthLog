@@ -53,10 +53,12 @@ import { bank as ko } from "./outbound-screen/locales/ko";
 import { bank as ptBR } from "./outbound-screen/locales/pt-br";
 import {
   DOSE_UNIT,
+  INN_STEM,
   LETTER,
   UNIT_END,
   type LocaleBank,
 } from "./outbound-screen/shared";
+import type { ScheduledDose } from "@/lib/medications/scheduled-doses";
 
 /** Which contract a caller asks the screen to enforce. */
 export type OutboundContract = "dose" | "risk" | "causal";
@@ -312,12 +314,19 @@ export const INSIGHTS_CONTRACTS: readonly OutboundContract[] = [
 /**
  * Continuation-exclusion for the dose bank (v1.32.7 — D7). A sentence that
  * matches a dose pattern is EXEMPT only when it is anchored to a maintenance
- * object ("keep taking … as prescribed") AND carries no change stem. So
- * "you should keep taking your prescribed 7.5 mg" passes, while
+ * object ("keep taking … as prescribed"), carries no change stem, AND every
+ * amount it states is one the person is on for the medication it names. So
+ * "keep taking your prescribed 7.5 mg" passes for someone on 7.5 mg, while
  * "you should keep in mind that trying 5 mg" (no maintenance anchor) and
  * "you should continue tapering to 2.4 mg" (a change stem present) stay
  * blocked. The direction is exclusion-of-continuation, never
  * requirement-of-change — "you should try 5 mg" must keep blocking.
+ *
+ * The plan check is not optional. The phrase alone used to be enough on every
+ * surface that passed no schedule, so "Take 40 mg as before." went out from
+ * a nudge or a briefing to someone who had never taken 40 mg of anything: "as
+ * before" is the model's claim, and only the plan can confirm it. A surface
+ * without the plan cannot exempt a stated amount at all.
  *
  * Accepted residual FP, failing safe: "I'd recommend discussing the 2.4 mg
  * step with your doctor" stays blocked ("step" is a change stem).
@@ -347,31 +356,41 @@ function sentenceDoseValues(sentence: string): number[] {
   return values;
 }
 
-/** True when a dose value matches a scheduled dose (exact / ±2%). */
-function matchesSchedule(
-  values: readonly number[],
-  schedule: readonly number[],
+/** True when a dose value equals a planned one (exact / ±2%). */
+function sameDose(value: number, planned: number): boolean {
+  return Math.abs(value - planned) <= Math.max(0.01, Math.abs(planned) * 0.02);
+}
+
+const INN_STEM_RE = new RegExp(INN_STEM, "i");
+
+/**
+ * True when every amount a continuation sentence states is on the person's
+ * plan for the medication it names. A sentence naming one of their
+ * medications is held to that medication's doses; one naming a drug outside
+ * the plan is never trusted; one naming none is held to the whole plan.
+ */
+function continuationMatchesPlan(
+  sentence: string,
+  plan: readonly ScheduledDose[] | undefined,
 ): boolean {
-  return values.some((v) =>
-    schedule.some((s) => Math.abs(v - s) <= Math.max(0.01, Math.abs(s) * 0.02)),
+  const values = sentenceDoseValues(sentence);
+  if (values.length === 0 || !plan || plan.length === 0) return false;
+  const named = plan.filter((entry) => {
+    const alternation = medicationNameAlternation([entry.name]);
+    return alternation !== null && new RegExp(alternation, "i").test(sentence);
+  });
+  if (named.length === 0 && INN_STEM_RE.test(sentence)) return false;
+  const pool = named.length > 0 ? named : plan;
+  return values.every((value) =>
+    pool.some((entry) => sameDose(value, entry.dose)),
   );
 }
 
-/**
- * True when a dose-change imperative trips, honouring the continuation rule.
- *
- * v1.32.9 (Coach Guard II / G3 — M6/D7 end state): when `scheduleDoses` is
- * supplied (the Coach passes the user's active doses), the continuation
- * exemption ALSO requires the sentence's dose to match one the user is actually
- * on. So "keep taking your 7.5 mg" passes only when 7.5 is a scheduled dose;
- * "keep taking your 15 mg" when the schedule says 7.5 is a wrong maintenance
- * dose and stays blocked. Without a schedule (every non-Coach surface) the
- * Guard I phrase-anchored exemption stands unchanged.
- */
+/** True when a dose-change imperative trips, honouring the continuation rule. */
 function doseTrips(
   subject: string,
   locale: Locale,
-  scheduleDoses?: readonly number[],
+  dosePlan?: readonly ScheduledDose[],
   medicationNames?: readonly string[],
 ): boolean {
   const bank = BANKS.dose;
@@ -386,18 +405,12 @@ function doseTrips(
     locale === "en"
       ? [DOSE_CHANGE_STEM.en]
       : [DOSE_CHANGE_STEM[locale], DOSE_CHANGE_STEM.en];
-  const gateOnSchedule =
-    scheduleDoses !== undefined && scheduleDoses.length > 0;
   for (const sentence of splitSentences(subject)) {
     if (!patterns.some((p) => p.test(sentence))) continue;
-    let exempt =
+    const exempt =
       continuation.some((p) => p.test(sentence)) &&
-      !changeStem.some((p) => p.test(sentence));
-    if (exempt && gateOnSchedule) {
-      // The continuation phrasing is only trusted when the dose it names is one
-      // the user is actually on. An off-schedule maintenance dose is caught.
-      exempt = matchesSchedule(sentenceDoseValues(sentence), scheduleDoses);
-    }
+      !changeStem.some((p) => p.test(sentence)) &&
+      continuationMatchesPlan(sentence, dosePlan);
     if (!exempt) return true;
   }
   return false;
@@ -413,12 +426,12 @@ function doseTrips(
  */
 export interface ScreenOptions {
   /**
-   * v1.32.9 — the user's active medication doses (numeric magnitudes). When
-   * present, the dose continuation exemption is additionally gated on a match:
-   * a "keep taking your N mg" is trusted only when N is a scheduled dose. Only
-   * the Coach passes this; every other surface keeps the phrase-anchored rule.
+   * The person's active medications with their dose magnitudes. A "keep
+   * taking your N mg" is trusted only when N is on this plan for the
+   * medication the sentence names; without the plan, a stated amount is never
+   * exempt.
    */
-  scheduleDoses?: readonly number[];
+  dosePlan?: readonly ScheduledDose[];
   /**
    * The person's own medication names, as typed into their schedule. Each one
    * counts as a medication noun in the dose-change class, so "skip the
@@ -441,9 +454,7 @@ export function screenModelOutput(
     if (contract === "dose") {
       // Dose is sentence-scoped so the continuation exemption cannot be
       // voided by a change stem in an unrelated sentence.
-      if (
-        doseTrips(subject, locale, opts?.scheduleDoses, opts?.medicationNames)
-      ) {
+      if (doseTrips(subject, locale, opts?.dosePlan, opts?.medicationNames)) {
         return { block: true, reason: REASON_FOR_CONTRACT.dose };
       }
       continue;

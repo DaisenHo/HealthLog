@@ -42,6 +42,9 @@ const BANKS: Record<Locale, LocaleBank> = {
 
 const SENTENCES: Record<Locale, readonly string[]> = {
   en: [
+    "Reduce your dose by half.",
+    "Take half your usual dose.",
+    "Reduce your dose.",
     "Increase your metformin to 2000 mg daily.",
     "You might want to consider increasing your insulin to 20 units.",
     "Take 2000 mg daily.",
@@ -81,6 +84,10 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Keep taking your 7.5 mg as prescribed.",
   ],
   de: [
+    "Reduzieren Sie die Dosis um die Hälfte.",
+    "Nehmen Sie nur die halbe Dosis.",
+    "Teilen Sie die Tablette in zwei Hälften.",
+    "Reduzieren Sie die Dosis.",
     "Erhöhe dein Metformin auf 2000 mg.",
     "Nimm 2 Tabletten am Abend.",
     "Pausiere dein Insulin.",
@@ -120,6 +127,9 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Nimm dein Metformin weiter wie verordnet.",
   ],
   fr: [
+    "Réduisez la dose de moitié.",
+    "Prenez une demi-dose.",
+    "Diminuez votre dose.",
     "Augmentez votre metformine à 2000 mg.",
     "Prenez 2 comprimés le soir.",
     "Sautez votre dose du soir.",
@@ -151,6 +161,9 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Continuez à prendre votre metformine.",
   ],
   es: [
+    "Reduzca la dosis a la mitad.",
+    "Tome media dosis.",
+    "Reduzca la dosis.",
     "Aumente su metformina a 2000 mg.",
     "Tome 2 comprimidos por la noche.",
     "Omita la dosis de la noche.",
@@ -181,6 +194,9 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Siga tomando su metformina.",
   ],
   it: [
+    "Riduca la dose della metà.",
+    "Prenda mezza dose.",
+    "Riduca la dose.",
     "Aumenti la metformina a 2000 mg.",
     "Prenda 2 compresse la sera.",
     "Salti la dose serale.",
@@ -210,6 +226,9 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Continui a prendere la metformina.",
   ],
   pl: [
+    "Zmniejsz dawkę o połowę.",
+    "Weź połowę dawki.",
+    "Zmniejsz dawkę.",
     "Zwiększ metforminę do 2000 mg.",
     "Proszę przyjąć 2 tabletki wieczorem.",
     "Pomiń wieczorną dawkę.",
@@ -239,6 +258,9 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Kontynuuj przyjmowanie leku.",
   ],
   nl: [
+    "Verlaag je dosis met de helft.",
+    "Neem een halve dosis.",
+    "Verlaag je dosis.",
     "Verhoog je metformine naar 2000 mg per dag.",
     "Bouw je dosis af naar 5 mg.",
     "Zet je insuline op 20 eenheden.",
@@ -282,6 +304,7 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Blijf je metformine nemen.",
   ],
   ko: [
+    "복용량을 늘리세요.",
     "메트포르민을 2000mg으로 증량하세요.",
     "저녁 인슐린 용량을 건너뛰세요.",
     "메트포르민 복용을 중단하세요.",
@@ -313,6 +336,9 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "처방대로 복용하세요.",
   ],
   "pt-BR": [
+    "Reduza a dose pela metade.",
+    "Tome meia dose.",
+    "Reduza a dose.",
     "Aumente sua metformina para 2000 mg por dia.",
     "Tome 2 comprimidos à noite.",
     "Pule a dose da noite.",

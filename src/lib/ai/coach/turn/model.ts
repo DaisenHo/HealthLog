@@ -307,7 +307,7 @@ export async function runTurnModel(args: {
       locale,
       figures: () => figures,
       userMessage: args.message,
-      scheduleDoses: ctx.scheduleDoses,
+      dosePlan: ctx.dosePlan,
       medicationNames: ctx.medicationNames,
     },
   });
@@ -466,7 +466,7 @@ export async function runTurnModel(args: {
           ...(args.userMessageId ? { userMessageId: args.userMessageId } : {}),
           inventory: inventory.entries,
           conversationWindowSet: args.conversationWindowSet,
-          scheduleDoses: ctx.scheduleDoses,
+          dosePlan: ctx.dosePlan,
           medicationNames: ctx.medicationNames,
         },
         checkpointScreen: { userMessage: args.message },

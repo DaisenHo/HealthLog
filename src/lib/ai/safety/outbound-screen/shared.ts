@@ -84,12 +84,13 @@ export const LETTER = "a-zà-ÿąćęłńóśźż";
 /**
  * Common generic-name stems (INN): ramipril, losartan, bisoprolol,
  * atorvastatin, amlodipine, metformin, semaglutide, apixaban, omeprazole,
- * furosemide. A surface that passes no schedule (a nudge, the document chat)
+ * furosemide, with the Polish spellings ("ramipryl", "atorwastatyna",
+ * "semaglutyd") beside the Latin ones. A surface that passes no schedule (a nudge, the document chat)
  * still recognises "skip the amlodipine". Two letters must precede the stem,
  * so "April" is not a drug; the stems are chosen so no everyday word ends in
  * one ("comparing" is why heparin is spelled out rather than stemmed).
  */
-export const INN_STEM = `(?<![${LETTER}])[${LETTER}]{2,}(?:pril|sartan|olol|statin|dipin|dypin|formin|glutid|gliflozin|gliptin|xaban|ksaban|prazol|semid)[${LETTER}]{0,4}(?![${LETTER}])|(?<![${LETTER}])(?:enoxa|dalte)?heparin[${LETTER}]{0,4}`;
+export const INN_STEM = `(?<![${LETTER}])[${LETTER}]{2,}(?:pril|pryl|sartan|olol|statin|statyn|dipin|dypin|formin|glutid|glutyd|gliflozin|gliptin|xaban|ksaban|prazol|semid)[${LETTER}]{0,4}(?![${LETTER}])|(?<![${LETTER}])(?:enoxa|dalte)?heparin[${LETTER}]{0,4}`;
 
 export const ENGINE = "(?:framingham|ascvd|score2|qrisk)";
 

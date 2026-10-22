@@ -92,6 +92,22 @@ export const bank: LocaleBank = {
       `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:tome|use|aplique|injete|acrescente|adicione)\\s+${PT_SHORT}(?:(?:um|uma|dois|duas|três|\\d+)\\s+${PT_SHORT}${med}[^.?!]{0,20}?(?:\\ba\\s+mais\\b|\\bextras?\\b|\\badiciona(?:l|is)\\b)|(?:outr[oa]s?|mais\\s+(?:um|uma))\\s+${PT_SHORT}${med})`,
       "i",
     ),
+    // Halving or a fraction with no number: "reduza a dose pela metade",
+    // "tome meia dose", "corte o comprimido ao meio".
+    new RegExp(
+      `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:reduza|diminua|baixe|corte|parta|divida)\\s+${PT_SLOT}${med}\\s+(?:pela\\s+metade|ao\\s+meio|em\\s+duas\\s+partes|[àa]\\s+metade)`,
+      "i",
+    ),
+    new RegExp(
+      `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:tome|use|aplique|injete)\\s+(?:s[óo]\\s+|apenas\\s+|somente\\s+)?(?:meia\\s+|(?:a\\s+)?metade\\s+d[aoe]s?\\s+)${PT_SHORT}${med}`,
+      "i",
+    ),
+    // A bare change imperative on a medication, no target: "reduza a
+    // dose.", "aumente a insulina um pouco".
+    new RegExp(
+      `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:aumente|suba|eleve|reduza|diminua|baixe|abaixe)\\s+(?:(?:a|o|as|os)\\s+)?${PT_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:agora|hoje|amanh[ãa]|um\\s+pouco|aos\\s+poucos|gradualmente|a\\s+partir)(?![\\w\\u00C0-\\u024F]))`,
+      "i",
+    ),
   ],
   dose: [
     // aumente / suba / passe a dose para|a|até|em N unit

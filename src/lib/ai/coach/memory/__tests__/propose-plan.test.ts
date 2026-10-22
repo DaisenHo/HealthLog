@@ -13,11 +13,11 @@ vi.mock("../../bytes-codec", () => ({
 }));
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 const doses = vi.hoisted(() => ({
-  values: [] as number[],
+  values: [] as { name: string; dose: number }[],
   names: [] as string[],
 }));
 vi.mock("@/lib/medications/scheduled-doses", () => ({
-  getScheduledDoseValues: vi.fn(async () => doses.values),
+  getScheduledDosePlan: vi.fn(async () => doses.values),
 }));
 vi.mock("@/lib/medications/medication-names", () => ({
   getMedicationNames: vi.fn(async () => doses.names),

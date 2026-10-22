@@ -204,7 +204,7 @@ export async function guardReply(args: {
   const outbound = screenCoachReply(
     replyText,
     locale,
-    ctx.scheduleDoses,
+    ctx.dosePlan,
     ctx.medicationNames,
   );
   if (outbound.block && outbound.reason) {

@@ -122,7 +122,7 @@ vi.mock("@/lib/ai/coach/snapshot", () => ({
   buildCoachSnapshot: h.m.buildCoachSnapshot,
 }));
 vi.mock("@/lib/medications/scheduled-doses", () => ({
-  getScheduledDoseValues: h.m.getScheduledDoseValues,
+  getScheduledDosePlan: h.m.getScheduledDosePlan,
 }));
 vi.mock("@/lib/ai/coach/workout-evidence-builder", () => ({
   buildWorkoutEvidenceSection: h.m.buildWorkoutEvidenceSection,

@@ -111,6 +111,22 @@ export const bank: LocaleBank = {
       `(?<!\\b(?:niet|nooit)\\s)\\b(?:neem|slik|spuit|injecteer|voeg)\\s+${NL_SHORT}(?:(?:(?:een|één|twee|\\d+)\\s+)?(?:extra|aanvullende?|tweede)[-\\s]+${NL_SHORT}${med}|nog\\s+(?:een|één|twee|\\d+)\\s+${NL_SHORT}${med}|(?:een|één|twee|drie|\\d+)\\s+${NL_SHORT}${med}\\s+(?:meer|extra)\\b)`,
       "i",
     ),
+    // Halving or a fraction with no number: "verlaag je dosis met de helft",
+    // "neem een halve dosis", "snijd de tablet doormidden".
+    new RegExp(
+      `(?<!\\b(?:niet|nooit)\\s)\\b(?:verlaag|verminder|deel|breek|snijd)\\s+${NL_SLOT}${med}\\s+(?:met\\s+de\\s+helft|door\\s+(?:twee|2)|doormidden|in\\s+twee)`,
+      "i",
+    ),
+    new RegExp(
+      `(?<!\\b(?:niet|nooit)\\s)\\b(?:neem|slik|spuit|injecteer)\\s+(?:alleen\\s+|maar\\s+)?(?:een\\s+halve|de\\s+helft\\s+van)\\s+${NL_SHORT}${med}`,
+      "i",
+    ),
+    // A bare change imperative on a medication, no target: "verlaag je
+    // dosis.", "verhoog je insuline wat". "Verlaag je dosis niet" is a warning.
+    new RegExp(
+      `(?<!\\b(?:niet|nooit)\\s)\\b(?:verhoog|verlaag|verminder)\\s+${NL_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:nu|vandaag|morgen|vanavond|iets|wat|een\\s+beetje|geleidelijk|vanaf)\\b)`,
+      "i",
+    ),
   ],
   dose: [
     // verhoog / ga omhoog / bouw op naar|tot|met N unit

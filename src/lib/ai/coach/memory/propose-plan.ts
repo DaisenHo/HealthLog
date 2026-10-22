@@ -28,7 +28,10 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import type { Locale } from "@/lib/i18n/config";
 import { getMedicationNames } from "@/lib/medications/medication-names";
-import { getScheduledDoseValues } from "@/lib/medications/scheduled-doses";
+import {
+  getScheduledDosePlan,
+  type ScheduledDose,
+} from "@/lib/medications/scheduled-doses";
 
 import { screenCoachReply } from "../outbound-guard";
 import { detectRefusal } from "../refusal";
@@ -87,19 +90,15 @@ export function planTextPasses(
   texts: readonly string[],
   locale: Locale,
   screen: {
-    scheduleDoses: readonly number[];
+    dosePlan: readonly ScheduledDose[];
     medicationNames: readonly string[];
   },
 ): boolean {
   try {
     for (const text of [...texts, texts.join(" ")]) {
       if (
-        screenCoachReply(
-          text,
-          locale,
-          screen.scheduleDoses,
-          screen.medicationNames,
-        ).block
+        screenCoachReply(text, locale, screen.dosePlan, screen.medicationNames)
+          .block
       ) {
         return false;
       }
@@ -154,9 +153,9 @@ async function runPropose(args: ProposePlanArgs): Promise<ProposePlanOutcome> {
   ) {
     return { kind: "declined", reason: "invalid" };
   }
-  const [scheduleDoses, medicationNames] = await Promise.all([
-    args.scheduleDoses ??
-      getScheduledDoseValues(userId).catch((): number[] => []),
+  const [dosePlan, medicationNames] = await Promise.all([
+    args.dosePlan ??
+      getScheduledDosePlan(userId).catch((): ScheduledDose[] => []),
     args.medicationNames ??
       getMedicationNames(userId).catch((): string[] => []),
   ]);
@@ -164,7 +163,7 @@ async function runPropose(args: ProposePlanArgs): Promise<ProposePlanOutcome> {
     !planTextPasses(
       [ifCue, thenAction, ...(target ? [target] : [])],
       args.locale,
-      { scheduleDoses, medicationNames },
+      { dosePlan, medicationNames },
     )
   ) {
     return { kind: "declined", reason: "unsafe" };

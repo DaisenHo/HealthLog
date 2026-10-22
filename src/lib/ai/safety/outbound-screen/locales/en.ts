@@ -115,6 +115,24 @@ export const bank: LocaleBank = {
       `${EN_CUE}(?:(?!\\b(?:not|never|before|without|until|unless|ask|asking|whether|if)\\b)[^.?!]){0,20}?\\b(?:(?:stopping|omitting|leaving\\s+out)\\s+${EN_SHORT}${med}|taking\\s+(?:another|(?:(?:an?|one|two|\\d+)\\s+)?(?:extra|additional|more))\\s+${EN_SHORT}${med})`,
       "i",
     ),
+    // Halving or a fraction with no number: "reduce your dose by half",
+    // "take half a dose". A half hour or half your sugar names no medication.
+    new RegExp(
+      `${EN_LEAD}(?:reduce|cut|lower|decrease|drop|split|break|divide)\\s+${EN_SHORT}${med}\\s+(?:by|in)\\s+(?:a\\s+)?half\\b`,
+      "im",
+    ),
+    new RegExp(
+      `${EN_LEAD}(?:take|use|inject|give\\s+yourself)\\s+(?:only\\s+|just\\s+)?half\\s+(?:of\\s+)?(?:(?:a|an|the|your)\\s+)?${EN_SHORT}${med}`,
+      "im",
+    ),
+    // A bare change imperative on a medication, no target: "reduce your
+    // dose.", "increase your insulin slightly". The medication noun has to
+    // close the clause or meet a time or degree word, so "reduce your dose of
+    // stress" and "cut your medication costs" are not read as one.
+    new RegExp(
+      `${EN_LEAD}(?:increase|raise|up|boost|bump|reduce|lower|decrease|cut|drop)\\s+${EN_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:now|today|tonight|tomorrow|a\\s+(?:bit|little)|slightly|gradually|somewhat|this\\s+week|for|until|from\\s+now)\\b)`,
+      "im",
+    ),
   ],
   dose: [
     // step/move/increase/raise/bump/titrate/go up to|by N unit
