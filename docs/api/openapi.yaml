@@ -43008,12 +43008,22 @@ components:
                 type:
                   - string
                   - "null"
+              notesEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
               createdAt:
                 type: string
                 minLength: 1
               updatedAt:
                 type: string
                 minLength: 1
+              deletedAt:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
             required:
               - id
               - relationship
