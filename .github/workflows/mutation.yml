@@ -35,8 +35,13 @@ jobs:
       - name: Run Stryker
         run: pnpm exec stryker run --concurrency 4
 
+      # Without pipefail the step takes the exit status of `tee`, which is
+      # always 0, so a module under its floor could never fail the run.
       - name: Check the per-module floors
-        run: node scripts/mutation-floors.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/mutation-floors.mjs | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the report
         if: always()

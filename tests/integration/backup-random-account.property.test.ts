@@ -21,7 +21,7 @@ import { legacyStreamedBlobFrom } from "@/__tests__/helpers/legacy-backup-blob";
 import type { Prisma } from "@/generated/prisma/client";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 
-import { assertAsyncProperty } from "../property/fast-check";
+import { assertAsyncProperty, propertyTimeout } from "../property/fast-check";
 import { callRoute } from "../kit/call-route";
 import { makeAdmin, makeSession, makeUser } from "../kit/factories";
 import { POST as restoreBackup } from "./restore-job-driver";
@@ -264,56 +264,62 @@ beforeEach(async () => {
 });
 
 describe("a generated account", () => {
-  it("comes back from a disaster-recovery backup exactly as it left", async () => {
-    await assertAsyncProperty(
-      fc.asyncProperty(accountArb, async (account) => {
-        await truncateAllTables(prisma);
-        await seed(account);
-        const before = await dump();
+  it(
+    "comes back from a disaster-recovery backup exactly as it left",
+    async () => {
+      await assertAsyncProperty(
+        fc.asyncProperty(accountArb, async (account) => {
+          await truncateAllTables(prisma);
+          await seed(account);
+          const before = await dump();
 
-        let json = "";
-        await streamFullBackupJson(
-          prisma,
-          OWNER_ID,
-          (chunk) => {
-            json += chunk;
-          },
-          {
-            purpose: "disaster-recovery",
-            exportedAt: new Date("2026-10-01T00:00:00.000Z"),
-          },
-        );
+          let json = "";
+          await streamFullBackupJson(
+            prisma,
+            OWNER_ID,
+            (chunk) => {
+              json += chunk;
+            },
+            {
+              purpose: "disaster-recovery",
+              exportedAt: new Date("2026-10-01T00:00:00.000Z"),
+            },
+          );
 
-        await prisma.user.delete({ where: { id: OWNER_ID } });
-        await makeUser({ id: OWNER_ID });
-        const backup = await prisma.dataBackup.create({
-          data: {
-            userId: OWNER_ID,
-            type: "RANDOM_ACCOUNT_ROUND_TRIP",
-            data: await legacyStreamedBlobFrom(async (write) => {
-              await write(json);
-            }),
-          },
-        });
-        const operator = await makeSession(await makeAdmin());
-        const restored = await callRoute(restoreBackup, {
-          method: "POST",
-          route: "/api/admin/backups/{id}/restore",
-          params: { id: backup.id },
-          body: { confirm: "RESTORE" },
-          auth: operator,
-          contract: {
-            skip: "the restore driver answers 200 with the job's report in place of the route's queued 202",
-          },
-        });
-        expect(
-          restored.status,
-          JSON.stringify(restored.body).slice(0, 300),
-        ).toBe(200);
+          await prisma.user.delete({ where: { id: OWNER_ID } });
+          await makeUser({ id: OWNER_ID });
+          const backup = await prisma.dataBackup.create({
+            data: {
+              userId: OWNER_ID,
+              type: "RANDOM_ACCOUNT_ROUND_TRIP",
+              data: await legacyStreamedBlobFrom(async (write) => {
+                await write(json);
+              }),
+            },
+          });
+          const operator = await makeSession(await makeAdmin());
+          const restored = await callRoute(restoreBackup, {
+            method: "POST",
+            route: "/api/admin/backups/{id}/restore",
+            params: { id: backup.id },
+            body: { confirm: "RESTORE" },
+            auth: operator,
+            contract: {
+              skip: "the restore driver answers 200 with the job's report in place of the route's queued 202",
+            },
+          });
+          expect(
+            restored.status,
+            JSON.stringify(restored.body).slice(0, 300),
+          ).toBe(200);
 
-        expect(await dump()).toEqual(before);
-      }),
-      12,
-    );
-  });
+          expect(await dump()).toEqual(before);
+        }),
+        12,
+      );
+      // Twelve round trips take a few seconds; the nightly factor multiplies
+      // both the cases and this budget.
+    },
+    propertyTimeout(60_000),
+  );
 });
