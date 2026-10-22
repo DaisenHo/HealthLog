@@ -52,7 +52,7 @@ export function EcgDetail({ recordingId }: { recordingId: string }) {
   });
 
   if (isError) {
-    // A failed read must never read as "no data" (UI-STANDARDS §6), and the
+    // A failed read must never read as "no data" (ui-standards.md §6), and the
     // alert is content, not muted meta — it also has to be recoverable.
     return (
       <QueryErrorCard

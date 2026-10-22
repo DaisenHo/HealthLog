@@ -11,6 +11,15 @@ vi.mock("@/lib/oauth/callback-claim", async (importOriginal) => ({
   duplicateOAuthCallback: async () => null,
 }));
 
+vi.mock("@/lib/integrations/oauth-kit/connect-target", () => ({
+  // The guardian arm is covered in its own test; here the record's own
+  // browser (or none) may finish, any other session may not.
+  verifyCallbackActor: async (record: string, session: string | null) =>
+    session === null || session === record
+      ? { ok: true, guardianUserId: null }
+      : { ok: false, reason: "cross_user" },
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
 }));
@@ -156,7 +165,7 @@ describe("GET /api/whoop/callback custom-scheme redirect", () => {
     const res = await GET(makeReq("nonce-owner"));
 
     expect(res.headers.get("location")).toBe(
-      "https://app.example/settings/integrations?whoop=error&reason=owner_conflict",
+      "https://app.example/settings/integrations?whoop=error&reason=already_linked",
     );
     expect(res.headers.get("location")).not.toContain("42");
     expect(connUpsert).not.toHaveBeenCalled();
@@ -179,7 +188,7 @@ describe("GET /api/whoop/callback custom-scheme redirect", () => {
     const res = await GET(makeReq("nonce-race"));
 
     expect(res.headers.get("location")).toBe(
-      "dev.healthlog.app://whoop?whoop=error&reason=owner_conflict",
+      "dev.healthlog.app://whoop?whoop=error&reason=already_linked",
     );
     expect(res.headers.get("location")).not.toContain("42");
   });

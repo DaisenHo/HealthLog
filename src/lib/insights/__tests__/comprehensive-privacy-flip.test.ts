@@ -97,6 +97,7 @@ vi.mock("@/lib/logging/context", async (importOriginal) => {
 import { generateComprehensiveInsight } from "../comprehensive-generate";
 import { hashInsightSnapshot } from "../snapshot-hash";
 import { compactSections } from "@/lib/ai/prompts/compact-sections";
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
 
 // The cached payload is sealed at rest, so its writes need a key.
 vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
@@ -151,7 +152,9 @@ describe("generateComprehensiveInsight — consent withdrawn in flight", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "old" } }),
+      ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: "0".repeat(64),
     });
@@ -191,7 +194,9 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "old" } }),
+      ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: "0".repeat(64), // changed → full generation
     });
@@ -236,7 +241,9 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "old" } }),
+      ),
       insightsExcludeMetrics: ["sleep"],
       insightsSnapshotHash: "0".repeat(64),
       gender: "FEMALE",
@@ -280,7 +287,9 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "old" } }),
+      ),
       insightsExcludeMetrics: ["sleep"],
       insightsSnapshotHash: "0".repeat(64),
       gender: "FEMALE",
@@ -322,7 +331,9 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: JSON.stringify({ dailyBriefing: { p: "old" } }),
+      insightsCachedTextEncrypted: sealInsightsCachedText(
+        JSON.stringify({ dailyBriefing: { p: "old" } }),
+      ),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: "0".repeat(64),
     });
@@ -361,7 +372,7 @@ describe("generateComprehensiveInsight — scope/version commit guard", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: CACHED_WITH_BRIEFING,
+      insightsCachedTextEncrypted: sealInsightsCachedText(CACHED_WITH_BRIEFING),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH, // unchanged → reroll path
       insightsBriefingRerollDate: null,

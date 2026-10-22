@@ -30,6 +30,8 @@ describe("Oura scope map", () => {
       "spo2",
       "heart_health",
       "stress",
+      "workout",
+      "heartrate",
       "personal",
     ]);
   });
@@ -40,6 +42,8 @@ describe("Oura scope map", () => {
       "vo2max",
       "cardio_age",
       "resilience",
+      "workout",
+      "heartrate",
     ]);
     expect(ouraScopeReconnectList(["resilience", "readiness", "spo2"])).toEqual(
       ["spo2", "resilience"],
@@ -65,10 +69,17 @@ describe("granted scopes", () => {
       ouraCollectionsMissingFromGrant(
         "extapi:daily extapi:personal extapi:spo2 extapi:heart_health",
       ),
-    ).toEqual(["resilience"]);
+    ).toEqual(["resilience", "workout", "heartrate"]);
+    // A grant from before workouts and heart rate were read: those two are
+    // the scope note, nothing else.
     expect(
       ouraCollectionsMissingFromGrant(
         "daily personal spo2 heart_health stress",
+      ),
+    ).toEqual(["workout", "heartrate"]);
+    expect(
+      ouraCollectionsMissingFromGrant(
+        "daily personal spo2 heart_health stress workout heartrate",
       ),
     ).toEqual([]);
   });

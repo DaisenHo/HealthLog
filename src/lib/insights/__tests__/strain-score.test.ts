@@ -32,6 +32,9 @@ import {
   percentile,
   resolvePersonalReference,
   persistStrainScore,
+  canonicalWorkoutTrimps,
+  canonicalDayActiveEnergy,
+  STRAIN_ACTIVE_ENERGY_REFERENCE,
   STRAIN_SCORE_EXTERNAL_ID_PREFIX,
   STRAIN_TRIMP_REFERENCE,
   STRAIN_MIN_TRAINING_DAYS,
@@ -151,8 +154,15 @@ describe("saturateToScore", () => {
 });
 
 function makePrisma(opts: {
-  energy?: number[];
-  workouts?: Array<{ id: string; samples: { samples: unknown } | null }>;
+  energy?: Array<number | { value: number; source: string }>;
+  workouts?: Array<{
+    id: string;
+    samples: { samples: unknown } | null;
+    source?: string;
+    sportType?: string;
+    startedAt?: Date;
+    durationSec?: number;
+  }>;
   rhr?: number | null;
   gender?: string;
   dateOfBirth?: Date | null;
@@ -164,15 +174,26 @@ function makePrisma(opts: {
     trainingDays?: number;
   }>;
 }) {
-  const energyRows = (opts.energy ?? []).map((value, i) => ({
-    value,
+  const energyRows = (opts.energy ?? []).map((entry, i) => ({
+    ...(typeof entry === "number" ? { value: entry } : entry),
+    measuredAt: new Date(Date.UTC(2026, 5, 1, 6 + i)),
     id: `e${i}`,
   }));
   const measurementFindMany = vi.fn().mockResolvedValue(energyRows);
   const measurementFindFirst = vi
     .fn()
     .mockResolvedValue(opts.rhr == null ? null : { value: opts.rhr });
-  const workoutFindMany = vi.fn().mockResolvedValue(opts.workouts ?? []);
+  // Distinct sessions by default: each fixture workout starts an hour after
+  // the previous one, so the cross-source picker keeps every row.
+  const workoutFindMany = vi.fn().mockResolvedValue(
+    (opts.workouts ?? []).map((w, i) => ({
+      source: "APPLE_HEALTH",
+      sportType: "RUNNING",
+      startedAt: new Date(Date.UTC(2026, 5, 1, 6 + i)),
+      durationSec: 1800,
+      ...w,
+    })),
+  );
   const upsert = vi.fn().mockResolvedValue({});
   const findUnique = vi.fn().mockResolvedValue({
     dateOfBirth:
@@ -517,5 +538,134 @@ describe("persistStrainScore — personal anchor + cache", () => {
     // The blended reference rides the warmed ~25-TRIMP prior, NOT the
     // population 150 carried by the energy-only placeholder row.
     expect(cacheArg.create.refPersonal).toBeLessThan(80);
+  });
+});
+
+describe("canonicalWorkoutTrimps — one impulse per session", () => {
+  const start = new Date("2026-06-01T07:00:00.000Z");
+  const row = (
+    id: string,
+    source: string,
+    trimp: number,
+    offsetMin = 0,
+    sportType = "RUNNING",
+  ) => ({
+    id,
+    source: source as "APPLE_HEALTH",
+    sportType,
+    startedAt: new Date(start.getTime() + offsetMin * 60_000),
+    durationSec: 1800,
+    trimp,
+  });
+
+  it("counts a session synced by two services once", () => {
+    const rows = [row("a", "APPLE_HEALTH", 40), row("s", "STRAVA", 38, 1)];
+    expect(canonicalWorkoutTrimps(rows, null, (r) => r.trimp)).toEqual([40]);
+  });
+
+  it("takes the dropped twin's impulse when the picked row has no series", () => {
+    // Apple ranks first on the default ladder; its copy carries no HR here.
+    const rows = [row("a", "APPLE_HEALTH", 0), row("w", "WHOOP", 55, 2)];
+    expect(canonicalWorkoutTrimps(rows, null, (r) => r.trimp)).toEqual([55]);
+  });
+
+  it("keeps two distinct sessions apart", () => {
+    const rows = [
+      row("a", "APPLE_HEALTH", 40),
+      row("b", "APPLE_HEALTH", 20, 120),
+      row("c", "APPLE_HEALTH", 15, 1, "CYCLING"),
+    ];
+    expect(
+      canonicalWorkoutTrimps(rows, null, (r) => r.trimp).sort((x, y) => x - y),
+    ).toEqual([15, 20, 40]);
+  });
+
+  it("never adds a source off the ladder to another source's session", () => {
+    // WHOOP and IMPORT are both off the workout ladder, so the picker keeps
+    // both rows of the slot: one session, the larger impulse.
+    const rows = [row("w", "WHOOP", 50), row("i", "IMPORT", 45, 1)];
+    expect(canonicalWorkoutTrimps(rows, null, (r) => r.trimp)).toEqual([50]);
+  });
+
+  it("still adds two sessions of one source in the same slot", () => {
+    const rows = [
+      { ...row("w1", "WHOOP", 30), durationSec: 600 },
+      { ...row("w2", "WHOOP", 20, 2), durationSec: 900 },
+    ];
+    expect(canonicalWorkoutTrimps(rows, null, (r) => r.trimp)).toEqual([50]);
+  });
+
+  it("is empty when nothing carries an impulse", () => {
+    expect(
+      canonicalWorkoutTrimps([row("a", "APPLE_HEALTH", 0)], null, () => 0),
+    ).toEqual([]);
+  });
+});
+
+describe("canonicalDayActiveEnergy — one source per day", () => {
+  const at = new Date("2026-06-01T09:00:00.000Z");
+  const e = (source: string, value: number) => ({
+    source: source as "APPLE_HEALTH",
+    value,
+    measuredAt: at,
+  });
+
+  it("keeps the ladder's first source, not the sum of two", () => {
+    expect(
+      canonicalDayActiveEnergy(
+        [e("APPLE_HEALTH", 200), e("OURA", 280), e("APPLE_HEALTH", 100)],
+        null,
+      ),
+    ).toBe(300);
+  });
+
+  it("keeps the larger total when no source is on the ladder", () => {
+    expect(
+      canonicalDayActiveEnergy([e("WHOOP", 200), e("IMPORT", 150)], null),
+    ).toBe(200);
+  });
+
+  it("drives the active-energy fallback score", async () => {
+    const { prisma } = makePrisma({
+      rhr: 50,
+      energy: [
+        { value: 300, source: "APPLE_HEALTH" },
+        { value: 290, source: "OURA" },
+      ],
+      workouts: [],
+    });
+    const result = await persistStrainScore(prisma, "user-1", NOW);
+    expect(result.reason).toBe("active_energy_fallback");
+    expect(result.score).toBe(
+      saturateToScore(300, STRAIN_ACTIVE_ENERGY_REFERENCE),
+    );
+  });
+});
+
+describe("persistStrainScore — duplicate sessions", () => {
+  it("scores a session stored twice the same as the session stored once", async () => {
+    const series = {
+      samples: [
+        { t: "2026-06-01T08:00:00.000Z", hr: 150 },
+        { t: "2026-06-01T08:30:00.000Z", hr: 155 },
+        { t: "2026-06-01T09:00:00.000Z", hr: 150 },
+      ],
+    };
+    const startedAt = new Date("2026-06-01T08:00:00.000Z");
+    const once = makePrisma({
+      rhr: 50,
+      workouts: [{ id: "w1", samples: series, startedAt }],
+    });
+    const twice = makePrisma({
+      rhr: 50,
+      workouts: [
+        { id: "w1", samples: series, startedAt },
+        { id: "w2", samples: series, startedAt, source: "STRAVA" },
+      ],
+    });
+    const a = await persistStrainScore(once.prisma, "user-1", NOW);
+    const b = await persistStrainScore(twice.prisma, "user-1", NOW);
+    expect(a.score).toBeGreaterThan(0);
+    expect(b.score).toBe(a.score);
   });
 });

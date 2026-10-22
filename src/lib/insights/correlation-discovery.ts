@@ -138,6 +138,20 @@ export function metricFamily(key: string): string {
   if (key.startsWith("ENV_")) return "ENVIRONMENT";
   if (key.startsWith("MOVEMENT_")) return "MOVEMENT";
   if (key.startsWith("CUSTOM_METRIC:")) return key;
+  // v1.44 — State of Mind is a mood self-report from another app: pairing it
+  // with the logged mood would correlate one feeling with itself.
+  if (key === "STATE_OF_MIND_VALENCE") return "MOOD";
+  // The room-climate readings are one room's air; the training channels one
+  // training record; the intake channels one supplement log.
+  if (key.startsWith("INDOOR_")) return "INDOOR";
+  if (key === WORKOUT_MINUTES_CHANNEL_KEY || key === TRAINING_LOAD_CHANNEL_KEY)
+    return "TRAINING";
+  if (
+    key === HYDRATION_CHANNEL_KEY ||
+    key === CAFFEINE_CHANNEL_KEY ||
+    key.startsWith(NUTRIENT_CHANNEL_PREFIX)
+  )
+    return "NUTRIENTS";
   // v1.21.0 (FDREXTEND) — medication compliance and symptom severity each form
   // their OWN single-channel family, so the loop's same-family guard collapses
   // only the self-lag (compliance→compliance, symptom→symptom). The returned
@@ -196,6 +210,19 @@ export interface NamedSeries {
    * there means the averaged 0–1 window, tested as one hypothesis.
    */
   lagDays?: number;
+  /**
+   * Behaviour channels only: the outcomes this channel is tested against.
+   * Absent means every outcome. A channel with one plausible question (the
+   * bedroom's air and the night's sleep) names it, so the pairs nobody asked
+   * about do not widen the false-discovery family for every other pair.
+   */
+  targets?: readonly string[];
+  /**
+   * Behaviour channels only: how the sentence names the exposure window when
+   * it is not the default next day. `overnight` is the night's mean, keyed on
+   * the day the person woke up (`lagDays: 0`).
+   */
+  phrasing?: "overnight";
 }
 
 /** One discovered, FDR-surviving correlation pair. */
@@ -325,6 +352,7 @@ interface RawPair {
   lagDays: number;
   behaviourLabel?: string;
   outcomeLabel?: string;
+  phrasing?: "overnight";
 }
 
 /**
@@ -374,6 +402,7 @@ function interpret(
   t: Translate,
   behaviourLabel?: string,
   outcomeLabel?: string,
+  phrasing?: "overnight",
 ): string {
   const params = {
     behaviour: behaviourLabel ?? humanise(behaviour, t),
@@ -389,7 +418,13 @@ function interpret(
     tier === "faint" ? "faint" : tier === "high" ? "high" : "moderate";
   // Lag 0 is the averaged same-day window of the exposure channels ("on the
   // day and the day before"); every other pair reads as next-day.
-  const template = lagDays === 0 ? "dailySameDay" : "daily";
+  // The overnight room climate reads as "overnight … that night".
+  const template =
+    phrasing === "overnight"
+      ? "dailyOvernight"
+      : lagDays === 0
+        ? "dailySameDay"
+        : "daily";
   return t(`insights.correlation.${template}.${tierKey}`, params);
 }
 
@@ -416,6 +451,12 @@ function humanise(key: string, t: Translate): string {
       .replace(/[_-]/g, " ")
       .toLowerCase();
     return t("insights.correlation.channelFactor", { factor });
+  }
+  if (key.startsWith(NUTRIENT_CHANNEL_PREFIX)) {
+    const code = key.slice(NUTRIENT_CHANNEL_PREFIX.length);
+    const nutrient =
+      translateOrNull(t, `nutrients.names.${code}`) ?? code.replace(/_/g, " ");
+    return t("insights.correlation.channelNutrient", { nutrient });
   }
   const labelKey = `insights.correlation.channel.${key}`;
   // An unmapped channel falls back to a readable prettified form, never a
@@ -462,6 +503,95 @@ export const SYMPTOM_SEVERITY_CHANNEL_KEY = "SYMPTOM_SEVERITY";
  */
 export const MOVEMENT_AWAY_CHANNEL_KEY = "MOVEMENT_AWAY";
 export const MOVEMENT_DISTANCE_CHANNEL_KEY = "MOVEMENT_DISTANCE";
+
+// ─── v1.44 — the extended channel families ─────────────────────────────────
+//
+// Folded by the assembler beside the declared matrix rather than into
+// `DISCOVERY_BEHAVIOURS` / `DISCOVERY_OUTCOMES`: those two lists also feed the
+// per-metric status fingerprint (`status-cache.ts`), and a channel added there
+// would make every written assessment card go stale on a reading of a type no
+// card is about. Every family below is a behaviour except State of Mind, and
+// each degrades to absent below the n ≥ 20 floor like every other channel.
+
+/** Daily water intake (mL), from the nutrient log. Owned by `nutrients`. */
+export const HYDRATION_CHANNEL_KEY = "HYDRATION";
+/** Daily caffeine intake (mg), from the nutrient log. Owned by `nutrients`. */
+export const CAFFEINE_CHANNEL_KEY = "CAFFEINE";
+/** One micronutrient's daily intake: `NUTRIENT:<catalog code>`. */
+export const NUTRIENT_CHANNEL_PREFIX = "NUTRIENT:";
+/**
+ * Days with alcohol, from the `alcohol` tag on mood entries: 1 on a day with a
+ * tagged entry, 0 on a day with entries and no tag, nothing on a day without
+ * an entry. Owned by `mood`. AUDIT-C is not a channel: it is a questionnaire
+ * answered every few months about the past year, and has no day to pair.
+ */
+export const ALCOHOL_CHANNEL_KEY = "ALCOHOL";
+/** Minutes of workout per day, one per session. Owned by `workouts`. */
+export const WORKOUT_MINUTES_CHANNEL_KEY = "WORKOUT_MINUTES";
+/** The day's heart-rate training impulse (TRIMP). Owned by `workouts`. */
+export const TRAINING_LOAD_CHANNEL_KEY = "TRAINING_LOAD";
+
+/** Apple Health day totals read as behaviours (minutes per day). */
+export const EXTENDED_BEHAVIOUR_TYPES = [
+  "EXERCISE_MINUTES",
+  "STAND_MINUTES",
+  "MINDFUL_MINUTES",
+] as const;
+
+/** Apple Health readings read as outcomes. */
+export const EXTENDED_OUTCOME_TYPES = ["STATE_OF_MIND_VALENCE"] as const;
+
+/**
+ * Room-climate readings, paired with the night's sleep only. The value is the
+ * mean of the readings between 21:00 and 07:00 local time, keyed on the day
+ * the person woke up, so it pairs with that night's sleep at lag 0.
+ */
+export const INDOOR_CLIMATE_TYPES = [
+  "INDOOR_CO2",
+  "INDOOR_TEMPERATURE",
+  "INDOOR_HUMIDITY",
+] as const;
+export const INDOOR_CLIMATE_TARGETS: readonly string[] = ["SLEEP_DURATION"];
+
+/** Every fixed channel key the extended families can write. */
+export const EXTENDED_CHANNEL_KEYS: readonly string[] = [
+  HYDRATION_CHANNEL_KEY,
+  CAFFEINE_CHANNEL_KEY,
+  ALCOHOL_CHANNEL_KEY,
+  WORKOUT_MINUTES_CHANNEL_KEY,
+  TRAINING_LOAD_CHANNEL_KEY,
+  ...EXTENDED_BEHAVIOUR_TYPES,
+  ...EXTENDED_OUTCOME_TYPES,
+  ...INDOOR_CLIMATE_TYPES,
+];
+
+/**
+ * Channels whose pairs are statistics for the person only and never reach a
+ * model: the Coach tool, the period narrative and the assessment cards drop
+ * every pair that touches one. State of Mind and mindfulness sit in the
+ * report's sensitive group and are kept out of the Coach snapshot and MCP;
+ * alcohol reaches a model only through the health profile's own opt-in.
+ *
+ * The scan itself is the same on every surface, so the statistics of the
+ * remaining pairs do not depend on who is reading; the fence is applied to
+ * the result.
+ */
+export const MODEL_FENCED_CHANNELS: ReadonlySet<string> = new Set([
+  "STATE_OF_MIND_VALENCE",
+  "MINDFUL_MINUTES",
+  ALCOHOL_CHANNEL_KEY,
+]);
+
+/** Drop the pairs that touch a {@link MODEL_FENCED_CHANNELS} channel. */
+export function withoutModelFencedPairs<
+  T extends { behaviour: string; outcome: string },
+>(pairs: readonly T[]): T[] {
+  return pairs.filter(
+    (p) =>
+      !MODEL_FENCED_CHANNELS.has(p.behaviour) &&
+      !MODEL_FENCED_CHANNELS.has(p.outcome),
+  );
+}
 
 /**
  * v1.21.0 (FDREXTEND) — discovery channels that are NOT `MeasurementType` enum
@@ -543,6 +673,7 @@ export function discoverCorrelations(
       // auto-correlation tautology, not a cross-domain insight; excluding it
       // before testing stops it crowding out genuine cross-metric links.
       if (metricFamily(b.key) === metricFamily(o.key)) continue;
+      if (b.targets && !b.targets.includes(o.key)) continue;
       const pairLag = b.lagDays ?? lagDays;
       const pairs = lagJoinPairs(b.points, o.points, pairLag);
       if (pairs.length < minPairs) continue;
@@ -558,6 +689,7 @@ export function discoverCorrelations(
         lagDays: pairLag,
         behaviourLabel: b.label,
         outcomeLabel: o.label,
+        ...(b.phrasing ? { phrasing: b.phrasing } : {}),
       });
     }
   }
@@ -612,6 +744,7 @@ export function discoverCorrelations(
         translate,
         t.behaviourLabel,
         t.outcomeLabel,
+        t.phrasing,
       ),
       lagDays: t.lagDays,
     }))

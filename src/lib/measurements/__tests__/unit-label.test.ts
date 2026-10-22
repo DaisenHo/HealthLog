@@ -67,6 +67,7 @@ const SHARED_SYMBOLS: ReadonlySet<string> = new Set([
   "°C",
   "°F",
   "dBA",
+  "ppm",
   "mL/(kg·min)",
   "kg/m²",
   "mL",

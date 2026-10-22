@@ -401,7 +401,41 @@
     "lifeSittingValue": "{hours} uur, zelf opgegeven",
     "lifeWork": "Werk",
     "lifeNightWork": "nachtwerk",
-    "lifeExposures": "blootstellingen: {list}"
+    "lifeExposures": "blootstellingen: {list}",
+    "workouts": {
+      "title": "Trainingen",
+      "summary": "{sessions} trainingen, {hours} u in totaal; gemiddeld {perWeek} trainingen en {minutesPerWeek} minuten per week.",
+      "colSport": "Sport",
+      "colSessions": "Trainingen",
+      "colTime": "Duur",
+      "colDistance": "Afstand",
+      "colEnergy": "Energie",
+      "colHeartRate": "Gem. hartslag",
+      "moreSports": "{count} andere sporten tellen mee in de totalen, maar staan niet in de lijst."
+    },
+    "medicationEffect": {
+      "title": "Verandering rond de start van medicijnen",
+      "colMedication": "Medicijn / meetwaarde",
+      "colStart": "Start",
+      "colLevel": "Niveauverandering (95%-BI)",
+      "colSlope": "Trendverandering (95%-BI)",
+      "colDays": "Dagen voor / na",
+      "to": "tot",
+      "week": "week",
+      "reasonNoStart": "Geen startdatum vastgelegd",
+      "reasonBefore": "Te weinig waarden vóór de start",
+      "reasonAfter": "Te weinig waarden sinds de start",
+      "reasonFit": "Niet te berekenen",
+      "excludedAdherence": "{count} dagen na de start weggelaten (minder dan {floor}% van de doses ingenomen)",
+      "excludedNotTaking": "{count} dagen weggelaten (gepauzeerd of tussen kuren)",
+      "notTracked": "inname niet bijgehouden, dus geen dagen weggelaten om gemiste doses",
+      "endDoseChange": "periode eindigt op {date}, vóór de eerste dosiswijziging",
+      "days": "{before} dagen voor, {after} dagen na de start, {excluded} dagen weggelaten",
+      "method": "Gesegmenteerde regressie op de dagwaarden van 90 dagen vóór tot hoogstens 180 dagen na de start, met Newey-West-intervallen. Dagen na de start waarop minder dan 80% van de doses van de 14 dagen ervoor is ingenomen, zijn weggelaten. Beschrijft een samenhang in de tijd, geen bewezen effect van het medicijn.",
+      "autocorrelation": "sterke afhankelijkheid van de vorige dag, dus de bereiken kunnen nog te smal zijn",
+      "window": "geanalyseerd van {from} tot {to}, dit kan buiten de rapportperiode vallen",
+      "windowLine": "Geanalyseerd van {from} tot {to}. Deze periode kan buiten de rapportperiode vallen."
+    }
   },
   "errorBoundary": {
     "title": "Er is iets misgegaan",
@@ -911,6 +945,15 @@
     "unitRating": "beoordeling",
     "typeWho5Score": "WHO-5-score",
     "typeSciScore": "SCI-score",
+    "typeExerciseMinutes": "Trainingsminuten",
+    "typeStandMinutes": "Staminuten",
+    "typeStandHours": "Stauren",
+    "typeMindfulMinutes": "Mindfulnessminuten",
+    "typeStateOfMindValence": "Gemoedstoestand",
+    "typeAfibBurden": "AF-belasting",
+    "typeIndoorCo2": "CO₂ binnen",
+    "typeIndoorTemperature": "Binnentemperatuur",
+    "typeIndoorHumidity": "Luchtvochtigheid binnen",
     "durationReadAs": "Gelezen als {duration}",
     "durationHoursMinutes": "{hours} u {minutes} min",
     "durationHoursOnly": "{hours} u",
@@ -2350,7 +2393,31 @@
       },
       "scaleAbsolute": "Absoluut",
       "scalePercentSinceStart": "% sinds start",
-      "scaleToggleLabel": "Schaal van grafiek"
+      "scaleToggleLabel": "Schaal van grafiek",
+      "segmented": {
+        "title": "Verandering bij de start",
+        "level": "Direct bij de start verschoof het niveau met {value} {unit} (95%-bereik {low} tot {high}).",
+        "slope": "Na de start veranderde de weektrend met {value} {unit} per week (95%-bereik {low} tot {high}).",
+        "preSlope": "Voor de start was de trend {value} {unit} per week.",
+        "includesZero": "Waar een bereik nul omvat, passen deze waarden ook bij geen verandering.",
+        "basis": "Gebaseerd op {before} dagen voor en {after} dagen na de start ({from} tot {to}).",
+        "excludedAdherence": "{count} dagen na de start zijn weggelaten, omdat in de {lookback} dagen ervoor minder dan {floor}% van de doses is ingenomen.",
+        "excludedNotTaking": "{count} dagen zijn weggelaten, omdat het medicijn gepauzeerd was of tussen twee kuren lag.",
+        "notTracked": "De inname van dit medicijn wordt niet bijgehouden, dus er zijn geen dagen weggelaten om gemiste doses.",
+        "endDoseChange": "De periode eindigt vóór de eerste dosiswijziging en beschrijft dus de startdosis.",
+        "confoundersTitle": "Andere medicijnwijzigingen in deze periode, die deze weergave niet van dit medicijn kan scheiden:",
+        "confounderStarted": "{name} gestart op {date}",
+        "confounderStopped": "{name} gestopt op {date}",
+        "confounderDoseChange": "{name}: dosis gewijzigd op {date}",
+        "confounderPaused": "{name} gepauzeerd op {date}",
+        "confounderResumed": "{name} hervat op {date}",
+        "method": "Zo wordt het berekend: door de dagwaarden vóór de start wordt een lijn gelegd en een tweede door die erna. De sprong tussen beide bij de start is de niveauverandering, het verschil in hun helling de trendverandering. De bereiken houden er rekening mee dat waarden van de ene dag doorwerken in de volgende.",
+        "needStart": "Stel een startdatum in om de verandering bij de start te zien.",
+        "needBefore": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen vóór de start.",
+        "needAfter": "Voor de verandering bij de start zijn waarden op minstens {days} dagen nodig, verspreid over {span} dagen sinds de start en op dagen waarop de doses zijn ingenomen.",
+        "fitFailed": "Deze waarden konden niet worden verwerkt, dus er wordt geen verandering bij de start getoond.",
+        "autocorrelation": "De dagwaarden hangen sterk af van de vorige dag, dus zelfs deze bereiken kunnen te smal zijn."
+      }
     },
     "import": {
       "resultSuccess": "{imported} innames geïmporteerd",
@@ -2679,7 +2746,20 @@
         "ENV_PRESSURE_DELTA": "luchtdrukschommeling gedurende de dag",
         "ENV_PM25": "fijnstof (PM2.5)",
         "ENV_OZONE_8H": "ozon",
-        "ENV_POLLEN_MAX": "pollen"
+        "ENV_POLLEN_MAX": "pollen",
+        "HRV_RMSSD": "hartslagvariabiliteit (RMSSD)",
+        "HYDRATION": "waterinname",
+        "CAFFEINE": "cafeïne-inname",
+        "ALCOHOL": "alcoholgebruik",
+        "WORKOUT_MINUTES": "trainingsminuten",
+        "TRAINING_LOAD": "trainingsbelasting",
+        "EXERCISE_MINUTES": "beweegminuten",
+        "STAND_MINUTES": "staminuten",
+        "MINDFUL_MINUTES": "mindfulnessminuten",
+        "STATE_OF_MIND_VALENCE": "vastgelegde gemoedstoestand",
+        "INDOOR_CO2": "CO2 binnen",
+        "INDOOR_TEMPERATURE": "binnentemperatuur",
+        "INDOOR_HUMIDITY": "luchtvochtigheid binnen"
       },
       "daily": {
         "high": "Bij hogere waarden voor {behaviour} ligt {outcome} de volgende dag in je gegevens vaak {direction}. Het is een patroon om in de gaten te houden, geen oorzaak.",
@@ -2707,6 +2787,12 @@
         "high": "Bij hogere waarden voor {behaviour} op dezelfde dag en de dag ervoor ligt {outcome} in je gegevens vaak {direction}. Het is een patroon om in de gaten te houden, geen oorzaak.",
         "moderate": "Op basis van het bewijs tot nu toe lijkt {outcome} in je gegevens {direction} te liggen bij hogere waarden voor {behaviour} op dezelfde dag en de dag ervoor. Het is een patroon om in de gaten te houden, geen oorzaak.",
         "faint": "Bij hogere waarden voor {behaviour} op dezelfde dag en de dag ervoor is er in je gegevens hooguit een zwakke aanwijzing dat {outcome} {direction} ligt. Het is te klein om op te bouwen en nooit een oorzaak."
+      },
+      "channelNutrient": "inname van {nutrient}",
+      "dailyOvernight": {
+        "high": "Bij hogere waarden voor {behaviour} 's nachts ligt {outcome} die nacht in je gegevens vaak {direction}. Het is een patroon om in de gaten te houden, geen oorzaak.",
+        "moderate": "Op basis van het bewijs tot nu toe lijkt {outcome} die nacht in je gegevens {direction} te liggen bij hogere waarden voor {behaviour} 's nachts. Het is een patroon om in de gaten te houden, geen oorzaak.",
+        "faint": "Bij hogere waarden voor {behaviour} 's nachts is er in je gegevens hooguit een zwakke aanwijzing dat {outcome} die nacht {direction} ligt. Het is te klein om op te bouwen en nooit een oorzaak."
       }
     },
     "noAnalysisYet": "Nog geen beoordeling.",
@@ -3264,11 +3350,12 @@
         "provider": "Antwoordt met",
         "modelManaged": "Het model voor deze provider stel je in bij de AI-instellingen.",
         "noProvider": "Geen provider beschikbaar",
+        "allSettings": "Alle AI-instellingen",
+        "operatorCodex": "ChatGPT (gedeeld door de serverbeheerder)",
+        "changeModel": "Wijzigen in Instellingen > AI",
         "saving": "Opslaan…",
         "saveFailed": "Die wijziging kon niet worden opgeslagen.",
-        "allSettings": "Alle AI-instellingen",
         "providerNotActive": "{provider} kon het niet overnemen: er is geen werkende aanmelding of sleutel. Stel deze provider in bij de AI-instellingen.",
-        "operatorCodex": "ChatGPT (gedeeld door de serverbeheerder)",
         "operatorManaged": "De beheerder van je server beheert deze verbinding. Zodra een van je eigen providers is ingesteld, antwoordt die als eerste."
       },
       "answer": {
@@ -3565,6 +3652,7 @@
       "falls": "valpartijen",
       "years": "jaar",
       "breathingEvents": "gebeurtenissen",
+      "standHours": "uur",
       "respiratoryRate": "ademhalingen/min"
     },
     "sleep": {
@@ -3807,6 +3895,16 @@
         "editTitle": "Workout bewerken",
         "editAction": "Bewerken",
         "updated": "Workout bijgewerkt"
+      },
+      "load": {
+        "title": "Trainingsbelasting",
+        "fitness": "Fitheid",
+        "fatigue": "Vermoeidheid",
+        "form": "Vorm",
+        "explainer": "Fitheid is je trainingsprikkel uit de hartslag, gemiddeld over ongeveer zes weken, vermoeidheid over ongeveer een week, en vorm is het verschil. De getallen zijn te vergelijken met je eigen verleden, niet met andere mensen of andere apps.",
+        "warmingUp": "Op basis van {days} dagen tot nu toe: tot zes weken gedekt zijn, valt de fitheid lager uit dan ze is.",
+        "coverage": "{rated} van de laatste {days} dagen konden worden beoordeeld. Een dag zonder activiteitsgegevens, of met een training die niet kon worden beoordeeld, wordt weggelaten in plaats van als rustdag te tellen.",
+        "asOf": "Stand van {date}, de laatste dag die kon worden beoordeeld."
       }
     },
     "bloodGlucose": {
@@ -4248,7 +4346,12 @@
         "outcomeDown": "Een hogere stemming gaat in je gegevens vaak samen met lagere waarden voor {factor} de volgende dag.",
         "stat": "{n} gekoppelde dagen, r = {r}, q = {q}",
         "statLabel": "Hoe dit is berekend",
-        "explainerLabel": "Hoe dit is berekend"
+        "explainerLabel": "Hoe dit is berekend",
+        "channel": {
+          "ALCOHOL": "alcoholgebruik",
+          "WORKOUT_MINUTES": "trainingsminuten",
+          "TRAINING_LOAD": "trainingsbelasting"
+        }
       },
       "inTargetTitle": "Binnen je bereik",
       "dimensions": {
@@ -4709,7 +4812,8 @@
       "shiftDown": "{vital} is gedaald ten opzichte van wat recent normaal was voor jou.",
       "rangeContext": "Nu {value}, meestal {low}–{high}.",
       "rangeContextTimeOfDay": "Nu {value}, op dit moment van de dag meestal {low}–{high}.",
-      "shiftContext": "Eerst rond {before}, sindsdien {after}."
+      "shiftContext": "Eerst rond {before}, sindsdien {after}.",
+      "shiftDays": "Op basis van {before} dagen ervoor en {after} sindsdien."
     },
     "breathingScreening": {
       "sectionTitle": "Ademhaling tijdens de slaap",
@@ -5289,12 +5393,17 @@
       "groups": {
         "account": "Account",
         "yourData": "Je gegevens",
-        "display": "Weergave",
         "healthProfile": "Gezondheidsprofiel",
         "ai": "AI",
         "connectivity": "Verbindingen",
-        "system": "Systeem"
-      }
+        "system": "Systeem",
+        "tracking": "Bijhouden",
+        "arrangement": "Indeling",
+        "notifications": "Meldingen",
+        "connections": "Verbindingen",
+        "data": "Gegevens"
+      },
+      "allSections": "Alle onderdelen"
     },
     "sharedRecord": {
       "managedSettings": {
@@ -5406,8 +5515,15 @@
       "unavailableTitle": "Niet beschikbaar in dit gedeelde dossier",
       "unavailableDescription": "Dit deel van Instellingen is bewust niet beschikbaar terwijl je het dossier van iemand anders bekijkt.",
       "integrationStatusDescription": "Koppelingsstatus voor dit beheerde dossier.",
-      "integrationStatusDetail": "Een beheerd profiel toont de gekoppelde diensten alleen als status. Koppelen, opnieuw koppelen, synchroniseren en ontkoppelen zijn niet beschikbaar voor verzorgers.",
-      "integrationStatusDocs": "Hoe delen werkt"
+      "integrationStatusDetail": "Diensten die je hier koppelt, sturen hun gegevens naar het dossier van {name}, niet naar het jouwe. Zonder eigen app bij de aanbieder gebruikt het profiel de jouwe.",
+      "integrationStatusDocs": "Hoe delen werkt",
+      "integrationConnectsFor": "Koppelt voor {name}",
+      "integrationConnectFor": "Koppelen voor {name}",
+      "integrationDisconnect": "Ontkoppelen",
+      "integrationDisconnectTitle": "{provider} ontkoppelen van {name}?",
+      "integrationDisconnectBody": "Er komen geen nieuwe gegevens meer binnen. Wat al geïmporteerd is, blijft in het dossier van {name}.",
+      "integrationNoClientApp": "Noch {name} noch je eigen account heeft al een {provider}-app. Stel er eerst een in bij je eigen integraties.",
+      "integrationConnectFailed": "Koppelen met {provider} kon niet starten."
     },
     "sections": {
       "account": {
@@ -5428,7 +5544,21 @@
         "remindersHeading": "Herinneringen",
         "matrixLink": "Meldingen per kanaal",
         "channelsLink": "Bezorgkanalen",
-        "displayHeading": "Op je telefoon"
+        "displayHeading": "Op je telefoon",
+        "elsewhere": {
+          "title": "Ingesteld waar ze thuishoren",
+          "description": "Deze herinneringen stel je in bij waar ze over gaan.",
+          "doses": {
+            "title": "Medicatie-innames",
+            "description": "Innametijden en herinneringen stel je per medicijn in.",
+            "link": "Medicatie openen"
+          },
+          "cycle": {
+            "title": "Cyclus",
+            "description": "Herinneringen voor menstruatie en vruchtbare dagen zet je per kanaal aan in het meldingenoverzicht.",
+            "link": "Meldingenoverzicht openen"
+          }
+        }
       },
       "layout": {
         "title": "Indeling",
@@ -5441,7 +5571,7 @@
           "title": "Inzichten",
           "description": "Overzichtsonderdelen en volgorde van de navigatieknoppen."
         },
-        "subtitle": "Kies wat je dashboard, inzichten en registratiemodules laten zien, en in welke volgorde.",
+        "subtitle": "Kies de volgorde en weergave van je dashboard, inzichten en lijsten.",
         "medications": {
           "title": "Medicatie",
           "description": "Lijstweergave en handmatige volgorde."
@@ -5457,10 +5587,6 @@
         "vorsorge": {
           "title": "Preventieve controles",
           "description": "Lijstweergave en volgorde van herinneringen."
-        },
-        "mood": {
-          "title": "Stemmingstags",
-          "description": "Groepen, tags en gearchiveerde tags voor de stemmingskiezer."
         },
         "documents": {
           "title": "Documenten",
@@ -5852,7 +5978,28 @@
         },
         "manageIn": "Beheren in {section}",
         "operatorDisabled": "Op de hele server uitgeschakeld",
-        "subtitle": "Kies welke onderdelen HealthLog in de hele app toont."
+        "subtitle": "Kies welke onderdelen HealthLog in de hele app toont.",
+        "backToHub": "Terug naar Modules",
+        "openModuleSettings": "Module-instellingen",
+        "pages": {
+          "medications": {
+            "title": "Medicatie",
+            "description": "Injectieplaatsen die de rotatie overslaat."
+          },
+          "mood": {
+            "title": "Stemmingstags",
+            "description": "Groepen, je eigen tags en gearchiveerde tags."
+          },
+          "labs": {
+            "title": "Labwaarden",
+            "description": "Biomarkers en tekstherkenning op het apparaat voor labuitslagen."
+          },
+          "arrangementTitle": "Volgorde en weergave",
+          "arrangementDescription": "Hoe deze lijst wordt gesorteerd en getoond, stel je in bij Indeling.",
+          "openArrangement": "Openen in Indeling",
+          "moduleSettingsTitle": "Module-instellingen",
+          "moduleSettingsDescription": "Al het andere staat op de pagina van de module onder Modules."
+        }
       },
       "gesundheitsakte": {
         "title": "Gezondheidsdossier",
@@ -6499,7 +6646,8 @@
       "nocode": "Withings heeft geen autorisatiecode teruggestuurd. Probeer het opnieuw en sta toegang toe in het Withings-venster.",
       "nocreds": "Er zijn geen Withings-API-inloggegevens opgeslagen. Sla eerst de client-ID en het clientgeheim op en koppel daarna opnieuw.",
       "token": "De tokenuitwisseling met Withings is mislukt. Controleer de client-ID en het clientgeheim en probeer het opnieuw.",
-      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw."
+      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw.",
+      "already_linked": "Dit Withings-account is al gekoppeld aan een ander HealthLog-profiel. Log bij Withings in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
     },
     "withingsSynchronize": "Synchroniseren",
     "withingsDisconnect": "Ontkoppelen",
@@ -6538,7 +6686,8 @@
       "nocode": "WHOOP heeft geen autorisatiecode teruggestuurd. Probeer het opnieuw en sta toegang toe in het WHOOP-venster.",
       "nocreds": "WHOOP is niet geconfigureerd. Voeg hierboven je WHOOP-OAuth-inloggegevens toe en probeer het opnieuw.",
       "token": "De tokenuitwisseling met WHOOP is mislukt. Start de koppeling opnieuw.",
-      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw."
+      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw.",
+      "already_linked": "Dit WHOOP-account is al gekoppeld aan een ander HealthLog-profiel. Log bij WHOOP in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
     },
     "fitbit": "Fitbit",
     "fitbitTag": "Fitbit & Pixel",
@@ -6617,7 +6766,8 @@
       "nocode": "Google heeft geen autorisatiecode teruggestuurd. Probeer het opnieuw en sta toegang toe in het Google-venster.",
       "nocreds": "Google Health is niet geconfigureerd. Voeg hierboven je Google-OAuth-inloggegevens toe en probeer het opnieuw.",
       "token": "De tokenuitwisseling met Google is mislukt. Start de koppeling opnieuw.",
-      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw."
+      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw.",
+      "already_linked": "Dit Google-account is al gekoppeld aan een ander HealthLog-profiel. Log bij Google in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
     },
     "fitbitOauthError": {
       "csrf1": "De beveiligingscontrole is mislukt omdat de browsercookie ontbrak. Start de koppeling opnieuw in dezelfde browser.",
@@ -6628,7 +6778,8 @@
       "nocreds": "Fitbit is niet geconfigureerd. Voeg hierboven je Fitbit-OAuth-inloggegevens toe en probeer het opnieuw.",
       "token": "De tokenuitwisseling met Fitbit is mislukt. Start de koppeling opnieuw.",
       "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw.",
-      "retired": "Google heeft de Fitbit Web API uitgeschakeld, dus er kan geen nieuwe Fitbit-koppeling meer worden gemaakt. Koppel in plaats daarvan Google Health, dat dezelfde apparaten leest."
+      "retired": "Google heeft de Fitbit Web API uitgeschakeld, dus er kan geen nieuwe Fitbit-koppeling meer worden gemaakt. Koppel in plaats daarvan Google Health, dat dezelfde apparaten leest.",
+      "already_linked": "Dit Fitbit-account is al gekoppeld aan een ander HealthLog-profiel. Log bij Fitbit in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
     },
     "integrations": {
       "withings": {
@@ -6665,7 +6816,9 @@
           "items": {
             "vo2max": "VO2 max",
             "cardio_age": "cardiovasculaire leeftijd",
-            "resilience": "veerkracht"
+            "resilience": "veerkracht",
+            "workout": "trainingen",
+            "heartrate": "hartslag"
           }
         }
       }
@@ -6972,7 +7125,8 @@
       "nocreds": "Polar is niet geconfigureerd op deze server. Vraag je beheerder om de Polar-OAuth-inloggegevens toe te voegen.",
       "token": "De tokenuitwisseling met Polar is mislukt. Start de koppeling opnieuw.",
       "rate_limited": "Te veel koppelingspogingen. Wacht even en probeer het opnieuw.",
-      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw."
+      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw.",
+      "already_linked": "Dit Polar-account is al gekoppeld aan een ander HealthLog-profiel. Log bij Polar in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
     },
     "oura": "Oura",
     "ouraDescription": "Koppel je Oura-account om paraatheid, slaapfasen, hartslagvariabiliteit en dagelijkse activiteit te synchroniseren.",
@@ -7002,25 +7156,24 @@
       "token": "De tokenuitwisseling met Oura is mislukt. Start de koppeling opnieuw.",
       "rate_limited": "Te veel koppelingspogingen. Wacht even en probeer het opnieuw.",
       "issuer": "Het inlogantwoord kwam niet van de eigen autorisatieserver van Oura, daarom is de koppeling voor je veiligheid gestopt. Start de koppeling opnieuw. Als dit blijft gebeuren, laat het dan je beheerder weten.",
-      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw."
+      "generic": "Onbekende fout bij het koppelen. Start de koppeling opnieuw.",
+      "already_linked": "Dit Oura-account is al gekoppeld aan een ander HealthLog-profiel. Log bij Oura in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
     },
     "integrationSetupGuide": "Installatiehandleiding",
     "coach": {
-      "activate": {
-        "title": "Coach activeren",
-        "description": "De Coach-knop en het Coach-paneel tonen.",
-        "toggleAria": "De Coach-knop en het Coach-paneel activeren",
-        "savedOn": "Coach geactiveerd.",
-        "savedOff": "Coach verborgen.",
-        "saveError": "De wijziging kon niet worden opgeslagen. Probeer het opnieuw."
-      },
       "memory": {
         "edit": "Bewerken",
         "source": {
           "user": "van jou",
           "coach": "van de Coach"
         }
-      }
+      },
+      "state": {
+        "title": "Coach",
+        "description": "Of de Coach-knop en het Coach-paneel zichtbaar zijn. De schakelaar staat bij Modules."
+      },
+      "nudgesMoved": "Stel je in bij je andere herinneringen onder Meldingen.",
+      "openNudges": "Openen in Meldingen"
     },
     "integrationRedirectGuide": {
       "intro": "Dit koppelt via je eigen {provider}-ontwikkelaarsapp; het instellen duurt ongeveer 5 minuten:",
@@ -7155,6 +7308,12 @@
         "profile": "Je profiel, medische voorgeschiedenis en dossiergegevens",
         "modules": "Gegevens van elke module: {list}"
       },
+      "workoutRoutes": {
+        "title": "Trainingsroutes",
+        "description": "Het GPS-spoor van nieuwe trainingen uit de iPhone-app en de Apple Gezondheid-export bewaren.",
+        "detail": "Uit voor nieuwe accounts. Een route laat zien waar je woont, werkt en traint, dus hij wordt pas bewaard als je dit aanzet. Trainingen worden altijd bewaard en geen enkele AI-functie leest ooit een route. Uitzetten stopt nieuwe routes; al bewaarde routes blijven tot je de training verwijdert.",
+        "loadError": "De route-instelling kon niet worden geladen."
+      },
       "retention": {
         "title": "Bewaartermijn",
         "description": "Hoe lang tijdgebonden gegevens worden bewaard voordat ze automatisch worden opgeschoond.",
@@ -7162,12 +7321,6 @@
         "audit": "Logboek van beveiligingsactiviteit: {days} dagen bewaard",
         "delivery": "Logboek van bezorgde meldingen: {days} dagen bewaard",
         "unavailable": "Details over de bewaartermijn zijn op dit moment niet beschikbaar."
-      },
-      "export": {
-        "title": "Mijn gegevens downloaden",
-        "description": "Je gegevens als CSV of JSON, of een volledig medisch dossier voor je arts.",
-        "openExport": "Export en back-up",
-        "openHealthRecord": "Medisch dossier"
       },
       "delete": {
         "title": "Verwijderen of wissen",
@@ -7179,12 +7332,16 @@
         "title": "Privacyniveau",
         "description": "Bepaal hoeveel van je gegevens met AI-functies wordt gedeeld.",
         "openAi": "AI-privacymodus"
+      },
+      "sessions": {
+        "title": "Sessies en apparaten",
+        "description": "Waar je bent ingelogd, welke apparaten de tweede factor overslaan en de beveiligingsactiviteit van je account.",
+        "open": "Beveiliging openen"
       }
     },
     "mcp": {
       "enableTitle": "Extern MCP-endpoint",
       "enableDescription": "Laat een assistent met MCP-ondersteuning (Claude.ai, ChatGPT) je gezondheidsgegevens lezen via een token met beperkte rechten.",
-      "enableToggleLabel": "Het MCP-endpoint inschakelen",
       "endpointLabel": "Connector-URL",
       "connectDescription": "Plak deze URL in de instellingen voor aangepaste connectors van je assistent en autoriseer daarna met het token hieronder, of log in wanneer daarom wordt gevraagd.",
       "tokensTitle": "Connectortokens",
@@ -7203,7 +7360,8 @@
       "connectionRevokeFailed": "De assistent kon niet worden ontkoppeld.",
       "connectionsDetail": "Als je een koppeling intrekt, eindigt de toegang direct, inclusief de mogelijkheid om die te vernieuwen.",
       "tokensDetail": "Het token wordt één keer getoond.",
-      "tokenNamePlaceholder": "Naam, bijv. Claude Desktop"
+      "tokenNamePlaceholder": "Naam, bijv. Claude Desktop",
+      "offKeepsTokens": "Uitzetten pauzeert het eindpunt. Je tokens en verbindingen blijven en werken weer zodra het aan staat."
     },
     "strava": "Strava",
     "stravaDescription": "Koppel je Strava-account om je activiteiten naar je trainingsgeschiedenis te synchroniseren.",
@@ -7232,7 +7390,8 @@
       "nocreds": "Strava is niet geconfigureerd op deze server. Vraag je beheerder om de Strava-API-inloggegevens toe te voegen.",
       "token": "Het uitwisselen van het token met Strava is mislukt. Start het koppelen opnieuw.",
       "rate_limited": "Te veel koppelpogingen. Wacht even en probeer het opnieuw.",
-      "generic": "Onbekende fout bij het koppelen. Start het koppelen opnieuw."
+      "generic": "Onbekende fout bij het koppelen. Start het koppelen opnieuw.",
+      "already_linked": "Dit Strava-account is al gekoppeld aan een ander HealthLog-profiel. Log bij Strava in met het account van dit profiel, of ontkoppel het eerst van het andere profiel."
     },
     "appleHealth": {
       "title": "Apple Health",
@@ -7465,7 +7624,14 @@
     "passkeyAddedToast": "Passkey toegevoegd.",
     "passkeyRemovedToast": "Passkey verwijderd.",
     "integrationDisconnected": "{provider} ontkoppeld.",
-    "integrationDisconnectFailed": "{provider} kon niet worden ontkoppeld."
+    "integrationDisconnectFailed": "{provider} kon niet worden ontkoppeld.",
+    "timezoneSaved": "Tijdzone opgeslagen.",
+    "moduleState": {
+      "on": "Aan",
+      "off": "Uit",
+      "change": "Wijzigen in Modules"
+    },
+    "timezoneUseDevice": "Tijdzone van dit apparaat gebruiken ({zone})"
   },
   "admin": {
     "title": "Beheer",
@@ -7600,6 +7766,7 @@
     "heapLimitLabel": "Heaplimiet",
     "heapLimitValue": "{mb} MB",
     "heapLimitLow": "{mb} MB, laag. Stel APP_MEMORY_LIMIT=1536m in via .env",
+    "memoryBelowFloor": "Container {mb} MB, onder het ondersteunde minimum van {floor} MB. Stel APP_MEMORY_LIMIT={floor}m in via .env",
     "offlineGeoOff": "Uit",
     "offlineGeoChosen": "Online ({host})",
     "apiGlobal": "API-endpoints en API-tokens toestaan.",
@@ -8855,6 +9022,10 @@
       "detailedToast": "Meldingen bevatten nu gezondheidscijfers.",
       "genericToast": "Meldingen bevatten geen gezondheidscijfers meer.",
       "saveError": "Opslaan mislukt. Probeer het later opnieuw."
+    },
+    "checkupReminders": {
+      "title": "Herinneringen voor controles",
+      "description": "Zet afzonderlijke herinneringen voor controles aan of uit."
     }
   },
   "i18n": {
@@ -9631,8 +9802,6 @@
       "description": "Voer de meetwaarde in; de herinnering wordt als gedaan gemarkeerd."
     },
     "manage": {
-      "title": "Herinneringen beheren",
-      "description": "Zet afzonderlijke herinneringen aan of uit.",
       "empty": "Nog geen herinneringen om aan te passen."
     },
     "dashboard": {
@@ -10016,6 +10185,27 @@
       "doneToastFew": "Samengevoegd in {name}, {count} metingen verplaatst",
       "doneToastOther": "Samengevoegd in {name}, {count} metingen verplaatst",
       "error": "De biomarkers konden niet worden samengevoegd. Probeer het opnieuw."
+    },
+    "trend": {
+      "title": "Verloop",
+      "slope": {
+        "rising": "Stijgt met ongeveer {amount} {unit} per jaar over {n} waarden sinds {since}.",
+        "falling": "Daalt met ongeveer {amount} {unit} per jaar over {n} waarden sinds {since}.",
+        "flat": "Geen verandering over {n} waarden sinds {since}."
+      },
+      "projection": {
+        "exits": {
+          "high": "Als deze rechte lijn zo doorliep, zou ze rond {date} de bovengrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling.",
+          "low": "Als deze rechte lijn zo doorliep, zou ze rond {date} de ondergrens van je referentiebereik bereiken. Dat is een doortrekking, geen voorspelling."
+        },
+        "beyond_horizon": "In dit tempo blijft de lijn langer dan {years} jaar binnen je referentiebereik, de periode die je waarden beslaan.",
+        "beyond_horizon_capped": "In dit tempo blijft de lijn langer dan {years} jaar binnen je referentiebereik, zo ver kijkt de doortrekking vooruit.",
+        "no_exit": "De lijn loopt weg van de grenzen van je referentiebereik.",
+        "already_outside": "De lijn ligt al buiten je referentiebereik.",
+        "no_clear_trend": "Over deze waarden is de verandering niet duidelijk te onderscheiden van geen verandering, dus er wordt niets doorgetrokken.",
+        "stale": "De nieuwste waarde is van {date}, meer dan een jaar geleden. De lijn staat op die datum, zonder projectie."
+      },
+      "interval": "95%-interval van de jaarlijkse verandering: {lo} tot {hi} {unit}."
     }
   },
   "modules": {
@@ -10957,7 +11147,16 @@
     "openDetail": "Details tonen",
     "historyLoadError": "Je testgeschiedenis kon niet worden geladen",
     "historyLoadErrorHint": "Dit betekent niet dat je geen resultaten hebt; de lijst kon niet worden opgehaald. Probeer het opnieuw.",
-    "privacyNote": "Je antwoorden worden versleuteld opgeslagen en komen nooit bij de AI-coach terecht."
+    "privacyNote": "Je antwoorden worden versleuteld opgeslagen en komen nooit bij de AI-coach terecht.",
+    "trend": {
+      "sincePrevious": "Sinds je vorige check-in op {date}: {change} punten.",
+      "sinceFirst": "Sinds je eerste check-in op {date}: {change} punten.",
+      "verdict": {
+        "improved": "Dat bereikt de verandering van {threshold} punten die studies als betekenisvol zien, in de betere richting.",
+        "worsened": "Dat bereikt de verandering van {threshold} punten die studies als betekenisvol zien, in de minder goede richting.",
+        "within_threshold": "Dat is minder dan de verandering van {threshold} punten die studies als betekenisvol zien."
+      }
+    }
   },
   "records": {
     "aiInclusion": {
@@ -12216,7 +12415,10 @@
     "leafVisits": "Bezoeken",
     "leafSurgicalHistory": "Operatiegeschiedenis",
     "leafImmunizations": "Vaccinaties",
-    "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)"
+    "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)",
+    "leafMedicationEffect": "Verandering rond de start van elk medicijn (vereist de medicatielijst)",
+    "leafWorkouts": "Trainingen (overzicht per sport)",
+    "leafHrvSdnn": "HRV (SDNN)"
   },
   "recordSharing": {
     "banner": {
@@ -13395,6 +13597,219 @@
       "targetLower": "Je doel, ondergrens",
       "clinicalUpper": "Klinische bovengrens",
       "clinicalLower": "Klinische ondergrens"
+    }
+  },
+  "activityCalendar": {
+    "title": "Activiteitenkalender",
+    "periodLabel": "Kalenderperiode",
+    "period": {
+      "week": "Week",
+      "month": "Maand"
+    },
+    "weekRange": "{start} t/m {end}",
+    "previous": "Vorige periode",
+    "next": "Volgende periode",
+    "metricLabel": "Dagen kleuren op",
+    "metric": {
+      "steps": "Stappen",
+      "activeMinutes": "Actieve minuten",
+      "load": "Trainingsbelasting"
+    },
+    "empty": "Nog geen stappen, actieve minuten of trainingen in deze periode.",
+    "loadError": "De activiteitenkalender kon niet worden geladen.",
+    "weekGoalsColumn": "Weekdoelen",
+    "weekGoalsMet": "Alle weekdoelen gehaald",
+    "weekGoalsNotMet": "Niet alle weekdoelen gehaald",
+    "cell": {
+      "steps": "{value} stappen",
+      "activeMinutes": "{value} actieve minuten",
+      "workouts": "{value} trainingen: {sports}"
+    },
+    "level": {
+      "none": "Geen gegevens",
+      "unrated": "Nog te weinig geschiedenis",
+      "low": "Ver onder je gewone niveau",
+      "below": "Onder je gewone niveau",
+      "usual": "Ongeveer zoals gewoonlijk",
+      "above": "Boven je gewone niveau",
+      "high": "Ver boven je gewone niveau",
+      "in_progress": "Vandaag, nog bezig"
+    },
+    "legend": "Vergeleken met je 12 weken daarvoor:",
+    "noBaseline": "Je gebruikelijke bereik verschijnt na 14 dagen met gegevens.",
+    "summary": {
+      "steps": "{value} stappen",
+      "activeMinutes": "{value} actieve minuten",
+      "workouts": "{value} trainingen",
+      "load": "Gemiddelde trainingsbelasting {value}",
+      "usual": "Gebruikelijk tot dit punt: {value}",
+      "noUsual": "Nog niet genoeg eerdere weken of maanden om mee te vergelijken.",
+      "usualThroughYesterday": "Tot en met gisteren {value}, je gebruikelijke tot dan {usual}",
+      "firstDay": "Vergeleken met je gebruikelijke zodra de eerste dag voorbij is."
+    },
+    "sportCount": "{sport}: {count}",
+    "goal": {
+      "workoutsPerWeek": "Trainingen per week",
+      "activeMinutesPerWeek": "Actieve minuten per week",
+      "stepsPerWeek": "Stappen per week",
+      "stepsPerMonth": "Stappen per maand"
+    },
+    "goalOf": "{value} van {target}",
+    "setGoals": "Doelen instellen",
+    "editGoals": "Doelen wijzigen",
+    "goalsSheet": {
+      "title": "Activiteitsdoelen",
+      "description": "Laat een veld leeg als je geen doel wilt.",
+      "none": "Geen doel",
+      "invalid": "Een heel getal van {min} tot {max}.",
+      "saveError": "De doelen konden niet worden opgeslagen."
+    },
+    "crossLink": {
+      "title": "Activiteitenkalender",
+      "body": "Je stappen per week of maand, vergeleken met wat gewoon is voor jou.",
+      "cta": "Kalender openen"
+    }
+  },
+  "sourceProvenance": {
+    "title": "Waar de waarden vandaan komen",
+    "description": "Welke bron elke dag een waarde leverde en welke je bronprioriteit gebruikt.",
+    "metric": "Meetwaarde",
+    "day": "Dag",
+    "dayTitle": "Bronnen op deze dag",
+    "loadError": "De bronnen konden niet worden geladen.",
+    "dayEmpty": "Geen waarden van deze meting op deze dag.",
+    "reason": {
+      "only_source": "{source} is op deze dag de enige bron.",
+      "highest_on_ladder": "{source} wordt gebruikt: van de bronnen van deze dag staat die het hoogst in je bronprioriteit.",
+      "name_tiebreak": "{source} wordt gebruikt: geen enkele bron van deze dag staat in je bronprioriteit, dus de naam besliste.",
+      "not_ranked": "Deze meting heeft geen bronprioriteit: de waarden van alle bronnen tellen mee."
+    },
+    "pass": {
+      "lower_on_ladder": "Lager in je bronprioriteit.",
+      "not_on_ladder": "Staat voor deze meting niet in je bronprioriteit.",
+      "name_tiebreak": "Zelfde rang als de gebruikte bron; de naam besliste."
+    },
+    "used": "Gebruikt",
+    "readings": "{count} metingen, apparaten: {devices}",
+    "ladder": "Je volgorde voor deze meting: {ladder}",
+    "utcNote": "De bron wordt per dag gekozen, van middernacht tot middernacht UTC, net als bij de grafieken.",
+    "openSettings": "Volgorde wijzigen in Bronprioriteit",
+    "compareTitle": "Twee bronnen vergelijken",
+    "range": "Periode",
+    "rangeDays": "{days} dagen",
+    "compareNeedsTwo": "In deze periode heeft maar één bron waarden van deze meting.",
+    "side": {
+      "a": "Eerste bron",
+      "b": "Tweede bron"
+    },
+    "daysBoth": "Dagen met beide",
+    "meanOf": "Gemiddelde van {source}",
+    "meanAbsDiff": "Gemiddeld verschil",
+    "pickedDays": "Gebruikte dagen (eerste / tweede)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "De gemiddelden tellen alleen dagen waarop beide bronnen waarden hebben, zodat je gelijke dagen vergelijkt. Vetgedrukt is de waarde die de grafieken gebruiken.",
+    "settingsHint": "Om te zien wat deze volgorde per dag beslist:",
+    "settingsHintLink": "Waar de waarden vandaan komen",
+    "metricLink": "Waar deze waarden vandaan komen"
+  },
+  "recordImport": {
+    "title": "Labuitslagen en medicijnen uit een spreadsheet",
+    "description": "Haal jaren aan labuitslagen of een medicijnlijst binnen uit een CSV-bestand.",
+    "detail": "Jij kiest welke kolom wat bevat; HealthLog controleert eerst elke rij en importeert pas als je bevestigt. Rijen die er al zijn worden overgeslagen.",
+    "kind": {
+      "labs": "Labuitslagen",
+      "medications": "Medicijnen"
+    },
+    "sheetTitle": {
+      "labs": "Labuitslagen importeren",
+      "medications": "Medicijnen importeren"
+    },
+    "sheetDescription": {
+      "labs": "Markers worden aan de jouwe gekoppeld, eenheden omgerekend als de omrekening bekend is.",
+      "medications": "Naam, dosis, dagelijkse tijden, zo nodig, begin en einde. Andere ritmes stel je daarna in de app in."
+    },
+    "file": "CSV-bestand",
+    "template": "Sjabloon downloaden",
+    "mapping": "Welke kolom bevat wat",
+    "required": "(verplicht)",
+    "notInFile": "Niet in het bestand",
+    "column": "Kolom {n}",
+    "delimiter": "Scheidingsteken",
+    "delimiterOption": {
+      "comma": "Komma",
+      "semicolon": "Puntkomma",
+      "tab": "Tab"
+    },
+    "decimal": "Decimaalteken",
+    "decimalOption": {
+      "dot": "Punt (5.4)",
+      "comma": "Komma (5,4)"
+    },
+    "dateOrder": "Datumnotatie",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025 (dag eerst)",
+      "mdy": "03/01/2025 (maand eerst)"
+    },
+    "header": "De eerste rij bevat kolomnamen",
+    "reminders": "Herinneringen aanzetten voor geïmporteerde medicijnen",
+    "timezoneNote": "Tijden zonder tijdzone worden in de tijdzone van je account gelezen. Een datum zonder tijd blijft die kalenderdag.",
+    "missing": "Nog te kiezen: {fields}",
+    "check": "Bestand controleren",
+    "runIdle": "Importeren",
+    "run": "{count} rijen importeren",
+    "close": "Sluiten",
+    "summaryCheck": "{rows} rijen gelezen: {inserted} te importeren, {duplicates} al aanwezig, {failed} met een probleem.",
+    "summaryDone": "{inserted} rijen geïmporteerd. Overgeslagen: {duplicates} die er al waren en {failed} met een probleem.",
+    "markersMatched": "Gekoppeld aan je markers:",
+    "markersCreated": "Nieuwe markers:",
+    "line": "Regel {line}",
+    "errorsTruncated": "Alleen de eerste 500 problemen worden getoond.",
+    "error": {
+      "tooLarge": "Het bestand is groter dan 16 MB.",
+      "rateLimited": "Te veel imports in het afgelopen uur. Probeer het later opnieuw.",
+      "invalid": "Het bestand of de kolomkeuze kon niet worden gelezen.",
+      "failed": "Het importeren is niet gelukt. Probeer het opnieuw."
+    },
+    "reason": {
+      "missing_value": "Een verplichte cel is leeg",
+      "invalid_number": "Geen getal",
+      "ambiguous_number": "Het getal is op twee manieren te lezen; controleer het decimaalteken",
+      "missing_unit": "Een getal heeft een eenheid nodig",
+      "invalid_date": "Geen datum in de gekozen notatie",
+      "invalid_time": "Geen tijd",
+      "ambiguous_date": "De datum is op twee manieren te lezen; gebruik een jaartal van vier cijfers en de gekozen notatie",
+      "future_date": "De datum ligt in de toekomst",
+      "text_too_long": "De tekst is te lang",
+      "unit_mismatch": "Deze eenheid is niet om te rekenen naar die van de marker",
+      "invalid_reference_range": "Het referentiebereik is niet te lezen",
+      "invalid_times": "De tijden zijn niet te lezen (bijv. 08:00 20:00)",
+      "missing_times": "Vul innametijden in of markeer het medicijn als zo nodig",
+      "invalid_yes_no": "Gebruik ja of nee",
+      "as_needed_with_times": "Een zo-nodig-medicijn heeft geen vaste tijden",
+      "end_before_start": "Het einde ligt voor het begin",
+      "invalid_medication": "Het medicijn kan zo niet worden opgeslagen",
+      "oversized_row": "De rij is te lang of te breed",
+      "row_limit": "Boven de rijlimiet voor één import",
+      "duplicate": "Al aanwezig, overgeslagen"
+    },
+    "field": {
+      "analyte": "Marker",
+      "value": "Uitslag",
+      "unit": "Eenheid",
+      "date": "Datum",
+      "time": "Tijd",
+      "referenceRange": "Referentiebereik",
+      "referenceLow": "Referentie laag",
+      "referenceHigh": "Referentie hoog",
+      "panel": "Groep",
+      "note": "Notitie",
+      "name": "Naam",
+      "dose": "Dosis",
+      "times": "Tijden",
+      "asNeeded": "Zo nodig",
+      "startsOn": "Begin",
+      "endsOn": "Einde"
     }
   }
 }

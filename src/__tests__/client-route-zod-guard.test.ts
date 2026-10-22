@@ -1,5 +1,6 @@
 /**
- * The documents vault and the Coach load no schema library in the browser.
+ * The documents vault, the Coach and the metric pages load no schema library
+ * in the browser.
  *
  * Both routes reached zod through a constant: the list of document kinds, the
  * bulk limit, the attachment cap, the Coach data clusters, a conversation
@@ -121,6 +122,11 @@ describe("client routes without the schema library", () => {
     "src/app/documents/page.tsx",
     "src/app/coach/page.tsx",
     "src/app/coach/conversations/page.tsx",
+    // The metric sub-pages read the plausibility band through the value
+    // domain (`src/lib/measurements/value-ranges.ts`), and the values list
+    // checks its segment against the type label map.
+    "src/app/insights/pulse/page.tsx",
+    "src/app/insights/values/[type]/page.tsx",
   ]) {
     it(`${route} ships no zod in its static client graph`, () => {
       const hits = clientZodImports(route);

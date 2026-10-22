@@ -48,6 +48,7 @@ import { annotate } from "@/lib/logging/context";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import {
   discoverCorrelations,
+  withoutModelFencedPairs,
   type DailySeriesPoint,
   type NamedSeries,
 } from "@/lib/insights/correlation-discovery";
@@ -422,7 +423,10 @@ export function assemblePeriodNarrativeContext(
 
   // ── drivers (FDR-surviving correlations, descriptive-only) ──────────────
   const discovery = discoverCorrelations(discoverySeries, { locale });
-  const drivers: NarrativeDriver[] = discovery.discovered.map((d) => ({
+  // The narrative is model input: pairs on a fenced channel stay out of it.
+  const drivers: NarrativeDriver[] = withoutModelFencedPairs(
+    discovery.discovered,
+  ).map((d) => ({
     behaviour: d.behaviour,
     outcome: d.outcome,
     r: d.r,

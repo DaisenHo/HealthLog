@@ -18,6 +18,8 @@
  */
 import pg from "pg";
 
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
+
 import { E2E_AI_OPTIONAL } from "./global-setup";
 
 function connect(): pg.Pool {
@@ -54,7 +56,7 @@ export async function resetAiOptionalAccount(): Promise<void> {
       `UPDATE users SET
          ai_provider = NULL,
          ai_base_url = NULL,
-         insights_cached_text = NULL,
+         insights_cached_text_encrypted = NULL,
          insights_cached_at = NULL,
          insights_cached_locale = NULL,
          disable_coach = false
@@ -80,16 +82,20 @@ export async function seedStoredBriefing(marker: string): Promise<void> {
     // Generated now: only text written today is served as today's read.
     briefingGeneratedAt: new Date().toISOString(),
   };
+  // Sealed the way the app writes it; there is no readable column to seed.
+  // The import is static on purpose: a dynamic `import()` of app code bypasses
+  // the test runner's `@/` path mapping for that module's own imports.
+  const sealed = Buffer.from(sealInsightsCachedText(JSON.stringify(insights)));
   await withAccount(async (pool, userId) => {
     await pool.query(
       `UPDATE users SET
          ai_provider = 'LOCAL',
          ai_base_url = 'http://127.0.0.1:9/v1',
-         insights_cached_text = $2,
+         insights_cached_text_encrypted = $2,
          insights_cached_at = now(),
          insights_cached_locale = 'en'
        WHERE id = $1`,
-      [userId, JSON.stringify(insights)],
+      [userId, sealed],
     );
     await pool.query(
       `INSERT INTO consent_receipts (id, user_id, kind, artefact, signed_at)

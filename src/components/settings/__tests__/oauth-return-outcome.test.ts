@@ -80,6 +80,27 @@ describe("oauthReasonKey", () => {
     );
   });
 
+  it("names an account already held by another record for every provider", async () => {
+    const en = (await import("../../../../messages/en.json"))
+      .default as unknown as {
+      settings: Record<string, Record<string, string>>;
+    };
+    for (const provider of [
+      "polar",
+      "oura",
+      "whoop",
+      "fitbit",
+      "googleHealth",
+      "strava",
+    ] as const) {
+      const key = oauthReasonKey(provider, "already_linked");
+      expect(key.endsWith(".already_linked")).toBe(true);
+      const [, base] = key.split(".");
+      expect(en.settings[base!]!.already_linked).toBeTruthy();
+    }
+    expect(en.settings.withingsOauthError!.already_linked).toBeTruthy();
+  });
+
   it("falls back to generic for an unknown tag", () => {
     expect(oauthReasonKey("whoop", "totally_unknown")).toBe(
       "settings.whoopOauthError.generic",

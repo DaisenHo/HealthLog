@@ -36,18 +36,28 @@
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 import {
+  ALCOHOL_CHANNEL_KEY,
   DISCOVERY_BEHAVIOURS,
   DISCOVERY_OUTCOMES,
   discoveryMeasurementTypes,
+  EXTENDED_BEHAVIOUR_TYPES,
+  EXTENDED_OUTCOME_TYPES,
+  HYDRATION_CHANNEL_KEY,
+  INDOOR_CLIMATE_TYPES,
   MEDICATION_COMPLIANCE_CHANNEL_KEY,
   MOVEMENT_AWAY_CHANNEL_KEY,
+  WORKOUT_MINUTES_CHANNEL_KEY,
   SYMPTOM_SEVERITY_CHANNEL_KEY,
   type DailySeriesPoint,
   type NamedSeries,
 } from "@/lib/insights/correlation-discovery";
 import {
   buildMeasurementDailySeries,
+  fetchAlcoholSeries,
   fetchComplianceSeries,
+  fetchIndoorClimateSeries,
+  fetchNutrientSeries,
+  fetchTrainingSeries,
   fetchCustomMetricBehaviourSeries,
   fetchSymptomEventSeries,
   fetchEnvironmentSeries,
@@ -162,6 +172,14 @@ export interface DiscoveryMatrixDiagnostics {
   moodFactorChannels: number;
   /** `SYMPTOM:*` channels read (before the module mask). */
   symptomEventChannels: number;
+  /** Stored daily points summed across the intake channels (v1.44). */
+  nutrientDays: number;
+  /** Days in the ALCOHOL series (0 below its tagged-day floor). */
+  alcoholDays: number;
+  /** Daily points summed across the two training channels. */
+  trainingDays: number;
+  /** Nights summed across the room-climate channels. */
+  indoorNights: number;
 }
 
 export interface DiscoveryMatrix {
@@ -260,6 +278,11 @@ async function readMeasurementDaily(
   };
 }
 
+/** Daily points summed across a family's series. */
+function daysIn(family: readonly NamedSeries[]): number {
+  return family.reduce((sum, s) => sum + s.points.length, 0);
+}
+
 /**
  * Build the full discovery matrix for a user over a window.
  *
@@ -292,8 +315,18 @@ export async function assembleDiscoveryMatrix(
       ...discoveryMeasurementTypes(DISCOVERY_BEHAVIOURS),
       ...discoveryMeasurementTypes(DISCOVERY_OUTCOMES),
       ...(opts.extraMeasurementTypes ?? []),
+      // v1.44 — the Apple Health day totals and State of Mind read through the
+      // same measurement path; they are left out of `byMetric` below.
+      ...EXTENDED_BEHAVIOUR_TYPES,
+      ...EXTENDED_OUTCOME_TYPES,
     ]),
   ) as MeasurementType[];
+  const extendedTypes = new Set<string>([
+    ...EXTENDED_BEHAVIOUR_TYPES,
+    ...EXTENDED_OUTCOME_TYPES,
+  ]);
+  const visible = (channelKey: string): boolean =>
+    isSurfaceVisible(correlationChannelSurfaceId(channelKey), opts.modules);
 
   const [
     measurements,
@@ -304,6 +337,10 @@ export async function assembleDiscoveryMatrix(
     customMetricSeries,
     symptomEventSeries,
     movementSeries,
+    nutrientSeries,
+    alcoholSeries,
+    trainingSeries,
+    indoorSeries,
   ] = await Promise.all([
     readMeasurementDaily(userId, tz, since, measurementTypes, fetchMode),
     readMood(userId, tz, since, opts.includeMoodFactors === true),
@@ -328,6 +365,20 @@ export async function assembleDiscoveryMatrix(
       opts.modules,
     )
       ? fetchMovementSeries(userId, tz, since)
+      : Promise.resolve([] as NamedSeries[]),
+    // v1.44 — each extended family is read only while its module is on; the
+    // mask below would drop it anyway.
+    visible(HYDRATION_CHANNEL_KEY)
+      ? fetchNutrientSeries(userId, tz, since)
+      : Promise.resolve([] as NamedSeries[]),
+    visible(ALCOHOL_CHANNEL_KEY)
+      ? fetchAlcoholSeries(userId, tz, since)
+      : Promise.resolve(null),
+    visible(WORKOUT_MINUTES_CHANNEL_KEY)
+      ? fetchTrainingSeries(userId, tz, since)
+      : Promise.resolve([] as NamedSeries[]),
+    visible(INDOOR_CLIMATE_TYPES[0])
+      ? fetchIndoorClimateSeries(userId, tz, since)
       : Promise.resolve([] as NamedSeries[]),
   ]);
 
@@ -366,6 +417,21 @@ export async function assembleDiscoveryMatrix(
   // channel and its own family, capped at eight; the illness module owns them
   // through the `SYMPTOM:` prefix rule in the surface map.
   series.push(...symptomEventSeries);
+  // v1.44 — the extended families, folded after every earlier family so the
+  // ranking of the pairs that existed before is unchanged on a tie. The
+  // intake, alcohol and training channels pair D → D+1; the room climate is
+  // the overnight mean keyed on the waking day and pairs with that night's
+  // sleep only. Exercise, stand and mindful minutes are behaviours; State of
+  // Mind is an outcome in the mood family.
+  for (const key of EXTENDED_BEHAVIOUR_TYPES) {
+    series.push({ key, role: "behaviour", points: points(key) });
+  }
+  for (const key of EXTENDED_OUTCOME_TYPES) {
+    series.push({ key, role: "outcome", points: points(key) });
+  }
+  series.push(...nutrientSeries);
+  if (alcoholSeries) series.push(alcoholSeries);
+  series.push(...trainingSeries, ...indoorSeries);
   // A factor is plausibly both a lag source ("rated work today → next-day
   // sleep") and a lag target ("steps today → next-day rated energy"), so it
   // enters as both roles. The engine skips self-pairs — every factor shares
@@ -376,6 +442,9 @@ export async function assembleDiscoveryMatrix(
   }
 
   const byMetric = new Map(measurements.byType);
+  // The extended types feed the scan only. `byMetric` is what the narrative
+  // cites deltas from, and none of them is a metric it describes.
+  for (const key of extendedTypes) byMetric.delete(key);
   if (mood.moodDaily.length > 0) byMetric.set("MOOD", mood.moodDaily);
   for (const [key, factorPoints] of factorSeries) {
     byMetric.set(key, factorPoints);
@@ -408,6 +477,10 @@ export async function assembleDiscoveryMatrix(
       ),
       moodFactorChannels: factorSeries.size,
       symptomEventChannels: symptomEventSeries.length,
+      nutrientDays: daysIn(nutrientSeries),
+      alcoholDays: alcoholSeries?.points.length ?? 0,
+      trainingDays: daysIn(trainingSeries),
+      indoorNights: daysIn(indoorSeries),
     },
   };
 }

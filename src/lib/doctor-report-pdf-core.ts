@@ -36,6 +36,7 @@ import { buildEmergencyFirstPageSection } from "./doctor-report-pdf/emergency-fi
 import { buildHeaderProfileSection } from "./doctor-report-pdf/header-profile-section";
 import { buildMeasurementsChartsSection } from "./doctor-report-pdf/measurements-charts-section";
 import { buildMedicationMoodWellnessSection } from "./doctor-report-pdf/medication-mood-wellness-section";
+import { buildWorkoutsSection } from "./doctor-report-pdf/activity-effect-sections";
 import { buildClinicalRecordsNotesSection } from "./doctor-report-pdf/clinical-records-notes-section";
 import { buildReportFooter } from "./doctor-report-pdf/footer-section";
 import {
@@ -294,6 +295,7 @@ export function buildDoctorReportPdfDocument(
   }
   cursor = buildHeaderProfileSection(context, cursor);
   cursor = buildMeasurementsChartsSection(context, cursor);
+  cursor = buildWorkoutsSection(context, cursor);
   cursor = buildMedicationMoodWellnessSection(context, cursor);
   cursor = buildClinicalRecordsNotesSection(context, cursor);
   buildReportFooter(context, cursor);

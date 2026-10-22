@@ -9,7 +9,7 @@ vi.mock("@/lib/api-handler", () => ({
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    withingsConnection: { findFirst: vi.fn() },
+    withingsConnection: { findMany: vi.fn() },
   },
 }));
 
@@ -54,6 +54,7 @@ const ORIGINAL_SECRET = process.env.WITHINGS_WEBHOOK_SECRET;
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(prisma.withingsConnection.findMany).mockResolvedValue([]);
   process.env.WITHINGS_WEBHOOK_SECRET = "test-secret";
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
@@ -92,10 +93,12 @@ function paramsFor(token: string) {
 
 describe("POST /api/withings/webhook/[token] (path-segment secret)", () => {
   it("returns 200 + triggers sync when the path token matches WITHINGS_WEBHOOK_SECRET", async () => {
-    vi.mocked(prisma.withingsConnection.findFirst).mockResolvedValueOnce({
-      userId: "user-42",
-      withingsUserId: "wu-1",
-    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      {
+        userId: "user-42",
+        withingsUserId: "wu-1",
+      },
+    ] as never);
 
     const res = await POST(
       jsonRequest("test-secret", { userid: "wu-1" }),
@@ -105,9 +108,9 @@ describe("POST /api/withings/webhook/[token] (path-segment secret)", () => {
     const body = (await res.json()) as { status: string };
     expect(body.status).toBe("ok");
 
-    expect(prisma.withingsConnection.findFirst).toHaveBeenCalledWith({
-      where: { withingsUserId: "wu-1" },
-    });
+    expect(prisma.withingsConnection.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { withingsUserId: "wu-1" } }),
+    );
     expect(syncUserMeasurements).toHaveBeenCalledTimes(1);
     expect(syncUserMeasurements).toHaveBeenCalledWith("user-42");
   });
@@ -119,7 +122,7 @@ describe("POST /api/withings/webhook/[token] (path-segment secret)", () => {
     );
     expect(res.status).toBe(401);
     expect(syncUserMeasurements).not.toHaveBeenCalled();
-    expect(prisma.withingsConnection.findFirst).not.toHaveBeenCalled();
+    expect(prisma.withingsConnection.findMany).not.toHaveBeenCalled();
   });
 
   it("returns 401 when the path token is the empty string (missing)", async () => {

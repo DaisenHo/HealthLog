@@ -57,6 +57,7 @@ function seededFacts(): SupportReportFacts {
       node: "v22.11.0",
       processType: "web,worker",
       heapLimitMb: 792,
+      containerMemoryLimitMb: 1536,
       uptimeSeconds: 7260,
     },
     database: {
@@ -217,6 +218,30 @@ describe("support report redaction", () => {
     expect(low).toContain("docker compose up -d.");
     const enough = redactSupportText(renderSupportReport(facts), CONTEXT);
     expect(enough).not.toContain("Heap limit note");
+  });
+
+  it("says when the container runs below the supported memory floor", () => {
+    const facts = seededFacts();
+    const below = redactSupportText(
+      renderSupportReport({
+        ...facts,
+        build: { ...facts.build, containerMemoryLimitMb: 1024 },
+      }),
+      CONTEXT,
+    );
+    expect(below).toContain("- Container memory limit: 1024 MB");
+    expect(below).toContain(
+      "- Memory note: Below the supported floor. The container memory limit of 1024 MB is below the supported floor of 1536 MB.",
+    );
+    const atFloor = renderSupportReport(facts);
+    expect(atFloor).toContain("- Container memory limit: 1536 MB");
+    expect(atFloor).not.toContain("Memory note");
+    const unknown = renderSupportReport({
+      ...facts,
+      build: { ...facts.build, containerMemoryLimitMb: null },
+    });
+    expect(unknown).toContain("- Container memory limit: none or unreadable");
+    expect(unknown).not.toContain("Memory note");
   });
 
   it("the seeds really are in the unredacted text", () => {

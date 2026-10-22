@@ -1,5 +1,6 @@
 "use client";
 
+import { SourceProvenanceLink } from "@/components/provenance/source-provenance-link";
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, HeartPulse } from "lucide-react";
 
@@ -226,6 +227,8 @@ export default function InsightsBlutdruckPage() {
         slug="blood-pressure"
         icon={<HeartPulse className="h-5 w-5" />}
       />
+      {/* v1.44 (#1204) — where these values come from. */}
+      <SourceProvenanceLink type="BLOOD_PRESSURE_SYS" />
     </SubPageShell>
   );
 }

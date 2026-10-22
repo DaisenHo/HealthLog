@@ -518,7 +518,7 @@ export function ShareLinkCreateForm({
               opens the record (and its shared documents). Promoted as the
               primary mobile affordance: a clinician scans it on the spot to
               open the record on their own device. Shown exactly once. The
-              white quiet-zone is the documented QR exemption (UI-STANDARDS §4)
+              white quiet-zone is the documented QR exemption (ui-standards.md §4)
               so the code stays scannable in the dark theme too. */}
           {qrDataUrl && (
             <div

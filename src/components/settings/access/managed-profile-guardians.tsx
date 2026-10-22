@@ -151,7 +151,7 @@ export function ManagedProfileGuardians({
               data-guardian-state={guardian.state}
               className="space-y-2 py-3 first:pt-0 last:pb-0"
             >
-              {/* UI-STANDARDS §11 inline action row. */}
+              {/* ui-standards.md §11 inline action row. */}
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">

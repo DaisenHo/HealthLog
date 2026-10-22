@@ -1,3 +1,4 @@
+import { releaseUnbackedClientApps } from "@/lib/integrations/oauth-kit/connect-target";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import {
@@ -92,7 +93,10 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
         // through AccountGrant removal. A queued Guardian egress claim thus
         // rechecks after this wipe commits instead of sending from a grant
         // this transaction has already deleted.
-        await protectManagedProfilesDuringDataWipe(tx, userId);
+        const affectedProfiles = await protectManagedProfilesDuringDataWipe(
+          tx,
+          userId,
+        );
 
         const perModel: Record<string, number> = {};
         for (const model of WIPE_MODELS) {
@@ -113,6 +117,13 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
         // data". The request commits with the wipe; the purge job deletes
         // the objects and removes it.
         await requestOffhostPurge(tx, userId, "data_wiped");
+
+        // A guardian's wipe ends their grants; a provider app a profile
+        // borrowed from them goes with those grants.
+        for (const profileId of affectedProfiles) {
+          if (profileId !== userId)
+            await releaseUnbackedClientApps(profileId, tx);
+        }
 
         return perModel;
       },

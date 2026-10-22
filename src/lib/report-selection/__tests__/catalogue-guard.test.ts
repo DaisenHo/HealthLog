@@ -32,6 +32,7 @@ import {
   leafLabelKey,
   LEAF_MODULE,
   MEASUREMENT_LEAF_GROUP,
+  reportMeasurementLabelKey,
 } from "../catalogue";
 import { STANDARD_TEMPLATE_LEAVES, standardTemplateFor } from "../template";
 
@@ -41,6 +42,15 @@ const EN = JSON.parse(
     "utf8",
   ),
 ) as Record<string, unknown>;
+
+function labelOf(key: string): unknown {
+  let node: unknown = EN;
+  for (const part of key.split(".")) {
+    if (typeof node !== "object" || node === null) return undefined;
+    node = (node as Record<string, unknown>)[part];
+  }
+  return node;
+}
 
 function resolves(key: string): boolean {
   let node: unknown = EN;
@@ -53,9 +63,9 @@ function resolves(key: string): boolean {
 
 describe("report selection catalogue", () => {
   it("carries every measurement type and every structured leaf", () => {
-    expect(MEASUREMENT_LEAF_IDS).toHaveLength(77);
-    expect(STRUCTURED_LEAF_IDS).toHaveLength(18);
-    expect(ALL_LEAF_IDS).toHaveLength(95);
+    expect(MEASUREMENT_LEAF_IDS).toHaveLength(86);
+    expect(STRUCTURED_LEAF_IDS).toHaveLength(20);
+    expect(ALL_LEAF_IDS).toHaveLength(106);
   });
 
   it("resolves a label for every leaf", () => {
@@ -145,13 +155,17 @@ describe("template purity", () => {
     expect(unknown).toEqual([]);
   });
 
-  it("fences exactly the eight leaves the design names", () => {
+  it("fences exactly the ten leaves the design names", () => {
     expect([...SENSITIVE_LEAF_IDS].sort()).toEqual(
       [
         "ANAMNESIS",
         "CYCLE",
         "FAMILY_HISTORY",
         "GAD7_SCORE",
+        // v1.44 — mindful minutes and the State of Mind valence are
+        // mental-health self-care and self-report.
+        "MINDFUL_MINUTES",
+        "STATE_OF_MIND_VALENCE",
         "MOOD",
         "PHQ9_SCORE",
         "SCI_SCORE",
@@ -201,6 +215,15 @@ describe("heart-rate variability in the report", () => {
   // own cardio leaf beside SDNN, never folded into it, and like SDNN no
   // module gates it: a report with Recovery off must not lose the account's
   // only HRV series for the estimator its device reports.
+  it("names the statistic on both rows, so the two never read as one series", () => {
+    const sdnn = reportMeasurementLabelKey("HEART_RATE_VARIABILITY");
+    const rmssd = reportMeasurementLabelKey("HRV_RMSSD");
+    expect(sdnn).not.toBe(rmssd);
+    expect(leafLabelKey("HEART_RATE_VARIABILITY")).toBe(sdnn);
+    expect(labelOf(sdnn)).toBe("HRV (SDNN)");
+    expect(labelOf(rmssd)).toBe("HRV (RMSSD)");
+  });
+
   it("files SDNN and RMSSD as separate, ungated cardio leaves", () => {
     for (const type of ["HEART_RATE_VARIABILITY", "HRV_RMSSD"] as const) {
       expect(MEASUREMENT_LEAF_GROUP[type]).toBe("cardio");

@@ -50,6 +50,10 @@ import { wallClockInTz } from "@/lib/tz/wall-clock";
 import {
   discoverCorrelations,
   discoverEmergingCorrelations,
+  withoutModelFencedPairs,
+  CAFFEINE_CHANNEL_KEY,
+  HYDRATION_CHANNEL_KEY,
+  NUTRIENT_CHANNEL_PREFIX,
   discoverLabOutcomeCorrelations,
   EARLY_WINDOW_DAYS,
   MEDICATION_COMPLIANCE_CHANNEL_KEY,
@@ -158,6 +162,8 @@ function tzDayKey(at: Date, tz: string): string {
 const CHANNEL_LABELS: Record<string, string> = {
   [MEDICATION_COMPLIANCE_CHANNEL_KEY]: "medication adherence",
   [SYMPTOM_SEVERITY_CHANNEL_KEY]: "symptom severity",
+  [HYDRATION_CHANNEL_KEY]: "water intake",
+  [CAFFEINE_CHANNEL_KEY]: "caffeine intake",
   ...Object.fromEntries(
     ENVIRONMENT_FIELDS.map((field) => [field.key, field.narrationLabel]),
   ),
@@ -172,6 +178,9 @@ const CHANNEL_LABELS: Record<string, string> = {
  */
 function humanise(key: string, label?: string): string {
   if (label && label.trim().length > 0) return label.trim().toLowerCase();
+  if (key.startsWith(NUTRIENT_CHANNEL_PREFIX)) {
+    return `${key.slice(NUTRIENT_CHANNEL_PREFIX.length).replace(/_/g, " ")} intake`;
+  }
   return CHANNEL_LABELS[key] ?? key.replace(/_/g, " ").toLowerCase();
 }
 
@@ -281,7 +290,12 @@ export async function readCoachCorrelations(
     });
 
     const discovery = discoverCorrelations(series, { locale });
-    const drivers: CoachCorrelationDriver[] = discovery.discovered.map((d) => ({
+    // The Coach is a model: pairs on a fenced channel never reach it. The
+    // scan above is the shared one, so the remaining pairs' statistics are the
+    // ones the correlations page shows.
+    const drivers: CoachCorrelationDriver[] = withoutModelFencedPairs(
+      discovery.discovered,
+    ).map((d) => ({
       behaviour: humanise(d.behaviour, d.behaviourLabel),
       outcome: humanise(d.outcome, d.outcomeLabel),
       direction: d.r >= 0 ? "higher" : "lower",
@@ -303,18 +317,18 @@ export async function readCoachCorrelations(
       recentFromDayKey,
       locale,
     });
-    const emerging: CoachEmergingDriver[] = emergingResult.emerging.map(
-      (d) => ({
-        behaviour: humanise(d.behaviour, d.behaviourLabel),
-        outcome: humanise(d.outcome, d.outcomeLabel),
-        direction: d.r >= 0 ? "higher" : "lower",
-        lagDays: d.lagDays,
-        n: d.n,
-        r: Math.round(d.r * 100) / 100,
-        note: d.interpretation,
-        provisional: true,
-      }),
-    );
+    const emerging: CoachEmergingDriver[] = withoutModelFencedPairs(
+      emergingResult.emerging,
+    ).map((d) => ({
+      behaviour: humanise(d.behaviour, d.behaviourLabel),
+      outcome: humanise(d.outcome, d.outcomeLabel),
+      direction: d.r >= 0 ? "higher" : "lower",
+      lagDays: d.lagDays,
+      n: d.n,
+      r: Math.round(d.r * 100) / 100,
+      note: d.interpretation,
+      provisional: true,
+    }));
 
     // v1.22 — labs ↔ outcome pass (point-vs-window over sparse draws).
     const labResult = discoverLabOutcomeCorrelations(labDraws, series, {

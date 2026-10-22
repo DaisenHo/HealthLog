@@ -9,9 +9,10 @@
  * by the page itself.
  *
  * Mobile-first per `docs/ui-guidelines.md`:
- *   - <md: section selector renders as a horizontal scroll strip at the top so
- *     a thumb-tap can swap sections without leaving the viewport.
- *   - >=md: sticky 220px sidebar + content column with `max-w-screen-xl`.
+ *   - <md: one button naming the current section opens a bottom sheet with
+ *     every section under its group (`SettingsMobileNav`).
+ *   - >=md: sticky 220px sidebar, grouped the same way, beside a content
+ *     column with `max-w-screen-xl`.
  */
 
 import * as React from "react";
@@ -56,6 +57,8 @@ import {
   type SettingsSectionSlug,
 } from "./section-slugs";
 import { SettingsHubBackLink } from "./settings-hub-back-link";
+import { SettingsMobileNav } from "./settings-mobile-nav";
+import { SettingsAnchorForward } from "./settings-anchor-forward";
 
 // Re-export so existing call-sites importing from this module keep working.
 // New server-side call-sites (e.g. `generateStaticParams()`) should import
@@ -71,18 +74,24 @@ export {
 };
 
 /**
- * The sidebar's 19 entries render under one
- * of these seven non-interactive group headers instead of as one flat
- * list. Presentation only: no slug, route, or redirect changes. Order
- * below is the render order of the groups themselves.
+ * The nine groups every section belongs to, in render order. The sidebar
+ * paints a non-interactive header above the first visible entry of each, and
+ * the phone's section sheet uses the same headers.
+ *
+ * Account: who you are and who can get in. Tracking: what the app records.
+ * Arrangement: order and view only. Notifications: every reminder. Health
+ * profile: what describes you. AI and Connections: what talks to the outside.
+ * Data: export, import, privacy and deletion. System: previews and about.
  */
 export type SettingsSectionGroup =
   | "account"
-  | "yourData"
-  | "display"
+  | "tracking"
+  | "arrangement"
+  | "notifications"
   | "healthProfile"
   | "ai"
-  | "connectivity"
+  | "connections"
+  | "data"
   | "system";
 
 /** i18n key for each group's header label, under `settings.shell.groups.*`. */
@@ -91,11 +100,13 @@ export const SETTINGS_SECTION_GROUP_LABEL_KEYS: Record<
   string
 > = {
   account: "settings.shell.groups.account",
-  yourData: "settings.shell.groups.yourData",
-  display: "settings.shell.groups.display",
+  tracking: "settings.shell.groups.tracking",
+  arrangement: "settings.shell.groups.arrangement",
+  notifications: "settings.shell.groups.notifications",
   healthProfile: "settings.shell.groups.healthProfile",
   ai: "settings.shell.groups.ai",
-  connectivity: "settings.shell.groups.connectivity",
+  connections: "settings.shell.groups.connections",
+  data: "settings.shell.groups.data",
   system: "settings.shell.groups.system",
 };
 
@@ -109,159 +120,84 @@ interface SettingsSection {
 }
 
 /**
- * Source of truth for the section list that the settings shell renders
- * in its sidebar + mobile chip-strip.
+ * Source of truth for the section list that the settings shell renders in
+ * its sidebar and in the phone's section sheet, pre-ordered by group.
  *
- * The list used to render in a single flat
- * order with no visual structure (19 entries deep, the AI cluster and the
- * programmatic-access cluster interleaved, the health-profile pair split
- * across the list). It is now clustered into the seven
- * `SettingsSectionGroup`s, each entry carrying its `group`; the list is
- * pre-ordered by group and the shell inserts a non-interactive header
- * before the first VISIBLE entry of each group. This is a presentation-only
- * reorder — no slug, route, or redirect changed, and `SETTINGS_SECTION_SLUGS`
- * (`section-slugs.ts`, which also carries the page-only slugs and drives
- * `generateStaticParams()`) is untouched.
+ * `SETTINGS_SECTION_SLUGS` (`section-slugs.ts`) is the route registry and
+ * keeps its own order (it drives `generateStaticParams()` and the record
+ * landing order); this list decides only where each entry is shown. Every
+ * slug a person ever reached keeps its URL: a section that moved between
+ * groups moved here, not in the route.
  *
- * "About" sits at the end of the list (System group). v1.4.33 IW7 had
- * folded it into the sidebar user-card dropdown only, which left
- * `/settings/about` an orphaned route — reachable by URL but discoverable
- * nowhere in the settings navigation. It is now both a regular shell entry
- * and a user-card dropdown item ("Über HealthLog" / "About HealthLog").
+ * The card titles people cite stay as they are: "Export & import",
+ * "Integrations", "API tokens", "Shared access", "Modules".
  */
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
-  // ── Account ──
+  // ── Account ── profile and display, sign-in and sessions, who else may open
+  // this record.
   {
     slug: "account",
     titleKey: "settings.sections.account.title",
     icon: User,
     group: "account",
   },
-  // v1.23 — the account-security home: second factors, recovery codes,
-  // passkey management.
+  // Second factors, passkeys, password, and (since v1.44) the active
+  // sessions, trusted devices and security activity that used to sit on the
+  // privacy page.
   {
     slug: "security",
     titleKey: "settings.sections.security.title",
     icon: ShieldCheck,
     group: "account",
   },
-  // v1.36.0 — who else may open this record, and whose this account may open.
-  // In the Account group beside Security: both answer "who can get at my
-  // account and what have they done", and a person looking for one will look
-  // where the other is.
   {
     slug: "access",
     titleKey: "settings.sections.access.title",
     icon: UsersRound,
     group: "account",
   },
-  // v1.23 — "Data & Privacy" assembles the export / deletion / retention /
-  // encryption / session / activity pieces into one coherent privacy pane.
-  {
-    slug: "privacy",
-    titleKey: "settings.sections.privacy.title",
-    icon: Lock,
-    group: "account",
-  },
-  // ── Your data ──
-  // v1.18.0 — the "Was du trackst" hub: the front door for enabling /
-  // disabling the secondary tracking domains.
+  // ── Tracking ── which areas are recorded; each module's own settings
+  // (biomarkers, mood tags, injection sites) open from its row.
   {
     slug: "modules",
     titleKey: "settings.sections.modules.title",
     icon: Blocks,
-    group: "yourData",
+    group: "tracking",
   },
-  {
-    slug: "integrations",
-    titleKey: "settings.sections.integrations.title",
-    icon: Link2,
-    group: "yourData",
-  },
-  // v1.18.1 — Quellen (source weighting): which connection wins when
-  // two report the same metric. v1.25.3 — Kanäle (delivery channels) folded
-  // back into Notifications as an in-page group;
-  // `/settings/channels` 301-redirects to `/settings/notifications#channels`.
-  {
-    slug: "sources",
-    titleKey: "settings.sections.sources.title",
-    icon: Layers,
-    group: "yourData",
-  },
-  // v1.18.0 — the full health record (PDF + FHIR R4 + zip package).
-  // v1.18.6.1 — NOT module-gated: the health record is a flagship export
-  // capability; gating its only entry-point on the `doctorReport` opt-out
-  // meant a stray toggle in the Modules hub made the whole section vanish
-  // with no in-context way back. The `doctorReport` module still governs
-  // the data layer server-side (403 `module.disabled` over Bearer).
-  {
-    slug: "gesundheitsakte",
-    titleKey: "settings.sections.gesundheitsakte.title",
-    icon: FileHeart,
-    group: "yourData",
-  },
-  // v1.25.7 — clinician share links fold into the Gesundheitsakte section as
-  // a labelled "Sharing" group; `/settings/sharing` 301-redirects there.
-  {
-    slug: "export",
-    titleKey: "settings.sections.export.title",
-    icon: Download,
-    group: "yourData",
-  },
-  // ── Display ──
-  // v1.17.1 — one nav entry replaces the four scattered Dashboard /
-  // Insights / Medications / Mood "arrange" entries; those routes still
-  // resolve, reached through this hub. v1.25.3 — renamed to "Appearance" /
-  // "Darstellung" and widened into the index for every module's
-  // view/sort/order surface (the slug stays `layout`). v1.25.11 (#148) —
-  // each module lives on its own subpage at `/settings/layout/<module>`;
-  // the old per-module routes 301-redirect there.
+  // ── Arrangement ── order and view, nothing else. The slug stays `layout`.
   {
     slug: "layout",
     titleKey: "settings.sections.layout.title",
     icon: Palette,
-    group: "display",
+    group: "arrangement",
   },
-  // v1.25.7 — Vorsorge (preventive-care reminders) folded into
-  // "Darstellung"; `/settings/vorsorge` 301-redirects to
-  // `/settings/layout/vorsorge`.
-  {
-    slug: "thresholds",
-    titleKey: "settings.sections.thresholds.title",
-    icon: SlidersHorizontal,
-    group: "display",
-  },
-  // v1.18.0 — "Benachrichtigungen" is the single module-gated
-  // reminder-types home; the standalone "Erinnerungen" hub is gone.
+  // ── Notifications ── every reminder kind, or the link to where it lives.
   {
     slug: "notifications",
     titleKey: "settings.sections.notifications.title",
     icon: Bell,
-    group: "display",
+    group: "notifications",
   },
   // ── Health profile ──
-  // v1.35.0 — which pillars count toward the Health Score. Sits at the top
-  // of the health-profile cluster: it is a statement about the person's own
-  // health picture, not about how the app looks or what it records.
   {
     slug: "score",
     titleKey: "settings.sections.score.title",
     icon: Gauge,
     group: "healthProfile",
   },
-  // v1.25 — Anamnese (medical history): the structured-record
-  // home for allergies + family history. NOT module-gated (like Vorsorge) —
-  // these are foundational health-profile records, always available.
+  {
+    slug: "thresholds",
+    titleKey: "settings.sections.thresholds.title",
+    icon: SlidersHorizontal,
+    group: "healthProfile",
+  },
   {
     slug: "anamnesis",
     titleKey: "settings.sections.anamnesis.title",
     icon: ClipboardList,
     group: "healthProfile",
   },
-  // v1.25 — Environmental context: home location, travel overrides,
-  // and the weather/daylight backfill. Module-gated on the opt-in
-  // `environment` module (`settings:environment` in the surface map), so the
-  // entry only appears once the user turns it on.
+  // Module-gated on the opt-in `environment` module.
   {
     slug: "environment",
     titleKey: "settings.sections.environment.title",
@@ -275,39 +211,69 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     icon: Sparkles,
     group: "ai",
   },
-  // v1.18.0 — Coach: the Coach preference cards get their own entry,
-  // shown only when the coach module is enabled (`settings:coach` in the
-  // surface map). The AI entry above keeps
-  // provider / model / BYOK configuration.
+  // Module-gated on the coach module (`settings:coach`).
   {
     slug: "coach",
     titleKey: "settings.sections.coach.title",
     icon: Bot,
     group: "ai",
   },
-  // ── Connectivity ──
+  // ── Connections ── data coming in (integrations, which source wins) and
+  // programmatic access going out (tokens, the MCP connector).
+  {
+    slug: "integrations",
+    titleKey: "settings.sections.integrations.title",
+    icon: Link2,
+    group: "connections",
+  },
+  {
+    slug: "sources",
+    titleKey: "settings.sections.sources.title",
+    icon: Layers,
+    group: "connections",
+  },
   {
     slug: "api",
     titleKey: "settings.sections.api.title",
     icon: KeyRound,
-    group: "connectivity",
+    group: "connections",
   },
-  // v1.22.0 — remote MCP connector. Not module-gated: the card carries its
-  // own enable toggle (mirroring `gesundheitsakte`), so the entry-point
-  // stays reachable even with the opt-in module off.
+  // Not module-gated: the page shows the connector's state and links to the
+  // one switch in Modules.
   {
     slug: "mcp",
     titleKey: "settings.sections.mcp.title",
     icon: Plug,
-    group: "connectivity",
+    group: "connections",
   },
-  // ── System ──
+  // ── Data ── getting data out and in, what is stored, and deleting it.
+  {
+    slug: "export",
+    titleKey: "settings.sections.export.title",
+    icon: Download,
+    group: "data",
+  },
+  // Not module-gated: the health record is a flagship export, and its only
+  // entry point must not vanish behind the `doctorReport` opt-out.
+  {
+    slug: "gesundheitsakte",
+    titleKey: "settings.sections.gesundheitsakte.title",
+    icon: FileHeart,
+    group: "data",
+  },
+  {
+    slug: "privacy",
+    titleKey: "settings.sections.privacy.title",
+    icon: Lock,
+    group: "data",
+  },
   {
     slug: "advanced",
     titleKey: "settings.sections.advanced.title",
     icon: Settings2,
-    group: "system",
+    group: "data",
   },
+  // ── System ──
   {
     slug: "about",
     titleKey: "settings.sections.about.title",
@@ -453,40 +419,6 @@ export function SettingsShell({
     (section) => section.slug === activeSlug,
   );
 
-  // v1.4.33 — keep the active chip in view inside the horizontal
-  // mobile strip. On a 393 CSS px viewport the strip is wider than the
-  // viewport and the rightmost chips sit off-screen; a user who tapped
-  // one of those chips lands on the new route with the strip still
-  // scrolled to the leftmost chip, which reads as if the navigation is
-  // broken. We pin the active chip to the left edge of the strip.
-  //
-  // v1.7.0 — adjust only the strip's own horizontal scroll offset
-  // (via `scrollTo({ left })`) instead of `Element.scrollIntoView()`.
-  // `scrollIntoView` walks every scrollable ancestor and adjusts both
-  // axes, so on mobile it also nudged the whole document vertically on
-  // each route change — a dizzy auto-scroll that fired on every settings
-  // sub-page tap. Scrolling the strip's own `scrollLeft` confines the
-  // motion to its horizontal axis and never touches the page scroll
-  // position.
-  const mobileStripRef = React.useRef<HTMLElement | null>(null);
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    const strip = mobileStripRef.current;
-    if (!strip) return;
-    const active = strip.querySelector<HTMLElement>('[aria-current="page"]');
-    if (!active) return;
-    // Land the active chip at the strip's left edge, clamped to the
-    // scrollable range. `offsetLeft` is relative to the strip's padding
-    // box, which is the origin for `scrollLeft`.
-    const maxScroll = strip.scrollWidth - strip.clientWidth;
-    const target = Math.max(0, Math.min(active.offsetLeft, maxScroll));
-    // Position the active chip instantly. A smooth behaviour here animates
-    // the strip from its reset `scrollLeft: 0` to the target on every tap,
-    // which reads as an unwanted "scroll from the start" sweep when swapping
-    // sections. An instant jump keeps the chip in view without the sweep.
-    strip.scrollTo({ left: target, behavior: "auto" });
-  }, [activeSlug]);
-
   // v1.18.6.1 — resolve the heading once. Pages pass an explicit `heading`
   // (the canonical path); the slug fallback keeps the shell renderable on
   // its own (and in tests that mount it without a heading) by deriving the
@@ -549,64 +481,18 @@ export function SettingsShell({
         <div className="mb-4 md:hidden">{headingBlock(true)}</div>
       ) : null}
 
-      {/* Mobile section strip — horizontal scroll, hidden on md+.
-          `no-scrollbar` (defined in `globals.css`) suppresses the
-          painted scrollbar; the horizontal swipe + keyboard arrow
-          scrolling still work. Without it the 10-section strip
-          renders an always-on scrollbar at the top of every settings
-          page, which makes the page feel like every section card has
-          an overflow problem.
-
-          v1.4.33 — `snap-x snap-mandatory` lets a swipe-flick land
-          on the next chip's leading edge instead of the in-between
-          dead zone. The auto `scrollIntoView({inline: "center"})`
-          effect above stays the canonical positioner for the active
-          chip; snap is the polish layer when the user manually flicks
-          through the strip without tapping. */}
-      <nav
-        ref={mobileStripRef}
-        aria-label={t("settings.shell.sectionsNav")}
-        className="no-scrollbar relative -mx-4 mb-4 snap-x snap-mandatory overflow-x-auto px-4 md:hidden"
-      >
-        <ul className="flex min-w-max items-center gap-2">
-          {visibleSections.map((section, index) => {
-            const isActive = section.slug === activeSlug;
-            const Icon = section.icon;
-            // A quiet vertical divider marks a
-            // group boundary in the horizontal strip (the desktop sidebar
-            // carries the full text header for the same grouping).
-            const startsNewGroup =
-              index > 0 && visibleSections[index - 1].group !== section.group;
-            return (
-              <React.Fragment key={section.slug}>
-                {startsNewGroup ? (
-                  <li aria-hidden="true" className="shrink-0">
-                    <span className="bg-border block h-6 w-px" />
-                  </li>
-                ) : null}
-                <li className="snap-start">
-                  <Link
-                    href={`/settings/${section.slug}`}
-                    aria-current={isActive ? "page" : undefined}
-                    className={cn(
-                      // v1.4.25 — chip strip is the primary mobile-settings
-                      // navigation surface. Pad to WCAG 2.5.5 44 px so the
-                      // chips can be tapped without zoom on a Pixel-5.
-                      "flex min-h-11 items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
-                      isActive
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-border text-foreground hover:bg-accent",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                    {t(section.titleKey)}
-                  </Link>
-                </li>
-              </React.Fragment>
-            );
-          })}
-        </ul>
-      </nav>
+      <SettingsAnchorForward />
+      {/* Below `md`: one button naming the current section, opening the
+          grouped section sheet. Hidden on md+, where the sidebar shows. */}
+      <SettingsMobileNav
+        activeSlug={activeSlug}
+        entries={visibleSections.map((section) => ({
+          slug: section.slug,
+          title: t(section.titleKey),
+          groupLabel: t(SETTINGS_SECTION_GROUP_LABEL_KEYS[section.group]),
+          icon: section.icon,
+        }))}
+      />
 
       {/* v1.18.6.1 — two-row grid on desktop:
             row 1 / col 2 = heading (content column only)

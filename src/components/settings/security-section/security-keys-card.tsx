@@ -13,18 +13,8 @@ import {
   X,
 } from "lucide-react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -308,46 +298,23 @@ export function SecurityKeysCard({
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 sm:h-8 sm:min-h-0 sm:w-8 sm:min-w-0"
-                            disabled={remove.isPending}
-                            aria-label={t("settings.security.keys.remove")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              {t("settings.security.keys.remove")}
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {t("settings.security.keys.removeConfirm")}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>
-                              {t("common.cancel")}
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              variant="destructive"
-                              disabled={remove.isPending}
-                              aria-busy={remove.isPending || undefined}
-                              onClick={() => remove.mutate(key.id)}
-                            >
-                              {remove.isPending && (
-                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-                              )}
-                              {t("common.delete")}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <ConfirmButton
+                        label=""
+                        ariaLabel={t("settings.security.keys.remove")}
+                        title={t("settings.security.keys.remove")}
+                        body={t("settings.security.keys.removeConfirm")}
+                        confirmLabel={t("common.delete")}
+                        onConfirm={() => remove.mutate(key.id)}
+                        pending={
+                          remove.isPending && remove.variables === key.id
+                        }
+                        disabled={remove.isPending}
+                        size="icon"
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-foreground min-h-11 min-w-11 sm:h-8 sm:min-h-0 sm:w-8 sm:min-w-0"
+                        icon={<Trash2 className="h-4 w-4" />}
+                        destructive
+                      />
                     </div>
                   )}
                 </div>

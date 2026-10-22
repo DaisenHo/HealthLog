@@ -46,6 +46,7 @@ import type { ModuleKey } from "@/lib/modules/registry";
  *  - `derived`: a derived score, by its `DerivedMetricId`.
  *  - `settings`: a Settings section, by its slug.
  *  - `settings-layout`: a Settings, Layout group, by its id.
+ *  - `settings-module`: a module's own Settings page under Modules, by its id.
  *  - `correlation`: a correlation-discovery channel, by its channel key.
  *  - `score-ring`: a dashboard hero score ring, by its `ScoreRingId`.
  *  - `day-section`: a section of the day view, by its `DaySectionKey`. The
@@ -66,6 +67,7 @@ export const SURFACE_KINDS = [
   "derived",
   "settings",
   "settings-layout",
+  "settings-module",
   "correlation",
   "score-ring",
   "day-section",
@@ -200,10 +202,14 @@ const STATIC_SURFACE_MODULE = {
 
   // ── Settings, Layout groups ──
   "settings-layout:medications": "medications",
-  "settings-layout:mood": "mood",
   "settings-layout:labs": "labs",
   "settings-layout:illness": "illness",
   "settings-layout:documents": "inboundDocuments",
+
+  // ── Settings, a module's own page under Modules ──
+  "settings-module:medications": "medications",
+  "settings-module:mood": "mood",
+  "settings-module:labs": "labs",
 
   // ── Correlation channels ──
   // Rated mood factors (`FACTOR:<key>`) are mood's too; see
@@ -222,6 +228,24 @@ const STATIC_SURFACE_MODULE = {
   // v1.43 — the Dawarich movement channels ride the environment module.
   "correlation:MOVEMENT_AWAY": "environment",
   "correlation:MOVEMENT_DISTANCE": "environment",
+  // v1.44 — the extended families. Intake rides the opt-in nutrient log (the
+  // `NUTRIENT:<code>` micronutrient channels fold onto `correlation:NUTRIENT`),
+  // alcohol days are read from mood entries' tag, and the two training
+  // channels from the workout record. State of Mind and mindfulness are
+  // self-reports about feeling, so they follow mood. The room climate rides
+  // the environment module like the weather. Exercise and stand minutes are
+  // ambient movement like steps and carry no owner.
+  "correlation:HYDRATION": "nutrients",
+  "correlation:CAFFEINE": "nutrients",
+  "correlation:NUTRIENT": "nutrients",
+  "correlation:ALCOHOL": "mood",
+  "correlation:WORKOUT_MINUTES": "workouts",
+  "correlation:TRAINING_LOAD": "workouts",
+  "correlation:MINDFUL_MINUTES": "mood",
+  "correlation:STATE_OF_MIND_VALENCE": "mood",
+  "correlation:INDOOR_CO2": "environment",
+  "correlation:INDOOR_TEMPERATURE": "environment",
+  "correlation:INDOOR_HUMIDITY": "environment",
 
   // ── Day view sections (v1.42) ──
   // The readings carry no owner here: each value follows its own type's
@@ -349,5 +373,8 @@ export function correlationChannelSurfaceId(channelKey: string): string {
   // A person-defined symptom (`SYMPTOM:<id>`, v1.40) rides the illness
   // module, like the symptom-burden channel it sits beside.
   if (channelKey.startsWith("SYMPTOM:")) return "correlation:SYMPTOM_SEVERITY";
+  // One micronutrient's intake (`NUTRIENT:<code>`, v1.44) rides the nutrient
+  // log like water and caffeine.
+  if (channelKey.startsWith("NUTRIENT:")) return "correlation:NUTRIENT";
   return `correlation:${channelKey}`;
 }

@@ -31,12 +31,18 @@ vi.mock("@/lib/oauth/callback-claim", async (importOriginal) => ({
   duplicateOAuthCallback: async () => null,
 }));
 
+vi.mock("@/lib/integrations/oauth-kit/connect-target", () => ({
+  // The guardian arm is covered in its own test; here the record's own
+  // browser (or none) may finish, any other session may not.
+  verifyCallbackActor: async (record: string, session: string | null) =>
+    session === null || session === record
+      ? { ok: true, guardianUserId: null }
+      : { ok: false, reason: "cross_user" },
+}));
+
 vi.mock("@/lib/api-handler", () => ({
   apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
-  requireAuth: vi.fn(async () => ({
-    user: { id: "user-1" },
-    session: { id: "sess-1" },
-  })),
+  AUTH_ERROR_CODES: { missing: "auth.missing" },
   HttpError: class HttpError extends Error {
     constructor(
       public status: number,
@@ -47,6 +53,13 @@ vi.mock("@/lib/api-handler", () => ({
   },
 }));
 
+vi.mock("@/lib/auth/session", () => ({
+  getSession: vi.fn(async () => ({
+    user: { id: "user-1" },
+    session: { id: "sess-1" },
+  })),
+}));
+
 vi.mock("@/lib/db", () => {
   const prisma = {
     withingsOAuthState: {
@@ -54,6 +67,7 @@ vi.mock("@/lib/db", () => {
     },
     withingsConnection: {
       upsert: vi.fn(),
+      findMany: vi.fn(async () => []),
     },
     oAuthCallbackClaim: { createMany: vi.fn(async () => ({ count: 1 })) },
     $transaction: async (run: (tx: unknown) => unknown) => run(prisma),
@@ -192,6 +206,43 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
     // Wide-Event annotation carries the same reason so operators can
     // grep without DB-shell.
     expect(annotateMock).toHaveBeenCalledWith({ meta: { reason: "replay" } });
+  });
+
+  it("a Withings account another record already holds is refused with reason=already_linked, nothing stored", async () => {
+    vi.mocked(prisma.withingsOAuthState.delete).mockResolvedValueOnce({
+      nonce: NONCE,
+      userId: "user-1",
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      createdAt: new Date(),
+    } as never);
+    const { getUserWithingsCredentials } =
+      await import("@/lib/withings/credentials");
+    vi.mocked(getUserWithingsCredentials).mockResolvedValue({
+      clientId: "cid",
+      clientSecret: "csec",
+    } as never);
+    const { exchangeCode } = await import("@/lib/withings/client");
+    vi.mocked(exchangeCode).mockResolvedValue({
+      userid: "wuid",
+      access_token: "atok",
+      refresh_token: "rtok",
+      expires_in: 3600,
+    } as never);
+    vi.mocked(prisma.withingsConnection.findMany).mockResolvedValueOnce([
+      { userId: "guardian-1" },
+    ] as never);
+
+    const res = await GET(callbackRequest(NONCE, NONCE));
+
+    expect(res.headers.get("location")).toBe(
+      `${APP_URL}/settings/integrations?withings=error&reason=already_linked`,
+    );
+    expect(prisma.withingsConnection.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { withingsUserId: "wuid", userId: { not: "user-1" } },
+      }),
+    );
+    expect(prisma.withingsConnection.upsert).not.toHaveBeenCalled();
   });
 
   it("non-P2025 delete failure (e.g. connection drop) surfaces a Wide-Event warning carrying err.name only, and bounces to the error page", async () => {

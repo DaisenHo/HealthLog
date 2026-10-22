@@ -90,6 +90,7 @@ describe("integration-sync registrar queue policies", () => {
     ["FITBIT_BACKFILL_QUEUE", "exclusive"],
     ["GOOGLE_HEALTH_BACKFILL_QUEUE", "exclusive"],
     ["STRAVA_BACKFILL_QUEUE", "exclusive"],
+    ["OURA_BACKFILL_QUEUE", "exclusive"],
     ["GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE", "exclusive"],
     ["FITBIT_SLEEP_REPAIR_QUEUE", "exclusive"],
     ["SLEEP_TIMELINE_BACKFILL_QUEUE", "exclusive"],

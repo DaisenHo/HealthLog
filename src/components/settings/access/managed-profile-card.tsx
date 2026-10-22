@@ -92,7 +92,7 @@ export function ManagedProfileCard() {
       />
       <div className="space-y-4">
         {/* Content, not meta: this is what somebody is consenting to take on,
-            and UI-STANDARDS §3 reserves muted for the incidental. */}
+            and ui-standards.md §3 reserves muted for the incidental. */}
         <p data-slot="managed-profile-explainer" className="text-sm">
           {t("recordSharing.managed.explainer")}
         </p>
@@ -159,7 +159,7 @@ function ManagedProfileRow({
       data-managed-profile-id={profile.accountId}
       className="space-y-2 py-3 first:pt-0 last:pb-0"
     >
-      {/* UI-STANDARDS §11 inline action row. */}
+      {/* ui-standards.md §11 inline action row. */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           {/* A person's name is user data and stays content. */}
@@ -168,7 +168,7 @@ function ManagedProfileRow({
             {t("recordSharing.lookingAfter.kindManaged")}
           </p>
         </div>
-        {/* UI-STANDARDS §11: the actions stay beside the name, never below it.
+        {/* ui-standards.md §11: the actions stay beside the name, never below it.
             Edit is offered without waiting for the roster — it changes what the
             record IS and does not depend on how many people look after it,
             unlike the deletion beside it, whose confirm copy states that
@@ -223,7 +223,7 @@ function ManagedProfileRow({
       {/* A failed roster read is not an absent roster.
           Without this branch a 500 renders exactly as a still-loading one —
           the row with no guardian panel and no delete control — and the person
-          waits for something that is never coming. UI-STANDARDS §6: a read
+          waits for something that is never coming. ui-standards.md §6: a read
           that failed says so and offers the way back. It is deliberately NOT
           the same as the 404 arm: a 404 means this account is no longer a
           Guardian of that profile, which is an answer, and the row correctly

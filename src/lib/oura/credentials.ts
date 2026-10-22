@@ -13,15 +13,7 @@
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { decrypt, encrypt } from "@/lib/crypto";
-import {
-  acquireProviderTokenRefreshLock,
-  PROVIDER_REFRESH_TRANSACTION_OPTIONS,
-} from "@/lib/integrations/oauth-refresh";
-import {
-  getOuraCredentials,
-  refreshAccessToken,
-  type OuraCredentials,
-} from "./client";
+import { getOuraCredentials, type OuraCredentials } from "./client";
 
 /**
  * Resolve the user's Oura OAuth client id/secret, DB-first then env.
@@ -87,7 +79,7 @@ export interface OuraConnection {
   accessToken: string;
   /**
    * The exact stored refresh-token ciphertext (NOT the decrypted value).
-   * `refreshOuraAccessToken` compares against it under the refresh lock to
+   * `refreshOuraAfterRefusal` compares against it under the refresh lock to
    * tell whether a peer already rotated the token this sync started with.
    */
   refreshTokenCiphertext: string;
@@ -114,76 +106,6 @@ export async function getOuraConnection(
     refreshTokenCiphertext: user.ouraRefreshTokenEncrypted,
     scopeDenied: readOuraScopeDenied(user.ouraScopeDenied),
   };
-}
-
-/**
- * Refresh the user's Oura access token once, however many syncs ask at the
- * same moment.
- *
- * Oura's refresh tokens are single-use, and spending one twice is what an
- * authorization server treats as theft: the second request is refused and the
- * grant behind it may be revoked, parking a healthy connection at reconnect.
- * The refresh is reactive on a 401, so an hourly tick, a manual sync and the
- * first sync after a reconnect can all reach it together. A per-user advisory
- * lock lets one of them refresh; each later one re-reads the stored refresh
- * ciphertext under the lock and, finding it changed from the one its own sync
- * started with, takes the access token stored beside it instead of refreshing
- * again. The write is still conditional on the ciphertext the refresh spent,
- * because a reconnect stores a new grant without taking the lock: a refresh of
- * the old grant finishing after it must not put the old grant back.
- *
- * Returns the access token to retry with, or null when the connection is gone.
- * A refused refresh throws for the caller to classify.
- */
-export async function refreshOuraAccessToken(
-  userId: string,
-  spentRefreshCiphertext: string,
-  creds: OuraCredentials,
-): Promise<string | null> {
-  return prisma.$transaction(async (tx) => {
-    await acquireProviderTokenRefreshLock(tx, "oura", userId);
-    const current = await tx.user.findUnique({
-      where: { id: userId },
-      select: {
-        ouraAccessTokenEncrypted: true,
-        ouraRefreshTokenEncrypted: true,
-      },
-    });
-    if (
-      !current?.ouraAccessTokenEncrypted ||
-      !current.ouraRefreshTokenEncrypted
-    ) {
-      return null;
-    }
-    if (current.ouraRefreshTokenEncrypted !== spentRefreshCiphertext) {
-      // Rotated by a peer, or replaced by a reconnect, while this sync ran.
-      return decrypt(current.ouraAccessTokenEncrypted);
-    }
-
-    const rotated = await refreshAccessToken(
-      decrypt(current.ouraRefreshTokenEncrypted),
-      creds,
-    );
-    const { count } = await tx.user.updateMany({
-      where: {
-        id: userId,
-        ouraRefreshTokenEncrypted: spentRefreshCiphertext,
-      },
-      data: {
-        ouraAccessTokenEncrypted: encrypt(rotated.access_token),
-        ouraRefreshTokenEncrypted: encrypt(rotated.refresh_token),
-      },
-    });
-    if (count > 0) return rotated.access_token;
-    // A reconnect stored a new grant while Oura answered; that one wins.
-    const fresh = await tx.user.findUnique({
-      where: { id: userId },
-      select: { ouraAccessTokenEncrypted: true },
-    });
-    return fresh?.ouraAccessTokenEncrypted
-      ? decrypt(fresh.ouraAccessTokenEncrypted)
-      : null;
-  }, PROVIDER_REFRESH_TRANSACTION_OPTIONS);
 }
 
 /**

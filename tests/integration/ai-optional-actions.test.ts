@@ -24,6 +24,7 @@ import {
   type StateName,
 } from "./ai-optional-fixtures";
 import { getPrismaClient } from "./setup";
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");
@@ -172,9 +173,11 @@ describe("insights/generate refuses by the briefing capability", () => {
       data: {
         // The read resolves (never calls) the chain, so the key must decrypt.
         aiAnthropicKeyEncrypted: encrypt("sk-ant-integration"),
-        insightsCachedText: JSON.stringify({
-          dailyBriefing: { paragraph: "Held text.", keyFindings: [] },
-        }),
+        insightsCachedTextEncrypted: sealInsightsCachedText(
+          JSON.stringify({
+            dailyBriefing: { paragraph: "Held text.", keyFindings: [] },
+          }),
+        ),
         insightsCachedAt: new Date(),
         insightsCachedLocale: "en",
       },

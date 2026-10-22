@@ -17,19 +17,9 @@ import {
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
@@ -591,39 +581,19 @@ function ApiTokensCard() {
                               : t("settings.tokenNeverUsed")}
                           </td>
                           <td className="px-3 py-2 text-right">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-muted-foreground hover:text-foreground h-9 w-9"
-                                  aria-label={t("settings.tokenRevokeAction")}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    {t("settings.tokenRevoke")}
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    {t("settings.tokenRevokeDescription")}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>
-                                    {t("common.cancel")}
-                                  </AlertDialogCancel>
-                                  <AlertDialogAction
-                                    variant="destructive"
-                                    onClick={() => handleRevoke(tok.id)}
-                                  >
-                                    {t("settings.tokenRevokeAction")}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <ConfirmButton
+                              label=""
+                              ariaLabel={t("settings.tokenRevokeAction")}
+                              title={t("settings.tokenRevoke")}
+                              body={t("settings.tokenRevokeDescription")}
+                              confirmLabel={t("settings.tokenRevokeAction")}
+                              onConfirm={() => handleRevoke(tok.id)}
+                              size="icon"
+                              variant="ghost"
+                              className="text-muted-foreground hover:text-foreground h-9 w-9"
+                              icon={<Trash2 className="h-3.5 w-3.5" />}
+                              destructive
+                            />
                           </td>
                         </tr>
                       );
@@ -690,39 +660,17 @@ function ApiTokensCard() {
                             ? formatDateTime(tok.lastUsedAt)
                             : t("settings.tokenNeverUsed")}
                         </p>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="min-h-11 w-full"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              {t("settings.tokenRevokeAction")}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                {t("settings.tokenRevoke")}
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {t("settings.tokenRevokeDescription")}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>
-                                {t("common.cancel")}
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                variant="destructive"
-                                onClick={() => handleRevoke(tok.id)}
-                              >
-                                {t("settings.tokenRevokeAction")}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <ConfirmButton
+                          label={t("settings.tokenRevokeAction")}
+                          title={t("settings.tokenRevoke")}
+                          body={t("settings.tokenRevokeDescription")}
+                          confirmLabel={t("settings.tokenRevokeAction")}
+                          onConfirm={() => handleRevoke(tok.id)}
+                          size="sm"
+                          className="min-h-11 w-full"
+                          icon={<Trash2 className="h-3.5 w-3.5" />}
+                          destructive
+                        />
                       </li>
                     );
                   })}

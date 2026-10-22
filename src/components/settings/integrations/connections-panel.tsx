@@ -57,6 +57,7 @@ const WITHINGS_OAUTH_ERROR_KEYS: Record<string, string> = {
   nocode: "settings.withingsOauthError.nocode",
   nocreds: "settings.withingsOauthError.nocreds",
   token: "settings.withingsOauthError.token",
+  already_linked: "settings.withingsOauthError.already_linked",
 };
 
 type WithingsOauthOutcome =
@@ -126,6 +127,8 @@ const OAUTH_OUTCOME_REASONS = new Set([
   "token",
   "rate_limited",
   "expired",
+  // The provider account is already connected to another record.
+  "already_linked",
 ]);
 
 /**

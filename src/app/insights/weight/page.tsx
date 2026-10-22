@@ -1,5 +1,6 @@
 "use client";
 
+import { SourceProvenanceLink } from "@/components/provenance/source-provenance-link";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Scale } from "lucide-react";
@@ -222,6 +223,8 @@ export default function InsightsGewichtPage() {
         slug="weight"
         icon={<Scale className="h-5 w-5" />}
       />
+      {/* v1.44 (#1204) — where these values come from. */}
+      <SourceProvenanceLink type="WEIGHT" />
     </SubPageShell>
   );
 }

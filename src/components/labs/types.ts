@@ -108,7 +108,42 @@ export interface BiomarkerDto {
   hidden: boolean;
   createdAt: string;
   updatedAt: string;
+  /** v1.44 — the detail read's trend line; absent on the list and older servers. */
+  trend?: BiomarkerTrendDto;
 }
+
+/** v1.44 — `GET /api/biomarkers/{id}` `trend` (`computeLabTrend`). */
+export type BiomarkerTrendDto =
+  | {
+      status: "ok";
+      n: number;
+      firstAt: string;
+      lastAt: string;
+      spanDays: number;
+      slopePerYear: number;
+      slopeCi95: [number, number];
+      pValue: number;
+      fittedNow: number;
+      asOf: string;
+      horizonYears: number;
+      horizonCapped: boolean;
+      projection:
+        | "exits"
+        | "beyond_horizon"
+        | "no_exit"
+        | "already_outside"
+        | "no_clear_trend"
+        | "no_band"
+        | "stale";
+      exitDate: string | null;
+      exitBound: "low" | "high" | null;
+    }
+  | {
+      status: "insufficient";
+      reason: "too_few_values" | "span_too_short";
+      n: number;
+      spanDays: number;
+    };
 
 export interface BiomarkerListResponse {
   biomarkers: BiomarkerDto[];

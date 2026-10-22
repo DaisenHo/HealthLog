@@ -9,6 +9,8 @@ import {
   isLayoutGroupId,
 } from "@/components/settings/layout-groups";
 import { SettingsShell } from "@/components/settings/settings-shell";
+import { ModuleSettingsLinkCard } from "@/components/settings/module-settings-link-card";
+import { isModuleSettingsPageId } from "@/components/settings/module-settings-page-ids";
 import { SettingsHubBackLink } from "@/components/settings/settings-hub-back-link";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -86,6 +88,11 @@ export default async function SettingsLayoutModulePage({ params }: PageProps) {
         <section aria-labelledby={headingId} className="space-y-6">
           <LayoutModuleGate moduleKey={layoutGroupModule(group.id)}>
             <Body />
+            {/* v1.44 — what the module needs beyond order and view lives
+                on its page under Modules; say where. */}
+            {isModuleSettingsPageId(group.id) ? (
+              <ModuleSettingsLinkCard id={group.id} />
+            ) : null}
           </LayoutModuleGate>
         </section>
       </RecordSettingsSectionGate>

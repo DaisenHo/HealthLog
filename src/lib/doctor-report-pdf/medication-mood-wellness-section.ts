@@ -9,6 +9,7 @@ import {
   type DoctorReportPdfRenderContext,
 } from "./render-context";
 import { GLP1_SIDE_EFFECT_TAG_LABEL_KEYS } from "../medications/glp1-side-effect-tags";
+import { buildMedicationEffectSection } from "./activity-effect-sections";
 
 const MOOD_LABEL_KEYS: Record<number, string> = {
   1: "doctorReport.moodAwful",
@@ -139,6 +140,9 @@ export function buildMedicationMoodWellnessSection(
       (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable
         .finalY + 8;
   }
+
+  // v1.44 — the effect around each medication's start, beside its adherence.
+  y = buildMedicationEffectSection(context, pdfCursorState(doc, y)).y;
 
   // v1.4.25 — GLP-1 therapy section. Only renders when the data
   // aggregator emitted a non-null `glp1` block (user has at least one

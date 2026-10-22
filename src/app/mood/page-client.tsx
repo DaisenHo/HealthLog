@@ -150,7 +150,7 @@ export default function MoodPageClient() {
                 className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
               >
                 <Link
-                  href="/settings/layout/mood"
+                  href="/settings/modules/mood"
                   aria-label={t("mood.customize")}
                   title={t("mood.customize")}
                 >

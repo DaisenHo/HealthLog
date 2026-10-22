@@ -124,7 +124,7 @@ async function expectAnnounced(page: Page, selector: string) {
  * Copy somebody has to act on is content, not meta.
  *
  * Two halves, and both are needed. The class check is the design standard —
- * UI-STANDARDS §3 reserves `text-muted-foreground` for meta, and consent or
+ * ui-standards.md §3 reserves `text-muted-foreground` for meta, and consent or
  * safety text rendered as meta is text people skip. The ratio check is the
  * measurable one: it walks up for an opaque background and asserts the AA
  * floor for body text, so a future token change that keeps the class and

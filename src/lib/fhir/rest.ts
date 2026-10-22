@@ -24,7 +24,15 @@ import {
 } from "@/lib/doctor-report-data";
 import type { FhirRecordInputs } from "@/lib/fhir/build-bundle";
 import { GERMAN_ATC_DEFAULT_LOCALES } from "@/lib/fhir/resources";
-import { isModuleEnabled } from "@/lib/modules/gate";
+import { isModuleEnabled, resolveModuleMap } from "@/lib/modules/gate";
+import { resolveReportGate } from "@/lib/doctor-report/selection-gate";
+import {
+  resolveSeriesScope,
+  seriesGlucoseUnit,
+  type SeriesCodeFilter,
+  type SeriesScope,
+} from "@/lib/fhir/series";
+import type { GlucoseUnit } from "@/lib/glucose";
 import { toAllergyDTO, toFamilyHistoryEntryDTO } from "@/lib/records/dto";
 import type {
   FhirBundleEntry,
@@ -65,6 +73,16 @@ export const FHIR_EVERYTHING_OPERATION = "$everything";
 /** Search parameters honoured uniformly across the search routes. */
 export const FHIR_SEARCH_PARAMS = ["_count", "_offset"] as const;
 
+/**
+ * Further search parameters the Observation search honours (v1.44). `date`
+ * switches the answer from the snapshot to the time series of every reading
+ * in the range; `code` narrows either answer to the named codings.
+ */
+export const FHIR_OBSERVATION_SEARCH_PARAMS = [
+  { name: "date", type: "date" },
+  { name: "code", type: "token" },
+] as const;
+
 /** Canonical FHIR media type for every response (success or outcome). */
 export const FHIR_CONTENT_TYPE = "application/fhir+json; charset=utf-8";
 
@@ -74,20 +92,34 @@ export const DEFAULT_COUNT = 50;
 export const MAX_COUNT = 200;
 
 /**
+ * Ceiling on `_offset`: the largest integer a JavaScript number holds
+ * exactly. It is no paging limit (the Observation time series of a heart-rate
+ * history pages well past a hundred thousand rows, and every page's `next`
+ * link must keep working); it refuses only an offset that cannot be passed
+ * on faithfully. Above it `Math.floor` returns a float such as `1e20`, which
+ * the database cannot read as a `bigint` `OFFSET` and which answered 500.
+ */
+export const MAX_OFFSET = Number.MAX_SAFE_INTEGER;
+
+/**
  * Parsed + clamped paging parameters. `count` is bounded to `[1, MAX_COUNT]`;
  * `offset` floors at 0. A non-numeric / negative input collapses to the
  * default rather than erroring — FHIR search is forgiving on paging params.
+ * An offset above {@link MAX_OFFSET} (including `Infinity`) is the one
+ * refusal: the caller answers it with a 400 `invalid` OperationOutcome.
  */
-export function parsePaging(searchParams: URLSearchParams): {
-  count: number;
-  offset: number;
-} {
+export function parsePaging(
+  searchParams: URLSearchParams,
+): { count: number; offset: number } | { error: string } {
   const rawCount = Number(searchParams.get("_count"));
   const count =
     Number.isFinite(rawCount) && rawCount > 0
       ? Math.min(Math.floor(rawCount), MAX_COUNT)
       : DEFAULT_COUNT;
   const rawOffset = Number(searchParams.get("_offset"));
+  if (rawOffset > MAX_OFFSET) {
+    return { error: `_offset must be at most ${MAX_OFFSET}` };
+  }
   const offset =
     Number.isFinite(rawOffset) && rawOffset > 0 ? Math.floor(rawOffset) : 0;
   return { count, offset };
@@ -97,6 +129,7 @@ export function parsePaging(searchParams: URLSearchParams): {
  * Build the absolute self link, and a next link when more rows remain. The
  * URL is rebuilt from the request URL with the paging params normalised, so
  * the echoed link always carries the clamped `_count` and concrete `_offset`.
+ * A next link never carries an offset {@link parsePaging} would refuse.
  */
 function pagingLinks(
   requestUrl: URL,
@@ -110,7 +143,7 @@ function pagingLinks(
   const links: FhirBundleLink[] = [{ relation: "self", url: self.toString() }];
 
   const nextOffset = offset + count;
-  if (nextOffset < total) {
+  if (nextOffset < total && nextOffset <= MAX_OFFSET) {
     const next = new URL(requestUrl.toString());
     next.searchParams.set("_count", String(count));
     next.searchParams.set("_offset", String(nextOffset));
@@ -307,4 +340,31 @@ export async function loadFhirContext(userId: string): Promise<{
       familyHistory: familyHistoryRows.map(toFamilyHistoryEntryDTO),
     },
   };
+}
+
+/**
+ * The series face's scope: the same saved selection and module map the
+ * snapshot replays, narrowed by an optional `code` filter, plus the owner's
+ * glucose unit. Reads two small rows and the selection — never the
+ * whole-record aggregate, so a series page costs what its page costs.
+ *
+ * Carries the same module backstop as {@link loadFhirContext}.
+ */
+export async function loadFhirSeriesScope(
+  userId: string,
+  codes: SeriesCodeFilter | null,
+): Promise<{ scope: SeriesScope; glucoseUnit: GlucoseUnit }> {
+  if (!(await isModuleEnabled(userId, "doctorReport"))) {
+    throw new Error(
+      'loadFhirSeriesScope called with the "doctorReport" module disabled — ' +
+        "the calling route is missing its requireModuleEnabled gate",
+    );
+  }
+  const [selection, moduleMap, glucoseUnit] = await Promise.all([
+    resolveSavedSelection(userId),
+    resolveModuleMap(userId),
+    seriesGlucoseUnit(userId),
+  ]);
+  const gate = resolveReportGate(selection, moduleMap);
+  return { scope: resolveSeriesScope(gate, codes), glucoseUnit };
 }

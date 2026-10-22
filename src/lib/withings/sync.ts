@@ -4,11 +4,9 @@
  */
 import { prisma } from "@/lib/db";
 import type { MeasurementType, Prisma } from "@/generated/prisma/client";
-import { encrypt, decrypt } from "@/lib/crypto";
 import { getUnitForType } from "@/lib/validations/measurement";
 import {
   fetchMeasurements,
-  refreshAccessToken,
   subscribeWebhook,
   WITHINGS_MEASTYPES,
   type WithingsMeasure,
@@ -27,7 +25,6 @@ import {
   WITHINGS_PLAN_GATED_STATUS,
   type WithinPlanResult,
 } from "./api-plan";
-import { getUserWithingsCredentials } from "./credentials";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
@@ -52,10 +49,8 @@ import {
   invalidateUserMeasurements,
 } from "@/lib/cache/invalidate";
 import type { SyncWriteResult } from "@/lib/outcome/written-outcome";
-import {
-  acquireProviderTokenRefreshLock,
-  PROVIDER_REFRESH_TRANSACTION_OPTIONS,
-} from "@/lib/integrations/oauth-refresh";
+import { obtainAccessToken } from "@/lib/integrations/oauth-kit/token";
+import { withingsTokenDescriptor } from "./oauth-descriptor";
 
 /**
  * Build the callback URL handed to Withings at `Notify.subscribe` time.
@@ -95,7 +90,9 @@ export interface GetValidWithingsTokenOptions {
 }
 
 /**
- * Get valid access token for a user, refreshing if expired.
+ * Get a valid access token for a user, refreshing it through the shared OAuth
+ * token lifecycle (`src/lib/integrations/oauth-kit/token.ts`) when it is
+ * within five minutes of its expiry.
  */
 export async function getValidToken(
   userId: string,
@@ -103,77 +100,28 @@ export async function getValidToken(
 ): Promise<WithingsValidToken | null> {
   const connection = await prisma.withingsConnection.findUnique({
     where: { userId },
+    select: { id: true, withingsUserId: true },
   });
-
   if (!connection) return null;
 
-  if (connection.tokenExpiresAt.getTime() - 5 * 60 * 1000 >= Date.now()) {
-    return {
-      accessToken: decrypt(connection.accessToken),
-      connection: {
-        id: connection.id,
-        withingsUserId: connection.withingsUserId,
-      },
-    };
-  }
-
-  const creds = await getUserWithingsCredentials(userId);
-  if (!creds) {
-    getEvent()?.addWarning(
-      `No credentials found for user ${userId} during token refresh`,
-    );
-    await recordSyncFailure({
-      userId,
-      integration: "withings",
-      kind: "reauth_required",
-      message: "Withings credentials missing — token refresh skipped",
-      errorCode: "credentials_missing",
-    });
-    return null;
-  }
-
   try {
-    return await prisma.$transaction(async (tx) => {
-      await acquireProviderTokenRefreshLock(tx, "withings", userId);
-
-      const current = await tx.withingsConnection.findUnique({
-        where: { userId },
-      });
-      if (!current) return null;
-
-      if (current.tokenExpiresAt.getTime() - 5 * 60 * 1000 >= Date.now()) {
-        return {
-          accessToken: decrypt(current.accessToken),
-          connection: {
-            id: current.id,
-            withingsUserId: current.withingsUserId,
-          },
-        };
-      }
-
-      const newTokens = await refreshAccessToken(
-        decrypt(current.refreshToken),
-        creds,
+    const result = await obtainAccessToken(withingsTokenDescriptor, userId);
+    if (result.kind === "token") {
+      return { accessToken: result.accessToken, connection };
+    }
+    if (result.kind === "no_credentials") {
+      getEvent()?.addWarning(
+        `No credentials found for user ${userId} during token refresh`,
       );
-      const expiresAt = new Date(Date.now() + newTokens.expires_in * 1000);
-
-      await tx.withingsConnection.update({
-        where: { id: current.id },
-        data: {
-          accessToken: encrypt(newTokens.access_token),
-          refreshToken: encrypt(newTokens.refresh_token),
-          tokenExpiresAt: expiresAt,
-        },
+      await recordSyncFailure({
+        userId,
+        integration: "withings",
+        kind: "reauth_required",
+        message: "Withings credentials missing — token refresh skipped",
+        errorCode: "credentials_missing",
       });
-
-      return {
-        accessToken: newTokens.access_token,
-        connection: {
-          id: current.id,
-          withingsUserId: current.withingsUserId,
-        },
-      };
-    }, PROVIDER_REFRESH_TRANSACTION_OPTIONS);
+    }
+    return null;
   } catch (err) {
     getEvent()?.addWarning(`Token refresh failed for user ${userId}`);
     await recordWithingsSyncFailure(userId, err, WITHINGS_LEG_MEASURES);

@@ -32,6 +32,7 @@ const {
     whoopConnection: {
       findUnique: vi.fn(),
       update: vi.fn(async () => ({})),
+      updateMany: vi.fn(async () => ({ count: 1 })),
     },
     $transaction: vi.fn(),
   },
@@ -131,6 +132,9 @@ beforeEach(() => {
   isReauthRequiredMock.mockResolvedValue(false);
   prismaMock.whoopConnection.findUnique.mockReset();
   prismaMock.whoopConnection.update.mockReset().mockResolvedValue({});
+  prismaMock.whoopConnection.updateMany
+    .mockReset()
+    .mockResolvedValue({ count: 1 });
   getUserWhoopCredentialsMock.mockReset().mockResolvedValue(null);
   refreshAccessTokenMock.mockReset();
   // The advisory-lock transaction runs its callback against the same mock.

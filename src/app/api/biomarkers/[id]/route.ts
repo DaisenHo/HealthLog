@@ -26,6 +26,10 @@ import { mergedInto } from "@/lib/labs/biomarker-merge";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
 import { matchAnalyteKey } from "@/lib/labs/analyte-match";
 import { annotate } from "@/lib/logging/context";
+import { computeLabTrend } from "@/lib/labs/lab-trend";
+
+/** Upper bound on readings the trend line reads. */
+const LAB_TREND_READ_CAP = 2000;
 import { updateBiomarkerSchema } from "@/lib/validations/biomarkers";
 import { effectiveBound, isInvertedRange } from "@/lib/validations/labs";
 
@@ -58,14 +62,46 @@ export const GET = apiHandler(
       });
     }
 
-    const aliases = await aliasNamesByMarker(prisma, user.id, [row]);
+    const [aliases, readings] = await Promise.all([
+      aliasNamesByMarker(prisma, user.id, [row]),
+      // v1.44 — the marker's numeric readings for the trend line. Every
+      // reading is stored in the marker's unit, so the series needs no
+      // conversion; the cap is far above any real panel history.
+      prisma.labResult.findMany({
+        where: {
+          userId: user.id,
+          biomarkerId: id,
+          deletedAt: null,
+          value: { not: null },
+        },
+        // Newest first, so a capped read keeps the recent end of the series
+        // (the staleness check reads the newest reading); the fit sorts.
+        orderBy: { takenAt: "desc" },
+        take: LAB_TREND_READ_CAP,
+        select: { takenAt: true, value: true },
+      }),
+    ]);
+    const trend = computeLabTrend(
+      readings.flatMap((r) =>
+        r.value === null ? [] : [{ takenAt: r.takenAt, value: r.value }],
+      ),
+      { low: row.lowerBound, high: row.upperBound },
+      new Date(),
+    );
 
     annotate({
       action: { name: "labs.biomarker.get" },
-      meta: { biomarkerId: id },
+      meta: {
+        biomarkerId: id,
+        trend: trend.status,
+        ...(trend.status === "ok" ? { projection: trend.projection } : {}),
+      },
     });
 
-    return apiSuccess(serialiseBiomarker(row, aliases.get(row.id) ?? []));
+    return apiSuccess({
+      ...serialiseBiomarker(row, aliases.get(row.id) ?? []),
+      trend,
+    });
   },
 );
 

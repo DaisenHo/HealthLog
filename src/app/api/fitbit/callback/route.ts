@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  ALREADY_LINKED_REASON,
+  accountLinkedElsewhere,
+} from "@/lib/integrations/oauth-kit/account-link";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -12,7 +16,7 @@ import {
 import { getUserFitbitCredentials } from "@/lib/fitbit/credentials";
 import { FITBIT_OAUTH_STATE_COOKIE } from "@/lib/fitbit/oauth-state";
 import { FITBIT_BACKFILL_QUEUE } from "@/lib/jobs/fitbit-backfill";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
 import {
@@ -163,6 +167,11 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
       const profile = await fetchProfile(tokens.access_token);
       const fitbitUserId = resolveFitbitUserId(profile);
+      // One Fitbit account, one record.
+      if (await accountLinkedElsewhere("fitbit", fitbitUserId, user.id)) {
+        annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+        return ERR(ALREADY_LINKED_REASON);
+      }
       const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
 
       await prisma.fitbitConnection.upsert({
@@ -196,8 +205,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // Enqueue the self-converging history backfill. Best-effort: the boot-time
       // discovery query (`backfillCompletedAt IS NULL`) is the safety net, so a
       // missing boss instance here doesn't strand the connection.
-      const boss = getGlobalBoss();
-      if (boss) {
+      await enqueueWhenBossReady("fitbit-backfill", async (boss) => {
         await boss
           .send(FITBIT_BACKFILL_QUEUE, {
             userId: user.id,
@@ -206,7 +214,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           .catch((err) =>
             getEvent()?.addWarning(`fitbit-backfill enqueue failed: ${err}`),
           );
-      }
+      });
 
       const response = NextResponse.redirect(
         new URL(

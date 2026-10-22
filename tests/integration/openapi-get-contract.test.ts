@@ -210,6 +210,22 @@ function queriesFor(
       return [{ nutrient: "vitamin_d" }];
     case "/api/day/index":
       return [{ from: day(14), to: day(0) }];
+    case "/api/measurements/provenance":
+      return [
+        { type: "ACTIVITY_STEPS", date: day(2) },
+        { type: "WEIGHT", date: day(2) },
+      ];
+    case "/api/measurements/provenance/compare":
+      return [
+        { type: "ACTIVITY_STEPS", from: day(14), to: day(0) },
+        {
+          type: "ACTIVITY_STEPS",
+          from: day(14),
+          to: day(0),
+          a: "APPLE_HEALTH",
+          b: "MANUAL",
+        },
+      ];
     case "/api/documents/inbound/source":
       return [{ sourceSystem: "PAPERLESS", sourceId: "4711" }];
     case "/api/documents/sources/{system}/search":

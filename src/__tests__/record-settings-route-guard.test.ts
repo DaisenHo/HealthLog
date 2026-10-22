@@ -20,9 +20,11 @@ describe("record settings route guard", () => {
       .map((entry) => `app/api/record-settings/${entry}`)
       .sort();
 
-    expect(discovered).toHaveLength(3);
+    expect(discovered).toHaveLength(5);
     expect(discovered).toEqual([
       "app/api/record-settings/[family]/route.ts",
+      "app/api/record-settings/integrations/[provider]/connect/route.ts",
+      "app/api/record-settings/integrations/[provider]/disconnect/route.ts",
       "app/api/record-settings/integrations/route.ts",
       "app/api/record-settings/route.ts",
     ]);
@@ -32,6 +34,8 @@ describe("record settings route guard", () => {
     const routes = [
       "route.ts",
       "integrations/route.ts",
+      "integrations/[provider]/connect/route.ts",
+      "integrations/[provider]/disconnect/route.ts",
       "[family]/route.ts",
     ] as const;
     const sources = await Promise.all(

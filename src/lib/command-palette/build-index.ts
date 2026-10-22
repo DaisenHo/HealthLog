@@ -20,7 +20,11 @@ import { MODULE_REGISTRY, type ModuleKey } from "@/lib/modules/registry";
 import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
 import type { ShareDomain } from "@/lib/sharing/scope";
 
-import { SETTINGS_CARDS, SETTINGS_LAYOUT_PAGES } from "./settings-cards";
+import {
+  SETTINGS_CARDS,
+  SETTINGS_LAYOUT_PAGES,
+  SETTINGS_MODULE_PAGES,
+} from "./settings-cards";
 import { PALETTE_SYNONYMS } from "./synonyms";
 
 /**
@@ -241,6 +245,22 @@ export function buildPaletteIndex(input: PaletteIndexInput): PaletteEntry[] {
           keywords: keywordsFor(id, [layout]),
           icon: Palette,
           run: { kind: "href", href: `/settings/layout/${page.slug}` },
+        });
+      }
+    }
+    if (sectionVisible.has("modules")) {
+      const modulesTitle = sectionTitle.get("modules") ?? "";
+      for (const page of SETTINGS_MODULE_PAGES) {
+        if (modules?.[page.module] === false) continue;
+        const id = `settings:modules/${page.slug}`;
+        entries.push({
+          id,
+          group: "settings",
+          title: t(page.titleKey),
+          hint: modulesTitle,
+          keywords: keywordsFor(id, [modulesTitle]),
+          icon: MODULE_ICONS[page.module],
+          run: { kind: "href", href: `/settings/modules/${page.slug}` },
         });
       }
     }

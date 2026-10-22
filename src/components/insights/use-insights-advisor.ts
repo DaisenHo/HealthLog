@@ -26,7 +26,7 @@ import type { BriefingFailureClass } from "@/lib/insights/briefing-failure-marke
  *
  * Why a POST under a `useQuery` rather than a dedicated GET endpoint:
  * the route already cache-returns the most recent generation (24h TTL on
- * `User.insightsCachedAt` / `User.insightsCachedText`) without burning a
+ * `User.insightsCachedAt` / `User.insightsCachedTextEncrypted`) without burning a
  * rate-limit token, so a single POST-without-`force` is functionally a
  * GET-or-generate. Adding a separate GET would duplicate the cache-read
  * branch and split the audit-log surface; the reconcile report deferred
@@ -540,7 +540,7 @@ export function useInsightsAdvisorQuery(
       // re-fetches.
       queryClient.invalidateQueries({ queryKey: queryKeys.insightsRoot() });
       // v1.18.10 / v1.32.19 — the dashboard hero surfaces the briefing
-      // headline from the SNAPSHOT (server-lifted `User.insightsCachedText`),
+      // headline from the SNAPSHOT (server-lifted `User.insightsCachedTextEncrypted`),
       // and the Today hero's lead line is the SAME briefing lifted into the
       // digest — neither is this advisor cache. A regenerate rewrites that
       // server cache, so both the snapshot and the digest must refetch.

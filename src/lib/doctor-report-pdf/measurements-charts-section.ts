@@ -11,10 +11,11 @@ import {
   reportStatValue,
 } from "../doctor-report/stat-display";
 import type { MeasurementType } from "@/generated/prisma/client";
-import { MEASUREMENT_TYPE_LABEL_KEYS } from "../measurements/type-label-keys";
+import { reportMeasurementLabelKey } from "../report-selection/catalogue";
 import {
   getBmiClassificationKey,
   getBpClassificationKey,
+  COMPACT_SPARKLINE_TYPES,
   SPARKLINE_TYPES,
 } from "./clinical-summary";
 import {
@@ -252,7 +253,7 @@ export function buildMeasurementsChartsSection(
       const show = (v: number) =>
         num(reportStatValue(type, v, glucoseUnit), digits);
       groupRows.push([
-        t(MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType] ?? ""),
+        t(reportMeasurementLabelKey(type as MeasurementType)),
         `${show(s.latest)} ${unit}`.trim(),
         `${show(s.avg)} ${unit}`.trim(),
         show(s.min),
@@ -433,7 +434,13 @@ export function buildMeasurementsChartsSection(
     const chartTypes = SPARKLINE_TYPES.filter(
       (type) => (data.measurements[type]?.length ?? 0) >= 2,
     );
-    if (chartTypes.length > 0) {
+    // v1.44 — the wearable series (sleep, both HRV statistics, steps) draw at
+    // half width, two to a row: a clinician reads their direction, and four
+    // full-width charts would push the medication blocks a page further.
+    const compactTypes = COMPACT_SPARKLINE_TYPES.filter(
+      (type) => (data.measurements[type]?.length ?? 0) >= 2,
+    );
+    if (chartTypes.length > 0 || compactTypes.length > 0) {
       // Keep the heading with at least the first chart.
       y = ensureSpace(y, 6 + SPARKLINE_HEIGHT + 4);
       doc.setFontSize(12);
@@ -446,9 +453,7 @@ export function buildMeasurementsChartsSection(
         // A chart never tears across a page boundary — break before drawing
         // it whole.
         y = ensureSpace(y, SPARKLINE_HEIGHT + 4);
-        const label = t(
-          MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType] ?? "",
-        );
+        const label = t(reportMeasurementLabelKey(type as MeasurementType));
         y = drawSparkline(doc, {
           x: margin,
           y,
@@ -460,6 +465,32 @@ export function buildMeasurementsChartsSection(
           dateShort: (iso) => dateShort(iso),
         });
         y += 4;
+      }
+      const columnGap = 6;
+      const halfWidth = (pageWidth - 2 * margin - columnGap) / 2;
+      for (let i = 0; i < compactTypes.length; i += 2) {
+        y = ensureSpace(y, SPARKLINE_HEIGHT + 4);
+        let rowBottom = y;
+        for (const [column, type] of compactTypes.slice(i, i + 2).entries()) {
+          // Plotted in the unit the table prints (sleep in hours, not the
+          // stored minutes), so the min/max labels match the row above.
+          const points = (data.measurements[type] ?? []).map((p) => ({
+            measuredAt: p.measuredAt,
+            value: reportStatValue(type, p.value, glucoseUnit),
+          }));
+          const bottom = drawSparkline(doc, {
+            x: margin + column * (halfWidth + columnGap),
+            y,
+            width: halfWidth,
+            label: t(reportMeasurementLabelKey(type)),
+            points,
+            num,
+            unit: unitFor(type),
+            dateShort: (iso) => dateShort(iso),
+          });
+          rowBottom = Math.max(rowBottom, bottom);
+        }
+        y = rowBottom + 4;
       }
       y += 2;
     }

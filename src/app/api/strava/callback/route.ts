@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/db";
+import {
+  ALREADY_LINKED_REASON,
+  accountLinkedElsewhere,
+} from "@/lib/integrations/oauth-kit/account-link";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
+import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
@@ -14,7 +19,7 @@ import {
 import { runOAuthCallbackOnce } from "@/lib/oauth/callback-claim";
 import { markReconnected } from "@/lib/integrations/status";
 import { STRAVA_BACKFILL_QUEUE } from "@/lib/jobs/strava-backfill";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -69,11 +74,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const evt = getEvent();
   if (evt) evt.setAuth({ user_id: userId, auth_method: "session" });
 
+  // The browser finishing the flow must be the record's own, or, for a
+  // managed profile, a guardian's with a live MANAGE grant on it.
   const sessionData = await getSession();
-  if (sessionData && sessionData.user.id !== userId) {
-    annotate({ meta: { reason: "cross_user" } });
+  const actorCheck = await verifyCallbackActor(
+    userId,
+    sessionData?.user.id ?? null,
+  );
+  if (!actorCheck.ok) {
+    annotate({ meta: { reason: actorCheck.reason } });
     return ERR("cross_user");
   }
+  const guardianUserId = actorCheck.guardianUserId;
 
   if (!code) return ERR("nocode");
 
@@ -89,12 +101,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
       ).toString(),
       stateCookie: oauthStateCookieName("strava"),
     },
-    () => completeCallback(userId, code),
+    () => completeCallback(userId, guardianUserId, code),
   );
 });
 
 async function completeCallback(
   userId: string,
+  guardianUserId: string | null,
   code: string,
 ): Promise<NextResponse> {
   try {
@@ -121,6 +134,11 @@ async function completeCallback(
       annotate({ meta: { reason: "cross_user" } });
       return ERR("cross_user");
     }
+    // One Strava athlete, one record.
+    if (await accountLinkedElsewhere("strava", athleteId, userId)) {
+      annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+      return ERR(ALREADY_LINKED_REASON);
+    }
 
     await prisma.user.update({
       where: { id: userId },
@@ -131,7 +149,10 @@ async function completeCallback(
       },
     });
 
-    await auditLog("strava.connect", { userId });
+    await auditLog("strava.connect", {
+      userId,
+      actorUserId: guardianUserId,
+    });
     await markReconnected(userId, "strava");
 
     // Enqueue the self-converging history backfill at connect time so deep
@@ -140,8 +161,7 @@ async function completeCallback(
     // (`stravaBackfillCompletedAt IS NULL`) is the safety net, so a missing
     // boss instance here never strands the connection. Mirrors the WHOOP /
     // Fitbit callback enqueue.
-    const boss = getGlobalBoss();
-    if (boss) {
+    await enqueueWhenBossReady("strava-backfill", async (boss) => {
       await boss
         .send(STRAVA_BACKFILL_QUEUE, {
           userId,
@@ -150,7 +170,7 @@ async function completeCallback(
         .catch((err) =>
           getEvent()?.addWarning(`strava-backfill enqueue failed: ${err}`),
         );
-    }
+    });
 
     const response = NextResponse.redirect(
       new URL(

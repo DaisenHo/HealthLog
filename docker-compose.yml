@@ -503,25 +503,38 @@ services:
     # workload can grow large enough to starve Postgres on a shared host.
     # Node sizes its heap from this limit: 1g gives a 524 MB heap, which a
     # long-used account fills in normal operation, so garbage collection
-    # stalls requests for seconds. 1536m gives 792 MB. The support report and
-    # Admin > System status flag a heap below 700 MB. On a host with 2 GB or less, lower it with
-    # APP_MEMORY_LIMIT in .env; on a busy instance, raise it.
+    # stalls requests for seconds. 1536m gives 792 MB and is the supported
+    # floor (host: 3 GB RAM, 4 GB recommended). Below it the boot log, the
+    # support report and Admin > System status say so. On a busy instance,
+    # raise it with APP_MEMORY_LIMIT in .env; do not lower it.
     mem_limit: "${APP_MEMORY_LIMIT:-1536m}"
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1",
+          "wget --no-verbose --tries=1 --timeout=4 --spider http://127.0.0.1:3000/api/health || exit 1",
         ]
       interval: 30s
       timeout: 5s
-      retries: 3
+      # Five misses in a row, two and a half minutes, before "unhealthy". The
+      # probe gives the database two seconds to answer SELECT 1 and says 503
+      # past that, so a boot storm that saturates the pool for a minute after
+      # the start period (backfills, a restore, another tenant's import) costs
+      # a probe or two, not the container's health and the proxy's routing.
+      # wget's own 4 s timeout ends the request inside Docker's 5 s, so a
+      # stalled connection reads as one clean miss rather than a killed probe.
+      # A database that stays away for 2.5 minutes is a real outage and shows.
+      retries: 5
       # The entrypoint applies migrations before the server listens. A
       # migration that waits out a held lock retries for up to about eight
       # minutes (docs/ops/deploy.md), and failed probes in that time must not
       # read as a dead container. The first probe that answers still ends
       # the start period, so a normal boot is healthy within 30 seconds of
-      # listening.
+      # listening. After it listens, the pg-boss worker starts in the
+      # background and /api/health answers 503 with reason "starting" until it
+      # is up (10–60 s under load, reported as "starting" for at most five
+      # minutes); inside the start period those probes do not count, so a slow
+      # worker start cannot mark the container unhealthy.
       start_period: 10m
 
   # Optional dedicated worker container — uncomment + set

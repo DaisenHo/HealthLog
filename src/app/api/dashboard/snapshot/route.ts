@@ -26,7 +26,7 @@
  * so a regression is attributable without re-instrumenting.
  *
  * No LLM is reachable from the builder — the daily briefing is lifted
- * read-only from `User.insightsCachedText`. The nightly
+ * read-only from `User.insightsCachedTextEncrypted`. The nightly
  * `insight-pregenerate` cron keeps that cache warm.
  */
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";

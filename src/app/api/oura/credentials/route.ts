@@ -98,6 +98,7 @@ export const DELETE = apiHandler(async () => {
       ouraAccessTokenEncrypted: null,
       ouraRefreshTokenEncrypted: null,
       ouraScopeDenied: Prisma.DbNull,
+      ouraUserId: null,
     },
   });
   await clearOuraClientCredentials(user.id);

@@ -117,6 +117,15 @@ const PROVIDER_INGESTS: ProviderIngest[] = [
     metadataKey: "healthConnectExerciseType",
   },
   {
+    provider: "Oura",
+    mapper: "mapOuraSportType",
+    mapperFile: "lib/oura/sport-map.ts",
+    captureFile: "lib/oura/sync-workouts.ts",
+    captureField: "w.activity",
+    writeFile: "lib/oura/sync-workouts.ts",
+    metadataKey: "ouraActivity",
+  },
+  {
     provider: "Fitbit",
     mapper: "mapFitbitSportType",
     mapperFile: "lib/fitbit/client.ts",

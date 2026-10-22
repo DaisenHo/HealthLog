@@ -121,17 +121,23 @@ describe("notification channel cards", () => {
   );
 
   it.each([
-    ["webhook", <WebhookCard key="webhook" isAuthenticated />, 1],
-    ["ntfy", <NtfyCard key="ntfy" isAuthenticated />, 1],
-    ["email", <EmailCard key="email" isAuthenticated />, 1],
-    ["telegram", <TelegramCard key="telegram" isAuthenticated />, 0],
+    ["webhook", <WebhookCard key="webhook" isAuthenticated />],
+    ["ntfy", <NtfyCard key="ntfy" isAuthenticated />],
+    ["email", <EmailCard key="email" isAuthenticated />],
+    ["telegram", <TelegramCard key="telegram" isAuthenticated />],
   ] as const)(
-    "%s switch invokes the enable-only mutation rather than the full save",
-    async (channel, card, toggleMutationIndex) => {
-      render(card);
+    "%s enable switch saves on tap, alone, outside the form",
+    async (channel, card) => {
+      const html = render(card);
+      // The switch precedes the form: its Save covers the fields, not the
+      // switch.
+      expect(html.indexOf('role="switch"')).toBeGreaterThan(-1);
+      expect(html.indexOf('role="switch"')).toBeLessThan(html.indexOf("<form"));
+      expect(mocks.apiFetchRaw).not.toHaveBeenCalled();
 
-      await mocks.mutationOptions[toggleMutationIndex]!.mutationFn(true);
-
+      // The card's first mutation is the switch's, and it sends `enabled`
+      // and nothing else.
+      await mocks.mutationOptions[0]!.mutationFn(true);
       expect(mocks.apiFetchRaw).toHaveBeenCalledTimes(1);
       expect(mocks.apiFetchRaw).toHaveBeenCalledWith(
         `/api/settings/${channel}`,
@@ -145,21 +151,17 @@ describe("notification channel cards", () => {
   );
 
   it.each([
-    [<WebhookCard key="webhook" isAuthenticated />, 1, ["settings", "webhook"]],
-    [<NtfyCard key="ntfy" isAuthenticated />, 1, ["settings", "ntfy"]],
-    [<EmailCard key="email" isAuthenticated />, 1, ["settings", "email"]],
-    [
-      <TelegramCard key="telegram" isAuthenticated />,
-      0,
-      ["telegram", "settings"],
-    ],
+    [<WebhookCard key="webhook" isAuthenticated />, ["settings", "webhook"]],
+    [<NtfyCard key="ntfy" isAuthenticated />, ["settings", "ntfy"]],
+    [<EmailCard key="email" isAuthenticated />, ["settings", "email"]],
+    [<TelegramCard key="telegram" isAuthenticated />, ["telegram", "settings"]],
   ] as const)(
-    "rolls each visible switch back to its previous server state on error",
-    async (card, toggleMutationIndex, queryKey) => {
+    "rolls each switch back to its previous server state on error",
+    async (card, queryKey) => {
       const previous = { enabled: false, persistedConfig: "unchanged" };
       mocks.queryClient.getQueryData.mockReturnValue(previous);
       render(card);
-      const toggle = mocks.mutationOptions[toggleMutationIndex]!;
+      const toggle = mocks.mutationOptions[0]!;
 
       const context = await toggle.onMutate!(true);
       const optimisticUpdater = mocks.queryClient.setQueryData.mock
@@ -170,7 +172,6 @@ describe("notification channel cards", () => {
       });
 
       toggle.onError!(new Error("save failed"), true, context);
-
       expect(mocks.queryClient.setQueryData).toHaveBeenLastCalledWith(
         queryKey,
         previous,
@@ -185,9 +186,9 @@ describe("notification channel cards", () => {
     expect(html).toMatch(/<option value="generic" selected="">/);
     expect(html).toContain('<option value="gotify">');
 
-    // The full save is the first mutation of the last render, whose closure
-    // holds the values seeded from the server.
-    const save = mocks.mutationOptions[mocks.mutationOptions.length - 2]!;
+    // The full save is the mutation of the last render, whose closure holds
+    // the values seeded from the server; it carries the stored enable state.
+    const save = mocks.mutationOptions.at(-1)!;
     await save.mutationFn(false);
 
     const [, init] = mocks.apiFetchRaw.mock.calls[0] as [

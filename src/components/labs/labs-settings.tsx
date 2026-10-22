@@ -1,17 +1,16 @@
 "use client";
 
 /**
- * v1.18.6 — the Labs module's own settings page body.
+ * The Labs module's settings, in two places since v1.44:
  *
- * Reached from the wrench beside the page's "hinzufügen" button. Lets the
- * user:
- *   - pick the card-vs-list page view (MOD-03),
- *   - choose the sort order (by most-recent reading, descending / ascending,
- *     or manual) — MOD-04,
- *   - reorder biomarkers when sort = manual (MOD-03/04),
- *   - and create / edit / delete biomarkers via the existing
- *     `BiomarkerManager` (MOD-04).
- * View / sort / order persist client-side via `useModuleListPrefs("labs")`.
+ * `LabsSettings` — Settings > Arrangement > Labs: the card-vs-list view
+ * (MOD-03), the sort (recency, alphabetical or manual, MOD-04) and the manual
+ * order of the biomarkers. Order and view only, persisted per account through
+ * `useModuleListPrefs("labs")`.
+ *
+ * `LabsModuleSettings` — Settings > Modules > Labs: the on-device text
+ * recognition opt-in and the biomarker catalog (`BiomarkerManager`). Reached
+ * from the wrench on the labs page.
  */
 import { useQuery } from "@tanstack/react-query";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
@@ -51,12 +50,6 @@ import { useLabsLocalOcr, useUpdateLabsLocalOcr } from "./use-ocr-extract";
 export function LabsSettings() {
   const { t } = useTranslations();
   const { prefs, setView, setOrder, setSortDir } = useModuleListPrefs("labs");
-
-  // v1.18.10 — local (in-browser) OCR opt-in. Lets a user whose AI provider
-  // can't read images still scan a report: the image is OCR'd on-device and
-  // only the extracted text is sent to the text-only provider.
-  const localOcr = useLabsLocalOcr();
-  const updateLocalOcr = useUpdateLabsLocalOcr();
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.biomarkers(),
@@ -130,7 +123,20 @@ export function LabsSettings() {
           )}
         </SettingsCard>
       ) : null}
+    </div>
+  );
+}
 
+export function LabsModuleSettings() {
+  const { t } = useTranslations();
+  // v1.18.10 — local (in-browser) OCR opt-in. Lets a user whose AI provider
+  // can't read images still scan a report: the image is OCR'd on-device and
+  // only the extracted text is sent to the text-only provider.
+  const localOcr = useLabsLocalOcr();
+  const updateLocalOcr = useUpdateLabsLocalOcr();
+
+  return (
+    <div className="space-y-6">
       {/* v1.18.10 — local (in-browser) OCR opt-in for lab scans. */}
       <SettingsCard id="labs-local-ocr" className="scroll-mt-28">
         <SettingsCardHeader

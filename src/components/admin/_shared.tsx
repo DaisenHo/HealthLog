@@ -61,8 +61,19 @@ export interface SystemStatus {
   buildTime: string;
   startTime: string;
   database: string;
-  /** The process's heap ceiling; `low` when it is below what a long-used account needs. */
-  memory: { heapLimitMb: number; low: boolean };
+  /**
+   * The process's heap ceiling; `low` when it is below what a long-used
+   * account needs. `containerLimitMb` is the container's memory limit
+   * (`null` when there is none or it cannot be read), `belowFloor` when it is
+   * under the supported floor of `floorMb`.
+   */
+  memory: {
+    heapLimitMb: number;
+    low: boolean;
+    containerLimitMb: number | null;
+    floorMb: number;
+    belowFloor: boolean;
+  };
   worker: WorkerStatus;
   /**
    * Queues whose jobs exhausted their retries recently. `null` means the

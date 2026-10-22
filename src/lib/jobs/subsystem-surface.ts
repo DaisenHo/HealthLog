@@ -46,6 +46,7 @@ const subsystemSurface = {
   "integration-watchdog-hourly": { audience: "system" },
   "integration-watchdog-daily": { audience: "system" },
   "strava-backfill": { audience: "system" },
+  "oura-backfill": { audience: "system" },
   "oidc-native-handoff-cleanup": { audience: "system" },
 
   // register-status.ts

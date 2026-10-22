@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -39,30 +42,6 @@ export function TimeFormatSelect({
   const [optimistic, setOptimistic] = useState<TimeFormatPreference | null>(
     null,
   );
-  const [msg, setMsg] = useState<string | null>(null);
-  const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
-  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (clearTimerRef.current !== null) {
-        clearTimeout(clearTimerRef.current);
-        clearTimerRef.current = null;
-      }
-    };
-  }, []);
-
-  function scheduleClear() {
-    if (clearTimerRef.current !== null) {
-      clearTimeout(clearTimerRef.current);
-    }
-    clearTimerRef.current = setTimeout(() => {
-      clearTimerRef.current = null;
-      setMsg(null);
-      setMsgType(null);
-    }, 3000);
-  }
-
   const value: TimeFormatPreference = optimistic ?? user?.timeFormat ?? "AUTO";
 
   const mutation = useMutation({
@@ -84,31 +63,19 @@ export function TimeFormatSelect({
       // Repaint every formatter consumer right away; the /me refetch below
       // re-asserts the same value once it settles.
       storeTimeFormat(next);
-      setMsg(t("settings.timeFormat.saved"));
-      setMsgType("success");
+      toastWrittenOutcome("success", t("settings.timeFormat.saved"));
       queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
       setOptimistic(null);
-      scheduleClear();
     },
     onError: (err) => {
       setOptimistic(null);
-      setMsg(
-        err instanceof Error ? err.message : t("settings.timeFormat.saveError"),
-      );
-      setMsgType("error");
-      scheduleClear();
+      showErrorToast(t("settings.timeFormat.saveError"), { cause: err });
     },
   });
 
   function handleSelect(next: TimeFormatPreference) {
     if (next === value || mutation.isPending || !isAuthenticated) return;
     setOptimistic(next);
-    setMsg(null);
-    setMsgType(null);
-    if (clearTimerRef.current !== null) {
-      clearTimeout(clearTimerRef.current);
-      clearTimerRef.current = null;
-    }
     mutation.mutate(next);
   }
 
@@ -126,16 +93,8 @@ export function TimeFormatSelect({
         <option value="H24">{t("settings.timeFormat.h24")}</option>
         <option value="H12">{t("settings.timeFormat.h12")}</option>
       </NativeSelect>
-      <p
-        role="status"
-        aria-live="polite"
-        className={
-          msgType === "error"
-            ? "text-destructive text-xs"
-            : "text-muted-foreground text-xs"
-        }
-      >
-        {msg ?? t("settings.timeFormat.description")}
+      <p className="text-muted-foreground text-xs">
+        {t("settings.timeFormat.description")}
       </p>
     </div>
   );

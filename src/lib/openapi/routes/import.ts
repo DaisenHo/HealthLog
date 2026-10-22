@@ -23,6 +23,42 @@ import {
   stdResponses,
 } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
+import {
+  csvImportQuerySchema,
+  labsCsvQuerySchema,
+  medicationsCsvQuerySchema,
+  recordImportResultSchema,
+} from "@/lib/validations/record-import";
+
+const RECORD_IMPORT_COMMON =
+  "Body is the raw CSV file (`text/csv`, ≤ 16 MB), read as a stream: a UTF-8 byte-order mark is dropped, the separator is `,`, `;` or a tab, quoted fields may hold separators and line breaks. Every row is checked on its own and a refused row is reported by line with a reason, never guessed (a number or date that reads two ways is refused). Re-uploading the same file writes nothing: every row is reported as a duplicate. `dryRun=1` checks the whole file without writing and returns the first rows as they would be stored; it spends a separate bucket of 30 checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt `dryRun` never writes.";
+
+function recordImportResponses(id: string) {
+  return {
+    "200": {
+      description: "Per-file and per-row outcome.",
+      content: {
+        "application/json": {
+          schema: dataEnvelope(recordImportResultSchema, id),
+        },
+      },
+    },
+    ...stdResponses,
+    "403": {
+      description:
+        "`module.disabled`: the module the import writes to is switched off.",
+      content: { "application/json": { schema: errorEnvelope } },
+    },
+    "413": {
+      description: "`import.csv.too_large`: the file is larger than 16 MB.",
+      content: { "application/json": { schema: errorEnvelope } },
+    },
+    "415": {
+      description: "`import.csv.content_type`: the body is not `text/csv`.",
+      content: { "application/json": { schema: errorEnvelope } },
+    },
+  };
+}
 
 const csvImportRowResult = z
   .object({
@@ -304,17 +340,8 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Import"],
       summary: "Import measurements from CSV",
       description:
-        "Bulk-import measurements from a CSV file (web cold-start escape hatch). Body is raw `text/csv` (≤ 16 MB, ≤ 10 000 valid rows). Header (order-independent): `type,value,unit,measuredAt[,glucoseContext,notes,externalId]`. `measuredAt` must carry an explicit ISO-8601 offset and is bounded (no future beyond a 5-min skew, no instant before 1900). Glucose accepts `mmol/L` (converted to canonical `mg/dL`); weight accepts `lb` (converted to `kg`). `glucoseContext` is optional on a `BLOOD_GLUCOSE` row — a blank cell stores no context, which is the normal shape of a continuous-sensor export; a non-empty value is still checked against the enum, and the column is refused on any other type. Re-uploading a file is idempotent. With an `externalId` column a row upserts on `(userId, type, source=IMPORT, externalId)`: a changed row is `updated`, an unchanged one is `skipped` with reason `duplicate` and not written. Without it a row is deduplicated on `(type, measuredAt)` and a repeat is `skipped` / `duplicate`. Writes commit in chunks rather than as one transaction; a failure part-way leaves earlier chunks written, and re-uploading the same file completes the rest. `?dryRun=1` validates + previews without writing. Shares the 5/hour `import:` rate bucket.",
-      parameters: [
-        {
-          name: "dryRun",
-          in: "query",
-          required: false,
-          schema: { type: "string", enum: ["1", "true"] },
-          description:
-            "When `1` / `true`, parse + validate + return the per-row envelope without writing.",
-        },
-      ],
+        "Bulk-import measurements from a CSV file (web cold-start escape hatch). Body is raw `text/csv` (≤ 16 MB, ≤ 10 000 valid rows). Header (order-independent): `type,value,unit,measuredAt[,glucoseContext,notes,externalId]`. `measuredAt` must carry an explicit ISO-8601 offset and is bounded (no future beyond a 5-min skew, no instant before 1900). Glucose accepts `mmol/L` (converted to canonical `mg/dL`); weight accepts `lb` (converted to `kg`). `glucoseContext` is optional on a `BLOOD_GLUCOSE` row — a blank cell stores no context, which is the normal shape of a continuous-sensor export; a non-empty value is still checked against the enum, and the column is refused on any other type. Re-uploading a file is idempotent. With an `externalId` column a row upserts on `(userId, type, source=IMPORT, externalId)`: a changed row is `updated`, an unchanged one is `skipped` with reason `duplicate` and not written. Without it a row is deduplicated on `(type, measuredAt)` and a repeat is `skipped` / `duplicate`. Writes commit in chunks rather than as one transaction; a failure part-way leaves earlier chunks written, and re-uploading the same file completes the rest. `?dryRun=1` validates + previews without writing. Shares the 5/hour `import:` rate bucket. An unknown query parameter is refused with 422, so a misspelt `dryRun` never writes.",
+      requestParams: { query: csvImportQuerySchema },
       requestBody: {
         required: true,
         content: {
@@ -349,6 +376,48 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           },
         },
       },
+    },
+  },
+  "/api/import/labs-csv": {
+    post: {
+      tags: ["Import"],
+      summary: "Import lab results from CSV",
+      description: `${RECORD_IMPORT_COMMON} Each row's name resolves to the account's marker the way a scanned report's rows do (name, alias, catalog name); a new analyte mints one marker from its first row. A numeric result needs a unit; one in another unit is converted when the conversion is known and keeps the printed value beside it, otherwise the row is refused with \`unit_mismatch\`. Any other text in the value column is a qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows.`,
+      requestParams: { query: labsCsvQuerySchema },
+      requestBody: {
+        required: true,
+        content: {
+          "text/csv": {
+            schema: {
+              type: "string",
+              example:
+                "Analyte;Value;Unit;Date;Range\nHbA1c;5,4;%;01.03.2025;4,0-5,6\nUrine protein;negative;;01.03.2025;",
+            },
+          },
+        },
+      },
+      responses: recordImportResponses("LabsCsvImportEnvelope"),
+    },
+  },
+  "/api/import/medications-csv": {
+    post: {
+      tags: ["Import"],
+      summary: "Import medications from CSV",
+      description: `${RECORD_IMPORT_COMMON} Maps name, dose (as written), daily intake times, an as-needed mark and a start and end date; every other rhythm is set up afterwards in the app. A row needs times unless it is marked as needed. Each row is checked against the create route's own schema; a dated window opens a course. Reminders stay off unless \`reminders=1\`. A medication the record holds under the same name and dose is a duplicate. At most 500 data rows.`,
+      requestParams: { query: medicationsCsvQuerySchema },
+      requestBody: {
+        required: true,
+        content: {
+          "text/csv": {
+            schema: {
+              type: "string",
+              example:
+                "name,dose,times,as needed,start,end\nRamipril,5 mg,08:00,,2025-01-01,\nIbuprofen,400 mg,,yes,,",
+            },
+          },
+        },
+      },
+      responses: recordImportResponses("MedicationsCsvImportEnvelope"),
     },
   },
   "/api/import": {

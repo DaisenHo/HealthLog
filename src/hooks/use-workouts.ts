@@ -1,5 +1,6 @@
 "use client";
 
+import type { TrainingLoad } from "@/lib/insights/training-load";
 import { useMemo } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
@@ -55,6 +56,8 @@ export interface WorkoutListMeta {
 export interface WorkoutListPayload {
   workouts: WorkoutListEntry[];
   meta: WorkoutListMeta;
+  /** v1.44 — first page only; see `GET /api/workouts`. */
+  trainingLoad?: TrainingLoad;
 }
 
 export interface UseWorkoutsOptions {
@@ -179,6 +182,8 @@ export interface UseInfiniteWorkoutsResult {
   total: number;
   isLoading: boolean;
   isEmpty: boolean;
+  /** v1.44 — fitness, fatigue and form, from the first page. */
+  trainingLoad: TrainingLoad | undefined;
   error: Error | null;
   /** True when the first page failed and there is no history to preserve. */
   isError: boolean;
@@ -218,6 +223,7 @@ export function useInfiniteWorkouts(
     [pages],
   );
   const total = query.data?.pages[0]?.meta.total ?? 0;
+  const trainingLoad = query.data?.pages[0]?.trainingLoad;
   const isEmpty =
     Boolean(isAuthenticated) &&
     query.data !== undefined &&
@@ -228,6 +234,7 @@ export function useInfiniteWorkouts(
     total,
     isLoading: query.isLoading,
     isEmpty,
+    trainingLoad,
     error: query.error as Error | null,
     isError: query.isError && query.data === undefined,
     isFetchNextPageError: query.isFetchNextPageError,

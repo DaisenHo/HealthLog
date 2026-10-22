@@ -14,6 +14,7 @@ const recordRef: { value: { kind: "managed" | "shared"; level: string } } = {
 
 vi.mock("next/navigation", () => ({
   usePathname: () => pathnameRef.value,
+  useRouter: () => ({ replace: () => {}, push: () => {} }),
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
@@ -112,7 +113,9 @@ describe("managed record navigation", () => {
       expect(
         html.match(new RegExp(`href="/settings/${section.slug}"`, "g"))
           ?.length ?? 0,
-      ).toBe(2);
+        // The sidebar carries the link; the phone's section sheet mounts its
+        // list only when opened (v1.44).
+      ).toBe(1);
     }
 
     for (const section of unavailableDestinations) {

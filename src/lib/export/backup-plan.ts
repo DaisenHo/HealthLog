@@ -940,6 +940,10 @@ export const USER_COLUMN_BACKUP_CLASS = {
   // What the Oura grant on this host does not cover; meaningless beside a
   // grant that does not travel, and found out again by the first sync.
   ouraScopeDenied: "CREDENTIAL",
+  ouraUserId: "CREDENTIAL",
+  // Names the guardian whose provider app the record borrows; the app itself
+  // does not travel, so neither does the marker.
+  clientAppSharedBy: "CREDENTIAL",
   stravaClientIdEncrypted: "CREDENTIAL",
   stravaClientSecretEncrypted: "CREDENTIAL",
   stravaAccessTokenEncrypted: "CREDENTIAL",
@@ -948,7 +952,6 @@ export const USER_COLUMN_BACKUP_CLASS = {
 
   // ── Operational ───────────────────────────────────────────────────────────
   insightsCachedAt: "OPERATIONAL",
-  insightsCachedText: "OPERATIONAL",
   insightsCachedTextEncrypted: "OPERATIONAL",
   insightsCachedLocale: "OPERATIONAL",
   insightsSnapshotHash: "OPERATIONAL",
@@ -959,6 +962,10 @@ export const USER_COLUMN_BACKUP_CLASS = {
   stravaLastActivityAt: "OPERATIONAL",
   stravaBackfillCompletedAt: "OPERATIONAL",
   stravaBackfillResumeBefore: "OPERATIONAL",
+  // The restored account's Oura backfill reads its history again from the
+  // provider; a carried note would claim history this host never imported.
+  ouraBackfillProgress: "OPERATIONAL",
+  ouraBackfillCompletedAt: "OPERATIONAL",
   healthKitLastSyncedAt: "OPERATIONAL",
   healthKitLastSyncTrigger: "OPERATIONAL",
   healthKitLastBackgroundSyncAt: "OPERATIONAL",
@@ -1010,6 +1017,9 @@ export const USER_COLUMN_BACKUP_CLASS = {
   medicationListLayoutJson: "SETTING",
   moodTagLayoutJson: "SETTING",
   documentsLayoutJson: "SETTING",
+  moduleListLayoutJson: "SETTING",
+  previewFeaturesJson: "SETTING",
+  activityGoalsJson: "SETTING",
   reportSelectionJson: "SETTING",
   globalExcludedInjectionSites: "SETTING",
   healthKitConfigJson: "SETTING",
@@ -1039,6 +1049,7 @@ export const USER_COLUMN_BACKUP_CLASS = {
   coachPrefsJson: "SETTING",
   documentsAutoAiRead: "SETTING",
   labsLocalOcrEnabled: "SETTING",
+  storeWorkoutRoutes: "SETTING",
   // Where the person is in the app's introductions. Without these a restored
   // account is sent through setup and the tour again, and asked to accept the
   // disclaimer it already accepted (a newer disclaimer still asks, because the

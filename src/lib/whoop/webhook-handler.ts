@@ -30,7 +30,7 @@ import { prisma } from "@/lib/db";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/api-response";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import type { MeasurementType, Prisma } from "@/generated/prisma/client";
 import { WHOOP_RECOVERY_FIELD_TAGS } from "./client";
@@ -259,15 +259,17 @@ export async function processWhoopNotification(
   // resource sync. The payload carries the resource id so the worker can do a
   // targeted fetch-by-id refresh — landing the exact record immediately rather
   // than waiting for the next overlap window to re-walk the collection.
-  const boss = getGlobalBoss();
-  if (!boss) {
+  // A delivery during boot is sent once the boss is up rather than dropped.
+  const outcome = await enqueueWhenBossReady("whoop-webhook", (boss) =>
+    boss.send(queue, {
+      userId: connection.userId,
+      resourceId: resourceId ?? undefined,
+    }),
+  );
+  if (outcome === "skipped") {
     getEvent()?.addWarning("whoop-webhook: pg-boss not initialised");
     return NextResponse.json({ status: "ok" }, { status: 200 });
   }
-  await boss.send(queue, {
-    userId: connection.userId,
-    resourceId: resourceId ?? undefined,
-  });
 
   annotate({
     action: { name: "whoop.webhook.enqueued" },

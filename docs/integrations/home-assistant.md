@@ -109,20 +109,20 @@ a new weight:
 ```yaml
 automation:
   - alias: "Push weight to HealthLog"
-    trigger:
-      - platform: state
+    triggers:
+      - trigger: state
         entity_id: sensor.bathroom_scale_weight
-    condition:
+    conditions:
       - condition: template
         value_template: "{{ trigger.to_state.state not in ['unknown', 'unavailable'] }}"
-    action:
-      - service: rest_command.healthlog_measurement
+    actions:
+      - action: rest_command.healthlog_measurement
         data:
           type: WEIGHT
           value: "{{ trigger.to_state.state | float }}"
 ```
 
-The `condition` is not decoration. Home Assistant sensors publish `unknown` and
+The condition is not decoration. Home Assistant sensors publish `unknown` and
 `unavailable` as ordinary states, and forwarding one produces a 422 on every
 restart.
 
@@ -148,6 +148,89 @@ integration tends to have:
 Units are derived server-side from the type, so send the number in the unit
 above and do not send a `unit` field. The full enum is in
 `docs/api/openapi.yaml` under `MeasurementType`.
+
+## Room climate
+
+Indoor CO₂, temperature and humidity are their own types, kept apart from the
+body temperatures and from the outdoor weather the environment module pulls:
+
+| What the sensor reports | `type`               | Unit expected |
+| ----------------------- | -------------------- | ------------- |
+| Carbon dioxide          | `INDOOR_CO2`         | ppm           |
+| Room temperature        | `INDOOR_TEMPERATURE` | °C            |
+| Relative humidity       | `INDOOR_HUMIDITY`    | %             |
+
+Each push is kept as a reading, and the day's mean, low and high are what the
+charts and the daily views read, so a sensor sampled every 15 minutes gives a
+clear picture without anything further on your side. Pushing every few seconds
+adds rows, not detail.
+
+Add a second `rest_command` that takes a ready-made list of readings, so one
+request carries all three:
+
+```yaml
+rest_command:
+  healthlog_room_climate:
+    url: "https://healthlog.example.com/api/measurements"
+    method: POST
+    headers:
+      Authorization: !secret healthlog_token
+      Content-Type: "application/json"
+    payload: "{{ readings | to_json }}"
+```
+
+Track one room, the one you sleep in: that is the one worth reading next to
+your sleep. The readings carry no room name, so a second room would land in the
+same series and blur both, and two pushes in the same minute collide on a 409
+(see below).
+
+Then import the blueprint (Home Assistant 2024.10 or newer), either from
+[`docs/integrations/blueprints/healthlog-room-climate.yaml`](./blueprints/healthlog-room-climate.yaml)
+or by its raw GitHub URL under Settings → Automations & scenes → Blueprints →
+Import blueprint, and create one automation from it for that room. It asks for
+the three sensors (each optional) and an interval of 5, 10, 15, 20, 30 or 60
+minutes, counted from the full hour. Every push:
+
+- leaves out a sensor that reports `unknown`, `unavailable` or anything that is
+  not a number, and skips the push when nothing is left;
+- converts a temperature reported in °F to °C;
+- stamps all readings with the current minute, so a retry of the same push is
+  refused with a 409 instead of written twice.
+
+If you would rather write the automation yourself, this is the same thing for a
+single room without the blueprint:
+
+```yaml
+automation:
+  - alias: "Push bedroom climate to HealthLog"
+    triggers:
+      - trigger: time_pattern
+        minutes: "/15"
+    variables:
+      readings: >-
+        {% set at = now().replace(second=0, microsecond=0).isoformat() %}
+        {% set ns = namespace(items=[]) %}
+        {% for type, entity in [
+          ('INDOOR_CO2', 'sensor.bedroom_co2'),
+          ('INDOOR_TEMPERATURE', 'sensor.bedroom_temperature'),
+          ('INDOOR_HUMIDITY', 'sensor.bedroom_humidity')
+        ] %}
+          {% if is_number(states(entity)) %}
+            {% set ns.items = ns.items + [{'type': type,
+              'value': states(entity) | float, 'measuredAt': at}] %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.items }}
+    conditions:
+      - condition: template
+        value_template: "{{ readings | count > 0 }}"
+    actions:
+      - action: rest_command.healthlog_room_climate
+        data:
+          readings: "{{ readings }}"
+```
+
+One request takes up to five readings, so the room is one call.
 
 ## Sending several readings at once
 

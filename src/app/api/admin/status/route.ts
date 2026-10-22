@@ -9,7 +9,13 @@ import {
   readFailingQueues,
 } from "@/lib/jobs/job-failures";
 import { readFileSync } from "node:fs";
-import { heapLimitMb, isHeapLimitLow } from "@/lib/support/heap-limit";
+import {
+  containerMemoryLimitMb,
+  heapLimitMb,
+  isBelowMemoryFloor,
+  isHeapLimitLow,
+  MEMORY_FLOOR_MB,
+} from "@/lib/support/heap-limit";
 import {
   geoLookupMode,
   geoProviderChosen,
@@ -77,6 +83,8 @@ export const GET = apiHandler(async () => {
   // The process's heap ceiling, and whether it is the 1 GB-container size
   // that a long-used account can fill (`heap-limit.ts`).
   const heapLimit = heapLimitMb();
+  // And the container's own limit against the supported floor.
+  const containerLimit = containerMemoryLimitMb();
 
   return apiSuccess({
     version: process.env.npm_package_version || "0.1.0",
@@ -85,7 +93,13 @@ export const GET = apiHandler(async () => {
     buildTime: BUILD_TIME,
     startTime: START_TIME,
     database: "connected",
-    memory: { heapLimitMb: heapLimit, low: isHeapLimitLow(heapLimit) },
+    memory: {
+      heapLimitMb: heapLimit,
+      low: isHeapLimitLow(heapLimit),
+      containerLimitMb: containerLimit,
+      floorMb: MEMORY_FLOOR_MB,
+      belowFloor: isBelowMemoryFloor(containerLimit),
+    },
     worker: {
       running: workerStatus.running,
       startedAt: workerStatus.startedAt,

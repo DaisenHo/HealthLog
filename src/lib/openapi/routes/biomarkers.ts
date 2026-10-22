@@ -77,6 +77,73 @@ const biomarkerRow = z
       "A user-scoped catalog marker. `context` is the decrypted per-marker note (or null); `hasContext` flags its presence. `analyteKey` is the analyte the marker was recognised as: the catalog slug its name belongs to (e.g. `fasting-glucose`, `ldl`, `hdl`), or a key of the unit-conversion registry for an analyte with no catalog seed (e.g. `urea`, `uric-acid`), or null when its name matches none. It is derived from `name` and `unit`, never chosen: it is set on create and re-derived (or cleared) when an update changes either. A reading in another unit is converted only for a marker that has one. `hidden` drops the marker from the active catalog list and the lab-entry pickers without deleting it (its readings and unit/range survive). A `LabResult` linking this marker resolves its unit + reference bounds from here.",
   });
 
+const labTrend = z
+  .union([
+    z.object({
+      status: z.literal("ok"),
+      n: z.number().int(),
+      firstAt: z.string().describe("YYYY-MM-DD of the first reading."),
+      lastAt: z.string().describe("YYYY-MM-DD of the newest reading."),
+      spanDays: z.number().int(),
+      slopePerYear: z
+        .number()
+        .describe("Least-squares change per year, in the marker's unit."),
+      slopeCi95: z
+        .tuple([z.number(), z.number()])
+        .describe("95 % interval of the slope (Student t at n − 2 df)."),
+      pValue: z.number(),
+      fittedNow: z.number().describe("The line's value on `asOf`."),
+      asOf: z
+        .string()
+        .describe(
+          "YYYY-MM-DD the line was evaluated on: today, or `lastAt` when `projection` is `stale`.",
+        ),
+      horizonYears: z
+        .number()
+        .describe(
+          "How far ahead a bound may be met and still count as `exits`: three years, or the readings' span when shorter.",
+        ),
+      horizonCapped: z
+        .boolean()
+        .describe(
+          "True when `horizonYears` is the three-year cap, false when the readings' shorter span set it.",
+        ),
+      projection: z.enum([
+        "exits",
+        "beyond_horizon",
+        "no_exit",
+        "already_outside",
+        "no_clear_trend",
+        "no_band",
+        "stale",
+      ]),
+      exitDate: z
+        .string()
+        .nullable()
+        .describe(
+          "Only for `exits`: the day the straight line meets `exitBound`. A projection, never a forecast.",
+        ),
+      exitBound: z.enum(["low", "high"]).nullable(),
+    }),
+    z.object({
+      status: z.literal("insufficient"),
+      reason: z.enum(["too_few_values", "span_too_short"]),
+      n: z.number().int(),
+      spanDays: z.number().int(),
+    }),
+  ])
+  .meta({
+    id: "BiomarkerTrend",
+    description:
+      "v1.44 — the least-squares line through every numeric reading of the marker (all stored in the marker's unit). Needs at least three readings spanning at least 365 days, else `insufficient`. `projection` places the line against the marker's band: `exits` (with `exitDate`) only when the slope's 95 % interval excludes zero, the line is inside the band today and reaches a bound within `horizonYears` (three years, or the readings' span when shorter). `stale` when the newest reading is more than 365 days old: the line is then reported as of `lastAt`, with no projection. Server-computed; clients render it as given.",
+  });
+
+const biomarkerDetail = biomarkerRow
+  .extend({
+    trend: labTrend.optional().describe("v1.44 — absent on older servers."),
+  })
+  .meta({ id: "BiomarkerDetail" });
+
 const listResponse = z
   .object({ biomarkers: z.array(biomarkerRow) })
   .meta({ id: "ListBiomarkersResponse" });
@@ -191,7 +258,7 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Labs"],
       summary: "Fetch a single biomarker",
       description:
-        "Returns the biomarker including its decrypted `context` and, since v1.43, its `aliases`. Cross-user rows surface as 404. A marker merged into another answers 404 with `meta.mergedInto`.",
+        "Returns the biomarker including its decrypted `context`, since v1.43 its `aliases`, and since v1.44 its `trend` over every stored reading. Cross-user rows surface as 404. A marker merged into another answers 404 with `meta.mergedInto`.",
       requestParams: { path: z.object({ id: z.string() }) },
       responses: {
         ...recordRefusal(),
@@ -199,7 +266,7 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Biomarker detail.",
           content: {
             "application/json": {
-              schema: dataEnvelope(biomarkerRow, "GetBiomarkerResponse"),
+              schema: dataEnvelope(biomarkerDetail, "GetBiomarkerResponse"),
             },
           },
         },

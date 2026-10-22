@@ -4239,6 +4239,9 @@ const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "User.aiBaseUrl": "https://llm.example.com/v1",
   "User.aiCompatBaseUrl": "https://gateway.example.com/v1",
   "User.thresholdsJson": { WEIGHT: { min: 60, max: 80 } },
+  // The restore admits goal by goal against the goals schema, so the generic
+  // `{ roundTrip }` blob would be refused as an unknown key, not carried.
+  "User.activityGoalsJson": { workoutsPerWeek: 4, stepsPerMonth: 250_000 },
   "User.globalExcludedInjectionSites": ["THIGH_LEFT"],
   "User.avatarBytes": () => {
     const bytes = new Uint8Array(new ArrayBuffer(AVATAR_PNG.byteLength));

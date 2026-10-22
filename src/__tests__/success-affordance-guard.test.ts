@@ -82,6 +82,9 @@ const PINNED_AFFORDANCES: Record<
   // the two status grids used to spell the tint at every call site and now
   // name a tone instead, so the marker lives here once.
   "src/components/admin/_shared.tsx": { "text-success": 3, "toast.success": 1 },
+  // v1.44: the activity calendar's per-week tick for "every weekly goal met",
+  // a state of a row the person reads, not the outcome of a write.
+  "src/components/activity/activity-calendar-card.tsx": { "text-success": 1 },
   // v1.42: the readiness inventory's "carries" status icon, one arm of the
   // carries / thin / empty tone table, beside its spoken status label.
   "src/components/timeline/readiness-inventory.tsx": { "text-success": 1 },
@@ -348,7 +351,6 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/dashboard-layout-section.tsx": {
     "toast.success": 2,
   },
-  "src/components/settings/email-card.tsx": { "text-success": 1 },
   "src/components/settings/environment-section.tsx": { "toast.success": 4 },
   "src/components/settings/insights-pill-order-section.tsx": {
     "toast.success": 1,
@@ -383,13 +385,12 @@ const PINNED_AFFORDANCES: Record<
   },
   "src/components/settings/mcp-section.tsx": {
     "text-success": 4,
-    "toast.success": 2,
+    "toast.success": 1,
   },
   "src/components/settings/notification-status-card.tsx": {
     CheckCircle2: 2,
     "text-success": 1,
   },
-  "src/components/settings/ntfy-card.tsx": { "text-success": 1 },
   // The one that used to sit inside `account-section/index.tsx` — the card
   // moved to Settings → Security, the line moved with it.
   "src/components/settings/password-card.tsx": { "text-success": 1 },
@@ -397,7 +398,6 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/share-link-create-form.tsx": { "text-success": 3 },
   "src/components/settings/sharing-section.tsx": { "text-success": 1 },
   "src/components/settings/sources-section.tsx": { "toast.success": 2 },
-  "src/components/settings/telegram-card.tsx": { "text-success": 1 },
   "src/components/settings/test-connection-button.tsx": {
     CheckCircle2: 2,
     "text-success": 1,
@@ -407,7 +407,6 @@ const PINNED_AFFORDANCES: Record<
   },
   "src/components/settings/trusted-devices-card.tsx": { "text-success": 1 },
   "src/components/settings/web-push-card.tsx": { "text-success": 1 },
-  "src/components/settings/webhook-card.tsx": { "text-success": 1 },
   "src/components/targets/target-edit-sheet.tsx": { "toast.success": 2 },
   "src/components/ui/password-strength.tsx": { "text-success": 2 },
   // The success tone of the grade chip (a high confidence, a score that went

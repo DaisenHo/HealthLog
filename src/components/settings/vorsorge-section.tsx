@@ -9,17 +9,18 @@
  * The shell supplies the page chrome (left nav, heading, subtitle) so this
  * body is the preventive-care cards only. Preventive-care reminders are not
  * a toggleable module, so this entry carries no `moduleGate` (always shown).
+ *
+ * v1.44 — order and view only. The reminder switches moved to Settings >
+ * Notifications, the screening hints to Health profile > Medical history
+ * beside the life circumstances they come from.
  */
 
 import { VorsorgeSettings } from "@/components/measurement-reminders/vorsorge-settings";
-import { ScreeningHintsCard } from "@/components/records/screening-hints-card";
 
 export function VorsorgeSection() {
   return (
     <div className="space-y-6">
       <VorsorgeSettings />
-      {/* v1.43 (#614) — hints from the life circumstances, with their source. */}
-      <ScreeningHintsCard />
     </div>
   );
 }

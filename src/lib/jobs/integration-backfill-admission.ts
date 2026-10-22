@@ -19,6 +19,7 @@ export const INTEGRATION_BACKFILL_BOOT_ORDER = [
   // Appended, not slotted next to `fitbit-backfill`, so every existing
   // provider's boot stagger stays exactly where it was.
   "fitbit-sleep-repair",
+  "oura-backfill",
 ] as const;
 
 export type IntegrationBackfillKind =

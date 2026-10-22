@@ -1077,6 +1077,18 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "measurements",
     why: "The record's workout list. Verified to carry no AI-written paragraph: the single-workout route beside it does, and stays refused for exactly that reason.",
   },
+  "app/api/measurements/provenance/route.ts": {
+    domain: "measurements",
+    why: "Which source delivered a metric on one UTC day and which one the record's source priority picks, with the reason. Read-only aggregates of the resolved user's readings; no AI, no note text.",
+  },
+  "app/api/measurements/provenance/compare/route.ts": {
+    domain: "measurements",
+    why: "Two sources of one metric side by side over at most a year of UTC days, with the source the ladder picked each day. Read-only aggregates of the resolved user's readings; no AI, no note text.",
+  },
+  "app/api/activity/calendar/route.ts": {
+    domain: "measurements",
+    why: "The activity calendar: day totals of steps, active minutes and load, workouts by sport, and the record owner's goals, computed without AI. Read-only, scoped to the resolved user, module-gated on the record's own `workouts` switch like the workout list beside it.",
+  },
   "app/api/cycle/cycles/route.ts": {
     domain: "cycle",
     why: "The record's cycle history. Whether cycle tracking applies is a property of the record, and the gate gets there by re-loading the profile and gender for the resolved user id — note that the `gender` argument at the call site is dead (`requireCycleEnabled` names it `_gender`), so it is the id that carries the substitution, not that argument.",
@@ -2044,6 +2056,10 @@ const GUARDIAN_ROUTES: Record<string, string> = {
     "Verified integration connection status for the managed record, without any provider control surface.",
   "app/api/record-settings/[family]/route.ts":
     "The closed, field-specific managed-record configuration DTOs; identity and credentials remain excluded.",
+  "app/api/record-settings/integrations/[provider]/connect/route.ts":
+    "Starts an OAuth connect for the managed record a guardian administers. It returns the consent URL and the state names the managed record; the callback re-checks the browser's live MANAGE grant before any token lands. Refused on an adult record by the marker, at every grant level.",
+  "app/api/record-settings/integrations/[provider]/disconnect/route.ts":
+    "Disconnects a provider from the managed record a guardian administers, through the same disconnect the owner runs. Imported data stays. Refused on an adult record by the marker, at every grant level.",
 };
 
 /**
@@ -2068,6 +2084,10 @@ const ACTOR_ROUTES: Record<string, string> = {
     "The app shell reads it on every boot, including while a switch is on: the switcher, the banner naming whose record is open, and the route back out all bind this payload. Every field it returns is the caller's own — their preferences, their modules, their identity — and the one field about the switch says only which records they may open and which they are inside. It reads no row of the owner's, and its `accountAccess` block grants nothing: the resolver re-checks the grant on every delegated request regardless of what this payload said a moment ago.",
   "app/api/auth/me/locale/route.ts":
     "The UI language belongs to the person reading the screen, never to the record on it. Under a record scope this would transplant a delegate's choice onto the owner's row and send the owner's cron mail in a language they may not read. It has to keep working rather than merely refuse safely: the switcher's mount-time backfill fires on every page load, including the shared dashboard.",
+  "app/api/settings/module-list-layout/route.ts":
+    "How the person's own labs, illness and checkups lists are laid out: card or list view, manual order, sort. It reads and writes the caller's own row only. Inside another record the ids of a saved order simply match nothing and the list keeps the server order, so serving the person's own choice there reveals nothing of the owner's and grants nothing; refusing it under a switch broke the list controls in exactly the context they are used in.",
+  "app/api/settings/preview-features/route.ts":
+    "The person's own opt-in to preview features. A preview entry is chrome of the person reading the screen, never a property of the record on it; it reads and writes the caller's own row and nothing of the owner's.",
   "app/api/feature-flags/route.ts":
     "Reads the `AppSettings` singleton and no user row at all, so there is no record for a switch to substitute. It answers about the deployment, which for this purpose is the caller's side of the request; the shell gates the Coach launcher and the assistant surfaces on it, so a 403 here is a piece of chrome deciding it does not exist.",
 };
@@ -2164,8 +2184,20 @@ const ACTOR_ROUTES: Record<string, string> = {
  * v1.43 -- AUDIT-C's create and soft delete join the record list and the
  * manage literal under `profile`, the level allergies are written at.
  * 262 -> 266.
+ *
+ * v1.44 -- a guardian connects and disconnects a managed profile's OAuth
+ * providers: two guardian-only entries. 266 -> 268.
+ *
+ * v1.44 -- the module list layout and the preview-feature switch are the
+ * person's own presentation and join the actor list. 268 -> 270.
+ *
+ * v1.44 -- three readable routes join the record list: the activity calendar
+ * read and the two source provenance reads (one day, and two sources side by
+ * side). The activity goals route does not: setting or changing goals stays
+ * owner-only, and a delegate sees the goals only as the calendar reports them.
+ * 270 -> 273.
  */
-const FROZEN_ENTRY_COUNT = 266;
+const FROZEN_ENTRY_COUNT = 273;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

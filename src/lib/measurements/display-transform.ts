@@ -179,6 +179,8 @@ const TRANSFORMS: Partial<
   BODY_TEMPERATURE: TEMPERATURE_TRANSFORM,
   SKIN_TEMPERATURE: TEMPERATURE_TRANSFORM,
   WRIST_TEMPERATURE: TEMPERATURE_TRANSFORM,
+  // v1.44 — room temperature reads in the person's own scale too.
+  INDOOR_TEMPERATURE: TEMPERATURE_TRANSFORM,
   // A signed baseline DEVIATION (Δ°C) — the °F imperial branch scales by
   // 1.8 but carries NO +32 offset. A one-degree-Celsius deviation is a
   // 1.8-degree-Fahrenheit deviation, not a 33.8 °F reading.
@@ -333,6 +335,13 @@ const INTEGER_DISPLAY_TYPES: ReadonlySet<string> = new Set([
   // grain for these day-cumulative counts.
   "ACTIVE_ENERGY_BURNED",
   "TIME_IN_DAYLIGHT",
+  // v1.44 — the minute rings, mindful minutes and stood hours.
+  "EXERCISE_MINUTES",
+  "STAND_MINUTES",
+  "STAND_HOURS",
+  "MINDFUL_MINUTES",
+  // CO2 sensors report whole ppm.
+  "INDOOR_CO2",
 ]);
 
 /**

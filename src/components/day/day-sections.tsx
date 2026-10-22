@@ -73,7 +73,7 @@ import { useDayValueFormat } from "./use-day-value-format";
  * to look from, and the entry is where it is edited.
  */
 
-/** Section label, UI-STANDARDS §5. */
+/** Section label, ui-standards.md §5. */
 export const DAY_SECTION_LABEL =
   "text-muted-foreground text-xs font-medium tracking-wide uppercase";
 

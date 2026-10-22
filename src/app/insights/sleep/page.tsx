@@ -1,5 +1,6 @@
 "use client";
 
+import { SourceProvenanceLink } from "@/components/provenance/source-provenance-link";
 import Link from "next/link";
 import { Moon } from "lucide-react";
 
@@ -153,6 +154,8 @@ export default function InsightsSchlafPage() {
       <SleepQualitySection enabled={!isEmpty} />
 
       <MetricTargetSummary slug="sleep" />
+      {/* v1.44 (#1204) — where these values come from. */}
+      <SourceProvenanceLink type="SLEEP_DURATION" />
     </SubPageShell>
   );
 }

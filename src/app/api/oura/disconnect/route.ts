@@ -1,11 +1,8 @@
-import { prisma } from "@/lib/db";
-import { Prisma } from "@/generated/prisma/client";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { auditLog } from "@/lib/auth/audit";
+import { disconnectOAuth } from "@/lib/integrations/oauth-kit/disconnect";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { markDisconnected } from "@/lib/integrations/status";
 
 /**
  * v1.17.0 — disconnect Oura for the current user.
@@ -25,25 +22,9 @@ export const POST = apiHandler(async () => {
     });
   }
 
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { ouraAccessTokenEncrypted: true },
-  });
-  if (!dbUser?.ouraAccessTokenEncrypted) {
+  if ((await disconnectOAuth("oura", user.id)) === "not_connected") {
     return apiError("No Oura connection", 404);
   }
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      ouraAccessTokenEncrypted: null,
-      ouraRefreshTokenEncrypted: null,
-      ouraScopeDenied: Prisma.DbNull,
-    },
-  });
-
-  await auditLog("oura.disconnect", { userId: user.id });
-  await markDisconnected(user.id, "oura");
 
   return apiSuccess({ disconnected: true });
 });

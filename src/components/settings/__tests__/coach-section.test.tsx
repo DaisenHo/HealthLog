@@ -1,10 +1,10 @@
 /**
  * v1.18.0 — Settings → Coach section.
  *
- * The Coach preference cards (disable toggle, preferences, memory) moved
- * out of the AI / Assistant section into their own dedicated, module-gated
- * entry. SSR-only smoke test — interactive contracts live in the cards'
- * own suites (`disable-coach-card.test.tsx`, `coach-memory-section.test.tsx`).
+ * The Coach preference cards (state, preferences, memory) moved out of the
+ * AI / Assistant section into their own dedicated, module-gated entry.
+ * SSR-only smoke test — interactive contracts live in the cards' own suites
+ * (`coach-memory-section.test.tsx`; the switch in `modules-section.test.tsx`).
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -78,34 +78,51 @@ function render(locale: "en" | "de" = "en") {
 }
 
 describe("<CoachSection> — SSR smoke", () => {
-  it("renders the section scaffold + the Activate-Coach toggle card", () => {
+  it("shows the Coach state with a link to the one switch, not a second switch", () => {
     authState.disableCoach = false;
     const html = render();
     expect(html).toContain('id="settings-section-coach-title"');
-    expect(html).toContain('data-testid="settings-disable-coach-card"');
-    expect(html).toContain('data-testid="settings-disable-coach-switch"');
-    // v1.18.1 — polarity flipped to activate/default-on.
-    expect(html).toContain("Activate Coach");
-    expect(html).toContain("Show the Coach button and drawer");
-    // v1.18.6 — the proactive Coach nudge card moved here from
-    // Benachrichtigungen; its anchor renders under the enabled-coach gate.
-    expect(html).toContain('id="coach-nudge"');
+    expect(html).toContain('data-slot="settings-coach-state-card"');
+    expect(html).toContain('data-enabled="true"');
+    expect(html).toContain('href="/settings/modules#module-coach"');
+    // v1.44 — no switch of its own: one state, one control, in Modules.
+    const card = html.match(
+      /data-slot="settings-coach-state-card"[\s\S]*?<\/a>/,
+    )?.[0];
+    expect(card).toBeDefined();
+    expect(card).not.toContain('role="switch"');
+    expect(html).not.toContain("settings-disable-coach");
     // Raw key never leaks past i18n.
     expect(html).not.toContain("settings.sections.coach.");
-    expect(html).not.toContain("settings.coach.activate.");
+    expect(html).not.toContain("settings.coach.state.");
   });
 
-  it("renders the German Activate-Coach copy", () => {
-    authState.disableCoach = false;
+  it("reads off once the account has the Coach off", () => {
+    mountState.mounted = true;
+    authState.disableCoach = true;
+    try {
+      expect(render()).toContain('data-enabled="false"');
+    } finally {
+      mountState.mounted = false;
+      authState.disableCoach = false;
+    }
+  });
+
+  it("points the nudges at Settings > Notifications", () => {
+    const html = render();
+    expect(html).toContain('href="/settings/notifications#coach-nudge"');
+    expect(html).not.toContain('id="coach-nudge"');
+  });
+
+  it("renders the German copy", () => {
     const html = render("de");
-    expect(html).toContain("Coach aktivieren");
     expect(html).not.toContain("settings.sections.coach.");
-    expect(html).not.toContain("settings.coach.activate.");
+    expect(html).not.toContain("settings.coach.state.");
   });
 });
 
 describe("<CoachSection> — the tuning follows the record, not the account", () => {
-  it("hides the nudge when the record has the Coach off, whatever the viewer's own opt-out says", () => {
+  it("hides the nudge pointer when the record has the Coach off, whatever the viewer's own opt-out says", () => {
     // A guardian with the Coach on, inside a managed record that has it off:
     // `/me` publishes the viewer's own `disableCoach` and the RECORD's module
     // map. The record's answer decides.
@@ -113,10 +130,10 @@ describe("<CoachSection> — the tuning follows the record, not the account", ()
     authState.disableCoach = false;
     authState.modules = { coach: false };
     try {
-      expect(render()).not.toContain('id="coach-nudge"');
+      expect(render()).not.toContain('data-slot="settings-coach-nudge-link"');
       authState.disableCoach = true;
       authState.modules = { coach: true };
-      expect(render()).toContain('id="coach-nudge"');
+      expect(render()).toContain('data-slot="settings-coach-nudge-link"');
     } finally {
       mountState.mounted = false;
       authState.disableCoach = false;

@@ -97,11 +97,6 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
   },
   {
     section: "privacy",
-    anchor: "your-data-export",
-    titleKey: "settings.privacy.export.title",
-  },
-  {
-    section: "privacy",
     anchor: "delete-data",
     titleKey: "settings.privacy.delete.title",
   },
@@ -111,17 +106,17 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     titleKey: "settings.privacy.posture.title",
   },
   {
-    section: "privacy",
+    section: "security",
     anchor: "sessions",
     titleKey: "settings.security.sessionsTitle",
   },
   {
-    section: "privacy",
+    section: "security",
     anchor: "trusted-devices",
     titleKey: "settings.security.trustedDevices.title",
   },
   {
-    section: "privacy",
+    section: "security",
     anchor: "security-activity",
     titleKey: "settings.security.activityTitle",
   },
@@ -260,6 +255,11 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     titleKey: "notifications.lowStock.title",
     modules: ["medications"],
   },
+  {
+    section: "notifications",
+    anchor: "vorsorge-reminders",
+    titleKey: "notifications.checkupReminders.title",
+  },
   // ── Anamnesis ──
   {
     section: "anamnesis",
@@ -355,7 +355,7 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
   {
     section: "coach",
     anchor: "coach-activate",
-    titleKey: "settings.coach.activate.title",
+    titleKey: "settings.coach.state.title",
   },
   {
     section: "coach",
@@ -363,7 +363,7 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     titleKey: "insights.coach.settingsTitle",
   },
   {
-    section: "coach",
+    section: "notifications",
     anchor: "coach-nudge",
     titleKey: "notifications.coachNudge.title",
   },
@@ -429,7 +429,7 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
 ];
 
 /**
- * The Appearance hub's sub-pages, each its own entry. A module's page shows
+ * The Arrangement hub's sub-pages, each its own entry. A module's page shows
  * only while the module is on.
  */
 export const SETTINGS_LAYOUT_PAGES: ReadonlyArray<{
@@ -443,11 +443,6 @@ export const SETTINGS_LAYOUT_PAGES: ReadonlyArray<{
     slug: "medications",
     titleKey: "settings.sections.layout.medications.title",
     module: "medications",
-  },
-  {
-    slug: "mood",
-    titleKey: "settings.sections.layout.mood.title",
-    module: "mood",
   },
   {
     slug: "labs",
@@ -465,4 +460,30 @@ export const SETTINGS_LAYOUT_PAGES: ReadonlyArray<{
     module: "inboundDocuments",
   },
   { slug: "vorsorge", titleKey: "settings.sections.layout.vorsorge.title" },
+];
+
+/**
+ * The module pages under Settings > Modules (`/settings/modules/<slug>`),
+ * each its own entry while its module is on.
+ */
+export const SETTINGS_MODULE_PAGES: ReadonlyArray<{
+  slug: string;
+  titleKey: string;
+  module: ModuleKey;
+}> = [
+  {
+    slug: "medications",
+    titleKey: "settings.sections.modules.pages.medications.title",
+    module: "medications",
+  },
+  {
+    slug: "mood",
+    titleKey: "settings.sections.modules.pages.mood.title",
+    module: "mood",
+  },
+  {
+    slug: "labs",
+    titleKey: "settings.sections.modules.pages.labs.title",
+    module: "labs",
+  },
 ];

@@ -292,7 +292,7 @@ function ManagedProfileEditFields({
           />
         </div>
 
-        {/* Above the action row, per UI-STANDARDS §12: nothing follows it. */}
+        {/* Above the action row, per ui-standards.md §12: nothing follows it. */}
         {error && (
           <p
             role="alert"

@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
+import { ALREADY_LINKED_REASON } from "@/lib/integrations/oauth-kit/account-link";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
+import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
@@ -13,7 +15,7 @@ import { getUserWhoopCredentials } from "@/lib/whoop/credentials";
 import { WHOOP_OAUTH_STATE_COOKIE } from "@/lib/whoop/oauth-state";
 import { buildReturnSchemeRedirect } from "@/lib/whoop/return-scheme";
 import { WHOOP_BACKFILL_QUEUE } from "@/lib/jobs/whoop-backfill";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
 import { isP2002 } from "@/lib/prisma-errors";
@@ -180,11 +182,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // Optional session cross-check: only when a web session cookie is present.
     // The native ticket path carries no session — the nonce cookie + atomic
     // single-use delete already bind the row to its originator.
+    // A guardian finishing a managed profile's connect needs a live MANAGE
+    // grant on it; a managed profile has no session of its own.
     const sessionData = await getSession();
-    if (sessionData && sessionData.user.id !== userId) {
-      annotate({ meta: { reason: "cross_user" } });
+    const actorCheck = await verifyCallbackActor(
+      userId,
+      sessionData?.user.id ?? null,
+    );
+    if (!actorCheck.ok) {
+      annotate({ meta: { reason: actorCheck.reason } });
       return outcomeRedirect(returnScheme, "error", "cross_user");
     }
+    const guardianUserId = actorCheck.guardianUserId;
 
     if (!code) {
       return outcomeRedirect(returnScheme, "error", "nocode");
@@ -205,8 +214,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
         select: { userId: true },
       });
       if (owner && owner.userId !== userId) {
-        annotate({ meta: { reason: "owner_conflict" } });
-        return outcomeRedirect(returnScheme, "error", "owner_conflict");
+        annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+        return outcomeRedirect(returnScheme, "error", ALREADY_LINKED_REASON);
       }
 
       try {
@@ -231,13 +240,16 @@ export const GET = apiHandler(async (request: NextRequest) => {
         });
       } catch (err) {
         if (isP2002(err)) {
-          annotate({ meta: { reason: "owner_conflict" } });
-          return outcomeRedirect(returnScheme, "error", "owner_conflict");
+          annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+          return outcomeRedirect(returnScheme, "error", ALREADY_LINKED_REASON);
         }
         throw err;
       }
 
-      await auditLog("whoop.connect", { userId });
+      await auditLog("whoop.connect", {
+        userId,
+        actorUserId: guardianUserId,
+      });
 
       // Re-completing OAuth clears any prior reauth-required state.
       await markReconnected(userId, "whoop");
@@ -245,8 +257,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // Enqueue the self-converging history backfill. Best-effort: the boot-time
       // discovery query (`backfillCompletedAt IS NULL`) is the safety net, so a
       // missing boss instance here doesn't strand the connection.
-      const boss = getGlobalBoss();
-      if (boss) {
+      await enqueueWhenBossReady("whoop-backfill", async (boss) => {
         await boss
           .send(WHOOP_BACKFILL_QUEUE, {
             userId,
@@ -255,7 +266,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
           .catch((err) =>
             getEvent()?.addWarning(`whoop-backfill enqueue failed: ${err}`),
           );
-      }
+      });
 
       const response = outcomeRedirect(returnScheme, "connected");
       response.cookies.delete(WHOOP_OAUTH_STATE_COOKIE);

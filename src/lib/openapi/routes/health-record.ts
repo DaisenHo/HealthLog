@@ -353,7 +353,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["FHIR"],
       summary: "FHIR R4 CapabilityStatement (v1.11.0)",
       description:
-        "Read-only FHIR R4 capability statement for the REST face. Declares the served resource types (Patient, Coverage, Observation, MedicationStatement, MedicationAdministration), their `read` and `search-type` interactions, the `Patient/$everything` operation, and the `application/fhir+json` format. Every advertised interaction has a route. Auth: `fhir:read` scope (cookie sessions also pass).",
+        "Read-only FHIR R4 capability statement for the REST face. Declares the served resource types (Patient, Coverage, Observation, MedicationStatement, MedicationAdministration), their `read` and `search-type` interactions, the search parameters (`_count`, `_offset`; `date` and `code` on Observation), the `Patient/$everything` operation, and the `application/fhir+json` format. Every advertised interaction has a route. Auth: `fhir:read` scope (cookie sessions also pass).",
       responses: {
         "200": {
           description: "CapabilityStatement (application/fhir+json).",
@@ -376,7 +376,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
+            ),
         }),
       },
       responses: {
@@ -397,11 +402,18 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["FHIR"],
       summary: "FHIR R4 Observation search (v1.11.0)",
       description:
-        "Read-only `searchset` Bundle of the caller's own Observations (vitals / activity / lab / survey). Auth: `fhir:read` scope. Offset paging via `_count` (clamped ≤200) / `_offset`.",
+        "Read-only `searchset` Bundle of the caller's own Observations (vitals / activity / lab / survey). Auth: `fhir:read` scope. Offset paging via `_count` (clamped ≤200) / `_offset`. Without `date` the answer is the snapshot it has always been: one latest reading per type plus the derived panels, ids `obs-N`. With `date` (v1.44, repeatable, FHIR prefixes eq/gt/ge/lt/le, a value without an offset read as UTC) the answer is the time series instead: every reading in the range plus workouts, newest first, paged in the database, ids `m-<id>` / `w-<id>` that read back through `/api/fhir/Observation/{id}`. The series follows the same saved report selection as the snapshot, leaves sleep out (stored as stage segments), pairs a systolic and diastolic recorded at the same instant into the blood-pressure panel, and codes a workout as an `activity` Observation (LOINC 73985-4 Exercise activity, duration 55411-3 and energy 41981-2 as components). `code` (repeatable, `system|code` or a bare code, comma-separated) narrows either answer; an unknown code matches nothing. A malformed `date` is a 400 OperationOutcome.",
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
+            ),
+          date: z.string().optional(),
+          code: z.string().optional(),
         }),
       },
       responses: {
@@ -426,7 +438,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
+            ),
         }),
       },
       responses: {
@@ -451,7 +468,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
+            ),
         }),
       },
       responses: {
@@ -476,7 +498,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
+            ),
         }),
       },
       responses: {
@@ -557,7 +584,7 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["FHIR"],
       summary: "FHIR R4 Observation read",
       description:
-        "Read-only `Observation` by id, out of the caller's own record. An id belonging to someone else is indistinguishable from one that never existed — both answer a `not-found` OperationOutcome. Auth: `fhir:read` scope; `userId` is narrowed from auth.",
+        "Read-only `Observation` by id, out of the caller's own record: a snapshot id (`obs-N`) or a series id (`m-<id>` / `w-<id>`, v1.44), the latter read inside the same saved selection the series search applies. An id belonging to someone else is indistinguishable from one that never existed — both answer a `not-found` OperationOutcome. Auth: `fhir:read` scope; `userId` is narrowed from auth.",
       requestParams: {
         path: z.object({ id: z.string() }),
       },
@@ -651,7 +678,12 @@ export const healthRecordPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       requestParams: {
         query: z.object({
           _count: z.coerce.number().optional(),
-          _offset: z.coerce.number().optional(),
+          _offset: z.coerce
+            .number()
+            .optional()
+            .describe(
+              "Any integer up to 9007199254740991; a larger offset is a 400 OperationOutcome.",
+            ),
         }),
       },
       responses: {

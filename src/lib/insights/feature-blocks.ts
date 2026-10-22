@@ -28,6 +28,7 @@ import {
   readRollupBuckets,
   ROLLUP_FOLD_WINDOW_MS,
 } from "@/lib/rollups/measurement-rollups";
+import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
 import { deriveBucketedTypes } from "@/lib/signals/adapters/correlation";
 import type {
   AggregatedFeatures,
@@ -535,17 +536,32 @@ export async function readWorkoutsBlock(
   now: number,
 ): Promise<AggregatedFeatures["workouts"] | undefined> {
   const since = new Date(now - WORKOUT_WINDOW_DAYS * MS_PER_DAY);
-  const rows = await prisma.workout.findMany({
-    where: { userId, startedAt: { gte: since } },
-    orderBy: { startedAt: "desc" },
-    take: 2000,
-    select: {
-      sportType: true,
-      startedAt: true,
-      durationSec: true,
-      totalDistanceM: true,
-    },
-  });
+  const [stored, account] = await Promise.all([
+    prisma.workout.findMany({
+      where: { userId, startedAt: { gte: since } },
+      orderBy: [{ startedAt: "desc" }, { id: "asc" }],
+      take: 2000,
+      select: {
+        source: true,
+        sportType: true,
+        startedAt: true,
+        durationSec: true,
+        totalDistanceM: true,
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { sourcePriorityJson: true },
+    }),
+  ]);
+  // One session synced by two services (or re-sent by HealthKit) is one
+  // workout: the same collapse the workout list applies, so the count and the
+  // minutes here match what the person sees there. The picker returns its rows
+  // oldest first; the block reads the newest at index 0.
+  const rows = pickCanonicalWorkoutRows(
+    stored,
+    account?.sourcePriorityJson ?? null,
+  ).reverse();
   if (rows.length === 0) return undefined;
 
   const tally = (windowDays: number) => {

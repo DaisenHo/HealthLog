@@ -50,7 +50,7 @@
  * `eslint-disable-next-line` with the reason — visible in review — rather
  * than a silent registry entry here.
  *
- * @see .planning/audits/2026-07-05-fable/UI-STANDARDS.md §1 + §2 + §7.
+ * @see docs/contributing/ui-standards.md §1 + §2 + §7.
  */
 
 "use strict";
@@ -181,7 +181,7 @@ const spacingScaleRule = {
       slotPadding:
         '"{{match}}" on <{{element}}> fights the gap-based Card contract — the header→body distance comes from the parent flex gap, so slot padding stacks on top of it (or is a no-op). Tune density on the Card itself instead: <Card className="gap-2 py-3 md:py-4">.',
       cardShellOffScale:
-        'Off-scale "{{match}}" on a bg-card+border shell — the scale is 1/1.5/2/3/4/6/8/10, so the `5`/`7` steps and half-steps other than 1.5 are banned (UI-STANDARDS §2) and read off next to every sibling <Card> (p-4 md:p-6). Sweep the shell to an on-scale step (`p-4 md:p-6`, or `p-3` for a dense inner tile); new surfaces should compose <Card>.',
+        'Off-scale "{{match}}" on a bg-card+border shell — the scale is 1/1.5/2/3/4/6/8/10, so the `5`/`7` steps and half-steps other than 1.5 are banned (ui-standards.md §2) and read off next to every sibling <Card> (p-4 md:p-6). Sweep the shell to an on-scale step (`p-4 md:p-6`, or `p-3` for a dense inner tile); new surfaces should compose <Card>.',
     },
   },
   create(context) {

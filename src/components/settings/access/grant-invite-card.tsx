@@ -466,7 +466,7 @@ export function resolveInviteScope({
  * a button inside a label forwards its own tap to the label's control, so the
  * radio and the popover would fight for the same click (the same reason
  * `SectionOption` avoids the wrapping label). Muted, `text-xs` — the meta floor
- * per UI-STANDARDS §3.
+ * per ui-standards.md §3.
  */
 function AccessOption({
   level,

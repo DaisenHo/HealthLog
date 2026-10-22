@@ -62,6 +62,7 @@ const WRITERS: Record<string, Disposition> = {
   "lib/fitbit/sync-core.ts": { kind: "gate" },
   "lib/google-health/sync-core.ts": { kind: "gate" },
   "lib/nightscout/sync.ts": { kind: "gate" },
+  "lib/oura/sync-heart-rate.ts": { kind: "gate" },
   // The shared identity seam. Polar, Oura, WHOOP, the Withings sleep leg,
   // the Apple export importer and the batch endpoint all write through it,
   // so the gate here is what makes a new provider fail closed.
@@ -73,6 +74,10 @@ const WRITERS: Record<string, Disposition> = {
     validatedIn: "lib/validations/measurement.ts",
   },
   "app/api/import/route.ts": { kind: "validator" },
+  // v1.44 — the set-based insert writes rows that already passed the
+  // route's `validateMeasurementRange` per entry; everything else goes
+  // through the reconciler, which gates itself.
+  "app/api/measurements/batch/route.ts": { kind: "validator" },
   "lib/mcp/writes.ts": { kind: "validator" },
   "lib/measurements/create-from-telegram.ts": { kind: "validator" },
   "lib/measurements/import-apple-health-export.ts": { kind: "validator" },

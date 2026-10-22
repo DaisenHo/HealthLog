@@ -16,6 +16,10 @@ import {
   AI_AVAILABLE,
   aiUnavailable,
 } from "@/__tests__/helpers/ai-capability-fixtures";
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
+
+// The cached payload is sealed at rest, so seeding it needs a key.
+vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
 
 const briefingBody = {
   tiles: {},
@@ -35,9 +39,11 @@ vi.mock("@/lib/db", () => ({
   prisma: {
     user: {
       findUnique: async () => ({
-        insightsCachedText: JSON.stringify({
-          briefingGeneratedAt: new Date().toISOString(),
-        }),
+        insightsCachedTextEncrypted: sealInsightsCachedText(
+          JSON.stringify({
+            briefingGeneratedAt: new Date().toISOString(),
+          }),
+        ),
       }),
     },
   },

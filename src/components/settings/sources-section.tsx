@@ -679,6 +679,19 @@ export function SourcesSection() {
             {t("settings.sections.sources.integrationsHintLink")}
           </Link>
         </p>
+        {/* v1.44 (#1204) — the read-only view of what this ladder decides:
+            which source delivered what on a day, and two sources side by
+            side. Above the action row, like the hint before it. */}
+        <p className="text-muted-foreground text-xs">
+          {t("sourceProvenance.settingsHint")}{" "}
+          <Link
+            href="/insights/sources"
+            className="text-primary underline underline-offset-2"
+            data-slot="sources-provenance-cross-link"
+          >
+            {t("sourceProvenance.settingsHintLink")}
+          </Link>
+        </p>
 
         {/* One action row, last in the card (design standards §12). The
             reset used to ride the header's status slot, which carries
@@ -697,6 +710,7 @@ export function SourcesSection() {
             disabled={saveMutation.isPending}
             pending={resetMutation.isPending}
             onConfirm={() => resetMutation.mutate()}
+            destructive
           />
           {dirty && priority ? (
             <>

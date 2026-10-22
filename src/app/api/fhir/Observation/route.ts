@@ -1,12 +1,19 @@
 /**
- * GET /api/fhir/Observation — FHIR R4 `searchset` of the caller's own Observations
- * (vitals / activity / lab / survey): one latest reading per type plus the BP
- * panel, BMI, glucose, adherence, mood and the wellness composites.
+ * GET /api/fhir/Observation — FHIR R4 `searchset` of the caller's own Observations.
  *
- * Read-only. `userId` is narrowed from `requireAuth`; the shared emitters in
- * `@/lib/fhir/resources` are the single source of the coding, so this face and
- * the document export can never describe the same record differently. Offset
- * paging via `_count` (clamped ≤200) / `_offset`.
+ * Two answers, chosen by the request:
+ *
+ *   - no `date` parameter: the snapshot it has always been — one latest
+ *     reading per type plus the BP panel, BMI, glucose, adherence, mood and the
+ *     wellness composites (`obs-N` ids), offset-paged in memory.
+ *   - with `date` (v1.44): the time series — every reading in the range, plus
+ *     workouts, newest first, paged in the database (`m-…` / `w-…` ids). See
+ *     `@/lib/fhir/series`.
+ *
+ * `code` narrows either answer. Read-only. `userId` is narrowed from
+ * `requireAuth`; both answers read the owner's saved report selection, so the
+ * series cannot reach a type the snapshot withholds. Paging via `_count`
+ * (clamped ≤200) / `_offset`.
  */
 import { NextRequest } from "next/server";
 
@@ -18,10 +25,18 @@ import { observationsFromReportData } from "@/lib/fhir/resources";
 import {
   FHIR_READ_SCOPE,
   loadFhirContext,
+  loadFhirSeriesScope,
   operationOutcome,
   parsePaging,
   searchsetResponse,
 } from "@/lib/fhir/rest";
+import {
+  emitSeriesPage,
+  matchesCodeTokens,
+  parseCodeParams,
+  parseDateParams,
+  querySeriesPage,
+} from "@/lib/fhir/series";
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth(FHIR_READ_SCOPE);
@@ -41,11 +56,49 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (!rl.allowed) {
     return operationOutcome(429, "throttled", "Rate limit exceeded");
   }
-  const { count, offset } = parsePaging(request.nextUrl.searchParams);
-  const context = await loadFhirContext(user.id);
+  const params = request.nextUrl.searchParams;
+  const paging = parsePaging(params);
+  if ("error" in paging) {
+    return operationOutcome(400, "invalid", paging.error);
+  }
+  const { count, offset } = paging;
+  const codeValues = params.getAll("code");
+  const range = parseDateParams(params.getAll("date"));
+  if (range && "error" in range) {
+    return operationOutcome(400, "invalid", range.error);
+  }
 
-  const all = observationsFromReportData(context.data);
+  if (range) {
+    const { scope, glucoseUnit } = await loadFhirSeriesScope(
+      user.id,
+      parseCodeParams(codeValues),
+    );
+    const { total, refs } = await querySeriesPage({
+      userId: user.id,
+      scope,
+      range,
+      count,
+      offset,
+    });
+    const page = await emitSeriesPage({
+      userId: user.id,
+      refs,
+      scope,
+      glucoseUnit,
+    });
+    annotate({
+      meta: { mode: "series", total, count, offset, types: scope.types.length },
+    });
+    return searchsetResponse(request.nextUrl, page, total, count, offset);
+  }
+
+  const context = await loadFhirContext(user.id);
+  const snapshot = observationsFromReportData(context.data);
+  const all =
+    codeValues.length > 0
+      ? snapshot.filter((o) => matchesCodeTokens(o, codeValues))
+      : snapshot;
   const page = all.slice(offset, offset + count);
-  annotate({ meta: { total: all.length, count, offset } });
+  annotate({ meta: { mode: "snapshot", total: all.length, count, offset } });
   return searchsetResponse(request.nextUrl, page, all.length, count, offset);
 });

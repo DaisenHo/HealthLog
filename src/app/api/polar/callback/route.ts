@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/db";
+import {
+  ALREADY_LINKED_REASON,
+  accountLinkedElsewhere,
+} from "@/lib/integrations/oauth-kit/account-link";
 import { apiHandler } from "@/lib/api-handler";
 import { getSession } from "@/lib/auth/session";
+import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
@@ -14,7 +19,7 @@ import {
 import { runOAuthCallbackOnce } from "@/lib/oauth/callback-claim";
 import { markReconnected } from "@/lib/integrations/status";
 import { POLAR_SYNC_QUEUE } from "@/lib/jobs/integration-poll-queues";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -70,11 +75,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
   if (evt) evt.setAuth({ user_id: userId, auth_method: "session" });
 
   // Optional session cross-check when a web session is present.
+  // The browser finishing the flow must be the record's own, or, for a
+  // managed profile, a guardian's with a live MANAGE grant on it.
   const sessionData = await getSession();
-  if (sessionData && sessionData.user.id !== userId) {
-    annotate({ meta: { reason: "cross_user" } });
+  const actorCheck = await verifyCallbackActor(
+    userId,
+    sessionData?.user.id ?? null,
+  );
+  if (!actorCheck.ok) {
+    annotate({ meta: { reason: actorCheck.reason } });
     return ERR("cross_user");
   }
+  const guardianUserId = actorCheck.guardianUserId;
 
   if (!code) return ERR("nocode");
 
@@ -90,12 +102,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
       ).toString(),
       stateCookie: oauthStateCookieName("polar"),
     },
-    () => completeCallback(userId, code),
+    () => completeCallback(userId, guardianUserId, code),
   );
 });
 
 async function completeCallback(
   userId: string,
+  guardianUserId: string | null,
   code: string,
 ): Promise<NextResponse> {
   try {
@@ -114,6 +127,13 @@ async function completeCallback(
     }
     const polarUserId = String(tokens.x_user_id);
 
+    // One Polar member, one record. Checked before the registration so a
+    // refused connect registers nothing.
+    if (await accountLinkedElsewhere("polar", polarUserId, userId)) {
+      annotate({ meta: { reason: ALREADY_LINKED_REASON } });
+      return ERR(ALREADY_LINKED_REASON);
+    }
+
     // Register the user with the Polar app (idempotent; 409 = already linked).
     await registerUser(tokens.access_token, polarUserId);
 
@@ -126,21 +146,23 @@ async function completeCallback(
       },
     });
 
-    await auditLog("polar.connect", { userId });
+    await auditLog("polar.connect", {
+      userId,
+      actorUserId: guardianUserId,
+    });
     await markReconnected(userId, "polar");
 
     // Start the first sync now instead of leaving the user staring at an empty
     // card until the next hourly tick. Best-effort by design: the hourly cron
     // remains the safety net, so a missing boss instance must never strand the
     // redirect.
-    const boss = getGlobalBoss();
-    if (boss) {
+    await enqueueWhenBossReady("polar-connect", async (boss) => {
       await boss
         .send(POLAR_SYNC_QUEUE, { userId })
         .catch((err) =>
           getEvent()?.addWarning(`polar-sync connect enqueue failed: ${err}`),
         );
-    }
+    });
 
     const response = NextResponse.redirect(
       new URL(

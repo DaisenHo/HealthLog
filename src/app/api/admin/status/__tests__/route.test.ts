@@ -44,12 +44,19 @@ vi.mock("@/lib/jobs/worker-status", () => ({
   })),
 }));
 
-const heapMock = vi.hoisted(() => ({ mb: 792 }));
+const heapMock = vi.hoisted(() => ({
+  mb: 792,
+  container: 1536 as number | null,
+}));
 vi.mock("@/lib/support/heap-limit", async () => {
   const actual = await vi.importActual<
     typeof import("@/lib/support/heap-limit")
   >("@/lib/support/heap-limit");
-  return { ...actual, heapLimitMb: () => heapMock.mb };
+  return {
+    ...actual,
+    heapLimitMb: () => heapMock.mb,
+    containerMemoryLimitMb: () => heapMock.container,
+  };
 });
 
 const geoMock = vi.hoisted(() => ({
@@ -200,12 +207,40 @@ describe("GET /api/admin/status (integration health summary)", () => {
     const low = (await (await GET()).json()) as {
       data: { memory: { heapLimitMb: number; low: boolean } };
     };
-    expect(low.data.memory).toEqual({ heapLimitMb: 524, low: true });
+    expect(low.data.memory).toMatchObject({ heapLimitMb: 524, low: true });
     heapMock.mb = 792;
     const enough = (await (await GET()).json()) as {
       data: { memory: { heapLimitMb: number; low: boolean } };
     };
-    expect(enough.data.memory).toEqual({ heapLimitMb: 792, low: false });
+    expect(enough.data.memory).toMatchObject({ heapLimitMb: 792, low: false });
+  });
+
+  it("flags a container memory limit below the supported floor", async () => {
+    type Memory = {
+      containerLimitMb: number | null;
+      floorMb: number;
+      belowFloor: boolean;
+    };
+    heapMock.container = 1024;
+    const below = (await (await GET()).json()) as { data: { memory: Memory } };
+    expect(below.data.memory).toMatchObject({
+      containerLimitMb: 1024,
+      floorMb: 1536,
+      belowFloor: true,
+    });
+    heapMock.container = 1536;
+    const atFloor = (await (await GET()).json()) as {
+      data: { memory: Memory };
+    };
+    expect(atFloor.data.memory.belowFloor).toBe(false);
+    // No limit, or none readable: nothing to flag.
+    heapMock.container = null;
+    const none = (await (await GET()).json()) as { data: { memory: Memory } };
+    expect(none.data.memory).toMatchObject({
+      containerLimitMb: null,
+      belowFloor: false,
+    });
+    heapMock.container = 1536;
   });
 
   it("reports named failing queues through failingJobs only", async () => {

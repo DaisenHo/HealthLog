@@ -401,7 +401,41 @@
     "lifeSittingValue": "{hours}시간, 본인 응답",
     "lifeWork": "일",
     "lifeNightWork": "야간 근무",
-    "lifeExposures": "노출: {list}"
+    "lifeExposures": "노출: {list}",
+    "workouts": {
+      "title": "운동",
+      "summary": "총 {sessions}회, {hours}시간; 주당 평균 {perWeek}회, {minutesPerWeek}분.",
+      "colSport": "종목",
+      "colSessions": "횟수",
+      "colTime": "시간",
+      "colDistance": "거리",
+      "colEnergy": "에너지",
+      "colHeartRate": "평균 심박수",
+      "moreSports": "{count}개 종목이 합계에는 포함되지만 목록에는 없습니다."
+    },
+    "medicationEffect": {
+      "title": "약 시작 전후의 변화",
+      "colMedication": "약 / 측정값",
+      "colStart": "시작",
+      "colLevel": "수준 변화(95% CI)",
+      "colSlope": "추세 변화(95% CI)",
+      "colDays": "전 / 후 일수",
+      "to": "~",
+      "week": "주",
+      "reasonNoStart": "기록된 시작일 없음",
+      "reasonBefore": "시작 전 측정값이 너무 적음",
+      "reasonAfter": "시작 후 측정값이 너무 적음",
+      "reasonFit": "계산할 수 없음",
+      "excludedAdherence": "시작 후 {count}일 제외(복용률 {floor}% 미만)",
+      "excludedNotTaking": "{count}일 제외(일시 중지 또는 복용 기간 사이)",
+      "notTracked": "복용 미기록으로 놓친 용량에 따른 제외 없음",
+      "endDoseChange": "기간은 첫 용량 변경 전인 {date}에 끝남",
+      "days": "시작 전 {before}일, 시작 후 {after}일, 제외 {excluded}일",
+      "method": "시작 90일 전부터 최대 180일 후까지의 일별 값에 대한 분절 회귀, Newey-West 구간. 직전 14일 복용률이 80% 미만인 시작 후 날짜는 제외했습니다. 시간에 따른 연관성을 보여 줄 뿐, 약의 효과를 입증하지 않습니다.",
+      "autocorrelation": "전날 값에 크게 좌우되므로 범위가 여전히 너무 좁을 수 있음",
+      "window": "{from}부터 {to}까지 분석, 보고 기간을 넘어설 수 있음",
+      "windowLine": "{from}부터 {to}까지 분석했습니다. 이 기간은 보고 기간을 넘어설 수 있습니다."
+    }
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",
@@ -911,6 +945,15 @@
     "unitRating": "단계",
     "typeWho5Score": "WHO-5 점수",
     "typeSciScore": "SCI 점수",
+    "typeExerciseMinutes": "운동 시간(분)",
+    "typeStandMinutes": "서 있기 시간(분)",
+    "typeStandHours": "일어서기 시간",
+    "typeMindfulMinutes": "마음 챙기기 시간(분)",
+    "typeStateOfMindValence": "마음 상태",
+    "typeAfibBurden": "심방세동 부담",
+    "typeIndoorCo2": "실내 CO₂",
+    "typeIndoorTemperature": "실내 온도",
+    "typeIndoorHumidity": "실내 습도",
     "durationReadAs": "{duration}(으)로 읽었어요",
     "durationHoursMinutes": "{hours}시간 {minutes}분",
     "durationHoursOnly": "{hours}시간",
@@ -2350,7 +2393,31 @@
       },
       "scaleAbsolute": "절대값",
       "scalePercentSinceStart": "시작 이후 %",
-      "scaleToggleLabel": "차트 눈금"
+      "scaleToggleLabel": "차트 눈금",
+      "segmented": {
+        "title": "시작 시점의 변화",
+        "level": "시작 직후 수준이 {value} {unit} 이동했습니다(95% 범위 {low}~{high}).",
+        "slope": "시작 후 주간 추세가 주당 {value} {unit} 변했습니다(95% 범위 {low}~{high}).",
+        "preSlope": "시작 전 추세는 주당 {value} {unit}였습니다.",
+        "includesZero": "범위에 0이 포함되면 이 측정값은 변화가 없다는 것과도 일치합니다.",
+        "basis": "시작 전 {before}일과 시작 후 {after}일 기준({from}~{to}).",
+        "excludedAdherence": "직전 {lookback}일 동안 복용한 용량이 {floor}% 미만이어서 시작 후 {count}일을 제외했습니다.",
+        "excludedNotTaking": "약을 일시 중지했거나 복용 기간 사이였던 {count}일을 제외했습니다.",
+        "notTracked": "이 약은 복용을 기록하지 않으므로 놓친 용량 때문에 제외한 날이 없습니다.",
+        "endDoseChange": "기간이 첫 용량 변경 전에 끝나므로 시작 용량을 나타냅니다.",
+        "confoundersTitle": "이 기간의 다른 약 변경 사항으로, 이 화면에서는 이 약과 구분할 수 없습니다.",
+        "confounderStarted": "{name} {date} 시작",
+        "confounderStopped": "{name} {date} 중단",
+        "confounderDoseChange": "{name}: {date} 용량 변경",
+        "confounderPaused": "{name} {date} 일시 중지",
+        "confounderResumed": "{name} {date} 재개",
+        "method": "계산 방법: 시작 전 일별 값에 직선 하나를, 시작 후 값에 또 하나를 맞춥니다. 시작 시점의 두 직선 사이 간격이 수준 변화이고, 기울기 차이가 추세 변화입니다. 범위는 하루의 값이 다음 날로 이어지는 점을 반영합니다.",
+        "needStart": "시작 시점의 변화를 보려면 시작일을 설정하세요.",
+        "needBefore": "시작 시점의 변화를 보려면 시작 전 {span}일에 걸쳐 최소 {days}일의 측정값이 필요합니다.",
+        "needAfter": "시작 시점의 변화를 보려면 시작 후 {span}일에 걸쳐, 용량을 복용한 날 기준으로 최소 {days}일의 측정값이 필요합니다.",
+        "fitFailed": "이 측정값으로는 계산할 수 없어 시작 시점의 변화를 표시하지 않습니다.",
+        "autocorrelation": "하루 값이 전날 값에 크게 좌우되므로 이 범위도 너무 좁을 수 있습니다."
+      }
     },
     "import": {
       "resultSuccess": "복용 {imported}건을 불러왔어요",
@@ -2679,7 +2746,20 @@
         "ENV_PRESSURE_DELTA": "하루 중 기압 변화",
         "ENV_PM25": "초미세먼지(PM2.5)",
         "ENV_OZONE_8H": "오존",
-        "ENV_POLLEN_MAX": "꽃가루"
+        "ENV_POLLEN_MAX": "꽃가루",
+        "HRV_RMSSD": "심박 변이도(RMSSD)",
+        "HYDRATION": "수분 섭취량",
+        "CAFFEINE": "카페인 섭취량",
+        "ALCOHOL": "음주",
+        "WORKOUT_MINUTES": "운동 시간",
+        "TRAINING_LOAD": "훈련 부하",
+        "EXERCISE_MINUTES": "운동하기 시간",
+        "STAND_MINUTES": "서 있은 시간",
+        "MINDFUL_MINUTES": "마음챙김 시간",
+        "STATE_OF_MIND_VALENCE": "기록한 마음 상태",
+        "INDOOR_CO2": "실내 CO2",
+        "INDOOR_TEMPERATURE": "실내 온도",
+        "INDOOR_HUMIDITY": "실내 습도"
       },
       "daily": {
         "high": "{behaviour} 수치가 높은 날에는 다음 날 {outcome} 수치가 {direction} 경향이 있어요. 원인이 아니라 지켜볼 만한 패턴이에요.",
@@ -2707,6 +2787,12 @@
         "high": "당일과 전날의 {behaviour}이(가) 높을수록 내 데이터에서는 {outcome}이(가) {direction} 경향이 있습니다. 지켜볼 만한 패턴이지 원인은 아닙니다.",
         "moderate": "지금까지의 데이터로 보면 당일과 전날의 {behaviour}이(가) 높을수록 {outcome}이(가) {direction} 것으로 보입니다. 지켜볼 만한 패턴이지 원인은 아닙니다.",
         "faint": "당일과 전날의 {behaviour}이(가) 높을 때 내 데이터에서 {outcome}이(가) {direction} 기미가 아주 약하게 보일 뿐입니다. 의지하기엔 너무 작고, 원인은 아닙니다."
+      },
+      "channelNutrient": "{nutrient} 섭취량",
+      "dailyOvernight": {
+        "high": "밤사이 {behaviour}이(가) 높을수록 내 데이터에서는 그날 밤 {outcome}이(가) {direction} 경향이 있습니다. 지켜볼 만한 패턴이지 원인은 아닙니다.",
+        "moderate": "지금까지의 데이터로 보면 밤사이 {behaviour}이(가) 높을수록 그날 밤 {outcome}이(가) {direction} 것으로 보입니다. 지켜볼 만한 패턴이지 원인은 아닙니다.",
+        "faint": "밤사이 {behaviour}이(가) 높을 때 내 데이터에서 그날 밤 {outcome}이(가) {direction} 기미가 아주 약하게 보일 뿐입니다. 의지하기엔 너무 작고, 원인은 아닙니다."
       }
     },
     "noAnalysisYet": "아직 평가가 없어요.",
@@ -3264,11 +3350,12 @@
         "provider": "응답 제공자",
         "modelManaged": "이 제공자의 모델은 AI 설정에서 정해요.",
         "noProvider": "사용할 수 있는 제공자가 없어요",
+        "allSettings": "모든 AI 설정",
+        "operatorCodex": "ChatGPT (운영자 공유)",
+        "changeModel": "설정 > AI에서 변경",
         "saving": "저장 중…",
         "saveFailed": "변경 사항을 저장하지 못했어요.",
-        "allSettings": "모든 AI 설정",
         "providerNotActive": "{provider}(으)로 전환하지 못했습니다. 작동하는 로그인이나 키가 없습니다. AI 설정에서 설정하세요.",
-        "operatorCodex": "ChatGPT (운영자 공유)",
         "operatorManaged": "이 연결은 서버 운영자가 관리합니다. 내 공급자를 하나라도 설정하면 그 공급자가 먼저 답합니다."
       },
       "answer": {
@@ -3565,6 +3652,7 @@
       "falls": "회",
       "years": "세",
       "breathingEvents": "회",
+      "standHours": "시간",
       "respiratoryRate": "회/분"
     },
     "sleep": {
@@ -3807,6 +3895,16 @@
         "editTitle": "운동 편집",
         "editAction": "편집",
         "updated": "운동을 업데이트했습니다"
+      },
+      "load": {
+        "title": "훈련 부하",
+        "fitness": "체력",
+        "fatigue": "피로",
+        "form": "컨디션",
+        "explainer": "체력은 심박 기반 훈련 자극을 약 6주 동안, 피로는 약 1주 동안 평균한 값이고, 컨디션은 그 차이입니다. 이 숫자는 다른 사람이나 다른 앱이 아니라 내 과거와 비교하는 값입니다.",
+        "warmingUp": "지금까지 {days}일 기준: 6주가 채워질 때까지는 체력이 실제보다 낮게 나옵니다.",
+        "coverage": "최근 {days}일 중 {rated}일을 평가할 수 있었습니다. 활동 데이터가 없는 날이나 평가할 수 없는 운동이 있는 날은 휴식일로 세지 않고 제외합니다.",
+        "asOf": "{date} 기준, 평가할 수 있었던 마지막 날입니다."
       }
     },
     "bloodGlucose": {
@@ -4248,7 +4346,12 @@
         "outcomeDown": "기분이 좋으면 다음 날 {factor} 값은 낮은 편이에요.",
         "stat": "짝지은 {n}일, r = {r}, q = {q}",
         "statLabel": "계산 방법",
-        "explainerLabel": "계산 방법"
+        "explainerLabel": "계산 방법",
+        "channel": {
+          "ALCOHOL": "음주",
+          "WORKOUT_MINUTES": "운동 시간",
+          "TRAINING_LOAD": "훈련 부하"
+        }
       },
       "inTargetTitle": "내 범위 안",
       "dimensions": {
@@ -4709,7 +4812,8 @@
       "shiftDown": "{vital}: 최근 평소 수준보다 내려갔어요.",
       "rangeContext": "지금 {value}, 평소 {low}–{high}.",
       "rangeContextTimeOfDay": "지금 {value}, 이 시간대 평소 {low}–{high}.",
-      "shiftContext": "이전엔 약 {before}, 이후엔 {after}."
+      "shiftContext": "이전엔 약 {before}, 이후엔 {after}.",
+      "shiftDays": "이전 {before}일과 이후 {after}일 기준입니다."
     },
     "breathingScreening": {
       "sectionTitle": "수면 중 호흡",
@@ -5289,12 +5393,17 @@
       "groups": {
         "account": "계정",
         "yourData": "내 데이터",
-        "display": "화면",
         "healthProfile": "건강 프로필",
         "ai": "AI",
         "connectivity": "연결",
-        "system": "시스템"
-      }
+        "system": "시스템",
+        "tracking": "기록",
+        "arrangement": "배치",
+        "notifications": "알림",
+        "connections": "연결",
+        "data": "데이터"
+      },
+      "allSections": "모든 항목"
     },
     "sharedRecord": {
       "managedSettings": {
@@ -5406,8 +5515,15 @@
       "unavailableTitle": "이 공유 기록에서는 사용할 수 없어요",
       "unavailableDescription": "다른 사람의 기록을 보는 동안에는 이 설정 영역을 사용할 수 없어요.",
       "integrationStatusDescription": "이 관리 기록의 연결 상태예요.",
-      "integrationStatusDetail": "관리 프로필은 연결된 서비스를 상태로만 보여 줘요. 보호자는 연결, 다시 연결, 동기화, 연결 해제를 할 수 없어요.",
-      "integrationStatusDocs": "공유 방식 알아보기"
+      "integrationStatusDetail": "여기서 연결한 서비스의 데이터는 내 기록이 아니라 {name}의 기록으로 들어가요. 프로필에 자체 앱이 없으면 내 앱을 사용해요.",
+      "integrationStatusDocs": "공유 방식 알아보기",
+      "integrationConnectsFor": "{name}을(를) 위해 연결",
+      "integrationConnectFor": "{name}을(를) 위해 연결하기",
+      "integrationDisconnect": "연결 해제",
+      "integrationDisconnectTitle": "{name}에서 {provider} 연결을 해제할까요?",
+      "integrationDisconnectBody": "새 데이터가 더 이상 들어오지 않아요. 이미 가져온 데이터는 {name}의 기록에 남아요.",
+      "integrationNoClientApp": "{name}과(와) 내 계정 모두 아직 {provider} 앱이 없어요. 먼저 내 통합 설정에서 앱을 설정해 주세요.",
+      "integrationConnectFailed": "{provider} 연결을 시작하지 못했어요."
     },
     "sections": {
       "account": {
@@ -5428,11 +5544,25 @@
         "remindersHeading": "알림",
         "matrixLink": "채널별 알림",
         "channelsLink": "전송 채널",
-        "displayHeading": "휴대폰에서"
+        "displayHeading": "휴대폰에서",
+        "elsewhere": {
+          "title": "해당 위치에서 설정",
+          "description": "이 리마인더는 관련 항목 옆에서 설정합니다.",
+          "doses": {
+            "title": "약 복용",
+            "description": "복용 시간과 리마인더는 각 약에서 설정합니다.",
+            "link": "약 열기"
+          },
+          "cycle": {
+            "title": "주기",
+            "description": "생리와 가임기 리마인더는 알림 표에서 채널별로 켭니다.",
+            "link": "알림 표 열기"
+          }
+        }
       },
       "layout": {
-        "title": "화면 구성",
-        "backToHub": "화면 구성으로 돌아가기",
+        "title": "배치",
+        "backToHub": "배치로 돌아가기",
         "dashboard": {
           "title": "대시보드",
           "description": "타일 배치와 순서."
@@ -5441,7 +5571,7 @@
           "title": "인사이트",
           "description": "개요 섹션과 내비게이션 칩 순서."
         },
-        "subtitle": "대시보드, 인사이트, 기록 모듈에 무엇을 어떤 순서로 보여줄지 정해요.",
+        "subtitle": "대시보드, 인사이트, 기록 목록의 순서와 보기를 정하세요.",
         "medications": {
           "title": "복약",
           "description": "목록 보기와 수동 순서."
@@ -5457,10 +5587,6 @@
         "vorsorge": {
           "title": "건강검진",
           "description": "목록 보기와 알림 순서."
-        },
-        "mood": {
-          "title": "기분 태그",
-          "description": "기분 선택기의 그룹, 태그, 보관된 태그."
         },
         "documents": {
           "title": "문서",
@@ -5852,7 +5978,28 @@
         },
         "manageIn": "{section}에서 관리",
         "operatorDisabled": "서버 전체에서 꺼짐",
-        "subtitle": "HealthLog가 앱 전체에서 보여 줄 기록 영역을 골라요."
+        "subtitle": "HealthLog가 앱 전체에서 보여 줄 기록 영역을 골라요.",
+        "backToHub": "모듈로 돌아가기",
+        "openModuleSettings": "모듈 설정",
+        "pages": {
+          "medications": {
+            "title": "약",
+            "description": "순환에서 제외할 주사 부위입니다."
+          },
+          "mood": {
+            "title": "기분 태그",
+            "description": "그룹, 직접 만든 태그, 보관된 태그입니다."
+          },
+          "labs": {
+            "title": "검사",
+            "description": "바이오마커와 검사 보고서용 기기 내 텍스트 인식입니다."
+          },
+          "arrangementTitle": "순서와 보기",
+          "arrangementDescription": "이 목록의 정렬과 보기는 배치에서 설정합니다.",
+          "openArrangement": "배치에서 열기",
+          "moduleSettingsTitle": "모듈 설정",
+          "moduleSettingsDescription": "순서와 보기 외의 설정은 모듈의 페이지에 있습니다."
+        }
       },
       "gesundheitsakte": {
         "title": "건강 기록",
@@ -6499,7 +6646,8 @@
       "nocode": "Withings가 인증 코드를 보내지 않았어요. 다시 시도하고 Withings 창에서 접근을 허용해 주세요.",
       "nocreds": "저장된 Withings API 자격 증명이 없어요. 클라이언트 ID와 클라이언트 시크릿을 먼저 저장한 뒤 다시 연결해 주세요.",
       "token": "Withings와의 토큰 교환에 실패했어요. 클라이언트 ID와 클라이언트 시크릿을 확인하고 다시 시도해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 Withings 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Withings 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "withingsSynchronize": "동기화",
     "withingsDisconnect": "연결 해제",
@@ -6538,7 +6686,8 @@
       "nocode": "WHOOP이 인증 코드를 보내지 않았어요. 다시 시도하고 WHOOP 창에서 접근을 허용해 주세요.",
       "nocreds": "WHOOP이 설정되지 않았어요. 위에 WHOOP OAuth 자격 증명을 추가하고 다시 시도해 주세요.",
       "token": "WHOOP과의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 WHOOP 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 WHOOP 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "fitbit": "Fitbit",
     "fitbitTag": "Fitbit & Pixel",
@@ -6617,7 +6766,8 @@
       "nocode": "Google이 인증 코드를 보내지 않았어요. 다시 시도하고 Google 창에서 접근을 허용해 주세요.",
       "nocreds": "Google Health가 설정되지 않았어요. 위에 Google OAuth 자격 증명을 추가하고 다시 시도해 주세요.",
       "token": "Google과의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 Google 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Google 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "fitbitOauthError": {
       "csrf1": "브라우저 쿠키가 없어서 보안 확인에 실패했어요. 같은 브라우저에서 연결을 다시 시작해 주세요.",
@@ -6628,7 +6778,8 @@
       "nocreds": "Fitbit이 설정되지 않았어요. 위에 Fitbit OAuth 자격 증명을 추가하고 다시 시도해 주세요.",
       "token": "Fitbit과의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
       "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
-      "retired": "Google이 Fitbit Web API를 종료해서 새 Fitbit 연결을 만들 수 없어요. 같은 기기의 데이터를 읽는 Google Health를 대신 연결해 주세요."
+      "retired": "Google이 Fitbit Web API를 종료해서 새 Fitbit 연결을 만들 수 없어요. 같은 기기의 데이터를 읽는 Google Health를 대신 연결해 주세요.",
+      "already_linked": "이 Fitbit 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Fitbit 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "integrations": {
       "withings": {
@@ -6665,7 +6816,9 @@
           "items": {
             "vo2max": "VO2 max",
             "cardio_age": "심혈관 나이",
-            "resilience": "회복탄력성"
+            "resilience": "회복탄력성",
+            "workout": "운동",
+            "heartrate": "심박수"
           }
         }
       }
@@ -6972,7 +7125,8 @@
       "nocreds": "이 서버에는 Polar가 설정돼 있지 않아요. 관리자에게 Polar OAuth 자격 증명을 추가해 달라고 요청하세요.",
       "token": "Polar와의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
       "rate_limited": "연결 시도가 너무 많아요. 잠시 후 다시 시도해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 Polar 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Polar 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "oura": "Oura",
     "ouraDescription": "Oura 계정을 연결해 준비도, 수면 단계, 심박변이도, 일일 활동을 동기화해요.",
@@ -7002,25 +7156,24 @@
       "token": "Oura와의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
       "rate_limited": "연결 시도가 너무 많아요. 잠시 후 다시 시도해 주세요.",
       "issuer": "로그인 응답이 Oura의 인증 서버에서 오지 않아서 안전을 위해 연결을 중단했어요. 연결을 다시 시작해 주세요. 계속 발생하면 관리자에게 알려 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 Oura 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Oura 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "integrationSetupGuide": "설정 가이드",
     "coach": {
-      "activate": {
-        "title": "코치 활성화",
-        "description": "코치 버튼과 패널을 표시해요.",
-        "toggleAria": "코치 버튼과 패널 활성화",
-        "savedOn": "코치를 켰어요.",
-        "savedOff": "코치를 숨겼어요.",
-        "saveError": "변경 사항을 저장하지 못했어요. 다시 시도해 주세요."
-      },
       "memory": {
         "edit": "편집",
         "source": {
           "user": "내가 알려 줌",
           "coach": "코치가 기억함"
         }
-      }
+      },
+      "state": {
+        "title": "코치",
+        "description": "코치 버튼과 패널 표시 여부입니다. 스위치는 모듈에 있습니다."
+      },
+      "nudgesMoved": "알림에서 다른 리마인더와 함께 설정합니다.",
+      "openNudges": "알림에서 열기"
     },
     "integrationRedirectGuide": {
       "intro": "직접 만든 {provider} 개발자 앱으로 연결해요. 설정에 5분쯤 걸려요:",
@@ -7155,6 +7308,12 @@
         "profile": "프로필, 병력, 건강 기록 정보",
         "modules": "모듈별 기록: {list}"
       },
+      "workoutRoutes": {
+        "title": "운동 경로",
+        "description": "iPhone 앱과 Apple 건강 내보내기에서 새 운동의 GPS 경로를 저장합니다.",
+        "detail": "새 계정에서는 꺼져 있어요. 경로는 사는 곳, 일하는 곳, 운동하는 곳을 보여 주므로 이 설정을 켠 뒤에만 저장됩니다. 운동 기록은 항상 저장되며, 어떤 AI 기능도 경로를 읽지 않습니다. 끄면 새 경로 저장이 멈추고, 이미 저장된 경로는 운동을 삭제할 때까지 남습니다.",
+        "loadError": "경로 설정을 불러오지 못했습니다."
+      },
       "retention": {
         "title": "보관 기간",
         "description": "자동 정리 전까지 기간이 정해진 기록을 얼마나 보관하는지예요.",
@@ -7162,12 +7321,6 @@
         "audit": "보안 활동 기록: {days}일 보관",
         "delivery": "알림 발송 기록: {days}일 보관",
         "unavailable": "지금은 보관 기간 정보를 볼 수 없어요."
-      },
-      "export": {
-        "title": "내 데이터 내려받기",
-        "description": "기록을 CSV나 JSON으로, 또는 진료용 전체 건강 기록으로 받을 수 있어요.",
-        "openExport": "내보내기·백업",
-        "openHealthRecord": "건강 기록"
       },
       "delete": {
         "title": "삭제 또는 초기화",
@@ -7179,12 +7332,16 @@
         "title": "개인정보 보호 수준",
         "description": "AI 기능에 데이터를 어디까지 공유할지 정해요.",
         "openAi": "AI 개인정보 모드"
+      },
+      "sessions": {
+        "title": "세션 및 기기",
+        "description": "로그인된 위치, 2단계 인증을 건너뛰는 기기, 계정의 보안 활동을 확인해요.",
+        "open": "보안 열기"
       }
     },
     "mcp": {
       "enableTitle": "원격 MCP 엔드포인트",
       "enableDescription": "MCP를 지원하는 어시스턴트(Claude.ai, ChatGPT)가 범위가 제한된 토큰으로 건강 데이터를 읽게 해요.",
-      "enableToggleLabel": "MCP 엔드포인트 켜기",
       "endpointLabel": "커넥터 URL",
       "connectDescription": "어시스턴트의 커스텀 커넥터 설정에 이 URL을 붙여 넣고, 아래 토큰으로 인증하거나 안내가 나오면 로그인하세요.",
       "tokensTitle": "커넥터 토큰",
@@ -7203,7 +7360,8 @@
       "connectionRevokeFailed": "어시스턴트 연결을 해제하지 못했어요.",
       "connectionsDetail": "연결을 해지하면 갱신 권한까지 포함해 접근이 즉시 끊겨요.",
       "tokensDetail": "토큰은 한 번만 보여줘요.",
-      "tokenNamePlaceholder": "이름 (예: Claude Desktop)"
+      "tokenNamePlaceholder": "이름 (예: Claude Desktop)",
+      "offKeepsTokens": "끄면 엔드포인트가 일시 중지됩니다. 토큰과 연결은 그대로 남고 다시 켜면 다시 작동합니다."
     },
     "strava": "Strava",
     "stravaDescription": "Strava 계정을 연결해 활동을 운동 기록으로 동기화해요.",
@@ -7232,7 +7390,8 @@
       "nocreds": "이 서버에는 Strava가 설정돼 있지 않아요. 관리자에게 Strava API 자격 증명을 추가해 달라고 요청하세요.",
       "token": "Strava와의 토큰 교환에 실패했어요. 연결을 다시 시작해 주세요.",
       "rate_limited": "연결 시도가 너무 많아요. 잠시 후 다시 시도해 주세요.",
-      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요."
+      "generic": "연결 중 알 수 없는 오류가 났어요. 연결을 다시 시작해 주세요.",
+      "already_linked": "이 Strava 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 Strava 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
     "appleHealth": {
       "title": "Apple Health",
@@ -7465,7 +7624,14 @@
     "passkeyAddedToast": "패스키를 추가했어요.",
     "passkeyRemovedToast": "패스키를 삭제했어요.",
     "integrationDisconnected": "{provider} 연결을 해제했어요.",
-    "integrationDisconnectFailed": "{provider} 연결을 해제하지 못했어요."
+    "integrationDisconnectFailed": "{provider} 연결을 해제하지 못했어요.",
+    "timezoneSaved": "시간대를 저장했습니다.",
+    "moduleState": {
+      "on": "켜짐",
+      "off": "꺼짐",
+      "change": "모듈에서 변경"
+    },
+    "timezoneUseDevice": "이 기기의 시간대 사용 ({zone})"
   },
   "admin": {
     "title": "관리자",
@@ -7575,6 +7741,7 @@
     "heapLimitLabel": "힙 한도",
     "heapLimitValue": "{mb} MB",
     "heapLimitLow": "{mb} MB, 부족합니다. .env에 APP_MEMORY_LIMIT=1536m을 설정하세요",
+    "memoryBelowFloor": "컨테이너 {mb} MB, 지원 최소치 {floor} MB 미만입니다. .env에 APP_MEMORY_LIMIT={floor}m을 설정하세요",
     "offlineGeoOff": "꺼짐",
     "offlineGeoChosen": "온라인 ({host})",
     "apiGlobal": "API 엔드포인트와 API 토큰을 허용해요.",
@@ -8855,6 +9022,10 @@
       "detailedToast": "이제 알림에 건강 수치가 포함됩니다.",
       "genericToast": "이제 알림에 건강 수치가 포함되지 않습니다.",
       "saveError": "저장하지 못했어요. 나중에 다시 시도해 주세요."
+    },
+    "checkupReminders": {
+      "title": "검진 리마인더",
+      "description": "검진 리마인더를 개별로 켜거나 끕니다."
     }
   },
   "i18n": {
@@ -9631,8 +9802,6 @@
       "description": "측정값을 입력하면 알림이 완료로 표시돼요."
     },
     "manage": {
-      "title": "알림 관리",
-      "description": "알림을 하나씩 켜거나 끌 수 있어요.",
       "empty": "아직 설정할 알림이 없어요."
     },
     "dashboard": {
@@ -10016,6 +10185,27 @@
       "doneToastFew": "{name}(으)로 합쳤어요, 측정값 {count}개 이동",
       "doneToastOther": "{name}(으)로 합쳤어요, 측정값 {count}개 이동",
       "error": "바이오마커를 합치지 못했어요. 다시 시도해 주세요."
+    },
+    "trend": {
+      "title": "추세",
+      "slope": {
+        "rising": "{since} 이후 {n}개 값에서 1년에 약 {amount} {unit}씩 오르고 있습니다.",
+        "falling": "{since} 이후 {n}개 값에서 1년에 약 {amount} {unit}씩 내려가고 있습니다.",
+        "flat": "{since} 이후 {n}개 값에서 변화가 없습니다."
+      },
+      "projection": {
+        "exits": {
+          "high": "이 직선이 그대로 이어진다면 {date}쯤 참고 범위의 상한에 닿습니다. 이는 연장선일 뿐 예측이 아닙니다.",
+          "low": "이 직선이 그대로 이어진다면 {date}쯤 참고 범위의 하한에 닿습니다. 이는 연장선일 뿐 예측이 아닙니다."
+        },
+        "beyond_horizon": "이 속도라면 {years}년 넘게 참고 범위 안에 머뭅니다. 측정값이 다루는 기간입니다.",
+        "beyond_horizon_capped": "이 속도라면 {years}년 넘게 참고 범위 안에 머뭅니다. 연장선이 내다보는 최대 기간입니다.",
+        "no_exit": "직선이 참고 범위의 경계에서 멀어지고 있습니다.",
+        "already_outside": "직선이 이미 참고 범위 밖에 있습니다.",
+        "no_clear_trend": "이 값들에서는 변화가 '변화 없음'과 뚜렷이 구별되지 않아 연장선을 그리지 않습니다.",
+        "stale": "가장 최근 값은 {date}로 1년이 넘었습니다. 직선은 그 시점 기준으로 표시하며 예측은 하지 않습니다."
+      },
+      "interval": "연간 변화의 95% 구간: {lo}~{hi} {unit}."
     }
   },
   "modules": {
@@ -10957,7 +11147,16 @@
     "openDetail": "자세히 보기",
     "historyLoadError": "검사 기록을 불러오지 못했어요",
     "historyLoadErrorHint": "결과가 없다는 뜻은 아니에요. 목록을 가져오지 못했을 뿐이에요. 다시 시도해 주세요.",
-    "privacyNote": "답변은 암호화되어 저장되고, AI 코치에게는 전달되지 않아요."
+    "privacyNote": "답변은 암호화되어 저장되고, AI 코치에게는 전달되지 않아요.",
+    "trend": {
+      "sincePrevious": "{date} 이전 체크인 이후: {change}점.",
+      "sinceFirst": "{date} 첫 체크인 이후: {change}점.",
+      "verdict": {
+        "improved": "연구에서 의미 있다고 보는 {threshold}점 변화에 도달했고, 좋아지는 방향입니다.",
+        "worsened": "연구에서 의미 있다고 보는 {threshold}점 변화에 도달했고, 덜 좋은 방향입니다.",
+        "within_threshold": "연구에서 의미 있다고 보는 {threshold}점 변화보다 작습니다."
+      }
+    }
   },
   "records": {
     "aiInclusion": {
@@ -12216,7 +12415,10 @@
     "leafVisits": "진료",
     "leafSurgicalHistory": "수술 이력",
     "leafImmunizations": "예방접종",
-    "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)"
+    "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)",
+    "leafMedicationEffect": "각 약 시작 전후의 변화 (약 목록 필요)",
+    "leafWorkouts": "운동(종목별 요약)",
+    "leafHrvSdnn": "심박변이도 (SDNN)"
   },
   "recordSharing": {
     "banner": {
@@ -13395,6 +13597,219 @@
       "targetLower": "내 목표 하한",
       "clinicalUpper": "임상 기준 상한",
       "clinicalLower": "임상 기준 하한"
+    }
+  },
+  "activityCalendar": {
+    "title": "활동 캘린더",
+    "periodLabel": "캘린더 기간",
+    "period": {
+      "week": "주",
+      "month": "월"
+    },
+    "weekRange": "{start} ~ {end}",
+    "previous": "이전 기간",
+    "next": "다음 기간",
+    "metricLabel": "날짜 색상 기준",
+    "metric": {
+      "steps": "걸음 수",
+      "activeMinutes": "활동 시간(분)",
+      "load": "운동 부하"
+    },
+    "empty": "이 기간에는 아직 걸음 수, 활동 시간, 운동 기록이 없습니다.",
+    "loadError": "활동 캘린더를 불러오지 못했습니다.",
+    "weekGoalsColumn": "주간 목표",
+    "weekGoalsMet": "주간 목표를 모두 달성함",
+    "weekGoalsNotMet": "주간 목표를 모두 달성하지는 못함",
+    "cell": {
+      "steps": "{value}걸음",
+      "activeMinutes": "활동 {value}분",
+      "workouts": "운동 {value}회: {sports}"
+    },
+    "level": {
+      "none": "데이터 없음",
+      "unrated": "아직 기록이 충분하지 않음",
+      "low": "평소보다 훨씬 적음",
+      "below": "평소보다 적음",
+      "usual": "평소와 비슷함",
+      "above": "평소보다 많음",
+      "high": "평소보다 훨씬 많음",
+      "in_progress": "오늘, 아직 진행 중"
+    },
+    "legend": "이전 12주와 비교:",
+    "noBaseline": "데이터가 있는 날이 14일이 되면 평소 범위가 표시됩니다.",
+    "summary": {
+      "steps": "{value}걸음",
+      "activeMinutes": "활동 {value}분",
+      "workouts": "운동 {value}회",
+      "load": "평균 운동 부하 {value}",
+      "usual": "이 시점까지의 평소 값: {value}",
+      "noUsual": "비교할 이전 주나 달이 아직 충분하지 않습니다.",
+      "usualThroughYesterday": "어제까지 {value}, 그때까지의 평소 {usual}",
+      "firstDay": "첫날이 끝나면 평소와 비교합니다."
+    },
+    "sportCount": "{sport}: {count}",
+    "goal": {
+      "workoutsPerWeek": "주당 운동 횟수",
+      "activeMinutesPerWeek": "주당 활동 시간(분)",
+      "stepsPerWeek": "주당 걸음 수",
+      "stepsPerMonth": "월간 걸음 수"
+    },
+    "goalOf": "{target} 중 {value}",
+    "setGoals": "목표 설정",
+    "editGoals": "목표 변경",
+    "goalsSheet": {
+      "title": "활동 목표",
+      "description": "목표를 두지 않으려면 칸을 비워 두세요.",
+      "none": "목표 없음",
+      "invalid": "{min}부터 {max}까지의 정수를 입력하세요.",
+      "saveError": "목표를 저장하지 못했습니다."
+    },
+    "crossLink": {
+      "title": "활동 캘린더",
+      "body": "주 또는 월 단위의 걸음 수를 내 평소 값과 비교합니다.",
+      "cta": "캘린더 열기"
+    }
+  },
+  "sourceProvenance": {
+    "title": "값의 출처",
+    "description": "날마다 어떤 소스가 값을 보냈고, 소스 우선순위가 어느 것을 쓰는지 보여 줍니다.",
+    "metric": "측정 항목",
+    "day": "날짜",
+    "dayTitle": "이 날의 소스",
+    "loadError": "소스를 불러오지 못했습니다.",
+    "dayEmpty": "이 날에는 이 항목의 값이 없습니다.",
+    "reason": {
+      "only_source": "이 날의 소스는 {source}뿐입니다.",
+      "highest_on_ladder": "{source}을(를) 사용합니다. 이 날의 소스 중 소스 우선순위가 가장 높습니다.",
+      "name_tiebreak": "{source}을(를) 사용합니다. 이 날의 소스가 모두 우선순위에 없어 이름으로 정했습니다.",
+      "not_ranked": "이 항목에는 소스 우선순위가 없어 모든 소스의 값이 반영됩니다."
+    },
+    "pass": {
+      "lower_on_ladder": "소스 우선순위에서 더 아래에 있습니다.",
+      "not_on_ladder": "이 항목의 소스 우선순위에 없습니다.",
+      "name_tiebreak": "사용한 소스와 순위가 같아 이름으로 정했습니다."
+    },
+    "used": "사용됨",
+    "readings": "측정 {count}회, 기기: {devices}",
+    "ladder": "이 항목의 순서: {ladder}",
+    "utcNote": "소스는 차트와 같은 방식으로 UTC 자정부터 자정까지 하루 단위로 선택됩니다.",
+    "openSettings": "소스 우선순위에서 순서 변경",
+    "compareTitle": "두 소스 비교",
+    "range": "기간",
+    "rangeDays": "{days}일",
+    "compareNeedsTwo": "이 기간에는 한 소스에만 이 항목의 값이 있습니다.",
+    "side": {
+      "a": "첫 번째 소스",
+      "b": "두 번째 소스"
+    },
+    "daysBoth": "둘 다 있는 날",
+    "meanOf": "{source} 평균",
+    "meanAbsDiff": "평균 차이",
+    "pickedDays": "사용된 날 (첫 번째 / 두 번째)",
+    "pickedSplit": "{a} / {b}",
+    "compareNote": "평균은 두 소스 모두 값이 있는 날만 계산하여 같은 조건으로 비교합니다. 굵은 값이 차트에 쓰이는 값입니다.",
+    "settingsHint": "이 순서가 날마다 무엇을 정하는지 보려면:",
+    "settingsHintLink": "값의 출처",
+    "metricLink": "이 값의 출처"
+  },
+  "recordImport": {
+    "title": "스프레드시트에서 검사 결과와 약 가져오기",
+    "description": "수년간의 검사 결과나 약 목록을 CSV 파일에서 가져옵니다.",
+    "detail": "어떤 열에 무엇이 있는지 직접 고르면, HealthLog가 모든 행을 먼저 확인하고 확인 전에는 아무것도 가져오지 않습니다. 이미 있는 행은 건너뜁니다.",
+    "kind": {
+      "labs": "검사 결과",
+      "medications": "약"
+    },
+    "sheetTitle": {
+      "labs": "검사 결과 가져오기",
+      "medications": "약 가져오기"
+    },
+    "sheetDescription": {
+      "labs": "마커는 내 마커에 연결되고, 변환 방법을 아는 경우 단위가 변환됩니다.",
+      "medications": "이름, 용량, 매일 복용 시간, 필요시, 시작일과 종료일. 다른 주기는 나중에 앱에서 설정합니다."
+    },
+    "file": "CSV 파일",
+    "template": "템플릿 다운로드",
+    "mapping": "각 열의 내용",
+    "required": "(필수)",
+    "notInFile": "파일에 없음",
+    "column": "{n}열",
+    "delimiter": "구분자",
+    "delimiterOption": {
+      "comma": "쉼표",
+      "semicolon": "세미콜론",
+      "tab": "탭"
+    },
+    "decimal": "소수점",
+    "decimalOption": {
+      "dot": "마침표 (5.4)",
+      "comma": "쉼표 (5,4)"
+    },
+    "dateOrder": "날짜 형식",
+    "dateOrderOption": {
+      "iso": "2025-03-01",
+      "dmy": "01.03.2025 (일 먼저)",
+      "mdy": "03/01/2025 (월 먼저)"
+    },
+    "header": "첫 행에 열 이름이 있음",
+    "reminders": "가져온 약의 알림 켜기",
+    "timezoneNote": "시간대가 없는 시간은 계정의 시간대로 읽습니다. 시간이 없는 날짜는 그 날짜 그대로 저장됩니다.",
+    "missing": "아직 선택할 항목: {fields}",
+    "check": "파일 확인",
+    "runIdle": "가져오기",
+    "run": "{count}행 가져오기",
+    "close": "닫기",
+    "summaryCheck": "{rows}행 읽음: {inserted}행 가져오기 가능, {duplicates}행 이미 있음, {failed}행 문제 있음.",
+    "summaryDone": "{inserted}행을 가져왔습니다. 이미 있던 {duplicates}행과 문제가 있는 {failed}행은 건너뛰었습니다.",
+    "markersMatched": "내 마커에 연결됨:",
+    "markersCreated": "새 마커:",
+    "line": "{line}행",
+    "errorsTruncated": "처음 500개의 문제만 표시됩니다.",
+    "error": {
+      "tooLarge": "파일이 16MB보다 큽니다.",
+      "rateLimited": "지난 한 시간 동안 가져오기가 너무 많았습니다. 나중에 다시 시도하세요.",
+      "invalid": "파일이나 열 선택을 읽을 수 없습니다.",
+      "failed": "가져오기에 실패했습니다. 다시 시도하세요."
+    },
+    "reason": {
+      "missing_value": "필수 칸이 비어 있음",
+      "invalid_number": "숫자가 아님",
+      "ambiguous_number": "숫자를 두 가지로 읽을 수 있음. 소수점을 확인하세요",
+      "missing_unit": "숫자에는 단위가 필요함",
+      "invalid_date": "선택한 형식의 날짜가 아님",
+      "invalid_time": "시간이 아님",
+      "ambiguous_date": "날짜를 두 가지로 읽을 수 있음. 네 자리 연도와 선택한 형식을 쓰세요",
+      "future_date": "날짜가 미래임",
+      "text_too_long": "텍스트가 너무 김",
+      "unit_mismatch": "이 단위는 마커의 단위로 변환할 수 없음",
+      "invalid_reference_range": "참고 범위를 읽을 수 없음",
+      "invalid_times": "시간을 읽을 수 없음 (예: 08:00 20:00)",
+      "missing_times": "복용 시간을 넣거나 필요시 약으로 표시하세요",
+      "invalid_yes_no": "예 또는 아니오로 쓰세요",
+      "as_needed_with_times": "필요시 약에는 정해진 시간이 없음",
+      "end_before_start": "종료일이 시작일보다 앞섬",
+      "invalid_medication": "이대로는 약을 저장할 수 없음",
+      "oversized_row": "행이 너무 길거나 넓음",
+      "row_limit": "한 번에 가져올 수 있는 행 수를 넘음",
+      "duplicate": "이미 있어 건너뜀"
+    },
+    "field": {
+      "analyte": "마커",
+      "value": "결과",
+      "unit": "단위",
+      "date": "날짜",
+      "time": "시간",
+      "referenceRange": "참고 범위",
+      "referenceLow": "참고 하한",
+      "referenceHigh": "참고 상한",
+      "panel": "그룹",
+      "note": "메모",
+      "name": "이름",
+      "dose": "용량",
+      "times": "시간",
+      "asNeeded": "필요시",
+      "startsOn": "시작",
+      "endsOn": "종료"
     }
   }
 }

@@ -15,12 +15,14 @@ import { WorkoutList } from "@/components/insights/workout-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ManualWorkoutSheet } from "@/components/workouts/manual-workout-sheet";
+import { TrainingLoadCard } from "@/components/workouts/training-load-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { canLogWorkout } from "@/lib/workouts/manual-entry";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { translateOrNull } from "@/lib/i18n/translate-code";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ActivityCalendarCard } from "@/components/activity/activity-calendar-card";
 
 /**
  * v1.4.32 — `/insights/workouts`.
@@ -61,6 +63,7 @@ export default function InsightsWorkoutsPageClient() {
     total,
     isLoading,
     isEmpty,
+    trainingLoad,
     isError,
     error,
     isFetchNextPageError,
@@ -107,6 +110,11 @@ export default function InsightsWorkoutsPageClient() {
       {showLog ? (
         <ManualWorkoutSheet open={logOpen} onOpenChange={setLogOpen} />
       ) : null}
+      {/* The activity calendar (D1036): steps, active minutes and workouts
+          against the person's own usual. It stands above the list and draws
+          from steps alone too, so an account without workouts still sees
+          its routine. */}
+      <ActivityCalendarCard />
       {/* No `<MetricRangeControls>` here: workouts are session records, not a
           MeasurementType series, so the period-over-period range read has
           nothing to aggregate. */}
@@ -171,6 +179,7 @@ export default function InsightsWorkoutsPageClient() {
               })}
             </div>
           ) : null}
+          <TrainingLoadCard trainingLoad={trainingLoad} />
           {workouts.length > 0 ? (
             <>
               <p

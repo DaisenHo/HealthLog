@@ -132,6 +132,16 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<string, string> = {
   PAIN_NRS: "measurements.typePainNrs",
   WAIST_CIRCUMFERENCE: "measurements.typeWaistCircumference",
   WAIST_TO_HEIGHT: "measurements.typeWaistToHeight",
+  // ── v1.44 — activity rings, mindfulness, State of Mind, AFib burden ──
+  EXERCISE_MINUTES: "measurements.typeExerciseMinutes",
+  STAND_MINUTES: "measurements.typeStandMinutes",
+  STAND_HOURS: "measurements.typeStandHours",
+  MINDFUL_MINUTES: "measurements.typeMindfulMinutes",
+  STATE_OF_MIND_VALENCE: "measurements.typeStateOfMindValence",
+  AFIB_BURDEN: "measurements.typeAfibBurden",
+  INDOOR_CO2: "measurements.typeIndoorCo2",
+  INDOOR_TEMPERATURE: "measurements.typeIndoorTemperature",
+  INDOOR_HUMIDITY: "measurements.typeIndoorHumidity",
 };
 
 export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
@@ -267,6 +277,18 @@ export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
   PAIN_NRS: Activity,
   WAIST_CIRCUMFERENCE: Scale,
   WAIST_TO_HEIGHT: Scale,
+  // ── v1.44 — the rings take the activity glyphs, mindful minutes the
+  // breath, the valence the score dial, AFib burden the rhythm trace.
+  EXERCISE_MINUTES: Dumbbell,
+  STAND_MINUTES: PersonStanding,
+  STAND_HOURS: PersonStanding,
+  MINDFUL_MINUTES: Wind,
+  STATE_OF_MIND_VALENCE: Gauge,
+  AFIB_BURDEN: HeartPulse,
+  // Room climate: air, warmth, moisture.
+  INDOOR_CO2: Wind,
+  INDOOR_TEMPERATURE: Thermometer,
+  INDOOR_HUMIDITY: Droplets,
 };
 
 // The colour map lives in its own icon-free module so a surface that only

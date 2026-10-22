@@ -191,14 +191,14 @@ describe("<HealthRecordExportPanel> — the first run", () => {
     expect(groupChip(html, "vitals")).toBe("0/7");
     expect(groupChip(html, "body")).toBe("0/12");
     expect(groupChip(html, "labs")).toBe("0/1");
-    expect(groupChip(html, "medications")).toBe("0/4");
+    expect(groupChip(html, "medications")).toBe("0/5");
     // ALLERGIES, ILLNESS_EPISODES, VISITS, SURGICAL_HISTORY, IMMUNIZATIONS.
     expect(groupChip(html, "history")).toBe("0/5");
-    expect(groupChip(html, "cardio")).toBe("0/14");
-    expect(groupChip(html, "activity")).toBe("0/8");
+    expect(groupChip(html, "cardio")).toBe("0/15");
+    expect(groupChip(html, "activity")).toBe("0/12");
     expect(groupChip(html, "sleepRecovery")).toBe("0/16");
     expect(groupChip(html, "mobility")).toBe("0/11");
-    expect(groupChip(html, "environment")).toBe("0/4");
+    expect(groupChip(html, "environment")).toBe("0/7");
   });
 
   it("disables Generate while the scope is empty, and says what to do", () => {

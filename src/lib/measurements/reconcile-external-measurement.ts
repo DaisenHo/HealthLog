@@ -140,7 +140,13 @@ function lockKeys(desired: ExternalMeasurementWrite): string[] {
   ].sort();
 }
 
-async function lockUser(
+/**
+ * The per-account advisory lock every cooperative measurement writer takes
+ * first. Exported for the batch route's set-based insert, which takes it
+ * around its `INSERT … ON CONFLICT DO NOTHING` so it serialises with the
+ * reconciler exactly as a second reconciler would.
+ */
+export async function lockMeasurementUser(
   tx: PrismaTypes.TransactionClient,
   userId: string,
 ): Promise<void> {
@@ -259,7 +265,7 @@ export async function reconcileExternalMeasurement(
   await tx.$executeRawUnsafe(`SAVEPOINT ${SAVEPOINT}`);
 
   try {
-    await lockUser(tx, desired.userId);
+    await lockMeasurementUser(tx, desired.userId);
     for (const key of lockKeys(desired)) {
       await tx.$queryRaw(
         Prisma.sql`

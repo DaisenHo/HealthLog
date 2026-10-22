@@ -98,7 +98,10 @@ import { hashInsightSnapshot } from "../snapshot-hash";
 import { compactSections } from "@/lib/ai/prompts/compact-sections";
 import { featuresInReaderUnits } from "../features-units";
 import { DEFAULT_UNIT_PREFERENCES } from "@/lib/measurements/display-transform";
-import { openInsightsCachedText } from "@/lib/insights/cached-text-cipher";
+import {
+  openInsightsCachedText,
+  sealInsightsCachedText,
+} from "@/lib/insights/cached-text-cipher";
 
 // The cached payload is sealed at rest, so its writes need a key.
 vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
@@ -143,7 +146,7 @@ describe("daily-briefing re-roll on unchanged data", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: CACHED,
+      insightsCachedTextEncrypted: sealInsightsCachedText(CACHED),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,
       insightsBriefingRerollDate: null, // never re-rolled today
@@ -198,7 +201,7 @@ describe("daily-briefing re-roll on unchanged data", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: CACHED,
+      insightsCachedTextEncrypted: sealInsightsCachedText(CACHED),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,
       insightsBriefingRerollDate: todayKey, // already re-rolled today
@@ -214,7 +217,7 @@ describe("daily-briefing re-roll on unchanged data", () => {
     findUnique.mockResolvedValue({
       insightsPrivacyMode: "aggregated",
       insightsCachedAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
-      insightsCachedText: CACHED,
+      insightsCachedTextEncrypted: sealInsightsCachedText(CACHED),
       insightsExcludeMetrics: [],
       insightsSnapshotHash: FEATURES_HASH,
       insightsBriefingRerollDate: null,

@@ -27,7 +27,7 @@ function expectMatchingMessageKeys(expected: unknown, actual: unknown): void {
 }
 
 describe("managed record settings UI", () => {
-  it("gates shared deep links and renders integration status without controls", async () => {
+  it("gates shared deep links and controls integrations only through the managed-record routes", async () => {
     const [
       statusView,
       managedSettingsView,
@@ -58,8 +58,17 @@ describe("managed record settings UI", () => {
     expect(statusView).toContain("recordSettingsIntegrations");
     expect(statusView).toContain("/api/record-settings/integrations");
     expect(statusView).toContain("assertRecordSettingsResponseForRecord");
-    expect(statusView).not.toContain("<Button");
-    expect(statusView).not.toContain("<Link");
+    // A guardian's controls go through the fenced managed-record routes, never
+    // the owner's provider routes and never a navigation to the API.
+    expect(statusView).toContain(
+      "/api/record-settings/integrations/${provider}/connect",
+    );
+    expect(statusView).toContain(
+      "/api/record-settings/integrations/${provider}/disconnect",
+    );
+    expect(statusView).not.toMatch(/["`]\/api\/\$\{provider\}\//);
+    expect(statusView).not.toMatch(/loadDocument\(\s*["`]\/api/);
+    expect(statusView).not.toMatch(/<Link[\s>]/);
     expect(settingsPage).toContain("RecordSettingsSectionGate");
     expect(sectionGate).toContain("if (!inSharedRecord) return children");
     expect(sectionGate).toContain("ManagedIntegrationStatus");

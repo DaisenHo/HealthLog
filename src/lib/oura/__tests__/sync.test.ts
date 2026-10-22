@@ -21,6 +21,8 @@ const {
   fetchCardioAgeMock,
   fetchResilienceMock,
   fetchCyclePhasesMock,
+  fetchWorkoutsMock,
+  heartRatePagesMock,
   refreshMock,
   createManyAndReturnMock,
   updateMock,
@@ -48,6 +50,8 @@ const {
   fetchCardioAgeMock: vi.fn(),
   fetchResilienceMock: vi.fn(),
   fetchCyclePhasesMock: vi.fn(),
+  fetchWorkoutsMock: vi.fn(),
+  heartRatePagesMock: vi.fn(),
   refreshMock: vi.fn(),
   createManyAndReturnMock: vi.fn(),
   updateMock: vi.fn(),
@@ -70,11 +74,12 @@ const {
 // these cases pin.
 vi.mock("../credentials", () => ({
   getOuraConnection: getConnMock,
-  refreshOuraAccessToken: async (
-    userId: string,
-    spentCiphertext: string,
-    creds: unknown,
-  ) => {
+  syncOuraScopeDenied: scopeDeniedMock,
+}));
+vi.mock("../oauth-descriptor", () => ({
+  refreshOuraAfterRefusal: async (userId: string, spentCiphertext: string) => {
+    const creds = await getCredsMock(userId);
+    if (!creds) return null;
     const rotated = await refreshMock("ref", creds);
     return storeTokensMock(
       userId,
@@ -83,8 +88,6 @@ vi.mock("../credentials", () => ({
       spentCiphertext,
     );
   },
-  getOuraClientCredentials: getCredsMock,
-  syncOuraScopeDenied: scopeDeniedMock,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -143,6 +146,8 @@ vi.mock("../client", async (importOriginal) => {
     fetchCardiovascularAge: fetchCardioAgeMock,
     fetchResilience: fetchResilienceMock,
     fetchDailyCyclePhases: fetchCyclePhasesMock,
+    fetchWorkouts: fetchWorkoutsMock,
+    forEachHeartRatePage: heartRatePagesMock,
     refreshAccessToken: refreshMock,
   };
 });
@@ -158,6 +163,13 @@ import { OuraApiError } from "../response-classifier";
 import { isSyncFailureRecorded } from "@/lib/integrations/status";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The day-window watermark reads (the heart-rate window's carries a type). */
+function dayWatermarkReads() {
+  return findFirstMock.mock.calls.filter(
+    ([args]) => !(args as { where: { type?: string } }).where.type,
+  );
+}
 
 const CONN = {
   accessToken: "acc",
@@ -181,6 +193,10 @@ beforeEach(() => {
   fetchCardioAgeMock.mockReset().mockResolvedValue([]);
   fetchResilienceMock.mockReset().mockResolvedValue([]);
   fetchCyclePhasesMock.mockReset().mockResolvedValue([]);
+  fetchWorkoutsMock.mockReset().mockResolvedValue([]);
+  heartRatePagesMock
+    .mockReset()
+    .mockResolvedValue({ pages: 1, truncated: false });
   refreshMock.mockReset();
   scopeDeniedMock.mockReset().mockResolvedValue(undefined);
   transactionMock
@@ -903,9 +919,10 @@ describe("syncUserOura — window resolution", () => {
     await syncUserOura("u1");
 
     expect(windowDays()).toBe(7);
-    // One indexed read per tick, and tombstones are excluded from it — a
-    // soft-deleted row must not pass for a live one.
-    expect(findFirstMock).toHaveBeenCalledTimes(1);
+    // One indexed read per tick for the day window (the heart-rate window
+    // reads its own, typed watermark), and tombstones are excluded from it —
+    // a soft-deleted row must not pass for a live one.
+    expect(dayWatermarkReads()).toHaveLength(1);
     expect(findFirstMock).toHaveBeenCalledWith({
       where: { userId: "u1", source: "OURA", deletedAt: null },
       orderBy: { measuredAt: "desc" },
@@ -959,7 +976,7 @@ describe("syncUserOura — window resolution", () => {
     await syncUserOura("u1", { lookbackDays: 3 });
 
     expect(windowDays()).toBe(3);
-    expect(findFirstMock).not.toHaveBeenCalled();
+    expect(dayWatermarkReads()).toHaveLength(0);
   });
 
   it("passes the resolved window to the cycle-phases leg too", async () => {
@@ -1114,6 +1131,8 @@ describe("syncUserOura — a grant without the spo2 / heart_health scopes", () =
       fetchVo2MaxMock,
       fetchCardioAgeMock,
       fetchResilienceMock,
+      fetchWorkoutsMock,
+      heartRatePagesMock,
     ]) {
       m.mockRejectedValue(err401());
     }
@@ -1284,6 +1303,45 @@ describe("syncUserOura — Oura names the missing scope", () => {
     expect(result.failed).toBe(true);
     expect(recordFailureMock).toHaveBeenCalledWith(
       expect.objectContaining({ integration: "oura", kind: "persistent" }),
+    );
+  });
+});
+
+describe("syncUserOura — a grant from before workouts and heart rate were read", () => {
+  it("notes the two collections calmly: no refresh, no failure, everything else imports", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    fetchActivityMock.mockResolvedValue([
+      { id: "a1", day: "2026-06-10", steps: 1200, active_calories: 80 },
+    ]);
+    fetchWorkoutsMock.mockRejectedValue(errScope401("workout"));
+    heartRatePagesMock.mockRejectedValue(errScope401("heartrate"));
+
+    const result = await syncUserOura("u1");
+
+    expect(result.failed).toBe(false);
+    expect(result.imported).toBeGreaterThan(0);
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(recordFailureMock).not.toHaveBeenCalled();
+    expect(recordSuccessMock).toHaveBeenCalledWith("u1", "oura");
+    expect(scopeDeniedMock).toHaveBeenCalledWith(
+      "u1",
+      expect.arrayContaining(["workout", "heartrate"]),
+    );
+    expect(scopeDeniedMock.mock.calls[0]![1]).toHaveLength(2);
+  });
+
+  it("reads heart rate over a window of hours, not the day window", async () => {
+    getConnMock.mockResolvedValue(CONN);
+    findFirstMock.mockResolvedValue(null);
+
+    await syncUserOura("u1");
+
+    const range = heartRatePagesMock.mock.calls[0]![1] as {
+      start: Date;
+      end: Date;
+    };
+    expect(range.end.getTime() - range.start.getTime()).toBeLessThanOrEqual(
+      72 * 60 * 60 * 1000,
     );
   });
 });

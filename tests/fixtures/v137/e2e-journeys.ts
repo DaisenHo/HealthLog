@@ -56,7 +56,7 @@ export interface AccessibilityStateCase {
   readonly keyboardTarget: string | null;
   /**
    * Copy the person has to read and act on, which must render as content
-   * rather than as muted meta (UI-STANDARDS §3). `null` where the state's only
+   * rather than as muted meta (ui-standards.md §3). `null` where the state's only
    * text is a screen-reader label, which has no visual contrast to check.
    */
   readonly contrastTarget: string | null;

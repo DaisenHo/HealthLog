@@ -1,7 +1,7 @@
 /**
  * The ingest-side half of the app's plausibility domain.
  *
- * `VALUE_RANGES` in `@/lib/validations/measurement` is the band the
+ * `VALUE_RANGES` in `@/lib/measurements/value-ranges` is the band the
  * application declares a metric can occupy — PULSE 20–300, WEIGHT 1–500,
  * SLEEP_DURATION 0–1440 minutes. Every path a person can drive enforces it:
  * the measurement routes, the batch endpoint, the CSV and Apple-export
@@ -46,7 +46,7 @@
  */
 import { annotate, getEvent } from "@/lib/logging/context";
 import { isPlausibleMetricValue } from "@/lib/measurements/value-domain";
-import { VALUE_RANGES } from "@/lib/validations/measurement";
+import { VALUE_RANGES } from "@/lib/measurements/value-ranges";
 
 /**
  * Stable meta key the tally lands under. Pinned so dashboards can count it

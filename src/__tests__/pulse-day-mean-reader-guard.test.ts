@@ -104,6 +104,10 @@ const SQL_READERS: Record<string, Entry> = {
   "lib/measurements/daily-series-read.ts": HELPER,
   "lib/rollups/measurement-rollups.ts": HELPER,
   "lib/rollups/tiered-context.ts": HELPER,
+  "lib/insights/correlation-channel-series.ts": {
+    exempt:
+      "the one SQL mean is the room-climate hour mean, over INDOOR_CO2 / INDOOR_TEMPERATURE / INDOOR_HUMIDITY only; pulse reaches the correlation channels through `dayValueRows` and the rollup compose",
+  },
 };
 
 /** Files that name pulse and hold an in-memory mean or a mean-making fold. */
@@ -155,10 +159,6 @@ const TS_READERS: Record<string, Entry> = {
   "lib/insights/mood-aggregates.ts": { exempt: "the mood series only" },
   "lib/insights/narrative/period-narrative.ts": {
     exempt: "means of day-keyed series, already one value per day",
-  },
-  "lib/mcp/rich-reads.ts": {
-    exempt:
-      "changepoints over rollup bucket means, which weigh pulse days once (readCanonicalRollupBuckets)",
   },
   "lib/medications/efficacy/build-efficacy.ts": {
     exempt: "means of the day-mean series (readDayMeanSeries)",

@@ -26,6 +26,7 @@ import { z } from "zod/v4";
 import { METRIC_BOUNDS } from "@/lib/analytics/effective-range";
 import { MANAGED_RECORD_SETTINGS_PATCH_SCHEMAS } from "@/lib/record-settings";
 import { connectionHealth } from "./integrations";
+import { MANAGED_OAUTH_PROVIDERS } from "@/lib/integrations/oauth-kit/managed-provider";
 import {
   dataEnvelope,
   errorEnvelope,
@@ -112,7 +113,7 @@ const recordSettingsIntegrationsResponse = z
   .meta({
     id: "RecordSettingsIntegrationsResponse",
     description:
-      "Whether the managed record's integrations are connected and how each is doing (`health`), and nothing else. Deliberately no control and no credential projection — OAuth and provider state cannot safely carry a record selector, so a Guardian can see that a pipe exists but cannot connect, disconnect, probe or resume it from here. A provider with no real credential reads `disconnected` even when its ledger row says otherwise, because a synthesised healthy ledger is not proof of a connection.",
+      "Whether the managed record's integrations are connected and how each is doing (`health`), and nothing else. No credential projection. A Guardian connects or disconnects an OAuth provider for the record through `POST /api/record-settings/integrations/{provider}/connect` and `/disconnect`. A provider with no real credential reads `disconnected` even when its ledger row says otherwise, because a synthesised healthy ledger is not proof of a connection.",
   });
 
 // ── The six family DTOs ──────────────────────────────────────────────
@@ -334,6 +335,45 @@ const familyParameter = {
     "Which configuration family to read or write. An unrecognised value is a 404 — and note that the family check runs BEFORE authentication, so an unknown family answers 404 to an unauthenticated caller where a known one would answer 401.",
 };
 
+const managedProviderEnum = z.enum(MANAGED_OAUTH_PROVIDERS);
+
+const managedProviderParameter = {
+  name: "provider",
+  in: "path" as const,
+  required: true,
+  schema: {
+    type: "string" as const,
+    enum: [...MANAGED_OAUTH_PROVIDERS],
+  },
+  description:
+    "The OAuth provider. An unrecognised value is a 404, answered before authentication.",
+};
+
+const managedConnectStartResponse = z
+  .object({
+    recordId: z.string(),
+    provider: managedProviderEnum,
+    authorizationUrl: z
+      .string()
+      .describe("The provider's consent URL, with the state the record owns."),
+  })
+  .meta({
+    id: "ManagedConnectStartResponse",
+    description:
+      "Where to send the browser to connect a provider for the managed record.",
+  });
+
+const managedDisconnectResponse = z
+  .object({
+    recordId: z.string(),
+    provider: managedProviderEnum,
+    disconnected: z.literal(true),
+  })
+  .meta({
+    id: "ManagedDisconnectResponse",
+    description: "The provider is no longer connected to the managed record.",
+  });
+
 export const recordSettingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/record-settings": {
     get: {
@@ -363,7 +403,7 @@ export const recordSettingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Account sharing"],
       summary: "Read the managed record's integration connection states",
       description:
-        "Disclosure only: whether each of the record's integrations is connected, when it last succeeded, and its server-resolved health. There is deliberately no control arm and no credential projection anywhere under this path — a Guardian cannot connect, disconnect, probe or resume a managed record's provider, because an OAuth flow cannot safely carry a record selector. Cookie session or Bearer, while acting on a managed record the caller guards.",
+        "Whether each of the record's integrations is connected, when it last succeeded, and its server-resolved health. No credential projection. Connecting and disconnecting an OAuth provider are the two POST routes below this path. Cookie session or Bearer, while acting on a managed record the caller guards.",
       responses: {
         ...recordRefusal(),
         "200": {
@@ -376,6 +416,69 @@ export const recordSettingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               ),
             },
           },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/record-settings/integrations/{provider}/connect": {
+    post: {
+      tags: ["Account sharing"],
+      summary: "Start connecting an OAuth provider for the managed record",
+      description:
+        "Mints the OAuth state for the record the session is acting on, sets it as an httpOnly cookie, and answers with the provider's consent URL; the client then sends the browser there. A fetch rather than a navigation, so the record-session fence applies. The state names the managed record: the provider's callback lands the tokens on it after checking the browser still belongs to a Guardian holding a live MANAGE grant on that record. When the record has no provider app of its own and the deployment has none, the Guardian's own app is copied onto the record (audited). Fitbit is not offered: its classic API is retired. Cookie session, while acting on a managed record the caller guards.",
+      parameters: [managedProviderParameter],
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The consent URL to send the browser to.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                managedConnectStartResponse,
+                "ManagedConnectStartEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "The path named a provider outside the closed set. Answered before the caller is authenticated.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "Neither the record, the Guardian, nor the deployment has an OAuth app for this provider.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/record-settings/integrations/{provider}/disconnect": {
+    post: {
+      tags: ["Account sharing"],
+      summary: "Disconnect an OAuth provider from the managed record",
+      description:
+        "Runs the same disconnect the owner of a record runs: the grant is dropped, the provider told where it can (Withings webhooks, Strava deauthorisation), and the integration parked at `disconnected`. Imported data stays. Audited against the record with the Guardian as the actor. Cookie session or Bearer, while acting on a managed record the caller guards.",
+      parameters: [managedProviderParameter],
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "The provider is disconnected.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                managedDisconnectResponse,
+                "ManagedDisconnectEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description:
+            "The path named a provider outside the closed set, or the record has no connection to it.",
+          content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
       },

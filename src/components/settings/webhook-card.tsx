@@ -15,11 +15,8 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { isWebhookFormDirty } from "@/components/settings/channel-form-dirty";
-import {
-  optimisticallySetChannelEnabled,
-  persistChannelEnabled,
-  rollbackChannelEnabled,
-} from "@/components/settings/notification-channel-toggle";
+import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { useChannelEnabledToggle } from "@/components/settings/notification-channel-toggle";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
@@ -41,10 +38,7 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
   const [headerName, setHeaderName] = useState("");
   const [headerValue, setHeaderValue] = useState("");
   const [format, setFormat] = useState<WebhookPayloadFormat>("generic");
-  const [saveMsg, setSaveMsg] = useState<string | null>(null);
-  const [saveMsgType, setSaveMsgType] = useState<"success" | "error" | null>(
-    null,
-  );
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const { data: settings } = useQuery({
     queryKey: queryKeys.settingsWebhook(),
@@ -69,9 +63,14 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
     { url, headerName, headerValue, format },
     settings,
   );
+  // The enable switch saves on tap; the form's Save covers the fields below.
+  const toggle = useChannelEnabledToggle<WebhookSettings>(
+    "/api/settings/webhook",
+    queryKeys.settingsWebhook(),
+  );
 
   const save = useMutation({
-    mutationFn: async (enabled: boolean) => {
+    mutationFn: async () => {
       const res = await apiFetchRaw("/api/settings/webhook", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -80,7 +79,7 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           headerName: headerName || undefined,
           headerValue: headerValue || undefined,
           format,
-          enabled,
+          enabled: settings?.enabled ?? false,
         }),
       });
       if (!res.ok) {
@@ -102,54 +101,13 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settingsWebhook() });
-      setSaveMsg(t("settings.saved"));
-      setSaveMsgType("success");
+      setSaveError(null);
+      toastWrittenOutcome("success", t("settings.saved"));
       setHeaderValue("");
     },
+    // A form shows its refusal inline, next to the fields it is about.
     onError: (err: Error) => {
-      setSaveMsg(err.message);
-      setSaveMsgType("error");
-    },
-  });
-
-  const toggleEnabled = useMutation<
-    void,
-    Error,
-    boolean,
-    WebhookSettings | undefined
-  >({
-    mutationFn: (enabled) =>
-      persistChannelEnabled(
-        "/api/settings/webhook",
-        enabled,
-        t("common.error"),
-      ),
-    onMutate: async (enabled) => {
-      const queryKey = queryKeys.settingsWebhook();
-      await queryClient.cancelQueries({ queryKey });
-      setSaveMsg(null);
-      setSaveMsgType(null);
-      return optimisticallySetChannelEnabled<WebhookSettings>(
-        queryClient,
-        queryKey,
-        enabled,
-      );
-    },
-    onSuccess: () => {
-      setSaveMsg(t("settings.saved"));
-      setSaveMsgType("success");
-    },
-    onError: (err, _enabled, previous) => {
-      rollbackChannelEnabled(
-        queryClient,
-        queryKeys.settingsWebhook(),
-        previous,
-      );
-      setSaveMsg(err.message);
-      setSaveMsgType("error");
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.settingsWebhook() });
+      setSaveError(err.message);
     },
   });
 
@@ -167,15 +125,15 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           <Switch
             id="webhook-toggle"
             checked={settings?.enabled ?? false}
-            onCheckedChange={(checked) => toggleEnabled.mutate(checked)}
-            disabled={save.isPending || toggleEnabled.isPending}
+            onCheckedChange={(checked) => toggle.mutate(checked)}
+            disabled={!settings || save.isPending || toggle.isPending}
           />
         </div>
 
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            save.mutate(settings?.enabled ?? false);
+            save.mutate();
           }}
           className="space-y-4"
         >
@@ -244,12 +202,9 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
             </div>
           </div>
 
-          {saveMsg && (saveMsgType === "error" || !dirty) && (
-            <p
-              role="alert"
-              className={`text-sm ${saveMsgType === "success" ? "text-success" : "text-destructive"}`}
-            >
-              {saveMsg}
+          {saveError && (
+            <p role="alert" className="text-destructive text-sm">
+              {saveError}
             </p>
           )}
 
@@ -261,7 +216,7 @@ export function WebhookCard({ isAuthenticated }: { isAuthenticated: boolean }) {
             />
             <Button
               type="submit"
-              disabled={save.isPending || toggleEnabled.isPending}
+              disabled={save.isPending || toggle.isPending}
               className="min-h-11"
             >
               {save.isPending && (

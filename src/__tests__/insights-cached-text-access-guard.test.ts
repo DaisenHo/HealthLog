@@ -1,18 +1,16 @@
 /**
  * The cached AI insights payload is read and written in one place.
  *
- * Since v1.43.7 the payload is sealed in `User.insightsCachedTextEncrypted`
- * and the readable `insightsCachedText` survives only as a fallback for rows
- * the backfill has not reached. Two columns that must move together are a
- * standing invitation to move one: a clear written as
- * `{ insightsCachedText: null }` — the shape every clear had until this
- * release — would now leave the whole sealed briefing behind, after a consent
- * withdrawal of all places. So the names are spelled in
- * `src/lib/insights/cached-text-cipher.ts`, and every other file goes through
- * its select, write, clear and open helpers.
+ * The payload is sealed in `User.insightsCachedTextEncrypted`; the readable
+ * `insightsCachedText` column it replaced was dropped in v1.44.0 (migration
+ * 0430). Every reader and writer goes through
+ * `src/lib/insights/cached-text-cipher.ts` (its select, write, clear and open
+ * helpers), so a clear cannot forget the column and a read cannot skip the
+ * decryption. The column name is spelled there and in the tables that have
+ * to name every column of the row.
  *
- * The allowlist below is the set of files with a reason to spell the legacy
- * name anyway, each stated. A file that joins it has to say why here.
+ * The readable name survives only as the snapshot builder's input field, which
+ * carries the OPENED text, never the column.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -23,42 +21,46 @@ import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
-const ALLOWED: Readonly<Record<string, string>> = {
-  "lib/insights/cached-text-cipher.ts": "the one module that owns the columns",
-  "lib/jobs/free-text-encryption-backfill.ts":
-    "the backfill that seals the legacy column",
+const SEALED_ALLOWED: Readonly<Record<string, string>> = {
+  "lib/insights/cached-text-cipher.ts": "the one module that owns the column",
+  "lib/crypto/encrypted-columns.ts":
+    "the registry of every ciphertext-bearing column",
   "lib/export/backup-plan.ts":
     "the backup classification names every User column",
-  "lib/data-wipe/wipe-plan.ts":
-    "the wipe reset names every User column it resets, and resets both",
+  "lib/data-wipe/wipe-plan.ts": "the wipe reset names every User column",
+};
+
+const OPENED_TEXT_ALLOWED: Readonly<Record<string, string>> = {
   "lib/dashboard/snapshot.ts":
-    "the snapshot builder's input field carries the OPENED text, not the column",
+    "the snapshot builder's input field carries the opened text",
   "lib/dashboard/snapshot-read.ts":
     "fills that input field from openInsightsCachedText",
 };
 
-/** The legacy name, not its sealed sibling, outside comments. */
-const LEGACY_NAME = /\binsightsCachedText\b(?!Encrypted)/;
+const SEALED_NAME = /\binsightsCachedTextEncrypted\b/;
+/** The dropped readable name, not its sealed sibling. */
+const READABLE_NAME = /\binsightsCachedText\b(?!Encrypted)/;
 
-function filesSpellingTheLegacyName(): string[] {
+function sourceFilesMatching(pattern: RegExp): string[] {
   return walkSourceFiles(SRC, { floor: 2000 })
     .filter((f) => !f.startsWith("generated/"))
     .filter((f) => !f.includes("__tests__/") && !/\.test\.tsx?$/.test(f))
     .filter((f) =>
-      LEGACY_NAME.test(stripComments(readFileSync(join(SRC, f), "utf8"))),
-    );
+      pattern.test(stripComments(readFileSync(join(SRC, f), "utf8"))),
+    )
+    .sort();
 }
 
 describe("insights cache column access", () => {
-  const found = filesSpellingTheLegacyName();
-
-  it("is confined to the cipher module and the stated exceptions", () => {
-    const strays = found.filter((f) => !(f in ALLOWED));
-    expect(strays).toEqual([]);
+  it("spells the sealed column only in the cipher module and the stated tables", () => {
+    const found = sourceFilesMatching(SEALED_NAME);
+    expect(found.length).toBe(4);
+    expect(found).toEqual(Object.keys(SEALED_ALLOWED).sort());
   });
 
-  it("still finds every stated exception, so the matcher is live", () => {
-    expect(found.length).toBeGreaterThan(5);
-    expect([...found].sort()).toEqual(Object.keys(ALLOWED).sort());
+  it("uses the readable name only for the opened text the snapshot builder takes", () => {
+    const found = sourceFilesMatching(READABLE_NAME);
+    expect(found.length).toBe(2);
+    expect(found).toEqual(Object.keys(OPENED_TEXT_ALLOWED).sort());
   });
 });

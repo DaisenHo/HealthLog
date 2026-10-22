@@ -10,6 +10,10 @@ import {
   AI_AVAILABLE,
   aiUnavailable,
 } from "@/__tests__/helpers/ai-capability-fixtures";
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
+
+// The cached payload is sealed at rest, so seeding it needs a key.
+vi.stubEnv("ENCRYPTION_KEY", "c".repeat(64));
 
 const BRIEFING = {
   paragraph: "Your pulse is well above its usual level today.",
@@ -49,7 +53,7 @@ const buildDashboardSnapshot = vi.fn(async () => current);
 
 // The cached briefing text is read off its own row, not the session user.
 const cacheRow = vi.hoisted(() => ({
-  current: null as { insightsCachedText: string | null } | null,
+  current: null as { insightsCachedTextEncrypted: Uint8Array | null } | null,
 }));
 vi.mock("@/lib/db", () => ({
   prisma: { user: { findUnique: async () => cacheRow.current } },
@@ -80,10 +84,12 @@ const NOW = new Date("2026-10-05T19:00:00.000Z");
 
 function user(generatedAt: string | null): SessionUser {
   cacheRow.current = {
-    insightsCachedText: JSON.stringify({
-      dailyBriefing: BRIEFING,
-      ...(generatedAt ? { briefingGeneratedAt: generatedAt } : {}),
-    }),
+    insightsCachedTextEncrypted: sealInsightsCachedText(
+      JSON.stringify({
+        dailyBriefing: BRIEFING,
+        ...(generatedAt ? { briefingGeneratedAt: generatedAt } : {}),
+      }),
+    ),
   };
   return {
     id: "user-briefing-today",

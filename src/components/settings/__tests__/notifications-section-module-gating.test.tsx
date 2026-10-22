@@ -1,14 +1,12 @@
 /**
- * v1.18.0 — module-gated per-type visibility on the consolidated
- * "Benachrichtigungen" reminder-types home.
+ * Settings > Notifications is the one home for every reminder kind, each
+ * card gated on its module and failing open.
  *
- * The mood reminder shows only when the `mood` module is enabled. Low-stock
- * maps to the medications domain (shown unless explicitly disabled). The gate
- * fails OPEN, so a `/me` payload without a module map keeps every card
- * visible.
- *
- * v1.18.6 — the proactive Coach nudge card moved to Settings → Coach, so
- * it no longer appears on this screen.
+ * v1.18.0 — mood reminder on `mood`, low-stock on `medications`.
+ * v1.44 — the Coach nudges came back (gated on the Coach surface), the
+ * checkup reminder switches joined (not a module, always shown), and a card
+ * names the reminders set where their subject lives (dose times on the
+ * medication, the cycle reminders in the per-event matrix).
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -25,8 +23,9 @@ vi.mock("@tanstack/react-query", () => ({
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
-// The auth mock is driven per-test via a mutable ref so each render can pick
-// a different module map without re-mocking the module.
+// Mounted, so the Coach gate reads the module map like a hydrated page.
+vi.mock("@/hooks/use-mounted", () => ({ useMounted: () => true }));
+
 const authRef: { modules?: Record<string, boolean> } = {};
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
@@ -49,38 +48,43 @@ function render(modules?: Record<string, boolean>) {
   );
 }
 
-describe("<NotificationsSection> module-gated reminder types", () => {
-  it("shows mood + low-stock cards when no module map (fails open); no coach nudge", () => {
+describe("<NotificationsSection> reminder kinds", () => {
+  it("shows every reminder card when no module map (fails open)", () => {
     const html = render(undefined);
     expect(html).toContain('id="mood-reminder"');
     expect(html).toContain('id="low-stock"');
-    // v1.18.6 — the coach nudge moved to Settings → Coach.
-    expect(html).not.toContain('id="coach-nudge"');
+    expect(html).toContain('id="coach-nudge"');
+    expect(html).toContain('id="vorsorge-reminders"');
+    expect(html).toContain('data-slot="notifications-elsewhere"');
+    expect(html).toContain('id="cycle-reminders"');
   });
 
   it("hides the mood card when the mood module is disabled", () => {
     const html = render({ mood: false });
     expect(html).not.toContain('id="mood-reminder"');
-    // Low-stock is unaffected.
     expect(html).toContain('id="low-stock"');
   });
 
-  it("always shows low-stock unless medications is disabled", () => {
-    const html = render({ mood: false });
-    expect(html).toContain('id="low-stock"');
-    expect(html).not.toContain('id="mood-reminder"');
-    expect(html).not.toContain('id="coach-nudge"');
+  it("hides the low-stock card and the dose row when medications is disabled", () => {
+    const html = render({ medications: false });
+    expect(html).not.toContain('id="low-stock"');
+    expect(html).not.toContain('href="/medications"');
   });
 
-  it("drops the channels / inbox cross-links and the Vorsorge block (D5)", () => {
-    // v1.18.1 — the page is lean: no section blurb, no channels/inbox
-    // cross-links, and no embedded Vorsorge editor (it has its own page).
+  it("hides the Coach nudges when the Coach is off", () => {
+    expect(render({ coach: false })).not.toContain('id="coach-nudge"');
+  });
+
+  it("drops the elsewhere card when neither of its reminders applies", () => {
+    const html = render({ medications: false, cycle: false });
+    expect(html).not.toContain('data-slot="notifications-elsewhere"');
+    // The checkup reminders are not a module and stay.
+    expect(html).toContain('id="vorsorge-reminders"');
+  });
+
+  it("links to the per-event matrix and to the delivery channels", () => {
     const html = render({});
-    expect(html).not.toContain('data-slot="notifications-channels-cross-link"');
-    expect(html).not.toContain('data-slot="notifications-inbox-cross-link"');
-    // The remaining reminder-type cards (no coach nudge here anymore).
-    expect(html).toContain('id="mood-reminder"');
-    expect(html).toContain('id="low-stock"');
-    expect(html).not.toContain('id="coach-nudge"');
+    expect(html).toContain('href="/notifications"');
+    expect(html).toContain('href="/settings/integrations#channels"');
   });
 });

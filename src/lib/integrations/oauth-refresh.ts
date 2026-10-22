@@ -62,7 +62,14 @@ export async function persistRotatedToken(
 }
 
 export type SerializedRefreshProvider =
-  "whoop" | "withings" | "oura" | "codex" | "admin-codex";
+  | "whoop"
+  | "withings"
+  | "oura"
+  | "strava"
+  | "google-health"
+  | "polar"
+  | "codex"
+  | "admin-codex";
 
 /**
  * Provider refreshes hold a database transaction open around one bounded

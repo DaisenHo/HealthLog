@@ -23,7 +23,8 @@ import { checkAnalyticsReadRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { loadBaselineProfile } from "@/lib/insights/derived";
 import { computeCoincidentDeviation } from "@/lib/insights/derived/coincident-deviation";
-import { buildChangepointSignals } from "@/lib/insights/derived/changepoint";
+import { buildExtendedChangepointSignals } from "@/lib/insights/derived/changepoint";
+import { resolveModuleMap } from "@/lib/modules/gate";
 import { summariseHealthStatus } from "@/lib/insights/health-status";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +46,13 @@ export const GET = apiHandler(async () => {
     tz: user.timezone,
     now,
   });
-  const shifts = await buildChangepointSignals(user.id, now);
+  // v1.44 — the wider scan: every vital with a stable daily level over 180
+  // days, a metric whose module is off left unread.
+  const shifts = await buildExtendedChangepointSignals(
+    user.id,
+    now,
+    await resolveModuleMap(user.id),
+  );
 
   const vitals = coincident.status === "ok" ? coincident.value.vitals : [];
   const summary = summariseHealthStatus(vitals, shifts);

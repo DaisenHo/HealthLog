@@ -135,7 +135,7 @@
   /* The one sanctioned step below `text-xs` (12px). Minted so badges,
      tag chips, and tabular-nums micro-labels stop hand-rolling
      `text-[0.6875rem]` / `text-[0.65rem]` arbitrary values that drift by a
-     third of a pixel per site. UI-STANDARDS §5 pins the usage: never for
+     third of a pixel per site. ui-standards.md §5 pins the usage: never for
      muted body or meta text (the muted floor stays `text-xs`) — only for
      chips, badges, and tabular micro-labels with verified contrast. */
   --text-2xs: 0.6875rem;

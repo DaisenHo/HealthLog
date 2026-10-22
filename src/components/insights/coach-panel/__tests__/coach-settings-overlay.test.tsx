@@ -79,6 +79,8 @@ describe("<CoachSettingsBody>", () => {
     expect(select).toContain('value="local"');
     expect(select).toContain('value="admin-openai"');
     expect(select).not.toContain('value="codex"');
+    // The same preference Settings > AI writes; the link there stays.
+    expect(html).toContain('href="/settings/ai#ai-provider"');
   });
 
   it("shows the operator's central Codex as the active provider when it answers", () => {

@@ -211,6 +211,34 @@ export const SIGNALS: Record<string, SignalDefinition> = {
       category: "vital-signs",
     },
   },
+  // v1.44 — RMSSD, the heart-rate-variability statistic rings and bands
+  // report (Oura, WHOOP, Polar, Fitbit, Google Health). Registered for its FHIR
+  // coding only: every other surface reads it through its own tables today, so
+  // all surface flags stay off and nothing else derives from this entry.
+  // LOINC publishes an SDNN term (80404-7, above) and none for RMSSD, so the
+  // coding is text-only rather than borrowing SDNN's code for a different
+  // statistic.
+  HRV_RMSSD: {
+    key: "HRV_RMSSD",
+    kind: "measurement",
+    source: { measurementType: "HRV_RMSSD" },
+    displayName: "Heart-rate variability (RMSSD)",
+    unit: "ms",
+    direction: "higher-better",
+    archetype: "physiological-vital",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      loinc: null,
+      display: "Heart rate variability RMSSD",
+      unit: "ms",
+      category: "vital-signs",
+    },
+  },
   OXYGEN_SATURATION: {
     key: "OXYGEN_SATURATION",
     kind: "measurement",
@@ -1776,6 +1804,214 @@ export const SIGNALS: Record<string, SignalDefinition> = {
       correlationEligible: true,
       coachSnapshot: false,
       mcp: false,
+    },
+  },
+  // ── v1.44 — Apple Health activity rings, mindfulness, State of Mind, AFib ──
+  // The three ring metrics are read through MCP like steps and daylight. The
+  // mindful minutes, the State of Mind valence and AFib burden stay off every
+  // AI-facing surface (Coach, MCP, correlations): mental-health self-reports
+  // and an AFib awareness signal are shared only where the person asks.
+  EXERCISE_MINUTES: {
+    key: "EXERCISE_MINUTES",
+    kind: "measurement",
+    source: { measurementType: "EXERCISE_MINUTES" },
+    displayName: "Exercise minutes",
+    unit: "min/day",
+    direction: "higher-better",
+    archetype: "activity-fitness",
+    // Apple's exercise ring default and the WHO weekly 150 minutes / 7.
+    normalRange: { low: 22, high: 60 },
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierAppleExerciseTime",
+      display: "Exercise time",
+      unit: "min",
+      category: "activity",
+    },
+  },
+  STAND_MINUTES: {
+    key: "STAND_MINUTES",
+    kind: "measurement",
+    source: { measurementType: "STAND_MINUTES" },
+    displayName: "Standing minutes",
+    unit: "min/day",
+    direction: "higher-better",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierAppleStandTime",
+      display: "Stand time",
+      unit: "min",
+      category: "activity",
+    },
+  },
+  STAND_HOURS: {
+    key: "STAND_HOURS",
+    kind: "measurement",
+    source: { measurementType: "STAND_HOURS" },
+    displayName: "Stand hours",
+    unit: "h/day",
+    direction: "higher-better",
+    archetype: "activity-fitness",
+    // Apple's stand-ring goal is 12 hours.
+    normalRange: { low: 12, high: 24 },
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKCategoryTypeIdentifierAppleStandHour",
+      display: "Stand hours",
+      unit: "h",
+      category: "activity",
+    },
+  },
+  MINDFUL_MINUTES: {
+    key: "MINDFUL_MINUTES",
+    kind: "measurement",
+    source: { measurementType: "MINDFUL_MINUTES" },
+    displayName: "Mindful minutes",
+    unit: "min/day",
+    direction: "higher-better",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      loinc: "HKCategoryTypeIdentifierMindfulSession",
+      display: "Mindful session",
+      unit: "min",
+      category: "activity",
+    },
+  },
+  STATE_OF_MIND_VALENCE: {
+    key: "STATE_OF_MIND_VALENCE",
+    kind: "score",
+    source: { measurementType: "STATE_OF_MIND_VALENCE" },
+    displayName: "State of mind (valence)",
+    unit: "valence",
+    direction: "higher-better",
+    archetype: "physiological-vital",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      // A self-report on HealthKit's −1..1 scale; no LOINC concept.
+      loinc: null,
+      display: "State of mind valence",
+      unit: "1",
+      category: "survey",
+    },
+  },
+  AFIB_BURDEN: {
+    key: "AFIB_BURDEN",
+    kind: "measurement",
+    source: { measurementType: "AFIB_BURDEN" },
+    displayName: "AFib burden",
+    unit: "%",
+    direction: "lower-better",
+    archetype: "physiological-vital",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierAtrialFibrillationBurden",
+      display: "Atrial fibrillation burden",
+      unit: "%",
+      category: "vital-signs",
+    },
+  },
+  // ── v1.44 — room climate pushed through the ingest token ──
+  // Bands are the usual comfort guidance (CO2 under 1000 ppm as the long-
+  // standing ventilation threshold, 18–24 °C, 40–60 % RH); placement only.
+  INDOOR_CO2: {
+    key: "INDOOR_CO2",
+    kind: "measurement",
+    source: { measurementType: "INDOOR_CO2" },
+    displayName: "Indoor CO2",
+    unit: "ppm",
+    direction: "target-band",
+    archetype: "environmental-exposure",
+    normalRange: { low: 400, high: 1000 },
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      // A room reading, not a body observation; no LOINC concept applies.
+      loinc: null,
+      display: "Indoor carbon dioxide",
+      unit: "[ppm]",
+      category: "activity",
+    },
+  },
+  INDOOR_TEMPERATURE: {
+    key: "INDOOR_TEMPERATURE",
+    kind: "measurement",
+    source: { measurementType: "INDOOR_TEMPERATURE" },
+    displayName: "Indoor temperature",
+    unit: "°C",
+    direction: "target-band",
+    archetype: "environmental-exposure",
+    normalRange: { low: 18, high: 24 },
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      // A room reading, not a body observation; no LOINC concept applies.
+      loinc: null,
+      display: "Indoor air temperature",
+      unit: "Cel",
+      category: "activity",
+    },
+  },
+  INDOOR_HUMIDITY: {
+    key: "INDOOR_HUMIDITY",
+    kind: "measurement",
+    source: { measurementType: "INDOOR_HUMIDITY" },
+    displayName: "Indoor humidity",
+    unit: "%",
+    direction: "target-band",
+    archetype: "environmental-exposure",
+    normalRange: { low: 40, high: 60 },
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: false,
+    },
+    fhir: {
+      // A room reading, not a body observation; no LOINC concept applies.
+      loinc: null,
+      display: "Indoor relative humidity",
+      unit: "%",
+      category: "activity",
     },
   },
 };

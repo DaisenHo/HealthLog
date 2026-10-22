@@ -1,20 +1,12 @@
 import { apiHandler, requireAuth } from "@/lib/api-handler";
+import {
+  setConnectStateCookie,
+  startOAuthConnect,
+} from "@/lib/integrations/oauth-kit/connect-start";
 import { apiError } from "@/lib/api-response";
-import { prisma } from "@/lib/db";
-import { annotate, getEvent } from "@/lib/logging/context";
+import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
-import {
-  generatePkcePair,
-  getAuthorizationUrl,
-} from "@/lib/google-health/client";
-import { getUserGoogleHealthCredentials } from "@/lib/google-health/credentials";
-import {
-  GOOGLE_HEALTH_OAUTH_STATE_COOKIE,
-  GOOGLE_HEALTH_OAUTH_STATE_TTL_MS,
-  mintGoogleHealthOAuthStateNonce,
-} from "@/lib/google-health/oauth-state";
 import { NextRequest, NextResponse } from "next/server";
-import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 
 /**
  * Redirect the user to the Google OAuth consent page for the Google Health
@@ -55,27 +47,14 @@ export const GET = apiHandler(async (req: NextRequest) => {
     );
   }
 
-  const creds = await getUserGoogleHealthCredentials(user.id);
-  if (!creds) {
-    return apiError(
-      "Please configure your Google OAuth Client ID and Client Secret in Settings first.",
-      400,
-    );
-  }
-
-  const nonce = mintGoogleHealthOAuthStateNonce();
-  const { verifier, challenge } = generatePkcePair();
-  try {
-    await prisma.googleHealthOAuthState.create({
-      data: {
-        nonce,
-        userId: user.id,
-        codeVerifier: verifier,
-        expiresAt: new Date(Date.now() + GOOGLE_HEALTH_OAUTH_STATE_TTL_MS),
-      },
-    });
-  } catch (err) {
-    getEvent()?.setError(err);
+  const started = await startOAuthConnect("google-health", user.id);
+  if (!started.ok) {
+    if (started.reason === "nocreds") {
+      return apiError(
+        "Please configure your Google OAuth Client ID and Client Secret in Settings first.",
+        400,
+      );
+    }
     annotate({ action: { name: "google_health.connect.create_failed" } });
     return NextResponse.redirect(
       new URL(
@@ -85,16 +64,8 @@ export const GET = apiHandler(async (req: NextRequest) => {
     );
   }
 
-  const url = getAuthorizationUrl(nonce, creds, challenge);
-
-  const response = NextResponse.redirect(url);
-  response.cookies.set(GOOGLE_HEALTH_OAUTH_STATE_COOKIE, nonce, {
-    httpOnly: true,
-    secure: shouldEmitSecureCookie(),
-    sameSite: "lax",
-    maxAge: Math.floor(GOOGLE_HEALTH_OAUTH_STATE_TTL_MS / 1000),
-    path: "/",
-  });
-
-  return response;
+  return setConnectStateCookie(
+    NextResponse.redirect(started.authorizationUrl),
+    started.cookie,
+  );
 });

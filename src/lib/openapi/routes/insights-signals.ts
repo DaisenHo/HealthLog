@@ -44,6 +44,16 @@ const healthStatusResponse = z
         beforeMean: z.number(),
         afterMean: z.number(),
         direction: z.enum(["up", "down"]),
+        beforeDays: z
+          .number()
+          .int()
+          .optional()
+          .describe("v1.44 — days with a value before the break."),
+        afterDays: z
+          .number()
+          .int()
+          .optional()
+          .describe("v1.44 — days with a value from the break on."),
       }),
     ),
     generatedAt: z.string().describe("ISO-8601 instant the read was computed."),

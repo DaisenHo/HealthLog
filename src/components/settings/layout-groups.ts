@@ -5,7 +5,6 @@ import { surfaceModule } from "@/lib/modules/surface";
 import { DashboardSection } from "./dashboard-section";
 import { InsightsSection } from "./insights-section";
 import { MedicationsSection } from "./medications-section";
-import { MoodSection } from "./mood-section";
 import { LabsSection } from "./labs-section";
 import { IllnessSection } from "./illness-section";
 import { DocumentsSection } from "./documents-section";
@@ -29,6 +28,11 @@ import { VorsorgeSection } from "./vorsorge-section";
  * `generateStaticParams()`) both consume it, so its array values must stay
  * usable on the server. It holds references to the `"use client"` section
  * components, which a server component renders as ordinary client boundaries.
+ *
+ * v1.44 — the hub holds order and view only ("Arrangement"). The mood tag
+ * management, the labs biomarker catalog and text recognition, and the
+ * injection sites moved to the module pages under Settings > Modules
+ * (`module-settings-pages.tsx`); `/settings/layout/mood` redirects there.
  *
  * Each module section keeps its module-gate: a disabled module's row / subpage
  * does not render, read from the resolved `useAuth().user.modules` map (the
@@ -75,12 +79,6 @@ export const LAYOUT_GROUPS: ReadonlyArray<LayoutGroup> = [
     titleKey: "settings.sections.layout.medications.title",
     descriptionKey: "settings.sections.layout.medications.description",
     Body: MedicationsSection,
-  },
-  {
-    id: "mood",
-    titleKey: "settings.sections.layout.mood.title",
-    descriptionKey: "settings.sections.layout.mood.description",
-    Body: MoodSection,
   },
   {
     id: "labs",

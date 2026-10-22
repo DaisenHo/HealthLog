@@ -36,6 +36,7 @@
  */
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { annotate } from "@/lib/logging/context";
 import {
   readCanonicalRollupBuckets,
@@ -521,11 +522,12 @@ function bucketRuns(
 }
 
 /**
- * Best-effort pg-boss enqueue. Silent no-op when no boss is attached
- * (route is running in a context without the worker — typically the
- * test suite). The reader-side fall-through still produces fresh
- * data on a cache miss, so missing the enqueue is at-most a one-read
- * cost rather than a correctness bug.
+ * Best-effort pg-boss enqueue. A write that lands while the process is still
+ * bringing its boss up is sent once the boss is bound (`enqueueWhenBossReady`)
+ * instead of being dropped; with no boss coming at all (a context without
+ * the worker, typically the test suite) it is a silent no-op. The
+ * reader-side fall-through still produces fresh data on a cache miss, so a
+ * missed enqueue is at most a one-read cost rather than a correctness bug.
  */
 export async function enqueueRollupRecompute(input: {
   userId: string;
@@ -534,8 +536,6 @@ export async function enqueueRollupRecompute(input: {
   from: Date;
   to: Date;
 }): Promise<void> {
-  const boss = getGlobalBoss();
-  if (!boss) return;
   const payload: RollupRecomputePayload = {
     userId: input.userId,
     type: input.type,
@@ -544,34 +544,36 @@ export async function enqueueRollupRecompute(input: {
     to: input.to.toISOString(),
     enqueuedAt: new Date().toISOString(),
   };
-  await boss.send(ROLLUP_RECOMPUTE_QUEUE, payload, {
-    retryLimit: 3,
-    retryDelay: 30,
-    retryBackoff: true,
-    // Coalesce duplicate enqueues for the same bucket key — multiple
-    // measurements landing on the same day shouldn't each spawn a
-    // separate worker run. The singleton key uses bucket-start so
-    // two writes inside the same week share one queued job.
-    //
-    // The key only does that because the queue carries the `short` policy
-    // (see `reminder/register-rollup.ts`); under pg-boss's default `standard`
-    // policy nothing indexes `singleton_key` and this key coalesced nothing,
-    // which is how a large sync came to fan out thousands of jobs re-deriving
-    // byte-identical rows. `short` collapses sends only while an identical job
-    // is still QUEUED — safe here precisely because the handler re-reads the
-    // bucket's live rows when it starts, so the queued job still sees writes
-    // that land after it was enqueued.
-    //
-    // A job covering a run of several buckets (`recomputeBucketsForKeys`)
-    // carries its end in the key too: under the bare start it would collapse
-    // into a queued single-bucket job and the rest of the run would be lost.
-    singletonKey:
-      `${input.userId}|${input.type}|${input.granularity}|${input.from.toISOString()}` +
-      (bucketSpan(input.from, input.granularity).to.getTime() ===
-      input.to.getTime()
-        ? ""
-        : `|${input.to.toISOString()}`),
-  });
+  await enqueueWhenBossReady("rollup-recompute", (boss) =>
+    boss.send(ROLLUP_RECOMPUTE_QUEUE, payload, {
+      retryLimit: 3,
+      retryDelay: 30,
+      retryBackoff: true,
+      // Coalesce duplicate enqueues for the same bucket key — multiple
+      // measurements landing on the same day shouldn't each spawn a
+      // separate worker run. The singleton key uses bucket-start so
+      // two writes inside the same week share one queued job.
+      //
+      // The key only does that because the queue carries the `short` policy
+      // (see `reminder/register-rollup.ts`); under pg-boss's default `standard`
+      // policy nothing indexes `singleton_key` and this key coalesced nothing,
+      // which is how a large sync came to fan out thousands of jobs re-deriving
+      // byte-identical rows. `short` collapses sends only while an identical job
+      // is still QUEUED — safe here precisely because the handler re-reads the
+      // bucket's live rows when it starts, so the queued job still sees writes
+      // that land after it was enqueued.
+      //
+      // A job covering a run of several buckets (`recomputeBucketsForKeys`)
+      // carries its end in the key too: under the bare start it would collapse
+      // into a queued single-bucket job and the rest of the run would be lost.
+      singletonKey:
+        `${input.userId}|${input.type}|${input.granularity}|${input.from.toISOString()}` +
+        (bucketSpan(input.from, input.granularity).to.getTime() ===
+        input.to.getTime()
+          ? ""
+          : `|${input.to.toISOString()}`),
+    }),
+  );
 }
 
 /**

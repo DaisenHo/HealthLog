@@ -15,6 +15,7 @@ import type { GlucoseUnit } from "@/lib/glucose";
 import type { GlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
 import type { MeasurementSource } from "@/generated/prisma/client";
 import type { ModuleKey } from "@/lib/modules/gate";
+import type { EfficacySegmented } from "@/lib/medications/efficacy/segmented-effect";
 import type { Glp1SideEffectTag } from "@/lib/medications/glp1-side-effect-tags";
 import type {
   ComplianceSchedule,
@@ -497,6 +498,57 @@ export interface DoctorReportData {
     note: string | null;
     noteUnreadable: boolean;
   } | null;
+  /**
+   * Workouts over the window, summed per sport (v1.44). Null when the
+   * WORKOUTS leaf was not selected, the `workouts` module is off, or no
+   * session fell inside the window. Optional so older fixtures typecheck.
+   */
+  workouts?: DoctorReportWorkouts | null;
+  /**
+   * The segmented-regression effect of each listed medication on its target
+   * metric(s), around the medication's start (v1.44). Computed without AI from
+   * the same day values and dose ledger the efficacy tab reads. A target rides
+   * only when its own measurement leaf is admitted too, so the block never
+   * carries a figure derived from a series the owner withheld. It names the
+   * medications, so it rides only when MEDICATION_LIST is admitted as well.
+   * Null when either leaf was not selected or nothing qualified.
+   */
+  medicationEffects?: DoctorReportMedicationEffect[] | null;
+}
+
+/** The report's workout block: totals plus one row per sport. */
+export interface DoctorReportWorkouts {
+  sessions: number;
+  totalDurationSec: number;
+  /** Sessions and minutes divided by the window's weeks (days / 7). */
+  sessionsPerWeek: number;
+  minutesPerWeek: number;
+  /** Distinct sports in the window; `bySport` lists at most twelve. */
+  sportCount: number;
+  bySport: Array<{
+    /** The canonical sport key; the renderer names it in the reader's language. */
+    sportType: string;
+    sessions: number;
+    durationSec: number;
+    /** Summed over the sessions that reported a distance (`distanceSessions`). */
+    distanceM: number | null;
+    distanceSessions: number;
+    energyKcal: number | null;
+    /** Mean of the per-session average heart rates that were reported. */
+    avgHeartRate: number | null;
+  }>;
+}
+
+/** One medication's effect block in the report. */
+export interface DoctorReportMedicationEffect {
+  medicationName: string;
+  /** YYYY-MM-DD, or null when the medication carries no start date. */
+  startsOn: string | null;
+  targets: Array<{
+    /** The target MeasurementType; the renderer labels it and picks the unit. */
+    type: string;
+    effect: EfficacySegmented;
+  }>;
 }
 
 /** The three persisted score types surfaced in the wellness summary. */

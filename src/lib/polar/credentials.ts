@@ -11,7 +11,9 @@
  */
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
+import { obtainAccessToken } from "@/lib/integrations/oauth-kit/token";
 import { getPolarCredentials, type PolarCredentials } from "./client";
+import { polarTokenDescriptor } from "./oauth-descriptor";
 
 /**
  * Resolve the user's Polar OAuth client id/secret, DB-first then env.
@@ -80,24 +82,22 @@ export interface PolarConnection {
 }
 
 /**
- * Fetch + decrypt the user's stored Polar token. Returns null when the user has
+ * Fetch + decrypt the user's stored Polar token, read through the shared OAuth
+ * token lifecycle like every other provider's. Returns null when the user has
  * not connected Polar (no access token) or the member id is missing.
  */
 export async function getPolarConnection(
   userId: string,
 ): Promise<PolarConnection | null> {
+  const grant = await obtainAccessToken(polarTokenDescriptor, userId);
+  if (grant.kind !== "token") return null;
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: {
-      polarAccessTokenEncrypted: true,
-      polarUserIdEncrypted: true,
-    },
+    select: { polarUserIdEncrypted: true },
   });
-  if (!user?.polarAccessTokenEncrypted || !user?.polarUserIdEncrypted) {
-    return null;
-  }
+  if (!user?.polarUserIdEncrypted) return null;
   return {
-    accessToken: decrypt(user.polarAccessTokenEncrypted),
+    accessToken: grant.accessToken,
     polarUserId: decrypt(user.polarUserIdEncrypted),
   };
 }

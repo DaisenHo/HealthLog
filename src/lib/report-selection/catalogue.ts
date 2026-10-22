@@ -5,8 +5,8 @@
  * A LEAF is the smallest releasable unit. There are exactly two kinds: every
  * `MeasurementType` enum member, and the structured sections of the report
  * payload that are not measurement series (identity, insurance, the glucose
- * panel, labs, the three medication blocks, GLP-1, allergies, illness
- * episodes, family history, mood, cycle).
+ * panel, labs, the medication blocks, GLP-1, the medication effect, workouts,
+ * allergies, illness episodes, family history, mood, cycle).
  *
  * One catalogue drives the selection panel, the aggregator, the PDF, the
  * clinician share view and the guard tests, so a control can never again exist
@@ -44,7 +44,9 @@ export type StructuredLeafId =
   | "MEDICATION_LIST"
   | "MEDICATION_ADMINISTRATIONS"
   | "MEDICATION_COMPLIANCE"
+  | "MEDICATION_EFFECT"
   | "GLP1_THERAPY"
+  | "WORKOUTS"
   | "ALLERGIES"
   | "ILLNESS_EPISODES"
   | "VISITS"
@@ -119,6 +121,7 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   IRREGULAR_RHYTHM_NOTIFICATION: "cardio",
   HIGH_HEART_RATE_EVENT: "cardio",
   LOW_HEART_RATE_EVENT: "cardio",
+  AFIB_BURDEN: "cardio",
 
   // ── body ──
   WEIGHT: "body",
@@ -161,6 +164,9 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   STRAIN_SCORE: "activity",
   DAY_STRAIN: "activity",
   WORKOUT_STRAIN: "activity",
+  EXERCISE_MINUTES: "activity",
+  STAND_MINUTES: "activity",
+  STAND_HOURS: "activity",
 
   // ── mobility & gait ──
   WALKING_SPEED: "mobility",
@@ -180,11 +186,19 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   AUDIO_EXPOSURE_HEADPHONE: "environment",
   AUDIO_EXPOSURE_EVENT: "environment",
   TIME_IN_DAYLIGHT: "environment",
+  INDOOR_CO2: "environment",
+  INDOOR_TEMPERATURE: "environment",
+  INDOOR_HUMIDITY: "environment",
 
   // ── glucose ──
   BLOOD_GLUCOSE: "glucose",
 
   // ── fenced ──
+  // Mindful minutes and the State of Mind valence are mental-health
+  // self-care and self-report: fenced like the screening totals, so they
+  // reach a report only when the person picks them.
+  MINDFUL_MINUTES: "sensitive",
+  STATE_OF_MIND_VALENCE: "sensitive",
   PHQ9_SCORE: "sensitive",
   GAD7_SCORE: "sensitive",
   WHO5_SCORE: "sensitive",
@@ -201,7 +215,9 @@ export const STRUCTURED_LEAF_GROUP: Record<StructuredLeafId, ReportGroupId> = {
   MEDICATION_LIST: "medications",
   MEDICATION_ADMINISTRATIONS: "medications",
   MEDICATION_COMPLIANCE: "medications",
+  MEDICATION_EFFECT: "medications",
   GLP1_THERAPY: "medications",
+  WORKOUTS: "activity",
   ALLERGIES: "history",
   ILLNESS_EPISODES: "history",
   VISITS: "history",
@@ -213,7 +229,7 @@ export const STRUCTURED_LEAF_GROUP: Record<StructuredLeafId, ReportGroupId> = {
   ANAMNESIS: "sensitive",
 };
 
-/** i18n label keys for the 18 structured leaves. */
+/** i18n label keys for the structured leaves. */
 export const STRUCTURED_LEAF_LABEL_KEYS: Record<StructuredLeafId, string> = {
   PATIENT_IDENTITY: "reportSelection.leafPatientIdentity",
   EMERGENCY: "reportSelection.leafEmergency",
@@ -223,7 +239,9 @@ export const STRUCTURED_LEAF_LABEL_KEYS: Record<StructuredLeafId, string> = {
   MEDICATION_LIST: "reportSelection.leafMedicationList",
   MEDICATION_ADMINISTRATIONS: "reportSelection.leafMedicationAdministrations",
   MEDICATION_COMPLIANCE: "reportSelection.leafMedicationCompliance",
+  MEDICATION_EFFECT: "reportSelection.leafMedicationEffect",
   GLP1_THERAPY: "reportSelection.leafGlp1Therapy",
+  WORKOUTS: "reportSelection.leafWorkouts",
   ALLERGIES: "reportSelection.leafAllergies",
   ILLNESS_EPISODES: "reportSelection.leafIllnessEpisodes",
   VISITS: "reportSelection.leafVisits",
@@ -264,6 +282,9 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   // Activity / movement series and the training-load scores.
   ACTIVITY_STEPS: "workouts",
   ACTIVE_ENERGY_BURNED: "workouts",
+  EXERCISE_MINUTES: "workouts",
+  STAND_MINUTES: "workouts",
+  STAND_HOURS: "workouts",
   ENERGY_EXPENDITURE_KJ: "workouts",
   FLIGHTS_CLIMBED: "workouts",
   WALKING_RUNNING_DISTANCE: "workouts",
@@ -279,6 +300,8 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   STRAIN_SCORE: "workouts",
   DAY_STRAIN: "workouts",
   WORKOUT_STRAIN: "workouts",
+  // The per-sport workout block.
+  WORKOUTS: "workouts",
   // Readiness signals.
   RECOVERY_SCORE: "recovery",
   STRESS_SCORE: "recovery",
@@ -299,6 +322,9 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   AUDIO_EXPOSURE_HEADPHONE: "environment",
   AUDIO_EXPOSURE_EVENT: "environment",
   TIME_IN_DAYLIGHT: "environment",
+  INDOOR_CO2: "environment",
+  INDOOR_TEMPERATURE: "environment",
+  INDOOR_HUMIDITY: "environment",
   // Glucose: the raw series and the derived panel.
   BLOOD_GLUCOSE: "glucose",
   GLUCOSE_PANEL: "glucose",
@@ -309,6 +335,10 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   GAD7_SCORE: "mentalHealth",
   WHO5_SCORE: "mentalHealth",
   SCI_SCORE: "mentalHealth",
+  // The State of Mind valence and mindful minutes ride the mood module: a
+  // person who turned mood tracking off does not see them on a report.
+  STATE_OF_MIND_VALENCE: "mood",
+  MINDFUL_MINUTES: "mood",
   // Structured sections with an owning module.
   LAB_RESULTS: "labs",
   MOOD: "mood",
@@ -317,6 +347,7 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   MEDICATION_LIST: "medications",
   MEDICATION_ADMINISTRATIONS: "medications",
   MEDICATION_COMPLIANCE: "medications",
+  MEDICATION_EFFECT: "medications",
   GLP1_THERAPY: "medications",
   // The immunization log is its own opt-out module: the leaf hides when the
   // `vaccinations` module is off, and the deselected leaf hides regardless of
@@ -411,11 +442,33 @@ export const SENSITIVE_LEAF_IDS: readonly ReportLeafId[] = ALL_LEAF_IDS.filter(
       : MEASUREMENT_LEAF_GROUP[leaf] === SENSITIVE_GROUP_ID,
 );
 
+/**
+ * Measurement labels the report artefacts print differently from the app.
+ * Heart-rate variability comes as two statistics that are not
+ * interchangeable (SDNN from Apple Health and Withings, RMSSD from Oura,
+ * WHOOP, Polar and Fitbit); the app's generic "Heart-rate variability" label
+ * on the SDNN series sits beside "HRV (RMSSD)" on a clinician's page, so the
+ * report names the statistic on both.
+ */
+const REPORT_MEASUREMENT_LABEL_OVERRIDES: Partial<
+  Record<MeasurementType, string>
+> = {
+  HEART_RATE_VARIABILITY: "reportSelection.leafHrvSdnn",
+};
+
+/** The i18n label key a report artefact prints a measurement type under. */
+export function reportMeasurementLabelKey(type: MeasurementType): string {
+  return (
+    REPORT_MEASUREMENT_LABEL_OVERRIDES[type] ??
+    MEASUREMENT_TYPE_LABEL_KEYS[type]
+  );
+}
+
 /** The i18n label key for any leaf. */
 export function leafLabelKey(leaf: ReportLeafId): string {
   return isStructuredLeafId(leaf)
     ? STRUCTURED_LEAF_LABEL_KEYS[leaf]
-    : MEASUREMENT_TYPE_LABEL_KEYS[leaf];
+    : reportMeasurementLabelKey(leaf);
 }
 
 /** The group a leaf belongs to. */

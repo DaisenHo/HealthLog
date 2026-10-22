@@ -23,6 +23,10 @@ import type { MeasurementType } from "@/generated/prisma/client";
  * silently failing the assertion.
  */
 const MEASUREMENT_TYPES_WITHOUT_HK_COUNTERPART = new Set<MeasurementType>([
+  // v1.44 — room climate arrives through the ingest token, not HealthKit.
+  "INDOOR_CO2",
+  "INDOOR_TEMPERATURE",
+  "INDOOR_HUMIDITY",
   // Withings-only metrics (no HK identifier ships any of these as a
   // first-class quantity — Apple delegates body-composition tail to
   // third-party devices via the BodyMass/BodyFat pair).
@@ -140,6 +144,12 @@ describe("APPLE_HEALTH_TYPE_MAP", () => {
         "HKCategoryTypeIdentifierLowHeartRateEvent",
         "HKCategoryTypeIdentifierAppleWalkingSteadinessEvent",
         "HKCategoryTypeIdentifierSleepApneaEvent",
+        // v1.44 — mindfulness and the State of Mind are mental-health
+        // self-care and self-report; AFib burden is the AFib History
+        // feature the person enabled on the watch.
+        "HKCategoryTypeIdentifierMindfulSession",
+        "HKDataTypeIdentifierStateOfMind",
+        "HKQuantityTypeIdentifierAtrialFibrillationBurden",
       ].sort(),
     );
     // Audio exposure + time-in-daylight are environment / lifestyle
@@ -209,8 +219,8 @@ describe("HK_QUANTITY_TYPE_DEFERRED", () => {
   // skipped-but-known rather than unknown-and-dropped.
   it("covers the iOS-17 + iOS-18 long-tail identifiers", () => {
     const expectedLongTail = [
-      // Cardiovascular / clinical
-      "HKQuantityTypeIdentifierAtrialFibrillationBurden",
+      // Cardiovascular / clinical (AFib burden moved into the mapped set in
+      // v1.44 as AFIB_BURDEN).
       "HKQuantityTypeIdentifierPeripheralPerfusionIndex",
       // Mobility — `AppleWalkingSteadiness` moved into the mapped set in
       // v1.4.30. In v1.10.0 both remaining identifiers moved in too:
@@ -772,8 +782,82 @@ describe("dailyStatsExternalId (v1.4.30 — R-A Option A handoff lock)", () => {
         "HKQuantityTypeIdentifierTimeInDaylight",
         // v1.10.0 — hard-fall detections accumulate across the day.
         "HKQuantityTypeIdentifierNumberOfTimesFallen",
+        // v1.44 — the exercise and stand rings and mindful minutes.
+        "HKQuantityTypeIdentifierAppleExerciseTime",
+        "HKQuantityTypeIdentifierAppleStandTime",
+        "HKCategoryTypeIdentifierAppleStandHour",
+        "HKCategoryTypeIdentifierMindfulSession",
       ].sort(),
     );
+  });
+});
+
+describe("v1.44 — activity rings, mindfulness, State of Mind, AFib burden", () => {
+  const sample = (hkIdentifier: string, value: number, unit: string) =>
+    mapAppleHealthEntry({
+      hkIdentifier,
+      value,
+      unit,
+      startDate: "2026-10-20T08:00:00.000Z",
+      endDate: "2026-10-20T08:30:00.000Z",
+    });
+
+  it("maps every identifier and removes it from the deferred set", () => {
+    const expected: Record<string, MeasurementType> = {
+      HKQuantityTypeIdentifierAppleExerciseTime: "EXERCISE_MINUTES",
+      HKQuantityTypeIdentifierAppleStandTime: "STAND_MINUTES",
+      HKCategoryTypeIdentifierAppleStandHour: "STAND_HOURS",
+      HKCategoryTypeIdentifierMindfulSession: "MINDFUL_MINUTES",
+      HKDataTypeIdentifierStateOfMind: "STATE_OF_MIND_VALENCE",
+      HKQuantityTypeIdentifierAtrialFibrillationBurden: "AFIB_BURDEN",
+    };
+    for (const [hk, type] of Object.entries(expected)) {
+      expect(APPLE_HEALTH_TYPE_MAP[hk]?.measurementType).toBe(type);
+      expect(HK_QUANTITY_TYPE_DEFERRED.has(hk)).toBe(false);
+      expect(hkIdentifierForType(type)).toBe(hk);
+    }
+  });
+
+  it("passes the minute and hour values through", () => {
+    expect(
+      sample("HKQuantityTypeIdentifierAppleExerciseTime", 32, "min"),
+    ).toMatchObject({ type: "EXERCISE_MINUTES", value: 32, unit: "minutes" });
+    expect(
+      sample("HKCategoryTypeIdentifierAppleStandHour", 1, "count"),
+    ).toMatchObject({ type: "STAND_HOURS", value: 1, unit: "hours" });
+    expect(
+      sample("HKCategoryTypeIdentifierMindfulSession", 10, "min"),
+    ).toMatchObject({ type: "MINDFUL_MINUTES", value: 10, unit: "minutes" });
+  });
+
+  it("stores the State of Mind valence as is", () => {
+    expect(
+      sample("HKDataTypeIdentifierStateOfMind", -0.4, "valence"),
+    ).toMatchObject({ type: "STATE_OF_MIND_VALENCE", value: -0.4 });
+  });
+
+  it("scales AFib burden strictly, so a small burden stays small", () => {
+    // 0.5 % arrives as the fraction 0.005. A client that sends 2 for 2 %
+    // is not guessed at: it lands at 200 and the range guard refuses it.
+    expect(
+      sample("HKQuantityTypeIdentifierAtrialFibrillationBurden", 0.005, "%")
+        ?.value,
+    ).toBeCloseTo(0.5, 10);
+    expect(
+      sample("HKQuantityTypeIdentifierAtrialFibrillationBurden", 2, "%")?.value,
+    ).toBe(200);
+    expect(validateMeasurementRange("AFIB_BURDEN", 200)).not.toBeNull();
+    expect(validateMeasurementRange("AFIB_BURDEN", 0.5)).toBeNull();
+  });
+
+  it("bounds every new type", () => {
+    expect(
+      validateMeasurementRange("STATE_OF_MIND_VALENCE", 1.5),
+    ).not.toBeNull();
+    expect(validateMeasurementRange("STATE_OF_MIND_VALENCE", -1)).toBeNull();
+    expect(validateMeasurementRange("STAND_HOURS", 25)).not.toBeNull();
+    expect(validateMeasurementRange("EXERCISE_MINUTES", 1441)).not.toBeNull();
+    expect(validateMeasurementRange("MINDFUL_MINUTES", 20)).toBeNull();
   });
 });
 

@@ -321,7 +321,7 @@ export function ManagedProfileCreateForm({
  * Two nodes, never one that swaps. The form used to render a single muted
  * `<p>` whose TEXT changed from hint to error, which is wrong twice over:
  *
- *   * a refusal is content somebody has to act on, and UI-STANDARDS §3
+ *   * a refusal is content somebody has to act on, and ui-standards.md §3
  *     reserves `text-muted-foreground` for meta. The same reasoning is written
  *     out at `grant-action-error.tsx` — a refusal rendered as meta is a
  *     refusal nobody reads;

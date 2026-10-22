@@ -43,6 +43,12 @@ const IDENTITY_OWNER: Record<string, string> = {
     "lib/jobs/workout-insight-generate.ts",
   "lib/workouts/list-read.ts": "lib/workouts/list-read.ts",
   "lib/workouts/sport-context.ts": "lib/workouts/sport-context.ts",
+  // The doctor report's per-sport block (v1.44): sums sessions, so a session
+  // two sources reported must count once, as it does on the list.
+  "lib/doctor-report/workouts.ts": "lib/doctor-report/workouts.ts",
+  // The activity calendar counts workouts per day; a session two devices
+  // recorded must count once there, as it does in the list.
+  "lib/activity/calendar-read.ts": "lib/activity/calendar-read.ts",
   // The only indirection in the set. The Coach block is handed rows it does not
   // read itself; the snapshot builder fetches them in parallel with every other
   // block's data. Recording the owner here rather than assuming the call site
@@ -52,6 +58,16 @@ const IDENTITY_OWNER: Record<string, string> = {
   // about to insert, so a duplicate inside one batch is dropped by the rule
   // the list later applies.
   "app/api/workouts/batch/route.ts": "app/api/workouts/batch/route.ts",
+  // The day-total training impulse, the briefing's workout tally and the day
+  // view's workout section: each counted a session synced by two services
+  // twice while the list showed it once.
+  "lib/insights/strain-score.ts": "lib/insights/strain-score.ts",
+  "lib/insights/feature-blocks.ts": "lib/insights/feature-blocks.ts",
+  "lib/day/records.ts": "lib/day/records.ts",
+  // The workout-minutes correlation channel: one session per day per sport,
+  // as the list shows it.
+  "lib/insights/correlation-channel-series.ts":
+    "lib/insights/correlation-channel-series.ts",
 };
 
 /**

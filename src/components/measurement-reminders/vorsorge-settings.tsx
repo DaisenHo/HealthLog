@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * v1.18.6 — the Vorsorge module's own settings page body.
+ * The checkups list in Settings, in two parts since v1.44:
  *
- * Reached from the wrench beside the page's "hinzufügen" button. Lets the
- * user reorder reminders + pick the card-vs-list page view, and re-homes the
- * per-reminder enable/disable toggles that used to live in the page's
- * "Anpassen" sheet. Order + view persist client-side via
- * `useModuleListPrefs("vorsorge")`; the toggles persist through the existing
+ * `VorsorgeSettings` — Settings > Arrangement > Checkups: the card-vs-list
+ * view and the manual order, persisted per account through
+ * `useModuleListPrefs("vorsorge")`.
+ *
+ * `VorsorgeReminderSwitchesCard` — the per-reminder on/off switches, under
+ * Settings > Notifications with the other reminders, persisted through the
  * reminder PATCH route.
  */
 import { ArrowUpDown, LayoutGrid, ListChecks } from "lucide-react";
@@ -47,7 +48,6 @@ function resolveLabel(
 export function VorsorgeSettings() {
   const { t } = useTranslations();
   const { data: reminders, isLoading } = useMeasurementReminders(true);
-  const { update } = useMeasurementReminderMutations();
   const { prefs, setView, setOrder } = useModuleListPrefs("vorsorge");
 
   const ordered = applyOrder(reminders ?? [], prefs.order, (r) => r.id);
@@ -59,7 +59,7 @@ export function VorsorgeSettings() {
       : t("measurementReminders.selfPlanned"),
   }));
 
-  // v1.18.10 — the three Vorsorge settings groups adopt the shared
+  // v1.18.10 — the Vorsorge settings groups adopt the shared
   // `SettingsCard` + `SettingsCardHeader` contract (rounded-xl bordered
   // surface, neutral muted icon, `text-lg` title, short muted description)
   // so this surface reads like every other Settings section instead of bare
@@ -96,67 +96,80 @@ export function VorsorgeSettings() {
           )}
         </div>
       </SettingsCard>
-
-      <SettingsCard>
-        <SettingsCardHeader
-          icon={ListChecks}
-          title={t("measurementReminders.manage.title")}
-          description={t("measurementReminders.manage.description")}
-        />
-        <div>
-          {isLoading ? (
-            <Skeleton className="h-24 w-full" />
-          ) : (reminders?.length ?? 0) === 0 ? (
-            <EmptyState
-              variant="plain"
-              size="compact"
-              title={t("measurementReminders.manage.empty")}
-            />
-          ) : (
-            <Card>
-              <CardContent className="divide-border divide-y p-0">
-                {ordered.map((reminder) => (
-                  <div
-                    key={reminder.id}
-                    className="flex items-center justify-between gap-3 px-4 py-3"
-                  >
-                    <span
-                      id={`vorsorge-reminder-label-${reminder.id}`}
-                      className="min-w-0 truncate text-sm"
-                    >
-                      {resolveLabel(reminder, t)}
-                    </span>
-                    <Switch
-                      checked={reminder.enabled}
-                      onCheckedChange={(next) =>
-                        update.mutate(
-                          { id: reminder.id, body: { enabled: next } },
-                          {
-                            onSuccess: () =>
-                              toastWrittenOutcome(
-                                "success",
-                                t("settings.saved"),
-                              ),
-                            onError: (failure) =>
-                              showErrorToast(t("settings.savingError"), {
-                                cause: failure,
-                              }),
-                          },
-                        )
-                      }
-                      disabled={update.isPending}
-                      // Label each row's Switch by its own name span so SR
-                      // users hear the reminder name (plus the switch role's
-                      // on/off state) instead of N identical generic labels.
-                      aria-labelledby={`vorsorge-reminder-label-${reminder.id}`}
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </SettingsCard>
     </div>
+  );
+}
+
+/**
+ * The on/off switch of each preventive-care reminder. A reminder, so since
+ * v1.44 it lives with the other reminders under Settings > Notifications
+ * (`#vorsorge-reminders`, the wrapper there); the checkups page links
+ * there.
+ */
+export function VorsorgeReminderSwitchesCard() {
+  const { t } = useTranslations();
+  const { data: reminders, isLoading } = useMeasurementReminders(true);
+  const { update } = useMeasurementReminderMutations();
+  const { prefs } = useModuleListPrefs("vorsorge");
+  const ordered = applyOrder(reminders ?? [], prefs.order, (r) => r.id);
+
+  return (
+    <SettingsCard>
+      <SettingsCardHeader
+        icon={ListChecks}
+        title={t("notifications.checkupReminders.title")}
+        description={t("notifications.checkupReminders.description")}
+      />
+      <div>
+        {isLoading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : (reminders?.length ?? 0) === 0 ? (
+          <EmptyState
+            variant="plain"
+            size="compact"
+            title={t("measurementReminders.manage.empty")}
+          />
+        ) : (
+          <Card>
+            <CardContent className="divide-border divide-y p-0">
+              {ordered.map((reminder) => (
+                <div
+                  key={reminder.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3"
+                >
+                  <span
+                    id={`vorsorge-reminder-label-${reminder.id}`}
+                    className="min-w-0 truncate text-sm"
+                  >
+                    {resolveLabel(reminder, t)}
+                  </span>
+                  <Switch
+                    checked={reminder.enabled}
+                    onCheckedChange={(next) =>
+                      update.mutate(
+                        { id: reminder.id, body: { enabled: next } },
+                        {
+                          onSuccess: () =>
+                            toastWrittenOutcome("success", t("settings.saved")),
+                          onError: (failure) =>
+                            showErrorToast(t("settings.savingError"), {
+                              cause: failure,
+                            }),
+                        },
+                      )
+                    }
+                    disabled={update.isPending}
+                    // Label each row's Switch by its own name span so SR
+                    // users hear the reminder name (plus the switch role's
+                    // on/off state) instead of N identical generic labels.
+                    aria-labelledby={`vorsorge-reminder-label-${reminder.id}`}
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </SettingsCard>
   );
 }

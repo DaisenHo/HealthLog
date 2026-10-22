@@ -43,6 +43,11 @@ import type {
   EfficacyTargetView,
 } from "@/lib/medications/efficacy/build-efficacy";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  SEGMENTED_MIN_DAYS_PER_SIDE,
+  SEGMENTED_MIN_SPAN_DAYS,
+} from "@/lib/medications/efficacy/segmented-effect";
+import { ChangeAtStartSummary } from "./change-at-start-summary";
 
 // v1.30 UI audit (M8) — `EfficacyChart` mounts inside `TargetCard`'s own
 // `<Card>` as a bare 220px `ResponsiveContainer` with no chrome of its own.
@@ -309,6 +314,15 @@ function TargetCard({
         )}
 
         <BeforeAfterCard target={target} minWeeks={dto.minWeeksPerSide} />
+
+        {target.segmented ? (
+          <ChangeAtStartSummary
+            segmented={target.segmented}
+            unit={target.unit}
+            minDays={SEGMENTED_MIN_DAYS_PER_SIDE}
+            minSpanDays={SEGMENTED_MIN_SPAN_DAYS}
+          />
+        ) : null}
 
         {target.levelShift?.present &&
         target.levelShift.nearStart &&

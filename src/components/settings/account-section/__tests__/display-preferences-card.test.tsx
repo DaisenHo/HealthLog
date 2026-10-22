@@ -44,10 +44,15 @@ describe("Settings → Account display card", () => {
       "GlucoseUnitSelect",
       "TimeFormatSelect",
       "DateFormatSelect",
+      // v1.44 — the timezone saves on change too, in the display card.
+      "TimezoneSelect",
+      "TimezonePicker",
     ]) {
       expect(form).not.toContain(control);
     }
-    // The timezone saves with the form, so it stays inside it.
-    expect(form).toContain("TimezonePicker");
+    const card = src.slice(
+      src.indexOf("export function DisplayPreferencesCard"),
+    );
+    expect(card).toContain("<TimezoneSelect");
   });
 });

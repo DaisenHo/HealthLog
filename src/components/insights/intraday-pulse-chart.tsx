@@ -71,7 +71,7 @@ const AXIS_TICKS = [0, 360, 720, 1080, 1440];
  * line discloses the coverage so the shape doesn't read as more continuous
  * than it is.
  *
- * v1.29.x — a day navigator (`TileHeader`'s `right` slot, per UI-STANDARDS
+ * v1.29.x — a day navigator (`TileHeader`'s `right` slot, per ui-standards.md
  * §11) pages the same route backward through prior days; "next" is disabled
  * at today, so the view can never step into the future. A day outside the
  * dense retention window (`DENSE_INTRADAY_RETENTION_DAYS`) reads back at the

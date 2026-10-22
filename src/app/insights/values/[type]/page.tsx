@@ -8,8 +8,8 @@ import {
   INSIGHTS_OVERVIEW,
   resolveValuesBackHref,
 } from "@/lib/insights/values-back-link";
-import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/components/measurements/measurement-list-meta";
+import { MEASUREMENT_TYPE_LABEL_KEYS as EVERY_MEASUREMENT_TYPE } from "@/lib/measurements/type-label-keys";
 import { BackLink } from "@/components/ui/back-link";
 import { MeasurementList } from "@/components/measurements/measurement-list";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
@@ -38,8 +38,11 @@ export default function InsightsMetricValuesPage({
   const searchParams = useSearchParams();
 
   // Reject any segment that is not a real MeasurementType so a typo'd
-  // deep-link 404s instead of mounting a blank list.
-  if (!measurementTypeEnum.options.includes(type as never)) {
+  // deep-link 404s instead of mounting a blank list. The leaf label map is
+  // typed `Record<MeasurementType, string>`, so the compiler holds it to
+  // exactly the enum, and it answers the question without pulling the
+  // measurement schemas, and Zod, into the page.
+  if (!Object.hasOwn(EVERY_MEASUREMENT_TYPE, type)) {
     notFound();
   }
 

@@ -149,8 +149,9 @@ test.describe("Settings → Export & Import", () => {
     await page.getByTestId("report-apply-standard-export").click();
 
     await expect(generate).toBeEnabled();
-    // Exactly the shipped set: the three classic vitals, weight and BMI, and
-    // nothing at all from the groups the template leaves alone.
+    // Exactly the shipped set: the three classic vitals, weight and BMI, the
+    // two heart-rate-variability rows, and nothing at all from the groups the
+    // template leaves alone.
     await expect(
       page.getByTestId("report-group-row-vitals-export"),
     ).toContainText("3/7");
@@ -159,7 +160,10 @@ test.describe("Settings → Export & Import", () => {
     ).toContainText("2/12");
     await expect(
       page.getByTestId("report-group-row-cardio-export"),
-    ).toContainText("0/14");
+    ).toContainText("2/15");
+    await expect(
+      page.getByTestId("report-group-row-mobility-export"),
+    ).toContainText("0/11");
     // The fenced tier is not part of any one-click set.
     await expect(
       page.getByTestId("report-scope-summary-export"),

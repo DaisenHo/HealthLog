@@ -70,57 +70,105 @@ export async function register() {
       // A diagnostic must never break boot.
     }
 
-    const { shouldRunWorker } = await import("@/lib/process-type");
+    // One line when the container's memory limit is below the supported
+    // floor. The app keeps running.
+    try {
+      const { logMemoryFloorAtBoot } = await import("@/lib/support/heap-limit");
+      logMemoryFloorAtBoot();
+    } catch {
+      // A diagnostic must never break boot.
+    }
+
+    // The background role starts after the server is up. Awaiting it here
+    // held every request, `/api/health` included, for the seconds pg-boss
+    // needs to start, provision its queues and run the boot discovery; the
+    // probe now answers `starting` meanwhile. A request that enqueues while
+    // the boss is not bound yet takes the same path as during a producer
+    // reconnect: the enqueue waits for the boss in the background
+    // (`enqueueWhenBossReady`, bounded and logged when it gives up), and a
+    // route that needs the worker answers 503 until it is up.
+    const [
+      { shouldRunWorker },
+      { markStartup, startupPhase, startupElapsedMs, STARTING_MAX_MS },
+    ] = await Promise.all([
+      import("@/lib/process-type"),
+      import("@/lib/boot/startup-state"),
+    ]);
+    markStartup("starting");
+    // One line when the start takes longer than any real boot; from then on
+    // the probe reports plain `degraded` instead of `starting`.
+    setTimeout(() => {
+      if (startupPhase() === "stalled") {
+        console.warn(
+          `[boot] The background role is still not up after ${Math.round(STARTING_MAX_MS / 1000)} s; /api/health now reports degraded without "starting".`,
+        );
+      }
+    }, STARTING_MAX_MS + 1_000).unref();
+    const ready = (up: boolean) => {
+      const elapsed = startupElapsedMs();
+      markStartup(up ? "ready" : "failed");
+      console.info(
+        `[boot] background role ${up ? "ready" : "failed"} after ${elapsed ?? 0} ms`,
+      );
+    };
     if (!shouldRunWorker()) {
       // Split deployment: web requests still produce queue jobs, but this
       // process owns no schedules, supervision, or consumers.
-      try {
-        const { startGlobalBossProducer } =
-          await import("@/lib/jobs/boss-instance");
-        const boss = await startGlobalBossProducer(process.env.DATABASE_URL);
-        if (boss) {
-          const { registerShutdownHandlers } =
-            await import("@/lib/jobs/reminder/worker-lifecycle");
-          registerShutdownHandlers(boss);
+      void (async () => {
+        try {
+          const { startGlobalBossProducer } =
+            await import("@/lib/jobs/boss-instance");
+          const boss = await startGlobalBossProducer(process.env.DATABASE_URL);
+          if (boss) {
+            const { registerShutdownHandlers } =
+              await import("@/lib/jobs/reminder/worker-lifecycle");
+            registerShutdownHandlers(boss);
+          }
+          ready(boss !== null);
+        } catch (err) {
+          ready(false);
+          // Queue-backed garnishes degrade independently; never make the web
+          // server unavailable because its producer connection failed.
+          console.error(
+            "[instrumentation] Failed to start pg-boss producer:",
+            err,
+          );
         }
-      } catch (err) {
-        // Queue-backed garnishes degrade independently; never make the web
-        // server unavailable because its producer connection failed.
-        console.error(
-          "[instrumentation] Failed to start pg-boss producer:",
-          err,
-        );
-      }
+      })();
       return;
     }
 
-    const { WideEventBuilder } = await import("@/lib/logging/event-builder");
-    const { emitIfSampled } = await import("@/lib/logging/transports");
+    void (async () => {
+      const { WideEventBuilder } = await import("@/lib/logging/event-builder");
+      const { emitIfSampled } = await import("@/lib/logging/transports");
 
-    // Emit startup event
-    const startupEvt = new WideEventBuilder("background");
-    startupEvt.setBackground({ task_name: "startup" });
+      // Emit startup event
+      const startupEvt = new WideEventBuilder("background");
+      startupEvt.setBackground({ task_name: "startup" });
 
-    try {
-      const { startReminderWorker } =
-        await import("@/lib/jobs/reminder-worker");
-      await startReminderWorker();
+      try {
+        const { startReminderWorker } =
+          await import("@/lib/jobs/reminder-worker");
+        await startReminderWorker();
+        ready(true);
 
-      startupEvt.addMeta("reminder_worker", "started");
-      startupEvt.finish();
-      emitIfSampled(startupEvt.toJSON());
-    } catch (err) {
-      startupEvt.setError(err);
-      startupEvt.addMeta("reminder_worker", "failed");
-      startupEvt.finish();
-      emitIfSampled(startupEvt.toJSON());
+        startupEvt.addMeta("reminder_worker", "started");
+        startupEvt.finish();
+        emitIfSampled(startupEvt.toJSON());
+      } catch (err) {
+        ready(false);
+        startupEvt.setError(err);
+        startupEvt.addMeta("reminder_worker", "failed");
+        startupEvt.finish();
+        emitIfSampled(startupEvt.toJSON());
 
-      // Still log to stderr for container health checks
-      console.error(
-        "[instrumentation] CRITICAL: Failed to start reminder worker:",
-        err,
-      );
-    }
+        // Still log to stderr for container health checks
+        console.error(
+          "[instrumentation] CRITICAL: Failed to start reminder worker:",
+          err,
+        );
+      }
+    })();
   }
 }
 

@@ -62,7 +62,8 @@ const SETTINGS_ROUTES = [
 ] as const;
 
 /**
- * The Layout hub's seven children. They are the routes whose header block
+ * The Arrangement hub's children, plus (v1.44) the module pages under
+ * Modules, which use the same back-link header. They are the routes whose header block
  * changed MOST — the shell used to hand-roll a `space-y-6` between the
  * back-link and the title, and `PageHeader`'s documented contract is
  * `space-y-1.5`. Nothing measured them before, so the step went from 24 px
@@ -73,10 +74,12 @@ const LAYOUT_CHILD_ROUTES = [
   "/settings/layout/dashboard",
   "/settings/layout/insights",
   "/settings/layout/medications",
-  "/settings/layout/mood",
   "/settings/layout/labs",
   "/settings/layout/illness",
   "/settings/layout/vorsorge",
+  "/settings/modules/medications",
+  "/settings/modules/mood",
+  "/settings/modules/labs",
 ] as const;
 
 /** The `space-y-1.5` between a back-link and the title it sits above. */

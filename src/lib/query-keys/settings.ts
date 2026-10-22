@@ -39,6 +39,12 @@ export const settingsKeys = {
   modulesPrefs: () => ["settings", "modules"] as const,
 
   /**
+   * The labs / illness / checkups list presentation behind
+   * `GET/PUT /api/settings/module-list-layout` (view, manual order, labs sort).
+   */
+  moduleListLayout: () => ["settings", "module-list-layout"] as const,
+
+  /**
    * v1.35.0 — which pillars count toward the Health Score, behind
    * `GET/PATCH /api/auth/me/health-score-config`. Its own cell rather than
    * a slice of `authMe()`: the payload carries the optimistic-concurrency
