@@ -99,6 +99,19 @@ const US: CrisisResourceSet = {
 };
 
 /**
+ * Brazil (pt-BR) — CVV by phone and chat, SAMU as the emergency number.
+ * Both numbers are free and answer around the clock (cvv.org.br; the
+ * Ministry of Health's SAMU 192 page).
+ */
+const BR: CrisisResourceSet = {
+  emergencyNumber: "192",
+  resources: [
+    { id: "cvv", contacts: ["188", "cvv.org.br/chat"] },
+    { id: "findahelpline", contacts: ["findahelpline.com"] },
+  ],
+};
+
+/**
  * Resolve a crisis-resource set from the user's locale. Region detection is
  * coarse (locale prefix) and defaults to the international set — the goal is to
  * always surface SOMETHING actionable, never to be exhaustive.
@@ -117,5 +130,8 @@ export function crisisResourcesForLocale(
   if (lc === "de-ch" || lc === "de_ch" || lc === "ch") return CH;
   if (lc.startsWith("de")) return DE_AT_CH;
   if (lc === "en-us" || lc.startsWith("en_us") || lc === "us") return US;
+  // Brazilian Portuguese only: CVV's 188 does not connect from Portugal, so a
+  // bare "pt" or "pt-PT" keeps the international set.
+  if (lc === "pt-br" || lc === "pt_br" || lc === "br") return BR;
   return INTERNATIONAL;
 }
