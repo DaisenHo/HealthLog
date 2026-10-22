@@ -98,10 +98,10 @@ export const bank: LocaleBank = {
     /\bpowoduj\w*/i,
     /\bspowodowa\w*/i,
     /\bprzyczyn\w*/i,
-    /\bdoprowadzi\w*\s+do\b/i,
+    /\bdoprowadzi[\w\u00C0-\u024F]*\s+do\b/i,
     /\bwskutek\b/i,
     /\bdzi[ęe]ki\b/i,
-    /\bodpowiedzialn\w*\s+za\b/i,
+    /\bodpowiedzialn[\w\u00C0-\u024F]*\s+za\b/i,
   ],
   continuation:
     /\b(?:kontynuuj|przyjmuj\s+dalej|zgodnie\s+z\s+zaleceniem|pozosta[ńn]\s+przy)\b/i,

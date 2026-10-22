@@ -5,6 +5,7 @@ import {
   objectSlot,
   TARGET,
   ENGINE,
+  WORD_END,
   ELIDED,
   medicationExtras,
   type LocaleBank,
@@ -94,11 +95,17 @@ export const bank: LocaleBank = {
     /\b\d{1,3}\s*%\s+(?:de\s+)?(?:risque|probabilit[ée]|chance)/i,
     /\brisque\s+(?:cardiovasculaire|cardiaque|d'avc|de\s+mortalit[ée])\s+[àa]\s+(?:10|dix)\s+ans\b/i,
     // digit percent as a risk figure, either order (the noun need not be adjacent)
-    new RegExp(`\\b${RISK_NOUN_FR}\\b[^.?!]{0,40}\\d{1,3}\\s*%`, "i"),
-    new RegExp(`\\d{1,3}\\s*%[^.?!]{0,40}\\b${RISK_NOUN_FR}\\b`, "i"),
+    new RegExp(`\\b${RISK_NOUN_FR}${WORD_END}[^.?!]{0,40}\\d{1,3}\\s*%`, "i"),
+    new RegExp(`\\d{1,3}\\s*%[^.?!]{0,40}\\b${RISK_NOUN_FR}${WORD_END}`, "i"),
     // spelled-out percent as a risk figure, either order
-    new RegExp(`\\b${RISK_NOUN_FR}\\b[^.?!]{0,40}\\b${PCT_WORD_FR}\\b`, "i"),
-    new RegExp(`\\b${PCT_WORD_FR}\\b[^.?!]{0,40}\\b${RISK_NOUN_FR}\\b`, "i"),
+    new RegExp(
+      `\\b${RISK_NOUN_FR}${WORD_END}[^.?!]{0,40}\\b${PCT_WORD_FR}\\b`,
+      "i",
+    ),
+    new RegExp(
+      `\\b${PCT_WORD_FR}\\b[^.?!]{0,40}\\b${RISK_NOUN_FR}${WORD_END}`,
+      "i",
+    ),
     // named engine + qualifying number, either order
     new RegExp(`\\b${ENGINE}\\b[^.?!]{0,50}${QUAL_NUM_FR}`, "i"),
     new RegExp(`${QUAL_NUM_FR}[^.?!]{0,50}\\b${ENGINE}\\b`, "i"),
@@ -107,8 +114,8 @@ export const bank: LocaleBank = {
   ],
   causal: [
     /\bparce\s+qu\w*/i,
-    /\b[àa]\s+cause\s+de\b/i,
-    /\bcaus(?:e|es|ent|é|ée)\b/i,
+    /(?<![\w\u00C0-\u024F])[àa]\s+cause\s+de\b/i,
+    /\bcaus(?:e|es|ent|é|ée)(?![\w\u00C0-\u024F])/i,
     /\ben\s+raison\s+de\b/i,
     /\bentra[îi]n\w*/i,
     /\ba\s+conduit\s+[àa]/i,
@@ -118,7 +125,7 @@ export const bank: LocaleBank = {
     /\bprovoqu\w*/i,
   ],
   continuation:
-    /\b(?:continuez?\s+(?:à|de|le)|gardez|comme\s+prescrit|tel\s+que\s+prescrit)\b/i,
+    /\b(?:continuez?\s+(?:à|de|le)|gardez|comme\s+prescrit|tel\s+que\s+prescrit)(?![\w\u00C0-\u024F])/i,
   changeStem:
     /\b(?:augment|réduis|réduir|diminu|baiss|abaiss|doubl|arrêt|saut)\w*/i,
 };

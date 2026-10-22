@@ -7,6 +7,7 @@ import {
   TARGET,
   LETTER,
   ENGINE,
+  WORD_START,
   medicationExtras,
   type LocaleBank,
 } from "../shared";
@@ -140,8 +141,14 @@ export const bank: LocaleBank = {
       "i",
     ),
     new RegExp(`\\b\\d{1,3}\\s*%\\s+${RISK_NOUN_NL}\\b`, "i"),
-    new RegExp(`\\b${RISK_NOUN_NL}\\b[^.?!]{0,40}\\b${PCT_WORD_NL}\\b`, "i"),
-    new RegExp(`\\b${PCT_WORD_NL}\\b[^.?!]{0,40}\\b${RISK_NOUN_NL}\\b`, "i"),
+    new RegExp(
+      `\\b${RISK_NOUN_NL}\\b[^.?!]{0,40}${WORD_START}${PCT_WORD_NL}\\b`,
+      "i",
+    ),
+    new RegExp(
+      `${WORD_START}${PCT_WORD_NL}\\b[^.?!]{0,40}\\b${RISK_NOUN_NL}\\b`,
+      "i",
+    ),
     new RegExp(`\\b${HORIZON_NL}\\b[^.?!]{0,40}${QUAL_NUM_NL}`, "i"),
     new RegExp(`${QUAL_NUM_NL}[^.?!]{0,40}\\b${HORIZON_NL}\\b`, "i"),
     new RegExp(`\\b${ENGINE}\\b[^.?!]{0,50}${QUAL_NUM_NL}`, "i"),
