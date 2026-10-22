@@ -41,6 +41,7 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   return {
     collapseToTypeDayKeys: actual.collapseToTypeDayKeys,
     recomputeBucketsForMeasurement: vi.fn().mockResolvedValue(undefined),
+    recomputeBucketsForKeys: vi.fn().mockResolvedValue(undefined),
   };
 });
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));

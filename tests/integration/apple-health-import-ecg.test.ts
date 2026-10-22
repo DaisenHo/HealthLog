@@ -31,7 +31,13 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));
 
-vi.mock("@/lib/rollups/measurement-rollups", () => ({
+// The real module with only the fold stubbed, so the import's tail (its fold
+// window, the cache invalidation, the status re-warm) runs as it does in
+// production.
+vi.mock("@/lib/rollups/measurement-rollups", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/rollups/measurement-rollups")
+  >()),
   recomputeUserRollups: vi.fn(async () => {}),
 }));
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, inject, vi } from "vitest";
 
 import { quarantineEntryFor } from "../quarantine/quarantine";
+import { watchSwallowedMockErrors } from "../support/swallowed-mock-errors";
 import { prepareWorkerDatabase } from "./worker-database";
 
 // Each worker runs against its own clone of the migrated template (see
@@ -30,10 +31,14 @@ process.env.SESSION_SECRET = "integration-test-session-secret-32-bytes";
  * the worker BEFORE any application module reads it at import time, and a
  * static import here would pull part of the application tree in first.
  */
+/** A swallowed "missing mock export" error fails its test (see the module). */
+const checkSwallowedMockErrors = watchSwallowedMockErrors();
+
 afterEach(async () => {
   const { settleBackgroundTasks } =
     await import("@/lib/logging/background-tasks");
   await settleBackgroundTasks();
+  checkSwallowedMockErrors();
 });
 
 /** The flaky-test quarantine, as in the unit setup (`vitest.setup.ts`). */
