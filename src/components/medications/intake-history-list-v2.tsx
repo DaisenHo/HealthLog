@@ -3,7 +3,7 @@
 import { DayLinkAt } from "@/components/day/day-link";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import {
   Loader2,
@@ -313,30 +313,20 @@ export function IntakeHistoryListV2({
                       />
                     )}
                     <TableHead>
-                      <button
-                        type="button"
+                      <SortHeaderButton
+                        label={t("medications.intakeHistoryColTaken")}
+                        action={t("medications.intakeHistorySortByTaken")}
+                        indicator={sortIndicator("takenAt")}
                         onClick={() => toggleSort("takenAt")}
-                        className="focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md font-medium hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:min-h-9"
-                      >
-                        {t("medications.intakeHistoryColTaken")}
-                        <span className="sr-only">
-                          , {t("medications.intakeHistorySortByTaken")}
-                        </span>
-                        {sortIndicator("takenAt")}
-                      </button>
+                      />
                     </TableHead>
                     <TableHead>
-                      <button
-                        type="button"
+                      <SortHeaderButton
+                        label={t("medications.intakeHistoryColScheduled")}
+                        action={t("medications.intakeHistorySortByScheduled")}
+                        indicator={sortIndicator("scheduledFor")}
                         onClick={() => toggleSort("scheduledFor")}
-                        className="focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md font-medium hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:min-h-9"
-                      >
-                        {t("medications.intakeHistoryColScheduled")}
-                        <span className="sr-only">
-                          , {t("medications.intakeHistorySortByScheduled")}
-                        </span>
-                        {sortIndicator("scheduledFor")}
-                      </button>
+                      />
                     </TableHead>
                     <TableHead>
                       {t("medications.intakeHistoryColStatus")}
@@ -665,5 +655,34 @@ function IntakeRowActions({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/**
+ * A sortable column header: named by the column it shows, with the sort
+ * action added for screen readers (WCAG 2.5.3, the accessible name contains
+ * the visible text).
+ */
+function SortHeaderButton({
+  label,
+  action,
+  indicator,
+  onClick,
+}: {
+  label: string;
+  action: string;
+  indicator: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md font-medium hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:min-h-9"
+    >
+      {label}
+      <span className="sr-only">, {action}</span>
+      {indicator}
+    </button>
   );
 }

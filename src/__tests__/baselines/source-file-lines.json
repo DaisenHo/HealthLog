@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 124,
-  "total": 146512,
+  "total": 146508,
   "entries": {
     "app/api/dashboard/summary/route.ts": 1032,
     "app/api/documents/inbound/route.ts": 811,
@@ -17,7 +17,7 @@
     "components/charts/health-chart.tsx": 2517,
     "components/charts/mood-chart.tsx": 1166,
     "components/cycle/log-day-sheet.tsx": 1639,
-    "components/documents/document-detail-sheet.tsx": 1305,
+    "components/documents/document-detail-sheet.tsx": 1304,
     "components/documents/documents-view.tsx": 1244,
     "components/insights/coach-panel/chat-bubble.tsx": 888,
     "components/insights/coach-panel/coach-conversation.tsx": 1286,
@@ -25,7 +25,7 @@
     "components/insights/derived/vitals-dashboard.tsx": 1033,
     "components/insights/health-score-card.tsx": 1023,
     "components/insights/insights-tab-strip.tsx": 1086,
-    "components/layout/sidebar-nav.tsx": 858,
+    "components/layout/sidebar-nav.tsx": 855,
     "components/measurement-reminders/vorsorge-section.tsx": 1536,
     "components/measurements/measurement-form.tsx": 815,
     "components/measurements/measurement-list.tsx": 2019,

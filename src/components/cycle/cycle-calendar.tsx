@@ -104,6 +104,21 @@ function named(t: Translate, labelKey: string, valueKey?: string): string {
  * other-entries ring stays off. Every field here is one the day log can hold
  * and the grid has no marker of its own for.
  */
+/**
+ * A logged period day's marker. The flow grade is restated in the aria text
+ * so the shading is never colour-only (the legend covers it; the cell names
+ * it too).
+ */
+function periodMarker(day: CalendarDay, t: Translate): string {
+  const flowKey =
+    day.flow && day.flow !== "NONE"
+      ? `cycle.calendar.flow${day.flow.charAt(0)}${day.flow.slice(1).toLowerCase()}`
+      : null;
+  return flowKey
+    ? `${t("cycle.calendar.legendPeriod")} (${t(flowKey)})`
+    : t("cycle.calendar.legendPeriod");
+}
+
 export function otherEntryLabels(day: CalendarDay, t: Translate): string[] {
   const out: string[] = [];
   if (day.intermenstrualBleeding)
@@ -296,19 +311,7 @@ export function CycleCalendar({
                 !!info?.isPredictedOvulation && !isConfirmedOvulation;
 
               const markers: string[] = [];
-              if (info?.isPeriodLogged) {
-                // Restate the flow grade in the aria text so the shading is never
-                // colour-only (the legend covers it; the cell names it too).
-                const flowKey =
-                  info.flow && info.flow !== "NONE"
-                    ? `cycle.calendar.flow${info.flow.charAt(0)}${info.flow.slice(1).toLowerCase()}`
-                    : null;
-                markers.push(
-                  flowKey
-                    ? `${t("cycle.calendar.legendPeriod")} (${t(flowKey)})`
-                    : t("cycle.calendar.legendPeriod"),
-                );
-              }
+              if (info?.isPeriodLogged) markers.push(periodMarker(info, t));
               if (info?.isPredictedPeriod)
                 markers.push(t("cycle.calendar.legendPredicted"));
               if (info?.isFertileWindow)
