@@ -524,13 +524,37 @@ test.describe("the bottom sheet", () => {
   test("under reduced motion it opens without a slide", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/mood");
+    await expect(page.locator('[data-testid="bottom-nav-more"]')).toBeVisible();
+    // Read the sheet the moment it is inserted, before the browser has drawn
+    // a frame of it: that is when a slide that exists at all is still
+    // running, however short it was made. A read after it shows depends on
+    // frames having been drawn in between, which WebKit in the CI container
+    // does not promise, so a later read alone can pass or fail at random.
+    await page.evaluate(() => {
+      const w = window as unknown as { __sheetAtInsert?: unknown };
+      const watch = new MutationObserver(() => {
+        const sheet = document.querySelector(
+          '[data-testid="bottom-nav-more-sheet"]',
+        );
+        const overlay = document.querySelector('[data-slot="sheet-overlay"]');
+        if (!sheet || !overlay || w.__sheetAtInsert) return;
+        watch.disconnect();
+        w.__sheetAtInsert = [sheet, overlay].map((el) => ({
+          name: getComputedStyle(el).animationName,
+          animations: el.getAnimations().length,
+        }));
+      });
+      watch.observe(document.body, { childList: true, subtree: true });
+    });
     await page.locator('[data-testid="bottom-nav-more"]').tap();
     await expect(more(page)).toBeVisible();
-    expect(
-      await more(page).evaluate(
-        (el) =>
-          el.getAnimations().filter((a) => a.playState === "running").length,
-      ),
-    ).toBe(0);
+    const atInsert = await page.evaluate(
+      () =>
+        (window as unknown as { __sheetAtInsert?: unknown }).__sheetAtInsert,
+    );
+    expect(atInsert).toEqual([
+      { name: "none", animations: 0 },
+      { name: "none", animations: 0 },
+    ]);
   });
 });
