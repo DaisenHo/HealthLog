@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.44.2] — 2026-10-22
+
+### Changed
+
+- **Sheets that come up from the bottom can be pulled.** On a phone every
+  sheet now follows your finger: pull it down to close it, flick it away,
+  or let go early and it springs back. Content that is scrolled scrolls
+  first, sideways gestures such as sliders keep working, and the X, Escape
+  and a tap outside still close it. The day view opens at half height as
+  before and pulls up to almost the full screen. The page behind no longer
+  reloads when you pull inside a sheet, and closing a sheet puts the focus
+  back where you were.
+
+### Fixed
+
+- **Your own targets shape the dashboard charts.** Blood pressure, resting
+  pulse and body fat drew the standard band on the dashboard even when you
+  had set your own targets; they now draw yours, and the tile colours follow
+  them. The oxygen saturation page uses your target too. Without your own
+  targets nothing changes. (#1261)
+
+### Thanks
+
+Thanks to @mills1975 for spotting that the targets never reached the chart
+(#1261).
+
 ## [1.44.1] — 2026-10-22
 
 ### Security
