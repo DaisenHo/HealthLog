@@ -35,7 +35,7 @@ export async function buildNutrientsBackupPart(
       createdAt: true,
       updatedAt: true,
     },
-    orderBy: [{ day: "desc" }, { nutrient: "asc" }],
+    orderBy: [{ day: "desc" }, { nutrient: "asc" }, { source: "asc" }],
   });
   return {
     section: {

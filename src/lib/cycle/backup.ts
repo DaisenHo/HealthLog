@@ -232,20 +232,23 @@ export async function buildCycleBackupSection(
       where: disasterRecovery
         ? { userId }
         : { userId, deletedAt: null, isPredicted: false },
-      orderBy: { startDate: "asc" },
+      orderBy: [{ startDate: "asc" }, { id: "asc" }],
     }),
     prisma.cycleDayLog.findMany({
       where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-      orderBy: { date: "asc" },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
       include: {
-        symptomLinks: { include: { symptom: { select: { key: true } } } },
+        symptomLinks: {
+          include: { symptom: { select: { key: true } } },
+          orderBy: { symptomId: "asc" },
+        },
       },
     }),
     // `userId` set means the user made it. The NULL rows are the seeded
     // catalogue, which the restoring instance already has.
     prisma.cycleSymptom.findMany({
       where: { userId },
-      orderBy: { key: "asc" },
+      orderBy: [{ key: "asc" }, { id: "asc" }],
     }),
   ]);
 

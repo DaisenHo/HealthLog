@@ -59,6 +59,7 @@ export async function resolveMedicationCategories(
 
   const rows = await client.medicationCategoryAssignment.findMany({
     where: { medicationId: { in: medicationIds } },
+    orderBy: { medicationId: "asc" },
     select: {
       medicationId: true,
       category: true,
@@ -78,6 +79,7 @@ export async function resolveMedicationCategories(
       ? []
       : await client.medicationCategoryLabel.findMany({
           where: { key: { in: customKeys } },
+          orderBy: { id: "asc" },
           select: { key: true, userId: true, labelEncrypted: true },
         });
   const labelByKey = new Map(labels.map((l) => [l.key, l]));
@@ -220,7 +222,7 @@ export async function listMedicationCategoryLabels(
 ): Promise<MedicationCategoryLabelDto[]> {
   const rows = await client.medicationCategoryLabel.findMany({
     where: { userId },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     select: {
       key: true,
       labelEncrypted: true,
@@ -269,7 +271,7 @@ export async function readMedicationCategoryLabelsForBackup(
 > {
   const rows = await client.medicationCategoryLabel.findMany({
     where: { userId },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     select: {
       key: true,
       labelEncrypted: true,

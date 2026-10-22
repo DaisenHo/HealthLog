@@ -44,12 +44,17 @@ export async function buildIllnessBackupSlice(
 ): Promise<{ illnessEpisodes: CanonicalIllnessEpisode[] }> {
   const episodeRows = await prisma.illnessEpisode.findMany({
     where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-    orderBy: { onsetAt: "desc" },
+    orderBy: [{ onsetAt: "desc" }, { id: "asc" }],
     include: {
       dayLogs: {
         ...(disasterRecovery ? {} : { where: { deletedAt: null } }),
-        orderBy: { date: "asc" },
-        include: dayLogSymptomInclude,
+        orderBy: [{ date: "asc" }, { id: "asc" }],
+        include: {
+          symptomLinks: {
+            ...dayLogSymptomInclude.symptomLinks,
+            orderBy: { symptomId: "asc" },
+          },
+        },
       },
     },
   });

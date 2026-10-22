@@ -41,7 +41,7 @@ export async function buildWorkoutsBackupSlice(
 ): Promise<{ workouts: WorkoutBackupEntry[] }> {
   const workoutRows = await prisma.workout.findMany({
     where: { userId },
-    orderBy: { startedAt: "desc" },
+    orderBy: [{ startedAt: "desc" }, { id: "asc" }],
   });
 
   const workouts: WorkoutBackupEntry[] = workoutRows.map((w) => ({

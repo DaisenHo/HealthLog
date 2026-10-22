@@ -100,7 +100,7 @@ export async function buildHealthScoreBackupSection(
   // short of a wipe — so both purposes read the same set.
   const rows = await prisma.healthScoreRecord.findMany({
     where: { userId },
-    orderBy: { dayKey: "desc" },
+    orderBy: [{ dayKey: "desc" }, { id: "asc" }],
   });
 
   return {

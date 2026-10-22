@@ -344,17 +344,17 @@ export async function buildEnvironmentBackupSection(
   const [contextRows, travelRows, dawarichRows] = await Promise.all([
     prisma.environmentContext.findMany({
       where: { userId },
-      orderBy: { date: "asc" },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
       select: ENVIRONMENT_CONTEXT_BACKUP_SELECT,
     }),
     prisma.environmentTravelLocation.findMany({
       where: { userId },
-      orderBy: { startDate: "asc" },
+      orderBy: [{ startDate: "asc" }, { id: "asc" }],
       select: ENVIRONMENT_TRAVEL_LOCATION_BACKUP_SELECT,
     }),
     prisma.dawarichDay.findMany({
       where: { userId },
-      orderBy: { date: "asc" },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
       select: DAWARICH_DAY_BACKUP_SELECT,
     }),
   ]);

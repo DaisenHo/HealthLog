@@ -1561,7 +1561,7 @@ describe("buildFullBackupPayload — mood arms", () => {
     expect(prisma.moodEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         select: expect.objectContaining({
-          tagLinks: { select: expect.any(Object) },
+          tagLinks: { select: expect.any(Object), orderBy: expect.anything() },
         }),
       }),
     );

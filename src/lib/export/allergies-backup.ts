@@ -27,7 +27,7 @@ export async function buildAllergiesBackupSlice(
 ): Promise<{ allergies: CanonicalAllergy[] }> {
   const allergyRows = await prisma.allergy.findMany({
     where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
   });
   const allergies: CanonicalAllergy[] = disasterRecovery
     ? allergyRows.map((row) => ({

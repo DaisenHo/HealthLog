@@ -112,7 +112,7 @@ export async function buildRelationLinksBackupSection(
   // results, visits, doses and conditions are skipped in a portable export
   // only. A medication carries no tombstone.
   const liveUnlessDr = disasterRecovery ? {} : { deletedAt: null };
-  const order = { createdAt: "asc" } as const;
+  const order = [{ createdAt: "asc" as const }, { id: "asc" as const }];
 
   const [labDocs, encounterMeds, encounterDoses, medDocs, medConditions] =
     await Promise.all([

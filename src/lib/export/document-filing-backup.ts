@@ -184,12 +184,12 @@ export async function buildDocumentFilingBackupSection(
         document: { deletedAt: null },
         ...(disasterRecovery ? {} : { episode: { deletedAt: null } }),
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: DOCUMENT_CONDITION_LINK_BACKUP_SELECT,
     }),
     prisma.extractedFact.findMany({
       where: { userId, document: { deletedAt: null } },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: EXTRACTED_FACT_BACKUP_SELECT,
     }),
   ]);

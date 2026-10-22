@@ -39,7 +39,7 @@ export async function buildFamilyHistoryBackupSlice(
 ): Promise<{ familyHistory: CanonicalFamilyHistoryEntry[] }> {
   const familyRows = await prisma.familyHistoryEntry.findMany({
     where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
   });
   const familyHistory: CanonicalFamilyHistoryEntry[] = disasterRecovery
     ? familyRows.map((row) => ({

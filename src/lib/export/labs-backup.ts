@@ -159,16 +159,16 @@ export async function buildLabsBackupSlice(
     await Promise.all([
       prisma.labResult.findMany({
         where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-        orderBy: { takenAt: "desc" },
+        orderBy: [{ takenAt: "desc" }, { id: "asc" }],
         include: { biomarker: { select: { name: true } } },
       }),
       prisma.biomarker.findMany({
         where: { userId },
-        orderBy: { name: "asc" },
+        orderBy: [{ name: "asc" }, { id: "asc" }],
       }),
       prisma.biomarkerAlias.findMany({
         where: { userId },
-        orderBy: [{ biomarkerId: "asc" }, { nameFolded: "asc" }],
+        orderBy: [{ biomarkerId: "asc" }, { nameFolded: "asc" }, { id: "asc" }],
         select: {
           id: true,
           biomarkerId: true,
@@ -179,7 +179,7 @@ export async function buildLabsBackupSlice(
       }),
       prisma.biomarkerMerge.findMany({
         where: { userId },
-        orderBy: { mergedAt: "asc" },
+        orderBy: [{ mergedAt: "asc" }, { id: "asc" }],
         include: { target: { select: { name: true } } },
       }),
     ]);

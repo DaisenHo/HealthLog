@@ -31,17 +31,17 @@ import { dayKeyOfDate } from "@/lib/medications/course-window";
 // no id to remap: Prisma binds the child to whatever id the parent row
 // actually got.
 const MEDICATION_BACKUP_INCLUDE = {
-  schedules: true,
-  sideEffects: { orderBy: { occurredAt: "desc" } },
-  pauseEras: { orderBy: { pausedAt: "asc" } },
-  courses: { orderBy: { startsOn: "asc" } },
-  doseChanges: { orderBy: { effectiveFrom: "asc" } },
-  inventoryItems: { orderBy: { createdAt: "asc" } },
-  inventoryEvents: { orderBy: { occurredAt: "asc" } },
+  schedules: { orderBy: [{ windowStart: "asc" }, { id: "asc" }] },
+  sideEffects: { orderBy: [{ occurredAt: "desc" }, { id: "asc" }] },
+  pauseEras: { orderBy: [{ pausedAt: "asc" }, { id: "asc" }] },
+  courses: { orderBy: [{ startsOn: "asc" }, { id: "asc" }] },
+  doseChanges: { orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }] },
+  inventoryItems: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
+  inventoryEvents: { orderBy: [{ occurredAt: "asc" }, { id: "asc" }] },
   phaseConfig: true,
   // The composition per unit; ordered so two exports of the
   // same account write it identically.
-  ingredients: { orderBy: { nutrient: "asc" } },
+  ingredients: { orderBy: [{ nutrient: "asc" }, { id: "asc" }] },
   // The archived schedule eras. Ordered TOTALLY, not just by the column
   // that reads like the sort key: the position in this list is the
   // identifier the supersede pointer travels as, so two eras sharing a
@@ -62,7 +62,7 @@ const MEDICATION_BACKUP_INCLUDE = {
   // portable restore mints a fresh biomarker id, and `(userId, name)` is
   // the natural key the catalogue is already unique on.
   efficacyTargets: {
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     include: { biomarker: { select: { name: true } } },
   },
 } satisfies Prisma.MedicationInclude;
@@ -476,6 +476,7 @@ export async function buildMedicationsBackupPart(
   const [medications, intakeEvents] = await Promise.all([
     prisma.medication.findMany({
       where: { userId },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       include: MEDICATION_BACKUP_INCLUDE,
     }),
     ctx.deferBulk

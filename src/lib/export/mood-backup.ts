@@ -116,7 +116,10 @@ const MOOD_ENTRY_QUERY_SELECT = {
   // `rating: { not: null }`, and a BINARY link carries a NULL rating by
   // definition — so the present/absent tags, the kind most people pick,
   // were absent from the file and could not come back from it.
-  tagLinks: { select: MOOD_ENTRY_TAG_LINK_SELECT },
+  tagLinks: {
+    select: MOOD_ENTRY_TAG_LINK_SELECT,
+    orderBy: { moodTagId: "asc" },
+  },
   // The day context, when the entry has one. Sparse by design — most
   // entries carry none, and the join answers null on those.
   context: { select: MOOD_CONTEXT_BACKUP_SELECT },
@@ -314,7 +317,7 @@ export async function buildMoodBackupPart(
       // custom rated tag could not be restored at all.
       prisma.moodTag.findMany({
         where: { userId },
-        orderBy: { key: "asc" },
+        orderBy: [{ key: "asc" }, { id: "asc" }],
       }),
       // The account's OWN categories. Seeded ones (`userId: null`) belong to the
       // instance and are deliberately not carried — but a custom tag's
@@ -326,7 +329,7 @@ export async function buildMoodBackupPart(
       // restored.
       prisma.moodTagCategory.findMany({
         where: { userId },
-        orderBy: { sortOrder: "asc" },
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
       }),
       // Which tags the account chose to hide. Carried by KEY rather than id:
       // what people hide is almost always a SEEDED tag, whose id differs on
@@ -334,7 +337,7 @@ export async function buildMoodBackupPart(
       prisma.moodTagHidden.findMany({
         where: { userId },
         select: { moodTag: { select: { key: true } }, createdAt: true },
-        orderBy: { createdAt: "asc" },
+        orderBy: [{ createdAt: "asc" }, { moodTagId: "asc" }],
       }),
     ]);
   return {

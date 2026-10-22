@@ -162,12 +162,12 @@ export async function buildRemindersBackupSection(
   const [reminderRows, eventRows] = await Promise.all([
     prisma.measurementReminder.findMany({
       where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: MEASUREMENT_REMINDER_BACKUP_SELECT,
     }),
     prisma.measurementReminderEvent.findMany({
       where: { userId },
-      orderBy: { occurredAt: "asc" },
+      orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
       select: MEASUREMENT_REMINDER_EVENT_BACKUP_SELECT,
     }),
   ]);

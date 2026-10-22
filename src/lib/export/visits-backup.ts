@@ -235,27 +235,27 @@ export async function buildVisitsBackupSection(
               { vaccinations: { some: { deletedAt: null } } },
             ],
           },
-      orderBy: { name: "asc" },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
       select: PRACTITIONER_BACKUP_SELECT,
     }),
     prisma.encounter.findMany({
       where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-      orderBy: { occurredAt: "desc" },
+      orderBy: [{ occurredAt: "desc" }, { id: "asc" }],
       select: ENCOUNTER_BACKUP_SELECT,
     }),
     prisma.encounterDocumentLink.findMany({
       where: { userId },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: ENCOUNTER_DOCUMENT_LINK_BACKUP_SELECT,
     }),
     prisma.encounterLabLink.findMany({
       where: { userId },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: ENCOUNTER_LAB_LINK_BACKUP_SELECT,
     }),
     prisma.encounterConditionLink.findMany({
       where: { userId },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: ENCOUNTER_CONDITION_LINK_BACKUP_SELECT,
     }),
   ]);
