@@ -25,7 +25,9 @@ import localFont from "next/font/local";
 
 // `next/font/local` is evaluated at build time from the literal arguments of
 // each call, so every option below has to be written out in place.
-export const interCyrillicExt = localFont({
+// The bindings are never read: importing this module is what attaches the
+// faces, so each name carries the leading underscore of an intended unused.
+const _interCyrillicExt = localFont({
   src: [
     {
       path: "./inter/inter-cyrillic-ext.woff2",
@@ -61,7 +63,7 @@ export const interCyrillicExt = localFont({
   ],
 });
 
-export const interCyrillic = localFont({
+const _interCyrillic = localFont({
   src: [
     { path: "./inter/inter-cyrillic.woff2", weight: "400", style: "normal" },
     { path: "./inter/inter-cyrillic.woff2", weight: "500", style: "normal" },
@@ -80,7 +82,7 @@ export const interCyrillic = localFont({
   ],
 });
 
-export const interGreekExt = localFont({
+const _interGreekExt = localFont({
   src: [
     { path: "./inter/inter-greek-ext.woff2", weight: "400", style: "normal" },
     { path: "./inter/inter-greek-ext.woff2", weight: "500", style: "normal" },
@@ -96,7 +98,7 @@ export const interGreekExt = localFont({
   ],
 });
 
-export const interGreek = localFont({
+const _interGreek = localFont({
   src: [
     { path: "./inter/inter-greek.woff2", weight: "400", style: "normal" },
     { path: "./inter/inter-greek.woff2", weight: "500", style: "normal" },
@@ -116,7 +118,7 @@ export const interGreek = localFont({
   ],
 });
 
-export const interVietnamese = localFont({
+const _interVietnamese = localFont({
   src: [
     { path: "./inter/inter-vietnamese.woff2", weight: "400", style: "normal" },
     { path: "./inter/inter-vietnamese.woff2", weight: "500", style: "normal" },
@@ -136,7 +138,7 @@ export const interVietnamese = localFont({
   ],
 });
 
-export const interLatinExt = localFont({
+const _interLatinExt = localFont({
   src: [
     { path: "./inter/inter-latin-ext.woff2", weight: "400", style: "normal" },
     { path: "./inter/inter-latin-ext.woff2", weight: "500", style: "normal" },
@@ -156,7 +158,7 @@ export const interLatinExt = localFont({
   ],
 });
 
-export const interLatin = localFont({
+const _interLatin = localFont({
   src: [
     { path: "./inter/inter-latin.woff2", weight: "400", style: "normal" },
     { path: "./inter/inter-latin.woff2", weight: "500", style: "normal" },
