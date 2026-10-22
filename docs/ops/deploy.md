@@ -109,6 +109,32 @@ that for you, and each boot retries). Anything else is a session you can
 judge: a stuck client may be ended with `SELECT pg_terminate_backend(<pid>)`.
 You never need to run `migrate resolve` by hand for this case.
 
+### v1.45.0 notes
+
+A single-container install (`HEALTHLOG_PROCESS_TYPE=all`, the shipped
+compose file) needs no action: the sequence above applies the one migration
+and the job-queue upgrade on the first boot.
+
+- Migration `0471` adds one nullable column to `healthkit_type_syncs`. It is
+  additive and rewrites no rows.
+- The job queue library moves its own schema from version 45 to 46 (new
+  columns on its queue table, four indexes built concurrently afterwards).
+  Only a worker process runs that upgrade; a web-only process opens its
+  send-only connection without migrating and refuses a schema older than
+  its own (`pg-boss database requires migrations`), so it cannot queue
+  anything until the upgrade has run. A web/worker split therefore deploys
+  in this order: stop both roles, start the new **worker** and wait until its
+  startup log line carries `"reminder_worker": "started"`, then start the new
+  web containers.
+  The other order leaves the web containers without a queue (imports and
+  document reads answer `503 Background worker is not running`) until they
+  are restarted after the worker. An old web container left running beside
+  the upgraded schema loses its queue the next time it reconnects.
+- The shipped compose file gives the app `stop_grace_period: 45s`, so a
+  redeploy lets running jobs finish instead of cutting them off after
+  Docker's default ten seconds. A forked or older compose file should add the
+  same line to the app and worker services.
+
 ### v1.44.0 notes
 
 Migration `0430` drops the `insights_cached_text` column from `users`. A
