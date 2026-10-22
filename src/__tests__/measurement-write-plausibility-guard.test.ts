@@ -123,7 +123,7 @@ const WRITERS: Record<string, Disposition> = {
   },
 
   // ── Restore ───────────────────────────────────────────────────────────
-  "lib/export/restore-backup.ts": {
+  "lib/export/measurements-backup.ts": {
     kind: "restore",
     why: "replays the record's own export; dropping rows would break the restore contract",
   },

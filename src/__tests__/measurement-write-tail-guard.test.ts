@@ -81,7 +81,7 @@ const WRITE_SITES: Record<string, string> = {
     "the import worker refolds the import's span and re-warms every imported type",
   "lib/import/health-connect/import.ts":
     "the Health Connect import worker refolds the import's span and re-warms every imported type",
-  "lib/export/restore-backup.ts":
+  "lib/export/measurements-backup.ts":
     "a restore replaces the whole record: it refolds the whole window and drops every per-user cache",
   // Value-preserving reshapes: the same readings folded into daily or hourly
   // rows. The rollups are refolded; the figures an assessment reads do not

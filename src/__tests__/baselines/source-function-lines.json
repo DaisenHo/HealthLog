@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 415,
-  "total": 154643,
+  "count": 413,
+  "total": 149647,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -324,8 +324,6 @@
     "lib/export/profile-backup.ts :: buildProfileBackupSection": 270,
     "lib/export/profile-backup.ts :: restoreProfileData": 291,
     "lib/export/records-backup.ts :: buildRecordsBackupSection": 308,
-    "lib/export/restore-backup.ts :: restoreBackup": 2833,
-    "lib/export/restore-backup.ts :: restoreBackup > prisma.$transaction(arg)": 2163,
     "lib/export/vaccinations-backup.ts :: restoreVaccinationsData": 216,
     "lib/export/visits-backup.ts :: restoreVisitsData": 261,
     "lib/fhir/build-bundle.ts :: buildFhirDocumentBundle": 363,

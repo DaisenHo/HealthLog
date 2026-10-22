@@ -95,7 +95,7 @@ const MAY_READ_EVERY_ROW: Record<string, string> = {
   // Record-keeping: a backup, a restore and an export carry the medication
   // as stored, schedule and switch included.
   "lib/export/full-backup-payload.ts": "backup carries the stored rows",
-  "lib/export/restore-backup.ts": "restore writes the stored rows back",
+  "lib/export/medications-restore.ts": "restore writes the stored rows back",
   // v1.44 — the CSV import writes new medications and reads only their names
   // and doses to skip duplicates; it derives nothing due.
   "lib/import/medications-csv.ts": "imports new rows, derives nothing due",

@@ -1,7 +1,7 @@
 /**
  * v1.43 — pair guard binding the `MedicationIngredient` model to both ends of
  * the backup: the writer's `ingredients: m.ingredients.map(...)` block in
- * `full-backup-payload.ts` and the nested create in `restore-backup.ts`.
+ * `full-backup-payload.ts` and the nested create in `medications-restore.ts`.
  *
  * The failure it catches is the one the measurement guard beside it was
  * written for: a column added to the composition in a later release, the
@@ -87,7 +87,7 @@ describe("medication ingredient backup completeness", () => {
 
   it("the restore writes every column back", () => {
     const keys = blockKeys(
-      read("src", "lib", "export", "restore-backup.ts"),
+      read("src", "lib", "export", "medications-restore.ts"),
       "create: m.ingredients.map((i) => ({",
     );
     expect(carried.filter((c) => !keys.has(c))).toEqual([]);

@@ -322,7 +322,7 @@ describe("every backed-up model travels both ways, or is named as debt", () => {
   it("does not count a nested relation read as a restore write", () => {
     expect(
       touches(
-        ["src/lib/export/restore-backup.ts"],
+        ["src/lib/export/measurements-backup.ts"],
         "User",
         WRITE_OPS,
         WRITE_RELATION_OPS,
@@ -569,7 +569,7 @@ describe("tables outside the schema have a backup verdict too", () => {
       "utf8",
     );
     const restore = readFileSync(
-      join(SRC, "lib/export/restore-backup.ts"),
+      join(SRC, "lib/export/medications-restore.ts"),
       "utf8",
     );
     expect(writer).toMatch(/getMedicationCategories\(/);

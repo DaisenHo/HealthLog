@@ -306,27 +306,27 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   "src/lib/medication-category.ts",
 ];
 
+const WRITER_FILES_WITHOUT_RESTORE = new Set([
+  "src/lib/export/full-backup-payload.ts",
+  "src/lib/export/paged-measurements.ts",
+  "src/lib/export/records-backup.ts",
+  "src/lib/illness/dto.ts",
+]);
+
 export const BACKUP_RESTORE_FILES: readonly string[] = [
-  "src/lib/export/restore-backup.ts",
-  "src/lib/export/profile-backup.ts",
-  "src/lib/export/intraday-profile-backup.ts",
-  "src/lib/export/health-score-backup.ts",
-  "src/lib/export/visits-backup.ts",
-  "src/lib/export/vaccinations-backup.ts",
-  "src/lib/export/reminders-backup.ts",
-  "src/lib/export/coach-backup.ts",
-  "src/lib/export/sensitive-backup.ts",
-  "src/lib/export/document-filing-backup.ts",
-  "src/lib/export/awards-backup.ts",
-  "src/lib/export/environment-backup.ts",
-  "src/lib/export/onboarding-backup.ts",
-  "src/lib/export/ecg-backup.ts",
-  "src/lib/export/symptoms-backup.ts",
-  "src/lib/export/life-events-backup.ts",
-  "src/lib/export/relation-links-backup.ts",
-  "src/lib/cycle/backup.ts",
-  // The restore writes the medication category through the same helper.
-  "src/lib/medication-category.ts",
+  "src/lib/export/measurements-backup.ts",
+  "src/lib/export/medications-restore.ts",
+  "src/lib/export/mood-restore.ts",
+  "src/lib/export/labs-backup.ts",
+  "src/lib/export/illness-backup.ts",
+  "src/lib/export/allergies-backup.ts",
+  "src/lib/export/family-history-backup.ts",
+  "src/lib/export/workouts-backup.ts",
+  "src/lib/export/nutrients-backup.ts",
+  "src/lib/export/documents-backup.ts",
+  ...BACKUP_WRITER_FILES.filter(
+    (file) => !WRITER_FILES_WITHOUT_RESTORE.has(file),
+  ),
 ];
 
 /**

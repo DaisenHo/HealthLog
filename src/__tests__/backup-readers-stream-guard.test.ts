@@ -12,7 +12,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const READERS = [
-  "src/lib/export/restore-backup.ts",
+  "src/lib/export/restore-preflight.ts",
   "src/app/api/admin/backups/[id]/summary/route.ts",
   "src/app/api/admin/backups/[id]/download/route.ts",
   "src/app/api/admin/backups/upload/route.ts",
