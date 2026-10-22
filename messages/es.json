@@ -6558,7 +6558,8 @@
           "medium": "Medio",
           "high": "Alto"
         },
-        "coachNote": "En el Coach se aplica la profundidad de pensamiento de los ajustes del Coach."
+        "coachNote": "En el Coach se aplica la profundidad de pensamiento de los ajustes del Coach.",
+        "backgroundNote": "El trabajo en segundo plano, como el resumen diario, no usa este ajuste: piensa como máximo en Medio, menos si el operador fija un límite más bajo, y nada en el nivel Ahorro."
       },
       "providerCardDescription": "Configura la clave y el modelo de cada proveedor; el orden de abajo decide a cuál pregunta HealthLog primero.",
       "runtimeTitle": "Comprobar y actualizar",
