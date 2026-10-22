@@ -41,16 +41,13 @@ async function imagesConfig(): Promise<ImagesConfig> {
   return mod.default.images ?? {};
 }
 
-/** Matches any import of `specifier` (static, dynamic, `require`, re-export). */
-function importOf(specifier: string): RegExp {
-  const escaped = specifier.replace(/[/]/g, "\\/");
-  return new RegExp(
-    `(?:\\bfrom\\s*|\\bimport\\s*\\(\\s*|\\brequire\\s*\\(\\s*|^\\s*import\\s+)["']${escaped}["']`,
-    "m",
-  );
-}
-
-const NEXT_IMAGE_IMPORT = importOf("next/(?:legacy/)?image");
+// Any import of the module: static, dynamic, `require`, side effect or
+// re-export. Two literals with one shape rather than one built from a string,
+// so nothing has to be escaped into a pattern.
+const NEXT_IMAGE_IMPORT =
+  /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)["']next\/(?:legacy\/)?image["']/m;
+const NEXT_LINK_IMPORT =
+  /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)["']next\/link["']/m;
 
 /** Every non-generated, non-test source file under `src/` matching `re`. */
 function importers(re: RegExp): string[] {
@@ -89,7 +86,7 @@ describe("next/image optimizer", () => {
     // An empty result for `next/image` is only worth something if the walk,
     // the comment stripping and the matcher together do find real imports.
     // `next/link` is imported the same way all over the tree.
-    requireFloor("next/link importers", importers(importOf("next/link")), 100);
+    requireFloor("next/link importers", importers(NEXT_LINK_IMPORT), 100);
   });
 
   it("is off, and then nothing imports next/image", async () => {
