@@ -152,7 +152,9 @@ describe("buildSessionOptions", () => {
   it("keeps work_mem when the timeout is disabled", () => {
     process.env.DATABASE_STATEMENT_TIMEOUT_MS = "0";
     delete process.env.DATABASE_WORK_MEM;
-    expect(buildSessionOptions()).toBe("-c work_mem=16MB -c jit=off -c TimeZone=UTC");
+    expect(buildSessionOptions()).toBe(
+      "-c work_mem=16MB -c jit=off -c TimeZone=UTC",
+    );
   });
 
   it("sets the default work_mem beside the timeouts", () => {
