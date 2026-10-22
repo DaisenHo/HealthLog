@@ -67,6 +67,14 @@ import {
   type MergeCandidate,
 } from "@/lib/measurements/cross-source-merge";
 import {
+  externalKeyOf,
+  onceInBatch,
+  readStoredSampleIdentities,
+  readStoredStatsRows,
+  sampleIsStoredDuplicate,
+  statsWriteUnchanged,
+} from "@/lib/measurements/batch-stored-rows";
+import {
   lockMeasurementUser,
   reconcileExternalMeasurement,
   type MeasurementReconciliationVerdict,
@@ -775,181 +783,52 @@ async function postBatch(request: NextRequest): Promise<Response> {
     // before this one is reached, and then the reconciler has to decide.
     // `stats:` rows are never prefiltered (overwrite semantics), and neither
     // is a value the reconciler's own plausibility gate would refuse.
-    const externalKeyCounts = new Map<string, number>();
-    const naturalKeyCounts = new Map<string, number>();
-    const naturalKeyOf = (
-      type: unknown,
-      source: unknown,
-      measuredAt: Date,
-      sleepStage: unknown,
-    ) => `${type}::${source}::${measuredAt.getTime()}::${sleepStage ?? "null"}`;
-    for (const p of prepared) {
-      const externalKey = `${p.row.type}::${p.row.source}::${p.row.externalId}`;
-      externalKeyCounts.set(
-        externalKey,
-        (externalKeyCounts.get(externalKey) ?? 0) + 1,
-      );
-      const naturalKey = naturalKeyOf(
-        p.row.type,
-        p.row.source,
-        p.row.measuredAt as Date,
-        p.row.sleepStage,
-      );
-      naturalKeyCounts.set(
-        naturalKey,
-        (naturalKeyCounts.get(naturalKey) ?? 0) + 1,
-      );
-    }
-    const sampleExternalIds = [
-      ...new Set(
-        prepared
-          .map((p) => p.row.externalId as string)
-          .filter((externalId) => !isStatsExternalId(externalId)),
-      ),
-    ];
-    const existingByExternalKey = new Map<
-      string,
-      { measuredAt: Date; sleepStage: unknown }
-    >();
-    if (sampleExternalIds.length > 0) {
-      const existing = await prisma.measurement.findMany({
-        where: { userId: user.id, externalId: { in: sampleExternalIds } },
-        select: {
-          type: true,
-          source: true,
-          externalId: true,
-          measuredAt: true,
-          sleepStage: true,
-        },
-      });
-      for (const row of existing) {
-        existingByExternalKey.set(
-          `${row.type}::${row.source}::${row.externalId}`,
-          { measuredAt: row.measuredAt, sleepStage: row.sleepStage },
-        );
-      }
-    }
-    function isExactStoredDuplicate(p: Prepared): boolean {
-      const externalKey = `${p.row.type}::${p.row.source}::${p.row.externalId}`;
-      const stored = existingByExternalKey.get(externalKey);
-      if (!stored) return false;
-      const measuredAt = p.row.measuredAt as Date;
-      const naturalKey = naturalKeyOf(
-        p.row.type,
-        p.row.source,
-        measuredAt,
-        p.row.sleepStage,
-      );
-      return (
-        stored.measuredAt.getTime() === measuredAt.getTime() &&
-        (stored.sleepStage ?? null) === (p.row.sleepStage ?? null) &&
-        externalKeyCounts.get(externalKey) === 1 &&
-        naturalKeyCounts.get(naturalKey) === 1 &&
-        classifyRangeRejection(
-          p.row.type as MeasurementType,
-          p.row.value as number,
-        ) === null
-      );
-    }
+    const onceInThisBatch = onceInBatch(prepared.map((p) => p.row));
+    const existingByExternalKey = await readStoredSampleIdentities(
+      prisma,
+      user.id,
+      [
+        ...new Set(
+          prepared
+            .map((p) => p.row.externalId as string)
+            .filter((externalId) => !isStatsExternalId(externalId)),
+        ),
+      ],
+    );
+    const isExactStoredDuplicate = (p: Prepared): boolean =>
+      sampleIsStoredDuplicate(
+        existingByExternalKey.get(
+          externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+        ),
+        p.row,
+      ) &&
+      onceInThisBatch(p.row) &&
+      classifyRangeRejection(
+        p.row.type as MeasurementType,
+        p.row.value as number,
+      ) === null;
 
-    // An unchanged `stats:` re-post. The phone re-sends the same daily
-    // totals on every sync, and each used to go through the reconciler
-    // (about ten round trips in its own transaction) only to write the same
-    // values back, and then counted as `updated`, which started the whole
-    // tail: the DAY refold, rollup jobs, PR detection and a cache stale for
-    // the account. Such a row is still reported `updated`, exactly as
-    // before, but nothing is written and it starts nothing.
-    //
-    // "Unchanged" is the reconciler's own update with nothing to change: a
-    // live row holds the entry's external key AND its natural identity
-    // (both indexes are unique, so that row is the only candidate), already
-    // carries the HealthKit-statistics provenance, and every column the
-    // update would write already has the value it would write. Like the
-    // sample prefilter above, it applies only where neither key occurs a
-    // second time in the batch, and never to a value the plausibility gate
-    // would refuse. A concurrent writer is no different from one that ran a
-    // moment later: its write lands after this no-op either way.
-    const statsExternalIds = [
+    // An unchanged `stats:` re-post is reported `updated` without a write
+    // (see `batch-stored-rows.ts`), under the same once-per-batch key rule.
+    const storedStats = await readStoredStatsRows(prisma, user.id, [
       ...new Set(
         prepared
           .map((p) => p.row.externalId as string)
           .filter((externalId) => isStatsExternalId(externalId)),
       ),
-    ];
-    const storedStatsByExternalKey = new Map<
-      string,
-      Record<string, unknown> & { measuredAt: Date }
-    >();
-    if (statsExternalIds.length > 0) {
-      const stored = await prisma.measurement.findMany({
-        where: {
-          userId: user.id,
-          externalId: { in: statsExternalIds },
-          deletedAt: null,
-        },
-        select: {
-          type: true,
-          source: true,
-          externalId: true,
-          measuredAt: true,
-          sleepStage: true,
-          value: true,
-          valueMin: true,
-          valueMax: true,
-          unit: true,
-          externalSourceVersion: true,
-          glucoseContext: true,
-          rhythmClassification: true,
-          deviceType: true,
-          aggregationProvenance: true,
-        },
-      });
-      for (const row of stored) {
-        storedStatsByExternalKey.set(
-          `${row.type}::${row.source}::${row.externalId}`,
-          row,
-        );
-      }
-    }
-    function isUnchangedStatsRow(p: Prepared): boolean {
-      const externalKey = `${p.row.type}::${p.row.source}::${p.row.externalId}`;
-      const stored = storedStatsByExternalKey.get(externalKey);
-      if (!stored) return false;
-      const measuredAt = p.row.measuredAt as Date;
-      const naturalKey = naturalKeyOf(
-        p.row.type,
-        p.row.source,
-        measuredAt,
-        p.row.sleepStage,
+    ]);
+    const isUnchangedStatsRow = (p: Prepared): boolean =>
+      onceInThisBatch(p.row) &&
+      classifyRangeRejection(
+        p.row.type as MeasurementType,
+        p.row.value as number,
+      ) === null &&
+      statsWriteUnchanged(
+        storedStats.get(
+          externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+        ),
+        desiredFor(p),
       );
-      if (
-        !(stored.measuredAt instanceof Date) ||
-        stored.measuredAt.getTime() !== measuredAt.getTime() ||
-        externalKeyCounts.get(externalKey) !== 1 ||
-        naturalKeyCounts.get(naturalKey) !== 1 ||
-        stored.aggregationProvenance !== "HEALTHKIT_STATISTICS" ||
-        classifyRangeRejection(
-          p.row.type as MeasurementType,
-          p.row.value as number,
-        ) !== null
-      ) {
-        return false;
-      }
-      const desired = desiredFor(p);
-      const same = (column: keyof typeof desired) =>
-        (stored[column] ?? null) === (desired[column] ?? null);
-      return (
-        same("value") &&
-        same("valueMin") &&
-        same("valueMax") &&
-        same("unit") &&
-        same("sleepStage") &&
-        same("externalSourceVersion") &&
-        same("glucoseContext") &&
-        same("rhythmClassification") &&
-        same("deviceType")
-      );
-    }
 
     // v1.42 — the `folded_window` guard (`folded-window.ts`). A raw Apple
     // Health sample of a dense or mean type, old enough to have been folded,
@@ -1205,16 +1084,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
         continue;
       }
 
-      const naturalKey = naturalKeyOf(
-        p.row.type,
-        p.row.source,
-        p.row.measuredAt as Date,
-        p.row.sleepStage,
-      );
-      if (
-        externalKeyCounts.get(key) === 1 &&
-        naturalKeyCounts.get(naturalKey) === 1
-      ) {
+      if (onceInThisBatch(p.row)) {
         pendingInserts.push(p);
         pushMergeCandidate(p);
         continue;
@@ -1610,7 +1480,17 @@ async function postBatch(request: NextRequest): Promise<Response> {
       syncTrigger === "foreground" ||
       syncTrigger === "manual" ||
       wroteManualRow;
-    invalidateUserMeasurements(user.id, evict ? { evict: true } : undefined);
+    // Every row this batch created, changed or retired is in
+    // `writtenIdentities`, so its earliest `measuredAt` bounds what changed:
+    // closed blocks of older readings (the pre-fold remainder, the day
+    // view's past history blocks) stay cached across the sync.
+    const touchedFrom = new Date(
+      Math.min(...writtenIdentities.map((w) => w.measuredAt.getTime())),
+    );
+    invalidateUserMeasurements(user.id, {
+      ...(evict ? { evict: true } : {}),
+      ...(Number.isFinite(touchedFrom.getTime()) ? { touchedFrom } : {}),
+    });
 
     // v1.37.19 — shared post-mutation tail for every distinct
     // (type, day) the batch touched. Updates participate as well as

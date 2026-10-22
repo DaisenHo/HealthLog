@@ -576,15 +576,21 @@ describe("a batch of duplicates only (v1.42)", () => {
 });
 
 describe("cache invalidation by origin (v1.42)", () => {
+  // Every call also says how far back the batch reached (`touchedFrom`), so
+  // closed blocks of older readings stay cached.
   it.each([
     ["foreground", { evict: true }],
     ["manual", { evict: true }],
-    ["background", undefined],
-    ["push", undefined],
-    [undefined, undefined],
+    ["background", {}],
+    ["push", {}],
+    [undefined, {}],
   ])("syncTrigger %s → %o", async (trigger, expected) => {
-    await post([weight(`uuid-${trigger}`, new Date(NOW - DAY))], trigger);
-    expect(invalidateUserMeasurements).toHaveBeenCalledWith(USER, expected);
+    const at = new Date(NOW - DAY);
+    await post([weight(`uuid-${trigger}`, at)], trigger);
+    expect(invalidateUserMeasurements).toHaveBeenCalledWith(USER, {
+      ...expected,
+      touchedFrom: at,
+    });
   });
 
   it("evicts for a background batch that wrote a hand-entered reading", async () => {
@@ -599,6 +605,7 @@ describe("cache invalidation by origin (v1.42)", () => {
     );
     expect(invalidateUserMeasurements).toHaveBeenCalledWith(USER, {
       evict: true,
+      touchedFrom: new Date(NOW - DAY),
     });
   });
 });

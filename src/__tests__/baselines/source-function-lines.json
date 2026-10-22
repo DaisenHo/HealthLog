@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 415,
-  "total": 154643,
+  "total": 154564,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -38,7 +38,7 @@
     "app/api/mcp/oauth/token/route.ts :: POST > withBackgroundEvent(arg)": 248,
     "app/api/measurement-reminders/[id]/route.ts :: apiHandler(arg) #2": 240,
     "app/api/measurements/[id]/route.ts :: apiHandler(arg) #2": 203,
-    "app/api/measurements/batch/route.ts :: postBatch": 1277,
+    "app/api/measurements/batch/route.ts :: postBatch": 1262,
     "app/api/measurements/route.ts :: apiHandler(arg)": 286,
     "app/api/measurements/route.ts :: postMeasurement": 377,
     "app/api/measurements/series/route.ts :: apiHandler(arg)": 670,
@@ -299,7 +299,7 @@
     "lib/analytics/correlations-fast-path.ts :: computeCorrelationHypothesesFastPath": 256,
     "lib/analytics/intraday-pulse-io.ts :: loadIntradayPulse": 206,
     "lib/analytics/score/reader.ts :: computeUserHealthScore": 324,
-    "lib/analytics/summaries-slice.ts :: computeFromRollups": 441,
+    "lib/analytics/summaries-slice.ts :: computeFromRollups": 377,
     "lib/api-handler.ts :: apiHandler": 207,
     "lib/api-handler.ts :: apiHandler > wrapped": 201,
     "lib/auth/profile-update.ts :: applyProfileUpdate": 353,

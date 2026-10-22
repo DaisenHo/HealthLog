@@ -88,15 +88,15 @@ export interface ServerCacheStats {
  * fence — invalidation flips `invalidated` and detaches the slot from
  * `pending`, so (a) the builder's `.then` skips the `set()` and (b) the
  * next read starts a fresh build instead of joining the stale one.
- * Callers already awaiting the detached promise still receive its value
- * (equivalent to having read a moment before the write); it just never
- * enters the cache.
+ * Callers already awaiting the detached promise still get its value (as
+ * if read just before the write); it never enters the cache.
  */
 interface PendingBuild<T> {
   promise: Promise<T>;
   invalidated: boolean;
 }
 
+type KeyFilter = (key: string) => boolean; // closed blocks, `invalidate.ts`
 export class ServerCache<T> {
   private readonly map = new Map<
     string,
@@ -124,9 +124,9 @@ export class ServerCache<T> {
   }
 
   /** Fence + detach every in-flight builder under `prefix`. */
-  private detachPendingByPrefix(prefix: string): void {
+  private detachPendingByPrefix(prefix: string, spare?: KeyFilter): void {
     for (const [key, slot] of this.pending) {
-      if (key.startsWith(prefix)) {
+      if (key.startsWith(prefix) && !spare?.(key)) {
         slot.invalidated = true;
         this.pending.delete(key);
       }
@@ -283,17 +283,17 @@ export class ServerCache<T> {
    * so the next read is a clean miss — identical to the old evict
    * behaviour).
    */
-  markStaleByPrefix(prefix: string): number {
+  markStaleByPrefix(prefix: string, spare?: KeyFilter): number {
     // v1.16.9 — fence in-flight builders too: a refresh that started
     // before the write would otherwise complete after this mark and
     // re-cache the pre-write body as FRESH for the full TTL. Detaching
     // keeps the SWR contract — the marked entry still serves stale, and
     // the next read kicks off a fresh (post-write) recompute.
-    this.detachPendingByPrefix(prefix);
+    this.detachPendingByPrefix(prefix, spare);
     let marked = 0;
     const now = Date.now();
     for (const [key, entry] of this.map) {
-      if (key.startsWith(prefix)) {
+      if (key.startsWith(prefix) && !spare?.(key)) {
         entry.expiresAt = now;
         marked += 1;
       }
@@ -320,12 +320,12 @@ export class ServerCache<T> {
    * entire user-bucket from a cache without having to enumerate every
    * possible cache-key variant the user might have warmed.
    */
-  deleteByPrefix(prefix: string): number {
+  deleteByPrefix(prefix: string, spare?: KeyFilter): number {
     // v1.16.9 — fence in-flight builders under the prefix (see `delete`).
-    this.detachPendingByPrefix(prefix);
+    this.detachPendingByPrefix(prefix, spare);
     let removed = 0;
     for (const key of this.map.keys()) {
-      if (key.startsWith(prefix)) {
+      if (key.startsWith(prefix) && !spare?.(key)) {
         const entry = this.map.get(key);
         this.map.delete(key);
         this.totalWeight -= entry?.weight ?? 0;

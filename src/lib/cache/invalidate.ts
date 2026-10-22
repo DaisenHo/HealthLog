@@ -49,6 +49,30 @@ export function invalidateUserDashboardSnapshot(userId: string): void {
 }
 
 /**
+ * The key part that marks an analytics entry as a closed block: a value that
+ * depends only on readings measured before `before`. Such a block is the
+ * same however many syncs land after it, as long as none of them touches a
+ * reading that old, so a measurement write that says how far back it
+ * reached (`touchedFrom`) leaves it in place. Every other invalidation, and
+ * every write that does not say, drops it as before.
+ */
+export function closedBlockKeyPart(before: Date | number): string {
+  const ms = typeof before === "number" ? before : before.getTime();
+  return `before:${ms}`;
+}
+
+const CLOSED_BLOCK_RE = /\|before:(\d+)(?:\||$)/;
+
+/**
+ * Whether `key` is a closed block that a write reaching back to
+ * `touchedFrom` cannot have changed. Exported for its test.
+ */
+export function closedBlockUntouched(key: string, touchedFrom: Date): boolean {
+  const match = CLOSED_BLOCK_RE.exec(key);
+  return match !== null && Number(match[1]) <= touchedFrom.getTime();
+}
+
+/**
  * Invalidate every cache that may reflect a user's measurement set.
  *
  * Covers: analytics aggregate, achievement progress, workouts cache.
@@ -74,16 +98,28 @@ export function invalidateUserDashboardSnapshot(userId: string): void {
  */
 export function invalidateUserMeasurements(
   userId: string,
-  opts?: { evict?: boolean },
+  opts?: {
+    evict?: boolean;
+    /**
+     * The earliest `measuredAt` the write created, changed or removed. With
+     * it, closed blocks of older readings (`closedBlockKeyPart`) stay.
+     * Leave it out unless the caller knows every row it touched.
+     */
+    touchedFrom?: Date;
+  },
 ): void {
   // A coverage probe already running read the set before this write; the
   // next reader must not join it.
   forgetCoverageProbe(userId);
+  const touchedFrom = opts?.touchedFrom;
+  const spare = touchedFrom
+    ? (key: string) => closedBlockUntouched(key, touchedFrom)
+    : undefined;
   // The `${userId}|` prefix covers the slim / thick analytics cells, the
   // iOS summary cell, AND the v1.7.0 dashboard snapshot
   // (`${userId}|dashboard-snapshot`) in one pass.
   if (opts?.evict) {
-    caches.analytics.deleteByPrefix(`${userId}|`);
+    caches.analytics.deleteByPrefix(`${userId}|`, spare);
   } else {
     // v1.12.7 — mark stale rather than hard-evict. Measurement writes are
     // the highest-frequency dirty signal (every iOS Apple-Health sync
@@ -94,7 +130,7 @@ export function invalidateUserMeasurements(
     // summary cells read via plain `cached` are unaffected: a marked-stale
     // entry has `expiresAt === now`, so their next read is a clean miss and
     // rebuilds fresh — identical to the old evict for those keys.
-    caches.analytics.markStaleByPrefix(`${userId}|`);
+    caches.analytics.markStaleByPrefix(`${userId}|`, spare);
   }
   caches.achievements.deleteByPrefix(userId);
   caches.workouts.deleteByPrefix(`${userId}|`);
