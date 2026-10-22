@@ -21,8 +21,10 @@ describe("per-process database connection budget", () => {
   const originalConnectionLimit = process.env.DB_CONNECTION_LIMIT;
   const originalPoolTimeout = process.env.DB_POOL_TIMEOUT;
   const originalLegacyPoolMax = process.env.DATABASE_POOL_MAX;
+  const originalProcessType = process.env.HEALTHLOG_PROCESS_TYPE;
 
   beforeEach(() => {
+    process.env.HEALTHLOG_PROCESS_TYPE = "web";
     process.env.DATABASE_URL =
       "postgresql://healthlog:test@db:5432/healthlog?connection_limit=20&pool_timeout=20";
     delete process.env.DB_CONNECTION_LIMIT;
@@ -39,6 +41,7 @@ describe("per-process database connection budget", () => {
     restore("DB_CONNECTION_LIMIT", originalConnectionLimit);
     restore("DB_POOL_TIMEOUT", originalPoolTimeout);
     restore("DATABASE_POOL_MAX", originalLegacyPoolMax);
+    restore("HEALTHLOG_PROCESS_TYPE", originalProcessType);
   });
 
   it("splits the URL connection_limit across Prisma and pg-boss", () => {
@@ -46,6 +49,17 @@ describe("per-process database connection budget", () => {
     expect(getPrismaPoolMax()).toBe(18);
     expect(getPgBossPoolMax()).toBe(2);
     expect(getPrismaPoolMax() + getPgBossPoolMax()).toBe(getConnectionBudget());
+  });
+
+  it("gives a process that runs the worker four pg-boss connections", () => {
+    for (const role of ["all", "worker"]) {
+      process.env.HEALTHLOG_PROCESS_TYPE = role;
+      expect(getPgBossPoolMax()).toBe(4);
+      expect(getPrismaPoolMax()).toBe(16);
+    }
+    process.env.DB_CONNECTION_LIMIT = "3";
+    expect(getPgBossPoolMax()).toBe(2);
+    expect(getPrismaPoolMax()).toBe(1);
   });
 
   it("uses the existing pool_timeout seconds for both pool constructors", () => {

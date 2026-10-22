@@ -6,6 +6,7 @@ import {
   sessionOptionsDisabled,
   TIME_ZONE_OPTION,
 } from "@/lib/db-session";
+import { shouldRunWorker } from "@/lib/process-type";
 
 export {
   pinTimeZoneOnConnect,
@@ -21,7 +22,17 @@ const globalForPrisma = globalThis as unknown as {
 
 const DEFAULT_CONNECTION_BUDGET = 20;
 const DEFAULT_POOL_TIMEOUT_SECONDS = 20;
-const PG_BOSS_CONNECTIONS = 2;
+/**
+ * pg-boss connections. A web-only process only sends jobs, and two sockets
+ * carry that. A process that runs the worker polls: about a hundred bindings
+ * (two dozen of them every two seconds, several with two to five slots), the
+ * cron timekeeper, supervision, and every job's own start and completion
+ * writes, plus the web sends when web and worker share the process. On two
+ * sockets those queued behind each other; four keep a fetch from waiting on
+ * a completion. The connections come out of the same per-process budget.
+ */
+const PG_BOSS_PRODUCER_CONNECTIONS = 2;
+const PG_BOSS_WORKER_CONNECTIONS = 4;
 
 function positiveInteger(raw: string | undefined): number | null {
   if (!raw) return null;
@@ -53,8 +64,14 @@ export function getConnectionBudget(): number {
   return Math.max(2, configured);
 }
 
-export function getPgBossPoolMax(): number {
-  return Math.min(PG_BOSS_CONNECTIONS, getConnectionBudget() - 1);
+export function getPgBossPoolMax(
+  role: "worker" | "producer" = shouldRunWorker() ? "worker" : "producer",
+): number {
+  const wanted =
+    role === "worker"
+      ? PG_BOSS_WORKER_CONNECTIONS
+      : PG_BOSS_PRODUCER_CONNECTIONS;
+  return Math.min(wanted, getConnectionBudget() - 1);
 }
 
 export function getPrismaPoolMax(): number {
