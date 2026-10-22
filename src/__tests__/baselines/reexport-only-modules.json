@@ -1,0 +1,23 @@
+{
+  "$comment": "Modules under src/ whose every statement is an export … from. Maintained by src/__tests__/import-cycle-guard.test.ts.",
+  "count": 16,
+  "total": 16,
+  "entries": {
+    "components/data-list/index.ts": 1,
+    "components/insights/derived/index.ts": 1,
+    "components/insights/workout-detail/index.ts": 1,
+    "lib/ai/coach/tools/index.ts": 1,
+    "lib/analytics/compliance.ts": 1,
+    "lib/cycle/index.ts": 1,
+    "lib/doctor-report-data.ts": 1,
+    "lib/fhir/resources/index.ts": 1,
+    "lib/insights/derived/index.ts": 1,
+    "lib/links/index.ts": 1,
+    "lib/logging/index.ts": 1,
+    "lib/mcp/index.ts": 1,
+    "lib/openapi/routes/insights/index.ts": 1,
+    "lib/openapi/routes/medications/index.ts": 1,
+    "lib/record-settings/index.ts": 1,
+    "lib/validations/medication/index.ts": 1
+  }
+}
