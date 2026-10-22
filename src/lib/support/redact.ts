@@ -39,8 +39,16 @@ function escapeRegExp(value: string): string {
  */
 const KNOWN_VALUE_MIN_LENGTH = 5;
 
-/** Top-level domains a host name in a self-hosted setup ends in. */
-const HOST_TLDS = [
+/**
+ * Top-level domains a host name in a self-hosted setup ends in: the generic
+ * ones, the home-network suffixes, and the country codes of every place the
+ * app's languages are at home (`HOST_TLD_LOCALE_REGIONS` in the test pins
+ * that list against `locales`), plus the neighbours a self-hoster there is
+ * as likely to register under. A second-level registry (`com.br`, `co.uk`)
+ * needs nothing extra: the label before it is matched as a subdomain.
+ */
+export const HOST_TLDS = [
+  // Generic.
   "com",
   "net",
   "org",
@@ -50,18 +58,44 @@ const HOST_TLDS = [
   "cloud",
   "info",
   "me",
+  "co",
+  "xyz",
+  "online",
+  "site",
+  "eu",
+  // Country codes.
   "de",
   "at",
   "ch",
-  "eu",
-  "uk",
+  "li",
+  "lu",
+  "be",
+  "nl",
   "fr",
   "es",
+  "pt",
+  "br",
+  "ao",
+  "mz",
   "it",
   "pl",
-  "nl",
+  "cz",
+  "sk",
   "kr",
+  "jp",
+  "uk",
+  "ie",
   "us",
+  "ca",
+  "au",
+  "nz",
+  "mx",
+  "ar",
+  "se",
+  "dk",
+  "no",
+  "fi",
+  // Home-network and private suffixes.
   "local",
   "lan",
   "home",
@@ -69,7 +103,9 @@ const HOST_TLDS = [
   "arpa",
   "localdomain",
   "ts",
-].join("|");
+];
+
+const HOST_TLD_PATTERN = HOST_TLDS.join("|");
 
 export const SUPPORT_REDACTION_STEPS: readonly SupportRedactionStep[] = [
   {
@@ -132,7 +168,7 @@ export const SUPPORT_REDACTION_STEPS: readonly SupportRedactionStep[] = [
     apply: (text) =>
       text.replace(
         new RegExp(
-          `\\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+(?:${HOST_TLDS})\\b`,
+          `\\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+(?:${HOST_TLD_PATTERN})\\b`,
           "gi",
         ),
         "[host]",
