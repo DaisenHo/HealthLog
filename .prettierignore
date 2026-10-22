@@ -29,3 +29,8 @@ scripts/bench/results
 # Golden copies of the backup file and the restored account, written by the
 # parity test itself (BACKUP_PARITY_WRITE=1), so a rewrite diffs cleanly.
 tests/integration/__golden__
+
+# inlang writes its working files (cache, metadata, README) next to the
+# project settings when its CLI or SDK runs; only settings.json is tracked.
+project.inlang/*
+!project.inlang/settings.json

@@ -134,6 +134,26 @@ To suggest a fix or improvement:
 3. Edit `messages/<locale>.json`. Keep the JSON valid; the i18n integrity test will flag missing or extra keys against `en.json` before CI accepts the PR.
 4. Open a PR titled `i18n(<locale>): <area>`. Describe what was unclear, awkward, or wrong in the previous wording.
 
+### Translating in the browser
+
+Every locale can be edited in [Fink](https://fink.inlang.com/?repo=MBombeck/HealthLog&project=project.inlang), inlang's browser editor, without cloning the repository. Fink reads `project.inlang/settings.json`, which points it at `messages/<locale>.json`, shows each message next to its translations, and flags strings that are missing or use other placeholders than English.
+
+1. Open the link and sign in with GitHub.
+2. Without write access to this repository, choose **Fork**. Fink asks you to install the Inlang GitHub App on your own account so it can push to your fork.
+3. Edit, then choose **Push**. Fink commits to the fork; **Open pull request** takes you to GitHub's compare page, where you submit the change against `main`.
+
+Fink writes the same nested JSON this repository uses and changes only the lines you edited. A string you add for a key the locale did not have yet goes to the end of its section instead of the position it has in `en.json`, which is harmless.
+
+What a reviewer checks on a translation pull request:
+
+- Only `messages/*.json` changed, and only the strings the description names.
+- Every `{placeholder}` of the English string is still there and spelled the same. The i18n integrity test fails the build otherwise.
+- Medical terms are the ones the language's clinical guidelines use, and the register matches the rest of the locale (`du` in German, `você` in Brazilian Portuguese).
+- Words the app or the Telegram bot matches literally stay as they are: slash commands, `taken <name>`, and the unit symbols.
+- Machine translation is fine as a first draft, but someone who reads the language has gone through every string before the pull request is opened, and the description says so.
+
+To run the checks Fink shows on a local checkout: `npx @inlang/cli@3.4.4 check --project ./project.inlang`. It reads the files and changes nothing.
+
 ### Adding a new locale
 
 If you want to introduce a locale that isn't shipped (e.g. `sv`, `cs`):
@@ -141,9 +161,8 @@ If you want to introduce a locale that isn't shipped (e.g. `sv`, `cs`):
 1. Open an issue first using the **Translation request** template. We'll confirm the locale is in scope and decide whether it joins the AI-initial-community-maintained tier or the maintained tier.
 2. Copy `messages/en.json` to `messages/<locale>.json`.
 3. Translate. AI assistance is welcome as a starting point but the PR description should note whether it's an AI-initial pass or a fully human-reviewed one — that information drives the banner state.
-4. Add the locale to the supported list in `src/lib/i18n/locales.ts` (or wherever the registry lives — grep `SUPPORTED_LOCALES`).
-5. The Coach system prompts at `src/lib/ai/prompts/coach-prompt.ts` and `src/lib/ai/prompts/insight-generator.ts` and the doctor-report PDF strings need translation too. Include those in the same PR.
-6. Run `pnpm test -- i18n-integrity` locally before submitting.
+4. Add the locale to `locales` in `src/lib/i18n/config.ts` and to `locales` in `project.inlang/settings.json`, then run `pnpm typecheck`. Every per-locale table that still lacks the new locale fails to compile, and that list is the work: date and number formatting, the reply-language footers of the Coach and insights prompts, the outbound safety banks, the prose-grounding patterns and the no-key fallback copy. Include those in the same PR.
+5. Run `pnpm test` before submitting. The i18n guards hold the new bundle to the English keys and placeholders.
 
 ### Style guide for translators
 
@@ -156,7 +175,7 @@ If you want to introduce a locale that isn't shipped (e.g. `sv`, `cs`):
 
 ### Long-term
 
-When the community grows beyond ad-hoc PRs, we'll spin up a self-hosted [Weblate](https://weblate.org/) instance. That replaces the JSON-PR workflow with a web UI but keeps every translation under our own roof — no third-party telemetry. Tracking issue: `v1.6 — Weblate self-hosted on edge-01`.
+Fink covers browser editing today. It edits the files in this repository directly and keeps no copy of the translations anywhere else. If the community outgrows it, a self-hosted [Weblate](https://weblate.org/) instance remains the fallback. Tracking issue: `v1.6 — Weblate self-hosted on edge-01`.
 
 ## Code of Conduct
 

@@ -109,13 +109,14 @@ Next.js 16 (App Router, React Server Components), TypeScript strict, PostgreSQL 
 
 ## Documentation
 
-|                        |                                                  |
-| ---------------------- | ------------------------------------------------ |
-| User and operator docs | [docs.healthlog.dev](https://docs.healthlog.dev) |
-| Release history        | [CHANGELOG.md](CHANGELOG.md)                     |
-| API contract           | [`docs/api/openapi.yaml`](docs/api/openapi.yaml) |
-| Security policy        | [SECURITY.md](SECURITY.md)                       |
-| Contributing           | [CONTRIBUTING.md](CONTRIBUTING.md)               |
+|                        |                                                              |
+| ---------------------- | ------------------------------------------------------------ |
+| User and operator docs | [docs.healthlog.dev](https://docs.healthlog.dev)             |
+| Release history        | [CHANGELOG.md](CHANGELOG.md)                                 |
+| API contract           | [`docs/api/openapi.yaml`](docs/api/openapi.yaml)             |
+| Security policy        | [SECURITY.md](SECURITY.md)                                   |
+| Contributing           | [CONTRIBUTING.md](CONTRIBUTING.md)                           |
+| Translating            | [CONTRIBUTING.md#translations](CONTRIBUTING.md#translations) |
 
 ## Status
 
