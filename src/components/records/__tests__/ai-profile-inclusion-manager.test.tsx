@@ -32,6 +32,14 @@ vi.mock("@tanstack/react-query", () => ({
     };
   },
 }));
+
+// #1267 — the about-me save's abort reads the account payload; the
+// react-query mock above has no client to read it from.
+vi.mock("@/hooks/use-ai-capability", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/use-ai-capability")>()),
+  useAboutMeSaveTimeoutMs: () => 90_000,
+}));
+
 vi.mock("@/lib/api/api-fetch", () => ({
   apiGet: vi.fn(),
   apiPut: vi.fn(),

@@ -6558,7 +6558,8 @@
           "medium": "Médio",
           "high": "Alto"
         },
-        "coachNote": "No Coach, aplica-se a profundidade de pensamento definida nas configurações do Coach."
+        "coachNote": "No Coach, aplica-se a profundidade de pensamento definida nas configurações do Coach.",
+        "backgroundNote": "O trabalho em segundo plano, como o resumo diário, não usa esta configuração: pensa no máximo em Médio, menos quando o operador define um limite menor, e nada no nível de uso Frugal."
       },
       "providerCardDescription": "Configure a chave e o modelo de cada provedor; a ordem abaixo decide qual deles o HealthLog consulta primeiro.",
       "runtimeTitle": "Verificar e atualizar",

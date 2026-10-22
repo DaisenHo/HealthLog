@@ -49,8 +49,12 @@ async function openFromPlot(page: Page, plot: Locator, testInfo: TestInfo) {
     await expect(open).toBeVisible();
     // A tap alone never opens a sheet: a point is a small target.
     await expect(panel(page)).toHaveCount(0);
-    // The button is a calm, full 44 px row.
-    expect((await open.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    // The button is a calm, full 44 px row. The tooltip re-renders while the
+    // tap settles, so the measurement retries instead of reading a box from
+    // a node that has just been replaced.
+    await expect
+      .poll(async () => (await open.boundingBox())?.height ?? 0)
+      .toBeGreaterThanOrEqual(44);
     await open.tap();
     await expect(panel(page)).toHaveAttribute("data-shell", "bottom");
   } else {

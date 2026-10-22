@@ -6,6 +6,10 @@ import { Dialog as SheetPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
+import {
+  BottomSheetContent,
+  type BottomSheetOptions,
+} from "@/components/ui/bottom-sheet";
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />;
@@ -45,14 +49,43 @@ function SheetOverlay({
   );
 }
 
+/**
+ * A sheet from one edge. `side="bottom"` is the bottom sheet
+ * (`bottom-sheet.tsx`): a grip, the drag, and the options in
+ * `BottomSheetOptions`, which the other sides ignore.
+ */
 function SheetContent({
+  side = "right",
+  preview,
+  previewLabels,
+  draggable,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Content> &
+  BottomSheetOptions & {
+    side?: "top" | "right" | "bottom" | "left";
+    showCloseButton?: boolean;
+  }) {
+  if (side === "bottom") {
+    return (
+      <BottomSheetContent
+        preview={preview}
+        previewLabels={previewLabels}
+        draggable={draggable}
+        {...props}
+      />
+    );
+  }
+  return <EdgeSheetContent side={side} {...props} />;
+}
+
+function EdgeSheetContent({
   className,
   children,
-  side = "right",
+  side,
   showCloseButton = true,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
-  side?: "top" | "right" | "bottom" | "left";
+  side: "top" | "right" | "left";
   showCloseButton?: boolean;
 }) {
   const { t } = useTranslations();
@@ -61,14 +94,10 @@ function SheetContent({
       <SheetOverlay />
       <SheetPrimitive.Content
         data-slot="sheet-content"
-        // Read by the safe-area and on-screen-keyboard rules in
-        // `globals.css`: a bottom sheet stands on the keyboard, the
-        // full-height sides keep clear of the status bar and the notch.
-        // Its own attribute rather than `data-slot`, which consumers
-        // replace with theirs (`responsive-sheet-content`, `day-panel`).
-        // A bottom sheet's `bottom` comes from that rule (0 until the
-        // keyboard opens), so its branch below carries no `bottom-*`: a
-        // utility would outrank the layered rule and pin it to the edge.
+        // Read by the safe-area rules in `globals.css`: the full-height
+        // sides keep clear of the status bar and the notch. Its own
+        // attribute rather than `data-slot`, which consumers replace with
+        // theirs.
         data-sheet-side={side}
         className={cn(
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
@@ -78,8 +107,6 @@ function SheetContent({
             "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
           side === "top" &&
             "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b",
-          side === "bottom" &&
-            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 h-auto border-t",
           className,
         )}
         {...props}
@@ -90,8 +117,8 @@ function SheetContent({
           // a 36 px floor, matching the Dialog close-X treatment from
           // MB2 (Decision I). 36 px (not 44 px) is the intentional
           // exception for fixed icon-only close affordances per the
-          // dialog primitive's rationale: 44 px would crowd the sheet
-          // header out of proportion on the bottom-sheet branch.
+          // dialog primitive's rationale. The bottom sheet's X is 44 px
+          // on its title row (`bottom-sheet.tsx`).
           <SheetPrimitive.Close
             data-slot="sheet-close-button"
             className="ring-offset-background focus-visible:border-ring focus-visible:ring-ring/50 text-muted-foreground hover:bg-accent hover:text-foreground absolute top-3 right-4 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md transition-colors focus-visible:ring-[3px] focus-visible:outline-none disabled:pointer-events-none sm:min-h-9 sm:min-w-9 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"

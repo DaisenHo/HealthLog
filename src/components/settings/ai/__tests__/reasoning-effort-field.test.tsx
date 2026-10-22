@@ -99,6 +99,12 @@ describe.each([
     expect(select).toMatch(/<option value="" selected="">/);
   });
 
+  it("says the daily briefing does not follow this setting (#1267)", () => {
+    const html = render(form(provider({})));
+    expect(html).toContain('data-slot="reasoning-effort-background-note"');
+    expect(html).toContain(en.settings.ai.reasoning.backgroundNote);
+  });
+
   it("seeds the stored value", () => {
     const select = selectMarkup(render(form(provider(stored("none")))), id);
     expect(select).toMatch(/<option value="none" selected="">/);

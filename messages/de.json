@@ -6558,7 +6558,8 @@
           "medium": "Mittel",
           "high": "Hoch"
         },
-        "coachNote": "Im Coach gilt die Denktiefe aus den Coach-Einstellungen."
+        "coachNote": "Im Coach gilt die Denktiefe aus den Coach-Einstellungen.",
+        "backgroundNote": "Hintergrundarbeit wie das Tagesbriefing nutzt diese Einstellung nicht: Sie denkt höchstens auf Mittel nach, weniger, wenn der Betreiber eine niedrigere Grenze setzt, und gar nicht auf der Stufe Sparsam."
       },
       "providerCardDescription": "Richte Schlüssel und Modell je Anbieter ein; die Reihenfolge darunter bestimmt, welchen HealthLog zuerst fragt.",
       "runtimeTitle": "Prüfen und aktualisieren",

@@ -1,5 +1,81 @@
 # Changelog
 
+## [1.44.2] — 2026-10-22
+
+### Changed
+
+- **Sheets that come up from the bottom can be pulled.** On a phone every
+  sheet now follows your finger: pull it down to close it, flick it away,
+  or let go early and it springs back. Content that is scrolled scrolls
+  first, sideways gestures such as sliders keep working, and the X, Escape
+  and a tap outside still close it. The day view opens at half height as
+  before and pulls up to almost the full screen. The page behind no longer
+  reloads when you pull inside a sheet, and closing a sheet puts the focus
+  back where you were.
+
+### Fixed
+
+- **Your own targets shape the dashboard charts.** Blood pressure, resting
+  pulse and body fat drew the standard band on the dashboard even when you
+  had set your own targets; they now draw yours, and the tile colours follow
+  them. The oxygen saturation page uses your target too. Without your own
+  targets nothing changes. (#1261)
+- **Local thinking models finish the briefing, and regenerate waits for
+  them.** A thinking model such as Gemma 4 on Ollama could spend a long
+  briefing thinking and hand back no answer, which was logged as a
+  connection problem and shown as a timeout. A reply with nothing but
+  thinking is now asked once more without thinking, and that model is asked
+  that way for the next hour, through the Local provider and an
+  OpenAI-compatible gateway alike. The regenerate button waits as long as
+  your AI response timeout allows instead of giving up after 45 seconds, and
+  so does saving your notes about yourself; a local model allowed more than
+  five minutes is no longer cut off at five. A failed call is logged with
+  what actually went wrong, such as a refused or dropped connection, an
+  empty reply or a timeout, and the briefing only suggests a longer timeout
+  when time really ran out. The provider's reasoning setting now says that
+  the daily briefing thinks at its own depth. (#1267)
+
+### Thanks
+
+Thanks to @mills1975 for spotting that the targets never reached the chart
+(#1261).
+
+Thanks to @Tio61 for the precise report that traced the regenerate timeout
+to its line and ruled out the transport with their own requests from inside
+the container (#1267).
+
+## [1.44.1] — 2026-10-22
+
+### Security
+
+- **Next.js 16.4.2.** The framework fixed two critical advisories that
+  allow unauthenticated remote code execution, one in `use cache` functions
+  that return typed arrays (GHSA-673q-mjm6-r5xr) and one in the image
+  optimizer when it handles SVG (GHSA-2464-fhr4-w9xw), and a high-severity
+  denial of service through Server Actions (GHSA-p3m5-59mp-jv5r). HealthLog
+  uses neither `use cache` nor the image component, and it defines no Server
+  Actions and refuses requests that call one. Every instance runs the same
+  framework, though, so it updates anyway.
+- **The image optimizer is off.** Nothing in HealthLog renders through it,
+  so `/_next/image` now answers 404 instead of processing whatever image a
+  request names. Icons and logos load as before.
+- **nodemailer 10.1.7** fixes several advisories in how email addresses are
+  parsed (GHSA-8c8m-p3m8-cjg8 among them).
+
+### Fixed
+
+- **`[` and `]` move the open day on every press.** Pressed quickly in a
+  row, one press could be lost and the day ended one short. A step now
+  starts from the day in the address bar and waits until the previous one
+  is shown.
+- **Back closes a document opened from the vault.** Pressed right after
+  opening a document, Back could leave its sheet open. The sheet now follows
+  the address bar directly.
+
+### Upgrade notes
+
+- None. Pull the new image and restart.
+
 ## [1.44.0] — 2026-10-22
 
 ### Added

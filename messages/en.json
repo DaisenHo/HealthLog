@@ -6558,7 +6558,8 @@
           "medium": "Medium",
           "high": "High"
         },
-        "coachNote": "In the Coach, the thinking depth from the Coach settings applies."
+        "coachNote": "In the Coach, the thinking depth from the Coach settings applies.",
+        "backgroundNote": "Background work such as the daily briefing does not use this setting: it thinks at Medium at most, lower when the operator sets a lower limit, and not at all on the Frugal usage level."
       },
       "providerCardDescription": "Set up each provider's key and model; the order below decides which one HealthLog asks first.",
       "runtimeTitle": "Check and refresh",

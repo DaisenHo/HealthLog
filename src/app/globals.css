@@ -668,6 +668,37 @@ body {
   }
 
   /*
+   * A bottom sheet with a preview step (`BottomSheetContent preview`) is laid
+   * out at its full height and, on the preview step, rests lowered by the
+   * difference: moving between the steps, or dragging, is a transform and
+   * never a relayout. Its footer is lifted by the same amount so it stays on
+   * the window's bottom edge, and its scrolling body ends above that footer,
+   * so nothing in it is out of reach on the lower step. The drag writes the
+   * same three properties inline while a finger is down.
+   */
+  [data-sheet-snap="preview"] {
+    transform: translateY(
+      calc(var(--sheet-height) - var(--sheet-preview-height))
+    );
+  }
+  [data-sheet-snap] [data-sheet-footer] {
+    transition: transform 260ms ease-out;
+  }
+  [data-sheet-snap="preview"] [data-sheet-footer] {
+    transform: translateY(
+      calc(var(--sheet-preview-height) - var(--sheet-height))
+    );
+  }
+  [data-sheet-snap="preview"] [data-sheet-body] {
+    margin-bottom: calc(var(--sheet-height) - var(--sheet-preview-height));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-sheet-snap] [data-sheet-footer] {
+      transition: none;
+    }
+  }
+
+  /*
    * Side and top sheets run the full height of the window. In an installed
    * app on a tablet the status bar sits over their first 24 px, and a phone
    * held sideways has its notch over one side, so the panel keeps its header

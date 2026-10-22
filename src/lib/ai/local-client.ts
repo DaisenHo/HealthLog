@@ -25,7 +25,9 @@ import {
   type JsonModeDialect,
 } from "./json-dialect";
 import type { ReasoningEffort } from "./reasoning-effort";
+import { emitSignal } from "@/lib/logging/signal";
 import {
+  ANSWERS_ONLY_UNREASONED,
   annotateReasoningDowngrade,
   isReasoningParameterRejection,
   learnedReasoningDialect,
@@ -150,6 +152,25 @@ class ReasoningCollector {
   }
 }
 
+/**
+ * The empty-reply error. `httpStatus: 0` is the sentinel the chain classifier
+ * treats as a hard failure; `kind` says whether the reply held reasoning and
+ * no answer, or nothing at all, so the log names it instead of "network".
+ */
+function emptyReplyError(hadReasoning: boolean): Error {
+  const err = new Error(
+    hadReasoning
+      ? "Local AI returned reasoning but no answer"
+      : "Local AI returned empty content",
+  );
+  Object.assign(err, {
+    httpStatus: 0,
+    kind: hadReasoning ? "reasoning_only" : "empty_response",
+    upstream: "local",
+  });
+  return err;
+}
+
 /** The reasoning text a non-streamed message carries, if any. */
 function messageReasoning(message: unknown): string | null {
   const m = (message ?? {}) as Record<string, unknown>;
@@ -230,10 +251,14 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     );
 
     const callEffort = this.callReasoningEffort(params);
+    const sentEffort = this.sentReasoningEffort(params);
     // Reasoning tokens count against `max_tokens` on these servers; the
     // thinking budget rides on top of the answer budget (a ceiling only).
     const thinkingTokens =
-      params.reasoning && callEffort && params.reasoning.effort !== "off"
+      params.reasoning &&
+      sentEffort &&
+      sentEffort !== "none" &&
+      params.reasoning.effort !== "off"
         ? REASONING_THINKING_BUDGET[params.reasoning.effort]
         : 0;
     const body = JSON.stringify({
@@ -249,7 +274,9 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       // body of a setup that never touched it stays byte-identical; "Off" is
       // `none`, which stops a thinking model spending the answer budget.
       // v1.41 — a call that carries its own resolved level wins over it.
-      ...(!params.reasoning && this.reasoningEffort
+      // #1267 — once a model answered nothing while reasoning, the entry's
+      // setting gives way to the `none` that `callReasoningEffort` sends.
+      ...(!params.reasoning && this.reasoningEffort && callEffort === null
         ? { reasoning_effort: this.reasoningEffort }
         : {}),
       ...(callEffort ? { reasoning_effort: callEffort } : {}),
@@ -288,11 +315,64 @@ export class LocalOpenAICompatibleClient implements AIProvider {
    * call without one: the entry's #1126 setting applies, exactly as before.
    */
   private callReasoningEffort(params: CompletionParams): string | null {
+    const learned = learnedReasoningDialect(this.reasoningDialectKey());
+    // #1267 — this endpoint and model answered a reasoning request with
+    // nothing but reasoning: every call asks with `none` until the lesson
+    // expires, a call without a level of its own included.
+    if (learned === ANSWERS_ONLY_UNREASONED) return "none";
     if (!params.reasoning) return null;
-    if (learnedReasoningDialect(this.reasoningDialectKey()) === "none") {
-      return null;
-    }
+    if (learned === "none") return null;
     return params.reasoning.effort === "off" ? "none" : params.reasoning.effort;
+  }
+
+  /**
+   * The `reasoning_effort` this request carries, whichever level decided it:
+   * the call's own (`callReasoningEffort`), else the entry's #1126 setting.
+   */
+  private sentReasoningEffort(params: CompletionParams): string | null {
+    return (
+      this.callReasoningEffort(params) ??
+      (params.reasoning ? null : this.reasoningEffort)
+    );
+  }
+
+  /**
+   * #1267 — a reply with reasoning and no answer. Ollama serves thinking
+   * models (Gemma 4 among them) on `/v1/chat/completions` with the thought in
+   * a separate `reasoning` field, and a long thought can leave `content`
+   * empty: the thought used the whole token budget, or the answer itself was
+   * parsed into `reasoning`. The same model asked with `reasoning_effort:
+   * "none"` answers in `content`. So when a request that did not already say
+   * `none` comes back empty with reasoning (or after asking to reason), learn
+   * that this endpoint and model answer only unreasoned, and tell the caller
+   * to ask once more. Returns false when the empty reply is final.
+   */
+  private learnAnswerlessReasoning(
+    params: CompletionParams,
+    hadReasoning: boolean,
+    finishReason: string | undefined,
+  ): boolean {
+    const sent = this.sentReasoningEffort(params);
+    if (sent === "none") return false;
+    if (!hadReasoning && sent === null) return false;
+    rememberReasoningDialect(
+      this.reasoningDialectKey(),
+      ANSWERS_ONLY_UNREASONED,
+    );
+    annotateReasoningDowngrade("local", sent ?? "default", "none");
+    emitSignal({
+      action: "ai.local.reasoning_answerless",
+      level: "warn",
+      meta: {
+        effort: sent ?? "default",
+        finish:
+          finishReason === "length" || finishReason === "stop"
+            ? finishReason
+            : "other",
+        reasoning: hadReasoning,
+      },
+    });
+    return true;
   }
 
   async generateCompletion(
@@ -442,21 +522,25 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         content = split.content;
       }
     }
-    const reasoning = collector.result(
-      json.usage?.completion_tokens_details?.reasoning_tokens ?? null,
-    );
+    const finish = json.choices?.[0]?.finish_reason;
     if (!content) {
+      const hadReasoning =
+        messageReasoning(json.choices?.[0]?.message) !== null;
+      if (this.learnAnswerlessReasoning(params, hadReasoning, finish)) {
+        return this.generateCompletion(params);
+      }
+      // The reasoning that did arrive still reaches `onReasoning`, as before.
+      collector.result(
+        json.usage?.completion_tokens_details?.reasoning_tokens ?? null,
+      );
       // v1.20.1 — sentinel httpStatus + kind so the chain classifier can tell
       // an empty 200-OK reply apart from a transport failure. Cascade unchanged
       // (`status <= 0` is already a hard failure).
-      const err = new Error("Local AI returned empty content");
-      Object.assign(err, {
-        httpStatus: 0,
-        kind: "empty_response",
-        upstream: "local",
-      });
-      throw err;
+      throw emptyReplyError(hadReasoning);
     }
+    const reasoning = collector.result(
+      json.usage?.completion_tokens_details?.reasoning_tokens ?? null,
+    );
 
     return {
       content,
@@ -470,7 +554,7 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       providerType: "local",
       // v1.28.28 (#470) — surface why the model stopped so the JSON callers
       // can tell a token-ceiling truncation ("length") from bad output.
-      finishReason: mapFinishReason(json.choices?.[0]?.finish_reason),
+      finishReason: mapFinishReason(finish),
       ...(reasoning ? { reasoning } : {}),
     };
   }
@@ -573,16 +657,22 @@ export class LocalOpenAICompatibleClient implements AIProvider {
           buffered = split.content;
         }
       }
-      const reasoning = collector.result(null);
       if (!buffered) {
-        const err = new Error("Local AI returned empty content");
-        Object.assign(err, {
-          httpStatus: 0,
-          kind: "empty_response",
-          upstream: "local",
-        });
-        throw err;
+        const hadReasoning =
+          messageReasoning(json?.choices?.[0]?.message) !== null;
+        if (
+          this.learnAnswerlessReasoning(
+            params,
+            hadReasoning,
+            json?.choices?.[0]?.finish_reason,
+          )
+        ) {
+          return this.generateCompletionStream(params, onDelta);
+        }
+        collector.result(null);
+        throw emptyReplyError(hadReasoning);
       }
+      const reasoning = collector.result(null);
       onDelta(buffered);
       return {
         content: buffered,
@@ -654,6 +744,8 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     // carries. Remember the first one; it only matters if the stream ends
     // without a single token, in which case it is the honest reason.
     let streamedError: unknown = null;
+    // #1267 — whether any reasoning arrived, asked for or not.
+    let streamedReasoning = false;
 
     let idleTimer: ReturnType<typeof setTimeout> | null = null;
     const armIdle = () => {
@@ -707,6 +799,9 @@ export class LocalOpenAICompatibleClient implements AIProvider {
           const choiceDelta = chunk.choices?.[0]?.delta;
           const reasoningDelta =
             choiceDelta?.reasoning_content ?? choiceDelta?.reasoning;
+          if (typeof reasoningDelta === "string" && reasoningDelta.trim()) {
+            streamedReasoning = true;
+          }
           if (params.reasoning && typeof reasoningDelta === "string") {
             collector.add(reasoningDelta);
           }
@@ -754,8 +849,6 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       collector.add(pending);
     }
     pending = "";
-    const reasoning = collector.result(reasoningTokens);
-
     if (!content) {
       // A stream that ended with a failure frame and no token reports the
       // failure, not "empty content".
@@ -764,14 +857,15 @@ export class LocalOpenAICompatibleClient implements AIProvider {
         label: "local AI endpoint",
         model: this.config.model,
       });
-      const err = new Error("Local AI returned empty content");
-      Object.assign(err, {
-        httpStatus: 0,
-        kind: "empty_response",
-        upstream: "local",
-      });
-      throw err;
+      // An unclosed inline `<think>` block is reasoning too.
+      const hadReasoning = streamedReasoning || endState === "inside";
+      if (this.learnAnswerlessReasoning(params, hadReasoning, finishReason)) {
+        return this.generateCompletionStream(params, onDelta);
+      }
+      collector.result(reasoningTokens);
+      throw emptyReplyError(hadReasoning);
     }
+    const reasoning = collector.result(reasoningTokens);
 
     return {
       content,

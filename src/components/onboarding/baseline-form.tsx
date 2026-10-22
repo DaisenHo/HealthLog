@@ -15,6 +15,7 @@ import {
 } from "@/lib/profile/height-unit-display";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { useAboutMeSaveTimeoutMs } from "@/hooks/use-ai-capability";
 import { localizedApiError } from "@/lib/api/localized-error";
 import {
   AnamnesisCard,
@@ -153,6 +154,7 @@ export function BaselineForm({
     allergies: "",
   });
   const [baseAboutMe, setBaseAboutMe] = useState("");
+  const saveTimeoutMs = useAboutMeSaveTimeoutMs();
 
   useEffect(() => {
     let active = true;
@@ -229,7 +231,9 @@ export function BaselineForm({
           // collapsed card never round-trips).
           const aboutMeBody = buildAnamnesisAboutMeBody(baseAboutMe, anamnesis);
           if (aboutMeBody) {
-            await apiPut("/api/coach/about-me", aboutMeBody);
+            await apiPut("/api/coach/about-me", aboutMeBody, {
+              signal: AbortSignal.timeout(saveTimeoutMs),
+            });
           }
         }
         await onConfirmed();

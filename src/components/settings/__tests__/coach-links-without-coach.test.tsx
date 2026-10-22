@@ -17,6 +17,8 @@ vi.mock("@/hooks/use-ai-capability", () => ({
   }),
   // v1.41 — the thinking depth reads the resolved block; none here.
   useCoachReasoning: () => null,
+  // #1267 — the about-me save's abort, from the response-timeout setting.
+  useAboutMeSaveTimeoutMs: () => 90_000,
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),

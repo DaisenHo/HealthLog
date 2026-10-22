@@ -1269,6 +1269,30 @@ describe("buildDashboardSnapshot — module gating (v1.18.0)", () => {
     expect(snap.targetBands.weightRange?.greenMax).toBe(78);
   });
 
+  it("an own blood-pressure, pulse and body-fat target reach the dashboard bands", async () => {
+    const snap = await buildDashboardSnapshot(
+      fakePrisma,
+      baseUser({
+        thresholdsJson: {
+          BLOOD_PRESSURE_SYS: { min: 115, max: 125 },
+          BLOOD_PRESSURE_DIA: { min: 70, max: 78 },
+          PULSE: { min: 48, max: 58 },
+          BODY_FAT: { min: 12, max: 16 },
+        },
+      }),
+      { modules: () => Promise.resolve(moduleMap()) },
+    );
+    expect(snap.targetBands.bpTargets).toEqual({
+      sysLow: 115,
+      sysHigh: 125,
+      diaLow: 70,
+      diaHigh: 78,
+    });
+    expect(snap.targetBands.pulseDisplayRange.greenMin).toBe(48);
+    expect(snap.targetBands.pulseDisplayRange.greenMax).toBe(58);
+    expect(snap.targetBands.bodyFatRange).toEqual({ min: 12, max: 16 });
+  });
+
   it("sleep disabled: tile hidden + SLEEP_DURATION stripped from summaries", async () => {
     const snap = await buildDashboardSnapshot(fakePrisma, baseUser(), {
       modules: () => Promise.resolve(moduleMap({ sleep: false })),
