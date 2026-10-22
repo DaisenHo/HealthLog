@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { isSettingsSectionSlug } from "@/lib/settings/section-slugs";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 describe("sleep-overview empty-state CTA href", () => {
   it("links to /settings/integrations (a real settings slug)", () => {
@@ -30,9 +31,9 @@ describe("sleep-overview empty-state CTA href", () => {
   });
 
   it("never links to the non-existent /settings/devices slug", () => {
-    const source = readFileSync(
-      join(process.cwd(), "src/components/insights/sleep-overview.tsx"),
-      "utf8",
+    const source = readSource(
+      "src/components/insights/sleep-overview.tsx",
+      "<EmptyState",
     );
     expect(source).not.toContain("/settings/devices");
   });

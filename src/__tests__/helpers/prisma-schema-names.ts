@@ -171,5 +171,16 @@ export function readDeclaredSchema(
     };
   });
 
+  // Every consumer compares this against an allowlist or a "none of these"
+  // rule, which an empty parse satisfies. For the real schema, this little is
+  // a broken read (a moved file, a block regex that stopped matching), not a
+  // schema. A synthetic schema a test writes itself is exempt.
+  if (schemaPath === SCHEMA_PATH && (models.length < 50 || enums.length < 10)) {
+    throw new Error(
+      `readDeclaredSchema(${schemaPath}): parsed ${models.length} model(s) and ` +
+        `${enums.length} enum(s), below the floor of 50 and 10. Fix the parser ` +
+        `before trusting a guard built on it.`,
+    );
+  }
   return { enums, models };
 }

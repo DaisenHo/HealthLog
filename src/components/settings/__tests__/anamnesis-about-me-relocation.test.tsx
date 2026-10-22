@@ -1,11 +1,10 @@
 import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { AnamnesisSection } from "../anamnesis-section";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 /**
  * #159 — the "About me" note and the free-text allergies line moved from the
@@ -144,9 +143,9 @@ describe("Anamnese — the About-me note card (#159)", () => {
 
 describe("Account settings — the About-me card is gone (#159)", () => {
   it("the account section carries no about-me mount any more", () => {
-    const source = readFileSync(
-      join(process.cwd(), "src/components/settings/account-section/index.tsx"),
-      "utf8",
+    const source = readSource(
+      "src/components/settings/account-section/index.tsx",
+      "export function AccountSection",
     );
     expect(source).not.toContain("AboutMeSection");
     expect(source).not.toContain("about-me-section");

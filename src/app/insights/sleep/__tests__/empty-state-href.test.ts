@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { isSettingsSectionSlug } from "@/lib/settings/section-slugs";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 describe("sleep empty-state CTA href", () => {
   it("links to /settings/integrations (a real settings slug)", () => {
@@ -29,9 +30,9 @@ describe("sleep empty-state CTA href", () => {
   });
 
   it("never links to the removed /settings/data-sources slug", () => {
-    const source = readFileSync(
-      join(process.cwd(), "src/app/insights/sleep/page.tsx"),
-      "utf8",
+    const source = readSource(
+      "src/app/insights/sleep/page.tsx",
+      "<MetricEmptyState",
     );
     expect(source).not.toContain("/settings/data-sources");
   });

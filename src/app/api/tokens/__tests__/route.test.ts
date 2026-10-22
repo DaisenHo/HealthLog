@@ -40,6 +40,7 @@ import { DELETE } from "../[id]/route";
 import { requireAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 const USER = { id: "user-1", username: "u" };
 
@@ -168,11 +169,9 @@ describe("the switch and the authentication path", () => {
     // a token would NOT be live during the outage and hiding the list would
     // stop being wrong. This reads the source because the behaviour is an
     // absence, and an absence has no call to spy on.
-    const { readFileSync } = await import("node:fs");
-    const { join } = await import("node:path");
-    const source = readFileSync(
-      join(process.cwd(), "src/lib/api-handler.ts"),
-      "utf8",
+    const source = readSource(
+      "src/lib/api-handler.ts",
+      "export async function requireAuth(",
     );
     expect(source).not.toContain("isApiGloballyEnabled");
     expect(source).not.toContain("apiGlobal");

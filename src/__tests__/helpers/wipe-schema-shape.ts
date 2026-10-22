@@ -38,6 +38,12 @@ export function parseWipeSchema(
   const blocks = [...schema.matchAll(/^model\s+(\w+)\s*\{([\s\S]*?)^\}/gm)].map(
     (m) => ({ name: m[1], body: m[2] }),
   );
+  if (schemaPath === WIPE_SCHEMA_PATH && blocks.length < 50) {
+    throw new Error(
+      `parseWipeSchema(${schemaPath}): parsed ${blocks.length} model(s), below ` +
+        `the floor of 50. A wipe guard over an empty parse passes on nothing.`,
+    );
+  }
   const modelNames = new Set(blocks.map((b) => b.name));
 
   const out = new Map<string, ModelShape>();

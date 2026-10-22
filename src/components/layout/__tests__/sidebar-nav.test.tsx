@@ -66,6 +66,7 @@ import {
 import { ADMIN_SECTIONS } from "@/components/admin/admin-shell";
 import { visibleUtilityDestinations } from "../nav-model";
 import { delegatedDomains } from "@/lib/sharing/domain-write-support";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 function render({
   pathname = "/",
@@ -565,9 +566,9 @@ describe("<SidebarNav> carries no rules for a viewport it never shows on", () =>
     // A touch screen at most 520 px tall gets the phone shell (the
     // `shell-mobile` variant), so the rail is hidden there and a class keyed
     // on that query can never apply.
-    const source = readFileSync(
-      join(__dirname, "..", "sidebar-nav.tsx"),
-      "utf8",
+    const source = readSource(
+      "src/components/layout/sidebar-nav.tsx",
+      "export function SidebarNav",
     );
     expect(source).not.toMatch(/pointer:coarse\)_and_\(height<=520px\)/);
   });

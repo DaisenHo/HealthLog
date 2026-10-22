@@ -19,6 +19,7 @@ import {
 import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
 import { locales } from "@/lib/i18n/config";
 import type { DataSummary } from "@/lib/analytics/trends";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 /**
  * The dashboard HRV tile must accept either HRV type.
@@ -250,10 +251,10 @@ describe("the tile the user actually sees", () => {
     // current formatting of the replacement, so reformatting cannot break
     // it. Freshness is per-type and captioning a live RMSSD tile from the
     // SDNN lookup is the failure it guards.
-    const page = readFileSync(
-      join(process.cwd(), "src/app/page-client.tsx"),
-      "utf8",
-    );
+    const page = readSource("src/app/page-client.tsx", [
+      "const tileStaleDays",
+      "HEART_RATE_VARIABILITY",
+    ]);
     expect(page).not.toContain('tileStaleDays("HEART_RATE_VARIABILITY")');
     expect(page).not.toContain(
       "const hrvSummary = data?.summaries?.HEART_RATE_VARIABILITY",
