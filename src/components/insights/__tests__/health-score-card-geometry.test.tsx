@@ -23,9 +23,10 @@ import { primeLocales } from "@/__tests__/helpers/prime-locales";
  * REAL compiled stylesheet, lays it out in a browser at the real column
  * width, and reads the boxes back.
  *
- * What it does NOT do is pretend to know the shipped typeface. The app loads
- * Inter through `next/font/google` at build time; no font file is committed,
- * so a headless browser here resolves the `font-sans` fallback chain instead.
+ * What it does NOT do is pretend to know the shipped typeface. The app's Inter
+ * faces are declared through `next/font/local` (`src/app/fonts/inter.ts`) and
+ * only exist in a Next build, so a headless browser here resolves the
+ * `font-sans` fallback chain instead.
  * Every assertion below is therefore written to be font-independent — a
  * relative comparison inside one run, or a structural property (does the row
  * push, does the label ellipsise, is the bar still there) that holds in any

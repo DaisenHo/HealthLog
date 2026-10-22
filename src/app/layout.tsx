@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import Script from "next/script";
+// Inter's faces, self-hosted; see the module. Before globals.css, where the
+// font-sans stack that names them lives, as the next/font/google import was.
+import "./fonts/inter";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AuthShell } from "@/components/layout/auth-shell";
@@ -11,12 +13,6 @@ import { resolveInitialLocale } from "@/lib/i18n/resolve-initial-locale";
 import { isKeyMismatch } from "@/lib/boot/key-mismatch-state";
 import { THEME_BOOT_SCRIPT, THEME_COLOR } from "@/lib/pwa/theme-color";
 import { KeyMismatchPage } from "./key-mismatch-page";
-
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "HealthLog",
@@ -136,7 +132,7 @@ export default async function RootLayout({
           src={`/i18n/${initialLocale}.js?v=${process.env.NEXT_PUBLIC_I18N_CATALOG_VERSION || "dev"}`}
         />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className="font-sans antialiased">
         {isKeyMismatch() ? (
           // The boot key check refused this process: no app shell, no data
           // reads, one page that names the fix.
