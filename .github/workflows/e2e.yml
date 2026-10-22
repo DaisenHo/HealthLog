@@ -81,7 +81,9 @@ jobs:
           restore-keys: |
             playwright-${{ runner.os }}-
 
-      - run: pnpm exec playwright install --with-deps chromium
+      # WebKit for the one phone spec that needs Safari's engine
+      # (`bottom-sheet.spec.ts`, the `webkit-iphone` project).
+      - run: pnpm exec playwright install --with-deps chromium webkit
 
       # `pnpm build` (not bare `next build`): the prebuild hook generates
       # the versioned service-worker stamp AND the static i18n catalog
