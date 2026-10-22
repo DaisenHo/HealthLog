@@ -432,7 +432,11 @@ export async function computeStrainScore(
   // The day's workouts + their HR series, with the session identity the
   // cross-source picker needs: one run recorded by the watch and synced again
   // through a second service is one training impulse, not two.
-  const [workouts, account] = await Promise.all([
+  const [account, workouts] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { sourcePriorityJson: true },
+    }),
     // Read through the windowed reader: a session whose twin lies across
     // midnight is counted once, on the day the list shows it.
     readWorkoutsAroundRange({ from: dayStart, to: dayEnd }, (bounds) =>
@@ -450,10 +454,6 @@ export async function computeStrainScore(
         take: 100,
       }),
     ),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { sourcePriorityJson: true },
-    }),
   ]);
 
   // The watch and the phone relay (or a ring) both write the day's active

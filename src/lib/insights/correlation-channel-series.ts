@@ -1260,15 +1260,7 @@ export async function fetchTrainingSeries(
   tz: string,
   since: Date,
 ): Promise<NamedSeries[]> {
-  const [workouts, account, trimp] = await Promise.all([
-    readWorkoutsAroundRange({ from: since, to: null }, (bounds) =>
-      prisma.workout.findMany({
-        where: { userId, startedAt: bounds },
-        orderBy: [{ startedAt: "asc" }, { id: "asc" }],
-        take: WORKOUT_READ_CAP,
-        select: WORKOUT_PICK_SELECT,
-      }),
-    ),
+  const [account, trimp, workouts] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { sourcePriorityJson: true },
@@ -1280,6 +1272,14 @@ export async function fetchTrainingSeries(
       take: 1000,
       select: { day: true, dayTrimp: true },
     }),
+    readWorkoutsAroundRange({ from: since, to: null }, (bounds) =>
+      prisma.workout.findMany({
+        where: { userId, startedAt: bounds },
+        orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+        take: WORKOUT_READ_CAP,
+        select: WORKOUT_PICK_SELECT,
+      }),
+    ),
   ]);
   const sessions = canonicalWorkoutsInRange(
     workouts,

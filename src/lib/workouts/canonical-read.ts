@@ -20,6 +20,11 @@
  * surfaces then pick over everything read and keep the rows that start inside
  * their range: a workout is canonical, or not, the same way on every surface.
  *
+ * The reader is async and calls the callback before it first awaits, so in a
+ * `Promise.all` it goes after the plain Prisma calls: an element before it
+ * that threw while the array was being built would leave its rejection
+ * unhandled.
+ *
  * A read callback may still carry a row cap as a runaway guard. A capped read
  * that actually hits its cap has lost rows at one end and is outside this
  * guarantee; the caps sit far above any real account's volume.

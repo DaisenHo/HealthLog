@@ -151,7 +151,11 @@ export async function buildWorkoutsProjection(
   // round trips. The rows come through the windowed reader: a twin just past
   // `until`, or a cluster that began just before `since`, decides which row
   // of the range is canonical exactly as it does for the detail route.
-  const [around, userRow] = await Promise.all([
+  const [userRow, around] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { sourcePriorityJson: true },
+    }),
     readWorkoutsAroundRange(range, (bounds) =>
       prisma.workout.findMany({
         where: {
@@ -179,10 +183,6 @@ export async function buildWorkoutsProjection(
         },
       }),
     ),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { sourcePriorityJson: true },
-    }),
   ]);
 
   const canonical: CanonicalWorkoutRow[] = canonicalWorkoutsInRange(

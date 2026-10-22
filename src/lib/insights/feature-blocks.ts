@@ -539,7 +539,11 @@ export async function readWorkoutsBlock(
   now: number,
 ): Promise<AggregatedFeatures["workouts"] | undefined> {
   const since = new Date(now - WORKOUT_WINDOW_DAYS * MS_PER_DAY);
-  const [stored, account] = await Promise.all([
+  const [account, stored] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { sourcePriorityJson: true },
+    }),
     readWorkoutsAroundRange({ from: since, to: null }, (bounds) =>
       prisma.workout.findMany({
         where: { userId, startedAt: bounds },
@@ -555,10 +559,6 @@ export async function readWorkoutsBlock(
         },
       }),
     ),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { sourcePriorityJson: true },
-    }),
   ]);
   // One session synced by two services (or re-sent by HealthKit) is one
   // workout: the same collapse the workout list applies, so the count and the

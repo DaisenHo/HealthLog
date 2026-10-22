@@ -909,7 +909,11 @@ async function assessmentsPart(frame: DayFrame): Promise<SectionPart> {
 /* ─── workouts, cycle ─────────────────────────────────────────────────────── */
 
 async function workoutsPart(frame: DayFrame): Promise<SectionPart> {
-  const [stored, account] = await Promise.all([
+  const [account, stored] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: frame.userId },
+      select: { sourcePriorityJson: true },
+    }),
     // The windowed reader orders the rows itself.
     readWorkoutsAroundRange(
       { from: frame.dayStart, to: frame.dayEnd },
@@ -919,10 +923,6 @@ async function workoutsPart(frame: DayFrame): Promise<SectionPart> {
           select: WORKOUT_PICK_SELECT,
         }),
     ),
-    prisma.user.findUnique({
-      where: { id: frame.userId },
-      select: { sourcePriorityJson: true },
-    }),
   ]);
   // One session synced by two services is one workout on the day, as in the
   // workout list it links to, a twin across midnight included.
