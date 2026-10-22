@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 123,
-  "total": 145551,
+  "total": 145465,
   "entries": {
     "app/api/dashboard/summary/route.ts": 1032,
     "app/api/documents/inbound/route.ts": 811,
@@ -86,7 +86,7 @@
     "lib/insights/correlation-channel-series.ts": 1339,
     "lib/insights/correlation-discovery.ts": 1240,
     "lib/insights/correlations.ts": 1026,
-    "lib/insights/features.ts": 2009,
+    "lib/insights/features.ts": 1923,
     "lib/insights/mood-aggregates.ts": 1055,
     "lib/insights/mood-status.ts": 814,
     "lib/insights/status-cache.ts": 812,

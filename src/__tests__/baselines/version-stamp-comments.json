@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2954,
-  "total": 10504,
+  "total": 10500,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -2228,7 +2228,7 @@
     "lib/insights/exclude-filter.ts": 1,
     "lib/insights/feature-blocks.ts": 5,
     "lib/insights/feature-cache.ts": 2,
-    "lib/insights/features.ts": 38,
+    "lib/insights/features.ts": 34,
     "lib/insights/general-status.ts": 14,
     "lib/insights/glp1-plateau.ts": 2,
     "lib/insights/graded-series.ts": 3,
