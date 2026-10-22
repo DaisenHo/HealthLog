@@ -146,3 +146,22 @@ export interface LocaleBank {
   /** A change stem that cancels that exemption. */
   changeStem: RegExp;
 }
+
+/**
+ * The number-free change shapes (halve it, take half, a bare "reduce your
+ * dose") have no unit to anchor them, so they stand down in a sentence that
+ * defers or declines: a question, a negation anywhere in it (a trailing
+ * "heute nicht" or "vandaag niet" came after the time word the pattern
+ * stops at), a restrictive condition ("only if", "nur wenn"), or a
+ * clinician named in it ("if your doctor agrees", "ask your pharmacist").
+ * `deferral` is the locale's alternation of those signals; it is checked
+ * over the whole sentence, which the screen hands in one at a time. The
+ * shapes with a stated amount do not stand down: a target dose stays
+ * blocked whatever surrounds it.
+ */
+export function unlessDeferred(deferral: string, pattern: RegExp): RegExp {
+  return new RegExp(
+    `^(?![\\s\\S]*(?:${deferral}))[\\s\\S]*?(?:${pattern.source})`,
+    pattern.flags,
+  );
+}

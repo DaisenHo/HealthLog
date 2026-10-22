@@ -8,6 +8,9 @@ import {
   LETTER,
   ENGINE,
   medicationExtras,
+  unlessDeferred,
+  WORD_START,
+  WORD_END,
   type LocaleBank,
 } from "../shared";
 
@@ -49,6 +52,9 @@ const RISK_VERDICT_PT = `(?:é|est[áa]|parece|fica|continua|indica|mostra|apont
 
 const PT_MED_CLASS =
   "(?:anticoagulantes?|antiagregantes?|estatinas?|beta-?bloqueadores?|diur[ée]ticos?|antidepressivos?|anti-?hipertensivos?|sonífer[oa]s?|rem[ée]dios?\\s+(?:para\\s+(?:a\\s+)?|de\\s+)(?:press[ãa]o|dormir|afinar\\s+o\\s+sangue))";
+
+/** Signals that the number-free change shapes stand down for (`unlessDeferred`). */
+const PT_DEFERRAL = `\\?|${WORD_START}(?:não|nao|nunca|sem|só\\s+se|somente\\s+se|antes\\s+(?:de\\s+)?que|até\\s+que|depois\\s+que|pergunte|converse|fale\\s+com|consult\\w*|médic[oa]s?|doutor[a]?|farmacêutic[oa])${WORD_END}`;
 
 export const bank: LocaleBank = {
   vocabulary: (names) =>
@@ -94,19 +100,28 @@ export const bank: LocaleBank = {
     ),
     // Halving or a fraction with no number: "reduza a dose pela metade",
     // "tome meia dose", "corte o comprimido ao meio".
-    new RegExp(
-      `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:reduza|diminua|baixe|corte|parta|divida)\\s+${PT_SLOT}${med}\\s+(?:pela\\s+metade|ao\\s+meio|em\\s+duas\\s+partes|[àa]\\s+metade)`,
-      "i",
+    unlessDeferred(
+      PT_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:reduza|diminua|baixe|corte|parta|divida)\\s+${PT_SLOT}${med}\\s+(?:pela\\s+metade|ao\\s+meio|em\\s+duas\\s+partes|[àa]\\s+metade)`,
+        "i",
+      ),
     ),
-    new RegExp(
-      `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:tome|use|aplique|injete)\\s+(?:s[óo]\\s+|apenas\\s+|somente\\s+)?(?:meia\\s+|(?:a\\s+)?metade\\s+d[aoe]s?\\s+)${PT_SHORT}${med}`,
-      "i",
+    unlessDeferred(
+      PT_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:tome|use|aplique|injete)\\s+(?:s[óo]\\s+|apenas\\s+|somente\\s+)?(?:meia\\s+|(?:a\\s+)?metade\\s+d[aoe]s?\\s+)${PT_SHORT}${med}`,
+        "i",
+      ),
     ),
     // A bare change imperative on a medication, no target: "reduza a
     // dose.", "aumente a insulina um pouco".
-    new RegExp(
-      `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:aumente|suba|eleve|reduza|diminua|baixe|abaixe)\\s+(?:(?:a|o|as|os)\\s+)?${PT_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:agora|hoje|amanh[ãa]|um\\s+pouco|aos\\s+poucos|gradualmente|a\\s+partir)(?![\\w\\u00C0-\\u024F]))`,
-      "i",
+    unlessDeferred(
+      PT_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:aumente|suba|eleve|reduza|diminua|baixe|abaixe)\\s+(?:(?:a|o|as|os)\\s+)?${PT_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:agora|hoje|amanh[ãa]|um\\s+pouco|aos\\s+poucos|gradualmente|a\\s+partir)(?![\\w\\u00C0-\\u024F]))`,
+        "i",
+      ),
     ),
   ],
   dose: [

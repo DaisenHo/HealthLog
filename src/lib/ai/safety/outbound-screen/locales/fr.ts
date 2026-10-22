@@ -8,6 +8,8 @@ import {
   WORD_END,
   ELIDED,
   medicationExtras,
+  unlessDeferred,
+  WORD_START,
   type LocaleBank,
 } from "../shared";
 
@@ -38,6 +40,9 @@ const RESULT_VERB_FR =
 
 const FR_MED_CLASS =
   "(?:anticoagulants?|antiagrégants?|statines?|bêta-?bloquants?|diurétiques?|antidépresseurs?|somnifères?)";
+
+/** Signals that the number-free change shapes stand down for (`unlessDeferred`). */
+const FR_DEFERRAL = `\\?|(?:^|\\s)n['’]|${WORD_START}(?:ne|pas|jamais|sauf|seulement\\s+si|sans|demandez|parlez|médecin\\w*|pharmacien\\w*|docteur|soignant\\w*|spécialiste)${WORD_END}`;
 
 export const bank: LocaleBank = {
   vocabulary: (names) =>
@@ -71,19 +76,28 @@ export const bank: LocaleBank = {
     ),
     // Halving or a fraction with no number: "réduisez la dose de moitié",
     // "prenez une demi-dose", "coupez le comprimé en deux".
-    new RegExp(
-      `(?<!\\b(?:vous|nous|je|tu|il|elle|on)\\s)(?<!n['’])\\b(?:r[ée]duisez|r[ée]duis|diminuez|diminue|baissez|baisse|coupez|coupe|divisez|divise)\\s+${FR_SLOT}${med}\\s+(?:de\\s+moiti[ée]|par\\s+deux|en\\s+deux)`,
-      "i",
+    unlessDeferred(
+      FR_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:vous|nous|je|tu|il|elle|on)\\s)(?<!n['’])\\b(?:r[ée]duisez|r[ée]duis|diminuez|diminue|baissez|baisse|coupez|coupe|divisez|divise)\\s+${FR_SLOT}${med}\\s+(?:de\\s+moiti[ée]|par\\s+deux|en\\s+deux)`,
+        "i",
+      ),
     ),
-    new RegExp(
-      `(?<!\\b(?:vous|nous|je|tu|il|elle|on)\\s)\\b(?:prenez|prends|injectez|injecte)\\s+(?:seulement\\s+|uniquement\\s+)?(?:une\\s+demi-?\\s?|la\\s+moiti[ée]\\s+d(?:e\\s+|u\\s+|es\\s+|['’]))${FR_SHORT}${med}`,
-      "i",
+    unlessDeferred(
+      FR_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:vous|nous|je|tu|il|elle|on)\\s)\\b(?:prenez|prends|injectez|injecte)\\s+(?:seulement\\s+|uniquement\\s+)?(?:une\\s+demi-?\\s?|la\\s+moiti[ée]\\s+d(?:e\\s+|u\\s+|es\\s+|['’]))${FR_SHORT}${med}`,
+        "i",
+      ),
     ),
     // A bare change imperative on a medication, no target: "diminuez votre
     // dose.", "augmentez votre insuline un peu".
-    new RegExp(
-      `(?<!\\b(?:vous|nous|je|tu|il|elle|on)\\s)(?<!n['’])\\b(?:augmentez|augmente|diminuez|diminue|r[ée]duisez|r[ée]duis|baissez|baisse)\\s+${FR_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:maintenant|aujourd|demain|ce\\s+soir|un\\s+peu|progressivement|pendant)(?![\\w\\u00C0-\\u024F]))`,
-      "i",
+    unlessDeferred(
+      FR_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:vous|nous|je|tu|il|elle|on)\\s)(?<!n['’])\\b(?:augmentez|augmente|diminuez|diminue|r[ée]duisez|r[ée]duis|baissez|baisse)\\s+${FR_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:maintenant|aujourd|demain|ce\\s+soir|un\\s+peu|progressivement|pendant)(?![\\w\\u00C0-\\u024F]))`,
+        "i",
+      ),
     ),
   ],
   dose: [

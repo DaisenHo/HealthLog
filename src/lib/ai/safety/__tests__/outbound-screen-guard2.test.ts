@@ -18,7 +18,7 @@ describe("screenModelOutput — dose exemption gated on the plan", () => {
 
   it("passes a continuation dose that MATCHES the user's plan", () => {
     const d = screenModelOutput(
-      "You should keep taking your prescribed 7.5 mg exactly as directed.",
+      "You should keep taking your prescribed semaglutide 7.5 mg exactly as directed.",
       "en",
       CONVERSATIONAL_CONTRACTS,
       { dosePlan: PLAN },
@@ -30,7 +30,7 @@ describe("screenModelOutput — dose exemption gated on the plan", () => {
     // The plan says 7.5; "keep taking your 15 mg" is a wrong maintenance
     // dose and must not ride the continuation exemption.
     const d = screenModelOutput(
-      "You should keep taking your 15 mg as prescribed.",
+      "You should keep taking your semaglutide 15 mg as prescribed.",
       "en",
       CONVERSATIONAL_CONTRACTS,
       { dosePlan: PLAN },
@@ -61,12 +61,12 @@ describe("screenModelOutput — dose exemption gated on the plan", () => {
     }
   });
 
-  it("passes the same sentences when the plan holds that dose", () => {
+  it("passes a named continuation when the plan holds that dose for it", () => {
     for (const [text, locale] of [
-      ["Take 40 mg as before.", "en"],
-      ["Tome 40 mg como antes.", "pt-BR"],
-      ["Nimm 40 mg wie bisher.", "de"],
-      ["Neem 40 mg zoals eerder.", "nl"],
+      ["Take atorvastatin 40 mg as before.", "en"],
+      ["Tome atorvastatina 40 mg como antes.", "pt-BR"],
+      ["Nimm Atorvastatin 40 mg wie bisher.", "de"],
+      ["Neem atorvastatine 40 mg zoals eerder.", "nl"],
     ] as const) {
       expect(
         screenModelOutput(text, locale, CONVERSATIONAL_CONTRACTS, {
@@ -75,6 +75,43 @@ describe("screenModelOutput — dose exemption gated on the plan", () => {
         text,
       ).toBe(false);
     }
+  });
+
+  it("blocks an amount with no medication named beside it, even on the plan", () => {
+    for (const text of [
+      "Take 40 mg as before.",
+      "You should keep taking your prescribed 7.5 mg exactly as directed.",
+    ]) {
+      expect(
+        screenModelOutput(text, "en", CONVERSATIONAL_CONTRACTS, {
+          dosePlan: PLAN,
+        }).block,
+        text,
+      ).toBe(true);
+    }
+  });
+
+  it("blocks a brand the plan does not carry, and swapped doses", () => {
+    for (const text of [
+      "Take Eliquis 5 mg as before.",
+      "Take Xarelto 40 mg as before.",
+      "Take ramipril 40 mg and atorvastatin 5 mg as before.",
+    ]) {
+      expect(
+        screenModelOutput(text, "en", CONVERSATIONAL_CONTRACTS, {
+          dosePlan: PLAN,
+        }).block,
+        text,
+      ).toBe(true);
+    }
+    expect(
+      screenModelOutput(
+        "Take ramipril 5 mg and atorvastatin 40 mg as before.",
+        "en",
+        CONVERSATIONAL_CONTRACTS,
+        { dosePlan: PLAN },
+      ).block,
+    ).toBe(false);
   });
 
   it("holds a named medication to its own dose, not to any dose on the plan", () => {
@@ -137,7 +174,7 @@ describe("screenModelOutput — dose exemption gated on the plan", () => {
 
   it("matches a comma-decimal planned dose (DE reader)", () => {
     const d = screenModelOutput(
-      "Nimm weiterhin deine 7,5 mg wie verordnet.",
+      "Nimm weiterhin dein Semaglutid 7,5 mg wie verordnet.",
       "de",
       CONVERSATIONAL_CONTRACTS,
       { dosePlan: PLAN },

@@ -8,6 +8,8 @@ import {
   WORD_END,
   ELIDED,
   medicationExtras,
+  unlessDeferred,
+  WORD_START,
   type LocaleBank,
 } from "../shared";
 
@@ -36,6 +38,9 @@ const RESULT_VERB_IT =
 const IT_MED_CLASS =
   "(?:anticoagulant[ei]|antiaggregant[ei]|statin[ae]|betabloccant[ei]|diuretic[oi]|antidepressiv[oi])";
 
+/** Signals that the number-free change shapes stand down for (`unlessDeferred`). */
+const IT_DEFERRAL = `\\?|${WORD_START}(?:non|mai|senza|solo\\s+se|chieda|chiedi|parli|parla|consult\\w*|medic[oi]|dottor\\w*|farmacist\\w*|specialist\\w*)${WORD_END}`;
+
 export const bank: LocaleBank = {
   vocabulary: (names) =>
     `${ELIDED}(?:${IT_MED_NOUN}|${medicationExtras(IT_MED_CLASS, names)})`,
@@ -63,19 +68,28 @@ export const bank: LocaleBank = {
     ),
     // Halving or a fraction with no number: "riduca la dose della metà",
     // "prenda mezza dose", "prenda metà della dose".
-    new RegExp(
-      `(?<!\\b(?:non|mai)\\s)\\b(?:riduca|ridurre|diminuisca|abbassi|tagli|divida)\\s+${IT_SLOT}${med}\\s+(?:della|alla|a|per)\\s+met[àa]`,
-      "i",
+    unlessDeferred(
+      IT_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:non|mai)\\s)\\b(?:riduca|ridurre|diminuisca|abbassi|tagli|divida)\\s+${IT_SLOT}${med}\\s+(?:della|alla|a|per)\\s+met[àa]`,
+        "i",
+      ),
     ),
-    new RegExp(
-      `(?<!\\b(?:non|mai)\\s)\\b(?:prenda|assuma|inietti)\\s+(?:solo\\s+|soltanto\\s+)?(?:mezz[ao]\\s+|(?:la\\s+)?met[àa]\\s+(?:della|del|dell['’]|di)\\s*)${IT_SHORT}${med}`,
-      "i",
+    unlessDeferred(
+      IT_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:non|mai)\\s)\\b(?:prenda|assuma|inietti)\\s+(?:solo\\s+|soltanto\\s+)?(?:mezz[ao]\\s+|(?:la\\s+)?met[àa]\\s+(?:della|del|dell['’]|di)\\s*)${IT_SHORT}${med}`,
+        "i",
+      ),
     ),
     // A bare change imperative on a medication, no target: "riduca la
     // dose.", "aumenti l'insulina un po'".
-    new RegExp(
-      `(?<!\\b(?:non|mai)\\s)\\b(?:aumenti|incrementi|riduca|abbassi|diminuisca)\\s+${IT_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:ora|oggi|domani|stasera|un\\s+po|leggermente|gradualmente|per|da\\s+subito)(?![\\w\\u00C0-\\u024F]))`,
-      "i",
+    unlessDeferred(
+      IT_DEFERRAL,
+      new RegExp(
+        `(?<!\\b(?:non|mai)\\s)\\b(?:aumenti|incrementi|riduca|abbassi|diminuisca)\\s+${IT_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:ora|oggi|domani|stasera|un\\s+po|leggermente|gradualmente|per|da\\s+subito)(?![\\w\\u00C0-\\u024F]))`,
+        "i",
+      ),
     ),
   ],
   dose: [

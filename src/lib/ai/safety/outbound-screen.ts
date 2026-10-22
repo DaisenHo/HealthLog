@@ -315,8 +315,10 @@ export const INSIGHTS_CONTRACTS: readonly OutboundContract[] = [
  * Continuation-exclusion for the dose bank (v1.32.7 — D7). A sentence that
  * matches a dose pattern is EXEMPT only when it is anchored to a maintenance
  * object ("keep taking … as prescribed"), carries no change stem, AND every
- * amount it states is one the person is on for the medication it names. So
- * "keep taking your prescribed 7.5 mg" passes for someone on 7.5 mg, while
+ * amount it states sits beside one of the person's medications, named, at
+ * exactly that planned dose. So "keep taking your semaglutide 7.5 mg as
+ * prescribed" passes for someone on semaglutide 7.5 mg, an unnamed "keep
+ * taking your 7.5 mg" does not, while
  * "you should keep in mind that trying 5 mg" (no maintenance anchor) and
  * "you should continue tapering to 2.4 mg" (a change stem present) stay
  * blocked. The direction is exclusion-of-continuation, never
@@ -364,26 +366,53 @@ function sameDose(value: number, planned: number): boolean {
 const INN_STEM_RE = new RegExp(INN_STEM, "i");
 
 /**
- * True when every amount a continuation sentence states is on the person's
- * plan for the medication it names. A sentence naming one of their
- * medications is held to that medication's doses; one naming a drug outside
- * the plan is never trusted; one naming none is held to the whole plan.
+ * Where one stated amount ends and the next begins: a comma before a space
+ * (a decimal comma, "7,5", is not one), a semicolon, "and" / "or".
+ */
+const CLAUSE_SPLIT =
+  /,(?=\s)|;|\s(?:and|und|en|et|y|e|i|oraz|plus|sowie|ou|o|or|oder)\s|그리고|및/i;
+
+/**
+ * True when every amount a continuation sentence states is paired with one
+ * of the person's medications, named beside it, at exactly that dose. Each
+ * clause that states an amount must name exactly one medication on the plan
+ * (as it is written on the plan, the only alias the screen can know), and
+ * every amount in it must be one of that medication's planned doses. An
+ * amount with no name beside it, a name the plan does not carry (a brand
+ * like "Eliquis" is simply not a plan name; a generic stem like "apixaban"
+ * is recognised and refused), or a dose that belongs to another medication
+ * on the plan ("ramipril 500 mg and metformin 5 mg") is never trusted.
  */
 function continuationMatchesPlan(
   sentence: string,
   plan: readonly ScheduledDose[] | undefined,
 ): boolean {
-  const values = sentenceDoseValues(sentence);
-  if (values.length === 0 || !plan || plan.length === 0) return false;
-  const named = plan.filter((entry) => {
+  if (!plan || plan.length === 0) return false;
+  const matchers = plan.map((entry) => {
     const alternation = medicationNameAlternation([entry.name]);
-    return alternation !== null && new RegExp(alternation, "i").test(sentence);
+    return alternation === null ? null : new RegExp(alternation, "gi");
   });
-  if (named.length === 0 && INN_STEM_RE.test(sentence)) return false;
-  const pool = named.length > 0 ? named : plan;
-  return values.every((value) =>
-    pool.some((entry) => sameDose(value, entry.dose)),
-  );
+  let stated = 0;
+  for (const clause of sentence.split(CLAUSE_SPLIT)) {
+    const values = sentenceDoseValues(clause);
+    if (values.length === 0) continue;
+    stated += values.length;
+    const named = plan.filter((_, i) => matchers[i]?.test(clause) ?? false);
+    matchers.forEach((m) => m && (m.lastIndex = 0));
+    const names = new Set(named.map((entry) => entry.name.toLowerCase()));
+    if (names.size !== 1) return false;
+    // A generic name left once the plan's own names are taken out is a drug
+    // the plan does not carry.
+    const rest = matchers.reduce(
+      (text, m) => (m ? text.replace(m, " ") : text),
+      clause,
+    );
+    if (INN_STEM_RE.test(rest)) return false;
+    if (!values.every((v) => named.some((e) => sameDose(v, e.dose)))) {
+      return false;
+    }
+  }
+  return stated > 0;
 }
 
 /** True when a dose-change imperative trips, honouring the continuation rule. */
@@ -427,9 +456,10 @@ function doseTrips(
 export interface ScreenOptions {
   /**
    * The person's active medications with their dose magnitudes. A "keep
-   * taking your N mg" is trusted only when N is on this plan for the
-   * medication the sentence names; without the plan, a stated amount is never
-   * exempt.
+   * taking your X N mg" is trusted only when X is a medication on this plan,
+   * named beside the amount, planned at exactly N; an unnamed amount, a name
+   * the plan does not carry, or a dose of another medication is never
+   * exempt, and without the plan no stated amount is.
    */
   dosePlan?: readonly ScheduledDose[];
   /**
