@@ -449,11 +449,12 @@ describe("DELETE /api/auth/me/sessions/{id}", () => {
     ).toBeNull();
     expect((await listSessions(laptop)).status).toBe(401);
     expect((await listSessions(current)).status).toBe(200);
-    expect(
-      await prisma.auditLog.count({
-        where: { userId: owner.id, action: "auth.session.revoke" },
-      }),
-    ).toBe(1);
+    const audits = await prisma.auditLog.findMany({
+      where: { userId: owner.id, action: "auth.session.revoke" },
+    });
+    expect(audits.map((a) => JSON.parse(a.details ?? "{}"))).toEqual([
+      { self: false },
+    ]);
   });
 
   it("revokes the caller's own session when it names its own handle", async () => {
@@ -469,6 +470,13 @@ describe("DELETE /api/auth/me/sessions/{id}", () => {
 
     expect(res.status).toBe(200);
     expect((await listSessions(current)).status).toBe(401);
+    // The audit row says the person signed out the session they were using.
+    const audits = await prisma.auditLog.findMany({
+      where: { userId: owner.id, action: "auth.session.revoke" },
+    });
+    expect(audits.map((a) => JSON.parse(a.details ?? "{}"))).toEqual([
+      { self: true },
+    ]);
   });
 
   it("answers 404 for another account's session and leaves it signed in", async () => {
