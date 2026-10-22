@@ -1101,17 +1101,30 @@
     "familyHistory": [
       {
         "id": "<id:50>",
+        "relationship": "FATHER",
+        "condition": "Hypertension (deleted)",
+        "ageAtOnset": null,
+        "note": null,
+        "notesEncrypted": "<sealed:v1:diagnosed at fifty>",
+        "createdAt": "2026-05-02T15:46:01.000Z",
+        "updatedAt": "2026-05-02T15:47:01.000Z",
+        "deletedAt": "<tombstone>"
+      },
+      {
+        "id": "<id:51>",
         "relationship": "MOTHER",
         "condition": "Type 2 diabetes",
         "ageAtOnset": 3,
-        "note": "rt-FamilyHistoryEntry-notesEncrypted",
+        "note": null,
+        "notesEncrypted": "<sealed:v1:rt-FamilyHistoryEntry-notesEncrypted>",
         "createdAt": "2026-05-02T15:46:00.000Z",
-        "updatedAt": "2026-05-02T15:47:00.000Z"
+        "updatedAt": "2026-05-02T15:47:00.000Z",
+        "deletedAt": null
       }
     ],
     "workouts": [
       {
-        "id": "<id:51>",
+        "id": "<id:52>",
         "createdAt": "2026-05-03T21:58:00.000Z",
         "updatedAt": "2026-05-03T21:59:00.000Z",
         "metadata": {
@@ -1136,7 +1149,7 @@
     ],
     "documents": [
       {
-        "id": "<id:52>",
+        "id": "<id:53>",
         "kind": "LAB_RESULT",
         "title": "June labs",
         "filename": "june-labs.pdf",
@@ -1182,7 +1195,7 @@
       }
     },
     "healthProfile": {
-      "id": "<id:53>",
+      "id": "<id:54>",
       "aboutMe": null,
       "conditions": null,
       "allergies": null,
@@ -1212,18 +1225,18 @@
     },
     "healthProfileFacts": [
       {
-        "id": "<id:54>",
+        "id": "<id:55>",
         "kind": "SMOKING_STATUS",
         "value": null,
         "valueEncrypted": "<sealed:v1:never>",
         "validFrom": "2026-01-01T00:00:00.000Z",
         "validUntil": "2026-06-30T12:34:56.789Z",
         "provenance": "USER_CORRECTION",
-        "supersededByRevisionId": "<id:55>",
+        "supersededByRevisionId": "<id:56>",
         "createdAt": "2026-05-03T05:08:00.000Z"
       },
       {
-        "id": "<id:55>",
+        "id": "<id:56>",
         "kind": "SMOKING_STATUS",
         "value": null,
         "valueEncrypted": "<sealed:v1:former>",
@@ -1236,7 +1249,7 @@
     ],
     "customMetrics": [
       {
-        "id": "<id:56>",
+        "id": "<id:57>",
         "createdAt": "2026-05-03T15:09:00.000Z",
         "updatedAt": "2026-05-03T15:10:00.000Z",
         "deletedAt": null,
@@ -1249,7 +1262,7 @@
         "correlationEnabled": true,
         "entries": [
           {
-            "id": "<id:57>",
+            "id": "<id:58>",
             "createdAt": "2026-05-03T16:48:02.000Z",
             "deletedAt": "<tombstone>",
             "noteEncrypted": null,
@@ -1259,7 +1272,7 @@
             "note": null
           },
           {
-            "id": "<id:58>",
+            "id": "<id:59>",
             "createdAt": "2026-05-03T16:48:00.000Z",
             "deletedAt": null,
             "noteEncrypted": null,
@@ -1269,7 +1282,7 @@
             "note": "left hand, after the long ride"
           },
           {
-            "id": "<id:59>",
+            "id": "<id:60>",
             "createdAt": "2026-05-03T16:48:01.000Z",
             "deletedAt": null,
             "noteEncrypted": "<sealed:v1:right hand, rested>",
@@ -1281,7 +1294,7 @@
         ]
       },
       {
-        "id": "<id:60>",
+        "id": "<id:61>",
         "createdAt": "2026-05-03T15:09:01.000Z",
         "updatedAt": "2026-05-03T15:10:01.000Z",
         "deletedAt": "<tombstone>",
@@ -1297,7 +1310,7 @@
     ],
     "correlationPatterns": [
       {
-        "id": "<id:61>",
+        "id": "<id:62>",
         "updatedAt": "2026-05-03T18:39:00.000Z",
         "createdAt": "2026-05-03T18:38:00.000Z",
         "canonicalKey": "p1:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
@@ -1321,7 +1334,7 @@
     "decryptFailures": [],
     "intradayProfiles": [
       {
-        "id": "<id:62>",
+        "id": "<id:63>",
         "createdAt": "2026-05-01T09:51:00.000Z",
         "updatedAt": "2026-05-01T09:52:00.000Z",
         "type": "ACTIVITY_STEPS",
@@ -1387,7 +1400,7 @@
     ],
     "healthScoreRecords": [
       {
-        "id": "<id:63>",
+        "id": "<id:64>",
         "createdAt": "2026-05-03T20:13:00.000Z",
         "dayKey": "2026-07-01",
         "timezone": "Europe/Berlin",
@@ -1409,7 +1422,7 @@
       }
     ],
     "onboardingRecord": {
-      "id": "<id:64>",
+      "id": "<id:65>",
       "createdAt": "2026-05-06T09:47:00.000Z",
       "updatedAt": "2026-05-06T09:48:00.000Z",
       "needs": {
@@ -1476,7 +1489,7 @@
     },
     "practitioners": [
       {
-        "id": "<id:65>",
+        "id": "<id:66>",
         "name": "Closed practice (deleted)",
         "specialty": null,
         "practice": null,
@@ -1490,7 +1503,7 @@
         "deletedAt": "<tombstone>"
       },
       {
-        "id": "<id:66>",
+        "id": "<id:67>",
         "name": "Round-trip practice",
         "specialty": "Internal medicine",
         "practice": "rt-Practitioner-practice",
@@ -1506,26 +1519,26 @@
     ],
     "encounters": [
       {
-        "id": "<id:67>",
+        "id": "<id:68>",
         "occurredAt": "2026-06-30T08:00:00.000Z",
         "status": "PLANNED",
         "kind": "ROUTINE",
-        "practitionerId": "<id:66>",
+        "practitionerId": "<id:67>",
         "reasonEncrypted": "<sealed:v1:annual check>",
         "outcomeEncrypted": "<sealed:v1:ferritin back in range, recheck in a year>",
         "bodySiteEncrypted": "<sealed:v1:rt-Encounter-bodySiteEncrypted>",
         "laterality": "LEFT",
-        "reminderId": "<id:68>",
+        "reminderId": "<id:69>",
         "createdAt": "2026-05-04T04:31:00.000Z",
         "updatedAt": "2026-05-04T04:32:00.000Z",
         "deletedAt": null
       },
       {
-        "id": "<id:69>",
+        "id": "<id:70>",
         "occurredAt": "2026-04-02T08:00:00.000Z",
         "status": "DONE",
         "kind": "ROUTINE",
-        "practitionerId": "<id:65>",
+        "practitionerId": "<id:66>",
         "reasonEncrypted": null,
         "outcomeEncrypted": null,
         "bodySiteEncrypted": null,
@@ -1538,28 +1551,28 @@
     ],
     "encounterDocumentLinks": [
       {
-        "encounterId": "<id:67>",
-        "targetId": "<id:52>",
+        "encounterId": "<id:68>",
+        "targetId": "<id:53>",
         "createdAt": "2026-05-04T06:04:00.000Z"
       }
     ],
     "encounterLabLinks": [
       {
-        "encounterId": "<id:67>",
+        "encounterId": "<id:68>",
         "targetId": "<id:37>",
         "createdAt": "2026-05-04T07:44:00.000Z"
       }
     ],
     "encounterConditionLinks": [
       {
-        "encounterId": "<id:67>",
+        "encounterId": "<id:68>",
         "targetId": "<id:44>",
         "createdAt": "2026-05-04T09:24:00.000Z"
       }
     ],
     "customVaccines": [
       {
-        "id": "<id:70>",
+        "id": "<id:71>",
         "name": "Deleted combo",
         "components": [
           "rabies"
@@ -1571,7 +1584,7 @@
         "deletedAt": "<tombstone>"
       },
       {
-        "id": "<id:71>",
+        "id": "<id:72>",
         "name": "Round-trip travel combo",
         "components": [
           "typhoid",
@@ -1586,7 +1599,7 @@
     ],
     "vaccinations": [
       {
-        "id": "<id:72>",
+        "id": "<id:73>",
         "occurredAt": "2026-05-14T00:00:00.000Z",
         "antigenSlug": "tdap",
         "vaccineName": "Tetanus, diphtheria and pertussis",
@@ -1594,17 +1607,17 @@
         "seriesDoses": 3,
         "lotNumber": "RT-4471",
         "site": "LEFT_ARM",
-        "practitionerId": "<id:66>",
-        "encounterId": "<id:67>",
-        "reminderId": "<id:68>",
-        "customVaccineId": "<id:71>",
+        "practitionerId": "<id:67>",
+        "encounterId": "<id:68>",
+        "reminderId": "<id:69>",
+        "customVaccineId": "<id:72>",
         "noteEncrypted": "<sealed:v1:sore arm for a day, nothing else>",
         "createdAt": "2026-05-04T11:14:00.000Z",
         "updatedAt": "2026-05-04T11:15:00.000Z",
         "deletedAt": null
       },
       {
-        "id": "<id:73>",
+        "id": "<id:74>",
         "occurredAt": "2026-04-14T00:00:00.000Z",
         "antigenSlug": "influenza",
         "vaccineName": "Influenza (deleted)",
@@ -1624,14 +1637,14 @@
     ],
     "vaccinationDocumentLinks": [
       {
-        "vaccinationId": "<id:72>",
-        "targetId": "<id:52>",
+        "vaccinationId": "<id:73>",
+        "targetId": "<id:53>",
         "createdAt": "2026-05-04T12:44:00.000Z"
       }
     ],
     "measurementReminders": [
       {
-        "id": "<id:68>",
+        "id": "<id:69>",
         "label": "Blutdruck messen",
         "measurementType": "BLOOD_PRESSURE_SYS",
         "intervalDays": 7,
@@ -1653,7 +1666,7 @@
         "deletedAt": null
       },
       {
-        "id": "<id:74>",
+        "id": "<id:75>",
         "label": "Gewicht (deleted)",
         "measurementType": "WEIGHT",
         "intervalDays": 14,
@@ -1677,8 +1690,8 @@
     ],
     "measurementReminderEvents": [
       {
-        "id": "<id:75>",
-        "reminderId": "<id:68>",
+        "id": "<id:76>",
+        "reminderId": "<id:69>",
         "kind": "SKIPPED",
         "occurredAt": "2026-06-24T06:00:00.000Z",
         "onTime": false,
@@ -1686,8 +1699,8 @@
         "createdAt": "2026-05-04T17:47:01.000Z"
       },
       {
-        "id": "<id:76>",
-        "reminderId": "<id:68>",
+        "id": "<id:77>",
+        "reminderId": "<id:69>",
         "kind": "SATISFIED",
         "occurredAt": "2026-07-01T06:05:00.000Z",
         "onTime": true,
@@ -1697,7 +1710,7 @@
     ],
     "coachConversations": [
       {
-        "id": "<id:77>",
+        "id": "<id:78>",
         "title": "How is my blood pressure trending?",
         "documentScoped": false,
         "summaryEncrypted": "<sealed:v1:earlier turns: weight trend and evening walks>",
@@ -1707,7 +1720,7 @@
         "updatedAt": "2026-05-04T19:25:00.000Z",
         "messages": [
           {
-            "id": "<id:78>",
+            "id": "<id:79>",
             "role": "user",
             "contentEncrypted": "<sealed:v1:my readings look higher this week, is that real?>",
             "metricSourceJson": "rt-CoachMessage-metricSourceJson",
@@ -1720,7 +1733,7 @@
             "createdAt": "2026-07-20T09:58:00.000Z"
           },
           {
-            "id": "<id:79>",
+            "id": "<id:80>",
             "role": "assistant",
             "contentEncrypted": "<sealed:v1:the last seven mornings average 4 mmHg above the fortnight before>",
             "metricSourceJson": null,
@@ -1736,7 +1749,7 @@
         "attachments": []
       },
       {
-        "id": "<id:80>",
+        "id": "<id:81>",
         "titleEncrypted": "<sealed:v1:About my June labs>",
         "documentScoped": true,
         "summaryEncrypted": null,
@@ -1746,7 +1759,7 @@
         "updatedAt": "2026-05-04T19:25:01.000Z",
         "messages": [
           {
-            "id": "<id:81>",
+            "id": "<id:82>",
             "role": "user",
             "contentEncrypted": "<sealed:v1:What does the ferritin mean?>",
             "metricSourceJson": null,
@@ -1761,7 +1774,7 @@
         ],
         "attachments": [
           {
-            "documentId": "<id:52>",
+            "documentId": "<id:53>",
             "addedAt": "2026-07-21T07:59:00.000Z"
           }
         ]
@@ -1769,25 +1782,25 @@
     ],
     "coachFacts": [
       {
-        "id": "<id:82>",
+        "id": "<id:83>",
         "factEncrypted": "<sealed:v1:does not tolerate ACE inhibitors>",
         "deletedAt": null,
         "category": "constraint",
         "confidence": 80,
-        "sourceConversationId": "<id:77>",
+        "sourceConversationId": "<id:78>",
         "source": "user",
         "lastUsedAt": "2026-07-20T10:00:00.000Z",
-        "sourceMessageId": "<id:79>",
+        "sourceMessageId": "<id:80>",
         "createdAt": "2026-05-05T00:26:00.000Z",
         "updatedAt": "2026-05-05T00:27:00.000Z"
       },
       {
-        "id": "<id:83>",
+        "id": "<id:84>",
         "factEncrypted": "<sealed:v1:a fact the person deleted>",
         "deletedAt": "<tombstone>",
         "category": "preference",
         "confidence": 50,
-        "sourceConversationId": "<id:77>",
+        "sourceConversationId": "<id:78>",
         "source": "user",
         "lastUsedAt": null,
         "sourceMessageId": null,
@@ -1797,7 +1810,7 @@
     ],
     "coachPlans": [
       {
-        "id": "<id:84>",
+        "id": "<id:85>",
         "metric": "BLOOD_PRESSURE",
         "ifCueEncrypted": "<sealed:v1:if the evening reading is over 140>",
         "thenActionEncrypted": "<sealed:v1:then walk twenty minutes before dinner tomorrow>",
@@ -1806,12 +1819,12 @@
         "deletedAt": null,
         "status": "active",
         "reviewDate": "2026-10-01T00:00:00.000Z",
-        "sourceConversationId": "<id:77>",
+        "sourceConversationId": "<id:78>",
         "createdAt": "2026-05-05T02:10:00.000Z",
         "updatedAt": "2026-05-05T02:11:00.000Z"
       },
       {
-        "id": "<id:85>",
+        "id": "<id:86>",
         "metric": "WEIGHT",
         "ifCueEncrypted": "<sealed:v1:if the scale reads over 75>",
         "thenActionEncrypted": "<sealed:v1:then skip the second helping>",
@@ -1827,28 +1840,28 @@
     ],
     "coachReminders": [
       {
-        "id": "<id:86>",
+        "id": "<id:87>",
         "noteEncrypted": "<sealed:v1:ask how the evening walks are going>",
         "deletedAt": null,
         "metric": "BLOOD_PRESSURE",
-        "relatedPlanId": "<id:84>",
+        "relatedPlanId": "<id:85>",
         "triggerKind": "rt-CoachReminder-triggerKind",
         "dueAt": "2026-09-01T07:00:00.000Z",
         "contextCue": "rt-CoachReminder-contextCue",
         "status": "rt-CoachReminder-status",
         "source": "extractor",
-        "sourceConversationId": "<id:77>",
+        "sourceConversationId": "<id:78>",
         "lastSurfacedAt": "2026-06-30T12:34:56.789Z",
         "surfaceCount": 2,
         "createdAt": "2026-05-05T03:53:00.000Z",
         "updatedAt": "2026-05-05T03:54:00.000Z"
       },
       {
-        "id": "<id:87>",
+        "id": "<id:88>",
         "noteEncrypted": "<sealed:v1:a reminder the person deleted>",
         "deletedAt": "<tombstone>",
         "metric": null,
-        "relatedPlanId": "<id:85>",
+        "relatedPlanId": "<id:86>",
         "triggerKind": "date",
         "dueAt": "2026-09-15T07:00:00.000Z",
         "contextCue": null,
@@ -1863,7 +1876,7 @@
     ],
     "mentalHealthAssessments": [
       {
-        "id": "<id:88>",
+        "id": "<id:89>",
         "instrument": "GAD7",
         "locale": "en",
         "version": "standard",
@@ -1882,7 +1895,7 @@
         "updatedAt": "2026-05-05T13:57:01.000Z"
       },
       {
-        "id": "<id:89>",
+        "id": "<id:90>",
         "instrument": "PHQ9",
         "locale": "de",
         "version": "rt-MentalHealthAssessment-version",
@@ -1903,7 +1916,7 @@
     ],
     "consentReceipts": [
       {
-        "id": "<id:90>",
+        "id": "<id:91>",
         "kind": "ai-processing",
         "artefact": "JVBERi0xLjQKJWZpeHR1cmU=",
         "signedAt": "2026-06-01T09:00:00.000Z",
@@ -1911,7 +1924,7 @@
         "createdAt": "2026-05-05T15:26:00.000Z"
       },
       {
-        "id": "<id:91>",
+        "id": "<id:92>",
         "kind": "research-sharing",
         "artefact": "eyJhbGciOiJub25lIn0.e30.",
         "signedAt": "2026-06-02T09:00:00.000Z",
@@ -1921,15 +1934,15 @@
     ],
     "documentConditionLinks": [
       {
-        "documentId": "<id:52>",
+        "documentId": "<id:53>",
         "episodeId": "<id:43>",
         "createdAt": "2026-07-02T09:00:00.000Z"
       }
     ],
     "extractedFacts": [
       {
-        "id": "<id:92>",
-        "documentId": "<id:52>",
+        "id": "<id:93>",
+        "documentId": "<id:53>",
         "factType": "OBSERVATION",
         "status": "APPROVED",
         "confidence": 0.94,
@@ -2114,7 +2127,7 @@
     ],
     "ecgRecordings": [
       {
-        "id": "<id:93>",
+        "id": "<id:94>",
         "waveformEncrypted": "<sealed:v1:[-12,4,118,-33,7,2,-5,61]>",
         "source": "MANUAL",
         "externalRecordingId": "round-trip-signal-1",
@@ -2132,7 +2145,7 @@
     ],
     "symptomDefinitions": [
       {
-        "id": "<id:94>",
+        "id": "<id:95>",
         "labelEncrypted": "<sealed:v1:Aura>",
         "icon": "Zap",
         "sortOrder": 0,
@@ -2141,7 +2154,7 @@
         "updatedAt": "2026-05-02T22:27:00.000Z",
         "events": [
           {
-            "id": "<id:95>",
+            "id": "<id:96>",
             "noteEncrypted": null,
             "occurredAt": "2026-06-21T09:00:00.000Z",
             "intensity": 4,
@@ -2150,7 +2163,7 @@
             "updatedAt": "2026-05-03T00:08:00.000Z"
           },
           {
-            "id": "<id:96>",
+            "id": "<id:97>",
             "noteEncrypted": null,
             "occurredAt": "2026-07-10T18:30:00.000Z",
             "intensity": 2,
@@ -2161,7 +2174,7 @@
         ]
       },
       {
-        "id": "<id:97>",
+        "id": "<id:98>",
         "labelEncrypted": "<sealed:v1:Headache>",
         "icon": "Brain",
         "sortOrder": 1,
@@ -2170,7 +2183,7 @@
         "updatedAt": "2026-05-02T22:27:01.000Z",
         "events": [
           {
-            "id": "<id:98>",
+            "id": "<id:99>",
             "noteEncrypted": "<sealed:v1:left side, behind the eye>",
             "occurredAt": "2026-06-21T11:00:00.000Z",
             "intensity": 8,
@@ -2183,7 +2196,7 @@
     ],
     "lifeEvents": [
       {
-        "id": "<id:99>",
+        "id": "<id:100>",
         "titleEncrypted": "<sealed:v1:Moved to the coast>",
         "noteEncrypted": "<sealed:v1:the flat with the long hallway>",
         "category": "HOME",
@@ -2195,7 +2208,7 @@
         "deletedAt": null
       },
       {
-        "id": "<id:100>",
+        "id": "<id:101>",
         "titleEncrypted": "<sealed:v1:an event the person deleted>",
         "noteEncrypted": null,
         "category": "OTHER",
@@ -2207,7 +2220,7 @@
         "deletedAt": "<tombstone>"
       },
       {
-        "id": "<id:101>",
+        "id": "<id:102>",
         "titleEncrypted": "<sealed:v1:Parental leave>",
         "noteEncrypted": null,
         "category": "WORK",
@@ -2222,28 +2235,28 @@
     "labResultDocumentLinks": [
       {
         "labResultId": "<id:37>",
-        "documentId": "<id:52>",
+        "documentId": "<id:53>",
         "createdAt": "2026-05-06T14:44:00.000Z"
       }
     ],
     "encounterMedicationLinks": [
       {
-        "encounterId": "<id:67>",
+        "encounterId": "<id:68>",
         "medicationId": "<id:6>",
         "createdAt": "2026-05-06T16:24:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
-        "encounterId": "<id:67>",
-        "vaccinationId": "<id:72>",
+        "encounterId": "<id:68>",
+        "vaccinationId": "<id:73>",
         "createdAt": "2026-05-06T18:04:00.000Z"
       }
     ],
     "medicationDocumentLinks": [
       {
         "medicationId": "<id:6>",
-        "documentId": "<id:52>",
+        "documentId": "<id:53>",
         "createdAt": "2026-05-06T19:44:00.000Z"
       }
     ],
@@ -2289,7 +2302,7 @@
     "illnessEpisodes": 4,
     "illnessDayLogs": 2,
     "allergies": 2,
-    "familyHistory": 1,
+    "familyHistory": 2,
     "workouts": 1,
     "documents": 1,
     "healthProfile": 1,
@@ -2352,7 +2365,7 @@
     "illnessEpisodes": 4,
     "illnessDayLogs": 2,
     "allergies": 2,
-    "familyHistory": 1,
+    "familyHistory": 2,
     "workouts": 1,
     "documents": 1,
     "healthProfile": 1,
@@ -3459,7 +3472,7 @@
     ],
     "symptomDefinitions": [
       {
-        "id": "<id:94>",
+        "id": "<id:95>",
         "labelEncrypted": "<sealed:v1:Aura>",
         "icon": "Zap",
         "sortOrder": 0,
@@ -3468,7 +3481,7 @@
         "updatedAt": "2026-05-02T22:27:00.000Z",
         "events": [
           {
-            "id": "<id:95>",
+            "id": "<id:96>",
             "occurredAt": "2026-06-21T09:00:00.000Z",
             "intensity": 4,
             "noteEncrypted": null,
@@ -3477,7 +3490,7 @@
             "updatedAt": "2026-05-03T00:08:00.000Z"
           },
           {
-            "id": "<id:96>",
+            "id": "<id:97>",
             "occurredAt": "2026-07-10T18:30:00.000Z",
             "intensity": 2,
             "noteEncrypted": null,
@@ -3488,7 +3501,7 @@
         ]
       },
       {
-        "id": "<id:97>",
+        "id": "<id:98>",
         "labelEncrypted": "<sealed:v1:Headache>",
         "icon": "Brain",
         "sortOrder": 1,
@@ -3497,7 +3510,7 @@
         "updatedAt": "2026-05-02T22:27:01.000Z",
         "events": [
           {
-            "id": "<id:98>",
+            "id": "<id:99>",
             "occurredAt": "2026-06-21T11:00:00.000Z",
             "intensity": 8,
             "noteEncrypted": "<sealed:v1:left side, behind the eye>",
@@ -3510,7 +3523,7 @@
     ],
     "lifeEvents": [
       {
-        "id": "<id:99>",
+        "id": "<id:100>",
         "category": "HOME",
         "startDate": "2023-09-01",
         "endDate": null,
@@ -3522,7 +3535,7 @@
         "deletedAt": null
       },
       {
-        "id": "<id:100>",
+        "id": "<id:101>",
         "category": "OTHER",
         "startDate": "2025-12-01",
         "endDate": null,
@@ -3534,7 +3547,7 @@
         "deletedAt": "<tombstone>"
       },
       {
-        "id": "<id:101>",
+        "id": "<id:102>",
         "category": "WORK",
         "startDate": "2026-03-02",
         "endDate": "2026-05-29",
@@ -3583,17 +3596,30 @@
     "familyHistory": [
       {
         "id": "<id:50>",
+        "relationship": "FATHER",
+        "condition": "Hypertension (deleted)",
+        "ageAtOnset": null,
+        "note": null,
+        "notesEncrypted": "<sealed:v1:diagnosed at fifty>",
+        "createdAt": "2026-05-02T15:46:01.000Z",
+        "updatedAt": "2026-05-02T15:47:01.000Z",
+        "deletedAt": "<tombstone>"
+      },
+      {
+        "id": "<id:51>",
         "relationship": "MOTHER",
         "condition": "Type 2 diabetes",
         "ageAtOnset": 3,
-        "note": "rt-FamilyHistoryEntry-notesEncrypted",
+        "note": null,
+        "notesEncrypted": "<sealed:v1:rt-FamilyHistoryEntry-notesEncrypted>",
         "createdAt": "2026-05-02T15:46:00.000Z",
-        "updatedAt": "2026-05-02T15:47:00.000Z"
+        "updatedAt": "2026-05-02T15:47:00.000Z",
+        "deletedAt": null
       }
     ],
     "workouts": [
       {
-        "id": "<id:51>",
+        "id": "<id:52>",
         "sportType": "RUNNING",
         "startedAt": "2026-06-29T06:00:00.000Z",
         "endedAt": "2026-06-29T06:30:00.000Z",
@@ -3618,7 +3644,7 @@
     ],
     "documents": [
       {
-        "id": "<id:52>",
+        "id": "<id:53>",
         "kind": "LAB_RESULT",
         "title": "June labs",
         "filename": "june-labs.pdf",
@@ -3647,15 +3673,15 @@
     ],
     "documentConditionLinks": [
       {
-        "documentId": "<id:52>",
+        "documentId": "<id:53>",
         "episodeId": "<id:43>",
         "createdAt": "2026-07-02T09:00:00.000Z"
       }
     ],
     "extractedFacts": [
       {
-        "id": "<id:92>",
-        "documentId": "<id:52>",
+        "id": "<id:93>",
+        "documentId": "<id:53>",
         "factType": "OBSERVATION",
         "status": "APPROVED",
         "confidence": 0.94,
@@ -3680,7 +3706,7 @@
       }
     ],
     "healthProfile": {
-      "id": "<id:53>",
+      "id": "<id:54>",
       "aboutMe": null,
       "conditions": null,
       "allergies": null,
@@ -3710,18 +3736,18 @@
     },
     "healthProfileFacts": [
       {
-        "id": "<id:54>",
+        "id": "<id:55>",
         "kind": "SMOKING_STATUS",
         "value": null,
         "valueEncrypted": "<sealed:v1:never>",
         "validFrom": "2026-01-01T00:00:00.000Z",
         "validUntil": "2026-06-30T12:34:56.789Z",
         "provenance": "USER_CORRECTION",
-        "supersededByRevisionId": "<id:55>",
+        "supersededByRevisionId": "<id:56>",
         "createdAt": "2026-05-03T05:08:00.000Z"
       },
       {
-        "id": "<id:55>",
+        "id": "<id:56>",
         "kind": "SMOKING_STATUS",
         "value": null,
         "valueEncrypted": "<sealed:v1:former>",
@@ -3734,7 +3760,7 @@
     ],
     "customMetrics": [
       {
-        "id": "<id:56>",
+        "id": "<id:57>",
         "name": "Grip strength",
         "unit": "kg",
         "targetLow": 2.5,
@@ -3747,7 +3773,7 @@
         "deletedAt": null,
         "entries": [
           {
-            "id": "<id:57>",
+            "id": "<id:58>",
             "value": 40,
             "unit": "kg",
             "measuredAt": "2026-06-28T18:00:00.000Z",
@@ -3757,7 +3783,7 @@
             "deletedAt": "<tombstone>"
           },
           {
-            "id": "<id:58>",
+            "id": "<id:59>",
             "value": 44,
             "unit": "kg",
             "measuredAt": "2026-07-01T18:00:00.000Z",
@@ -3767,7 +3793,7 @@
             "deletedAt": null
           },
           {
-            "id": "<id:59>",
+            "id": "<id:60>",
             "value": 45,
             "unit": "kg",
             "measuredAt": "2026-07-02T18:00:00.000Z",
@@ -3779,7 +3805,7 @@
         ]
       },
       {
-        "id": "<id:60>",
+        "id": "<id:61>",
         "name": "Plank (deleted)",
         "unit": "s",
         "targetLow": null,
@@ -3795,7 +3821,7 @@
     ],
     "correlationPatterns": [
       {
-        "id": "<id:61>",
+        "id": "<id:62>",
         "canonicalKey": "p1:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
         "family": "sleep",
         "factorKey": "sleep_duration",
@@ -3818,7 +3844,7 @@
     ],
     "intradayProfiles": [
       {
-        "id": "<id:62>",
+        "id": "<id:63>",
         "type": "ACTIVITY_STEPS",
         "dateKey": "2026-07-01",
         "hourlyCumulative": [
@@ -3884,7 +3910,7 @@
     ],
     "healthScoreRecords": [
       {
-        "id": "<id:63>",
+        "id": "<id:64>",
         "dayKey": "2026-07-01",
         "timezone": "Europe/Berlin",
         "composite": 71,
@@ -3906,7 +3932,7 @@
       }
     ],
     "onboardingRecord": {
-      "id": "<id:64>",
+      "id": "<id:65>",
       "needs": {
         "recordTarget": "me",
         "areas": [
@@ -3973,7 +3999,7 @@
     },
     "practitioners": [
       {
-        "id": "<id:65>",
+        "id": "<id:66>",
         "name": "Closed practice (deleted)",
         "specialty": null,
         "practice": null,
@@ -3987,7 +4013,7 @@
         "deletedAt": "<tombstone>"
       },
       {
-        "id": "<id:66>",
+        "id": "<id:67>",
         "name": "Round-trip practice",
         "specialty": "Internal medicine",
         "practice": "rt-Practitioner-practice",
@@ -4003,26 +4029,26 @@
     ],
     "encounters": [
       {
-        "id": "<id:67>",
+        "id": "<id:68>",
         "occurredAt": "2026-06-30T08:00:00.000Z",
         "status": "PLANNED",
         "kind": "ROUTINE",
-        "practitionerId": "<id:66>",
+        "practitionerId": "<id:67>",
         "reasonEncrypted": "<sealed:v1:annual check>",
         "outcomeEncrypted": "<sealed:v1:ferritin back in range, recheck in a year>",
         "bodySiteEncrypted": "<sealed:v1:rt-Encounter-bodySiteEncrypted>",
         "laterality": "LEFT",
-        "reminderId": "<id:68>",
+        "reminderId": "<id:69>",
         "createdAt": "2026-05-04T04:31:00.000Z",
         "updatedAt": "2026-05-04T04:32:00.000Z",
         "deletedAt": null
       },
       {
-        "id": "<id:69>",
+        "id": "<id:70>",
         "occurredAt": "2026-04-02T08:00:00.000Z",
         "status": "DONE",
         "kind": "ROUTINE",
-        "practitionerId": "<id:65>",
+        "practitionerId": "<id:66>",
         "reasonEncrypted": null,
         "outcomeEncrypted": null,
         "bodySiteEncrypted": null,
@@ -4035,28 +4061,28 @@
     ],
     "encounterDocumentLinks": [
       {
-        "encounterId": "<id:67>",
-        "targetId": "<id:52>",
+        "encounterId": "<id:68>",
+        "targetId": "<id:53>",
         "createdAt": "2026-05-04T06:04:00.000Z"
       }
     ],
     "encounterLabLinks": [
       {
-        "encounterId": "<id:67>",
+        "encounterId": "<id:68>",
         "targetId": "<id:37>",
         "createdAt": "2026-05-04T07:44:00.000Z"
       }
     ],
     "encounterConditionLinks": [
       {
-        "encounterId": "<id:67>",
+        "encounterId": "<id:68>",
         "targetId": "<id:44>",
         "createdAt": "2026-05-04T09:24:00.000Z"
       }
     ],
     "customVaccines": [
       {
-        "id": "<id:70>",
+        "id": "<id:71>",
         "name": "Deleted combo",
         "components": [
           "rabies"
@@ -4068,7 +4094,7 @@
         "deletedAt": "<tombstone>"
       },
       {
-        "id": "<id:71>",
+        "id": "<id:72>",
         "name": "Round-trip travel combo",
         "components": [
           "typhoid",
@@ -4083,7 +4109,7 @@
     ],
     "vaccinations": [
       {
-        "id": "<id:72>",
+        "id": "<id:73>",
         "occurredAt": "2026-05-14T00:00:00.000Z",
         "antigenSlug": "tdap",
         "vaccineName": "Tetanus, diphtheria and pertussis",
@@ -4091,17 +4117,17 @@
         "seriesDoses": 3,
         "lotNumber": "RT-4471",
         "site": "LEFT_ARM",
-        "practitionerId": "<id:66>",
-        "encounterId": "<id:67>",
-        "reminderId": "<id:68>",
-        "customVaccineId": "<id:71>",
+        "practitionerId": "<id:67>",
+        "encounterId": "<id:68>",
+        "reminderId": "<id:69>",
+        "customVaccineId": "<id:72>",
         "noteEncrypted": "<sealed:v1:sore arm for a day, nothing else>",
         "createdAt": "2026-05-04T11:14:00.000Z",
         "updatedAt": "2026-05-04T11:15:00.000Z",
         "deletedAt": null
       },
       {
-        "id": "<id:73>",
+        "id": "<id:74>",
         "occurredAt": "2026-04-14T00:00:00.000Z",
         "antigenSlug": "influenza",
         "vaccineName": "Influenza (deleted)",
@@ -4121,36 +4147,36 @@
     ],
     "vaccinationDocumentLinks": [
       {
-        "vaccinationId": "<id:72>",
-        "targetId": "<id:52>",
+        "vaccinationId": "<id:73>",
+        "targetId": "<id:53>",
         "createdAt": "2026-05-04T12:44:00.000Z"
       }
     ],
     "labResultDocumentLinks": [
       {
         "labResultId": "<id:37>",
-        "documentId": "<id:52>",
+        "documentId": "<id:53>",
         "createdAt": "2026-05-06T14:44:00.000Z"
       }
     ],
     "encounterMedicationLinks": [
       {
-        "encounterId": "<id:67>",
+        "encounterId": "<id:68>",
         "medicationId": "<id:6>",
         "createdAt": "2026-05-06T16:24:00.000Z"
       }
     ],
     "encounterVaccinationLinks": [
       {
-        "encounterId": "<id:67>",
-        "vaccinationId": "<id:72>",
+        "encounterId": "<id:68>",
+        "vaccinationId": "<id:73>",
         "createdAt": "2026-05-06T18:04:00.000Z"
       }
     ],
     "medicationDocumentLinks": [
       {
         "medicationId": "<id:6>",
-        "documentId": "<id:52>",
+        "documentId": "<id:53>",
         "createdAt": "2026-05-06T19:44:00.000Z"
       }
     ],
@@ -4163,7 +4189,7 @@
     ],
     "coachConversations": [
       {
-        "id": "<id:77>",
+        "id": "<id:78>",
         "title": "How is my blood pressure trending?",
         "documentScoped": false,
         "summaryEncrypted": "<sealed:v1:earlier turns: weight trend and evening walks>",
@@ -4173,7 +4199,7 @@
         "updatedAt": "2026-05-04T19:25:00.000Z",
         "messages": [
           {
-            "id": "<id:78>",
+            "id": "<id:79>",
             "role": "user",
             "contentEncrypted": "<sealed:v1:my readings look higher this week, is that real?>",
             "metricSourceJson": "rt-CoachMessage-metricSourceJson",
@@ -4186,7 +4212,7 @@
             "createdAt": "2026-07-20T09:58:00.000Z"
           },
           {
-            "id": "<id:79>",
+            "id": "<id:80>",
             "role": "assistant",
             "contentEncrypted": "<sealed:v1:the last seven mornings average 4 mmHg above the fortnight before>",
             "metricSourceJson": null,
@@ -4202,7 +4228,7 @@
         "attachments": []
       },
       {
-        "id": "<id:80>",
+        "id": "<id:81>",
         "titleEncrypted": "<sealed:v1:About my June labs>",
         "documentScoped": true,
         "summaryEncrypted": null,
@@ -4212,7 +4238,7 @@
         "updatedAt": "2026-05-04T19:25:01.000Z",
         "messages": [
           {
-            "id": "<id:81>",
+            "id": "<id:82>",
             "role": "user",
             "contentEncrypted": "<sealed:v1:What does the ferritin mean?>",
             "metricSourceJson": null,
@@ -4227,7 +4253,7 @@
         ],
         "attachments": [
           {
-            "documentId": "<id:52>",
+            "documentId": "<id:53>",
             "addedAt": "2026-07-21T07:59:00.000Z"
           }
         ]
@@ -4235,7 +4261,7 @@
     ],
     "mentalHealthAssessments": [
       {
-        "id": "<id:88>",
+        "id": "<id:89>",
         "instrument": "GAD7",
         "locale": "en",
         "version": "standard",
@@ -4254,7 +4280,7 @@
         "updatedAt": "2026-05-05T13:57:01.000Z"
       },
       {
-        "id": "<id:89>",
+        "id": "<id:90>",
         "instrument": "PHQ9",
         "locale": "de",
         "version": "rt-MentalHealthAssessment-version",
@@ -4275,7 +4301,7 @@
     ],
     "consentReceipts": [
       {
-        "id": "<id:90>",
+        "id": "<id:91>",
         "kind": "ai-processing",
         "artefact": "JVBERi0xLjQKJWZpeHR1cmU=",
         "signedAt": "2026-06-01T09:00:00.000Z",
@@ -4283,7 +4309,7 @@
         "createdAt": "2026-05-05T15:26:00.000Z"
       },
       {
-        "id": "<id:91>",
+        "id": "<id:92>",
         "kind": "research-sharing",
         "artefact": "eyJhbGciOiJub25lIn0.e30.",
         "signedAt": "2026-06-02T09:00:00.000Z",
@@ -4293,24 +4319,24 @@
     ],
     "coachFacts": [
       {
-        "id": "<id:82>",
+        "id": "<id:83>",
         "factEncrypted": "<sealed:v1:does not tolerate ACE inhibitors>",
         "category": "constraint",
         "confidence": 80,
-        "sourceConversationId": "<id:77>",
+        "sourceConversationId": "<id:78>",
         "source": "user",
         "lastUsedAt": "2026-07-20T10:00:00.000Z",
-        "sourceMessageId": "<id:79>",
+        "sourceMessageId": "<id:80>",
         "createdAt": "2026-05-05T00:26:00.000Z",
         "updatedAt": "2026-05-05T00:27:00.000Z",
         "deletedAt": null
       },
       {
-        "id": "<id:83>",
+        "id": "<id:84>",
         "factEncrypted": "<sealed:v1:a fact the person deleted>",
         "category": "preference",
         "confidence": 50,
-        "sourceConversationId": "<id:77>",
+        "sourceConversationId": "<id:78>",
         "source": "user",
         "lastUsedAt": null,
         "sourceMessageId": null,
@@ -4321,7 +4347,7 @@
     ],
     "coachPlans": [
       {
-        "id": "<id:84>",
+        "id": "<id:85>",
         "metric": "BLOOD_PRESSURE",
         "ifCueEncrypted": "<sealed:v1:if the evening reading is over 140>",
         "thenActionEncrypted": "<sealed:v1:then walk twenty minutes before dinner tomorrow>",
@@ -4329,13 +4355,13 @@
         "outcomeEncrypted": "<sealed:v1:rt-CoachPlan-outcomeEncrypted>",
         "status": "active",
         "reviewDate": "2026-10-01T00:00:00.000Z",
-        "sourceConversationId": "<id:77>",
+        "sourceConversationId": "<id:78>",
         "createdAt": "2026-05-05T02:10:00.000Z",
         "updatedAt": "2026-05-05T02:11:00.000Z",
         "deletedAt": null
       },
       {
-        "id": "<id:85>",
+        "id": "<id:86>",
         "metric": "WEIGHT",
         "ifCueEncrypted": "<sealed:v1:if the scale reads over 75>",
         "thenActionEncrypted": "<sealed:v1:then skip the second helping>",
@@ -4351,16 +4377,16 @@
     ],
     "coachReminders": [
       {
-        "id": "<id:86>",
+        "id": "<id:87>",
         "noteEncrypted": "<sealed:v1:ask how the evening walks are going>",
         "metric": "BLOOD_PRESSURE",
-        "relatedPlanId": "<id:84>",
+        "relatedPlanId": "<id:85>",
         "triggerKind": "rt-CoachReminder-triggerKind",
         "dueAt": "2026-09-01T07:00:00.000Z",
         "contextCue": "rt-CoachReminder-contextCue",
         "status": "rt-CoachReminder-status",
         "source": "extractor",
-        "sourceConversationId": "<id:77>",
+        "sourceConversationId": "<id:78>",
         "lastSurfacedAt": "2026-06-30T12:34:56.789Z",
         "surfaceCount": 2,
         "createdAt": "2026-05-05T03:53:00.000Z",
@@ -4368,10 +4394,10 @@
         "deletedAt": null
       },
       {
-        "id": "<id:87>",
+        "id": "<id:88>",
         "noteEncrypted": "<sealed:v1:a reminder the person deleted>",
         "metric": null,
-        "relatedPlanId": "<id:85>",
+        "relatedPlanId": "<id:86>",
         "triggerKind": "date",
         "dueAt": "2026-09-15T07:00:00.000Z",
         "contextCue": null,
@@ -4387,7 +4413,7 @@
     ],
     "measurementReminders": [
       {
-        "id": "<id:68>",
+        "id": "<id:69>",
         "label": "Blutdruck messen",
         "measurementType": "BLOOD_PRESSURE_SYS",
         "intervalDays": 7,
@@ -4409,7 +4435,7 @@
         "deletedAt": null
       },
       {
-        "id": "<id:74>",
+        "id": "<id:75>",
         "label": "Gewicht (deleted)",
         "measurementType": "WEIGHT",
         "intervalDays": 14,
@@ -4433,8 +4459,8 @@
     ],
     "measurementReminderEvents": [
       {
-        "id": "<id:75>",
-        "reminderId": "<id:68>",
+        "id": "<id:76>",
+        "reminderId": "<id:69>",
         "kind": "SKIPPED",
         "occurredAt": "2026-06-24T06:00:00.000Z",
         "onTime": false,
@@ -4442,8 +4468,8 @@
         "createdAt": "2026-05-04T17:47:01.000Z"
       },
       {
-        "id": "<id:76>",
-        "reminderId": "<id:68>",
+        "id": "<id:77>",
+        "reminderId": "<id:69>",
         "kind": "SATISFIED",
         "occurredAt": "2026-07-01T06:05:00.000Z",
         "onTime": true,
@@ -4623,7 +4649,7 @@
     ],
     "ecgRecordings": [
       {
-        "id": "<id:93>",
+        "id": "<id:94>",
         "source": "MANUAL",
         "externalRecordingId": "round-trip-signal-1",
         "recordedAt": "2026-06-15T14:22:00.000Z",
@@ -4678,7 +4704,7 @@
     "illnessEpisodes": 4,
     "illnessDayLogs": 2,
     "allergies": 2,
-    "familyHistory": 1,
+    "familyHistory": 2,
     "workouts": 1,
     "documents": 1,
     "documentConditionLinks": 1,
@@ -4734,7 +4760,7 @@
       "illnessEpisodes": 4,
       "illnessDayLogs": 2,
       "allergies": 2,
-      "familyHistory": 1,
+      "familyHistory": 2,
       "workouts": 1,
       "documents": 1,
       "documentConditionLinks": 1,

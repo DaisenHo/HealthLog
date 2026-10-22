@@ -122,7 +122,7 @@ export async function buildRecordsBackupSection(
       buildLabsBackupSlice(prisma, userId, disasterRecovery),
       buildIllnessBackupSlice(prisma, userId, disasterRecovery),
       buildAllergiesBackupSlice(prisma, userId, disasterRecovery),
-      buildFamilyHistoryBackupSlice(prisma, userId),
+      buildFamilyHistoryBackupSlice(prisma, userId, disasterRecovery),
       buildWorkoutsBackupSlice(prisma, userId, disasterRecovery),
       buildDocumentsBackupSlice(
         prisma,

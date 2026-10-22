@@ -1707,9 +1707,11 @@
         "relationship": "FATHER",
         "condition": "Diabetes",
         "ageAtOnset": 55,
-        "note": "type 2",
+        "note": null,
+        "notesEncrypted": "<sealed:v2:type 2>",
         "createdAt": "<now>",
-        "updatedAt": "<now>"
+        "updatedAt": "<now>",
+        "deletedAt": null
       }
     ],
     "workouts": [
