@@ -4,6 +4,7 @@ import { join, relative, sep } from "node:path";
 import type { APIRequestContext } from "@playwright/test";
 
 import { ADMIN_SECTION_SLUGS } from "@/components/admin/section-slugs";
+import { MODULE_SETTINGS_PAGE_IDS } from "@/components/settings/module-settings-page-ids";
 import { SETTINGS_SECTION_SLUGS } from "@/components/settings/section-slugs";
 
 import { expect, test } from "./setup/test";
@@ -80,17 +81,21 @@ const DYNAMIC_ROUTES: Record<string, Resolver> = {
     ADMIN_SECTION_SLUGS.map((slug) => `/admin/${slug}`),
   // `LAYOUT_GROUP_IDS` lives beside React components the test runner cannot
   // load; `settings/layout/[module]` 404s an unknown group, so a stale entry
-  // here fails on the status check below rather than passing quietly.
+  // here fails on the status check below rather than passing quietly. Mood
+  // has no arrangement page since v1.44: its old address redirects to
+  // `/settings/modules/mood`, which the entry below sweeps.
   "/settings/layout/[module]": async () =>
     [
       "dashboard",
       "insights",
       "medications",
-      "mood",
       "labs",
       "illness",
+      "documents",
       "vorsorge",
     ].map((group) => `/settings/layout/${group}`),
+  "/settings/modules/[module]": async () =>
+    MODULE_SETTINGS_PAGE_IDS.map((module) => `/settings/modules/${module}`),
   "/insights/scores/[metric]": async () =>
     ["sleep", "readiness", "recovery", "stress", "strain"].map(
       (metric) => `/insights/scores/${metric}`,

@@ -164,6 +164,21 @@ describe("SourceProvenanceView", () => {
     expect(html).toContain('data-slot="provenance-day-empty"');
     expect(html).toContain('data-slot="provenance-compare-empty"');
   });
+
+  it("labels the range with the charts' short day labels and spells them out", () => {
+    state.day = DAY;
+    state.compare = COMPARE;
+    const html = render(
+      <SourceProvenanceView initialType="SLEEP_DURATION" initialDate={null} />,
+    );
+    for (const days of ["30", "90", "365"]) {
+      expect(html).toMatch(
+        new RegExp(
+          `data-slot="provenance-range-${days}"[^>]*title="${days} days"[^>]*>${days}d<|title="${days} days"[^>]*data-slot="provenance-range-${days}"[^>]*>${days}d<`,
+        ),
+      );
+    }
+  });
 });
 
 describe("SourceProvenanceLink", () => {

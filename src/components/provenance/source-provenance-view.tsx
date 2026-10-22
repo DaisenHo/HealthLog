@@ -224,20 +224,14 @@ export function SourceProvenanceView({
                 slot="provenance-range"
                 value={range}
                 onChange={setRange}
-                options={[
-                  {
-                    value: "30",
-                    label: t("sourceProvenance.rangeDays", { days: 30 }),
-                  },
-                  {
-                    value: "90",
-                    label: t("sourceProvenance.rangeDays", { days: 90 }),
-                  },
-                  {
-                    value: "365",
-                    label: t("sourceProvenance.rangeDays", { days: 365 }),
-                  },
-                ]}
+                // The charts' short range labels ("30d"), spelled out in
+                // the title: three long ones beside the title push the card
+                // past a 390 px phone.
+                options={(["30", "90", "365"] as const).map((days) => ({
+                  value: days,
+                  label: t("charts.daysNLabel", { days }),
+                  title: t("sourceProvenance.rangeDays", { days }),
+                }))}
               />
             }
           />
