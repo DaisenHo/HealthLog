@@ -9,6 +9,10 @@ import type { Job } from "pg-boss";
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 vi.mock("@/lib/logging/signal", () => ({ emitSignal: vi.fn() }));
+const memory = vi.hoisted(() => ({ pressure: false }));
+vi.mock("@/lib/observability/container-memory", () => ({
+  memoryPressureActive: () => memory.pressure,
+}));
 
 import { emitSignal } from "@/lib/logging/signal";
 import { heavyLane, LANE_WAIT_WARN_MS, laneWanted } from "../heavy-lane";
@@ -264,5 +268,54 @@ describe("a long wait for the lane", () => {
     });
     release();
     await held;
+  });
+});
+
+describe("the lane under container memory pressure", () => {
+  it("sends a heavy job back while the container is near its limit", async () => {
+    const log: string[] = [];
+    const a = gate(log, "import");
+    const { back, defer } = deferrals();
+    memory.pressure = true;
+    try {
+      const outcome = await heavyLane(
+        "apple-health-import-v2",
+        a.handler,
+        undefined,
+        defer,
+      )([job("upload")]);
+      expect(outcome).toMatchObject({ ok: true, did: { lane_deferred: 1 } });
+      expect(a.handler).not.toHaveBeenCalled();
+      expect(back).toEqual([
+        { queue: "apple-health-import-v2", ids: ["upload"] },
+      ]);
+    } finally {
+      memory.pressure = false;
+    }
+  });
+
+  it("asks a holder to give way at its next boundary", async () => {
+    let seen: boolean[] = [];
+    const { defer } = deferrals();
+    let release!: () => void;
+    const gateDone = new Promise<void>((r) => (release = r));
+    const running = heavyLane(
+      "apple-health-import-v2",
+      async () => {
+        seen.push(laneWanted());
+        await gateDone;
+        seen.push(laneWanted());
+        return jobDone({ jobs: 1 });
+      },
+      undefined,
+      defer,
+    )([job("upload")]);
+    await tick();
+    memory.pressure = true;
+    release();
+    await running;
+    memory.pressure = false;
+    expect(seen).toEqual([false, true]);
+    seen = [];
   });
 });
