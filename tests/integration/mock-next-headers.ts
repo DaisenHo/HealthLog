@@ -1,20 +1,17 @@
 /**
  * Shared `next/headers` mock state for the integration suite.
  *
- * Background: vitest runs the integration suite with `isolate: false`
- * (one worker, one container). The factory passed to
- * `vi.mock("next/headers", ...)` is resolved ONCE per worker —
- * whichever test file loads first wins. If two files each declare a
- * top-level `const cookieJar = new Map()` and reference it from their
- * own `vi.mock("next/headers", ...)` factory, only the first file's
- * Map is ever read; the second file's writes silently disappear and
- * its tests flake based on import order.
+ * `environment-setup.ts` mocks `next/headers` for every file with a stand-in
+ * that reads these jars, so a test sets a cookie or a header here and the
+ * route handler under test sees it. Files are isolated (`isolate: true`), so
+ * each file gets fresh jars; clear them in `beforeEach` to keep cases
+ * independent. The route test kit (`tests/kit/`) fills them from the `auth`
+ * option of `callRoute`, so a kit test never touches them directly.
  *
- * Fix: every integration file imports `cookieJar` + `headerJar` from
- * THIS module (a singleton) and clears them in `beforeEach`. The
- * `vi.mock` factory inside each test file resolves the Maps via
- * `await import()` so it sees the same Map instances regardless of
- * which file's mock factory ran first.
+ * Many files still declare their own identical `vi.mock("next/headers")`.
+ * That predates the shared one, is harmless (a file's own mock wins), and is
+ * only needed where a file wants different behaviour, such as consuming
+ * `queuedSessionIds` below.
  */
 export const cookieJar = new Map<string, string>();
 export const headerJar = new Map<string, string>();

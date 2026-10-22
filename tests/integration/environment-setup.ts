@@ -1,12 +1,14 @@
 import { afterEach, inject, vi } from "vitest";
 
-declare module "vitest" {
-  export interface ProvidedContext {
-    integrationDatabaseUrl: string;
-  }
-}
+import { prepareWorkerDatabase } from "./worker-database";
 
-process.env.DATABASE_URL = inject("integrationDatabaseUrl");
+// Each worker runs against its own clone of the migrated template (see
+// `worker-database.ts`). The URL is final before any application module is
+// imported, so the Prisma singleton is built against the clone.
+process.env.DATABASE_URL = await prepareWorkerDatabase(
+  inject("integrationDatabaseUrl"),
+  inject("integrationDatabasePlan"),
+);
 process.env.ENCRYPTION_KEY =
   "0000000000000000000000000000000000000000000000000000000000000000";
 delete process.env.ENCRYPTION_KEYS;
@@ -32,6 +34,39 @@ afterEach(async () => {
     await import("@/lib/logging/background-tasks");
   await settleBackgroundTasks();
 });
+
+/**
+ * Route handlers read cookies and headers through `next/headers`, which only
+ * works inside a Next.js request scope. Every file gets the same stand-in,
+ * backed by the shared jars in `mock-next-headers.ts`, and the same no-op for
+ * the boot-time compatibility probe. A file that needs different behaviour
+ * still declares its own `vi.mock`, which takes precedence over this one.
+ */
+vi.mock("next/headers", async () => {
+  const { cookieJar, headerJar } = await import("./mock-next-headers");
+  return {
+    headers: vi.fn(async () => ({
+      get: (name: string) => headerJar.get(name.toLowerCase()) ?? null,
+      has: (name: string) => headerJar.has(name.toLowerCase()),
+    })),
+    cookies: vi.fn(async () => ({
+      get: (name: string) => {
+        const value = cookieJar.get(name);
+        return value ? { name, value } : undefined;
+      },
+      set: (name: string, value: string) => {
+        cookieJar.set(name, value);
+      },
+      delete: (name: string) => {
+        cookieJar.delete(name);
+      },
+    })),
+  };
+});
+
+vi.mock("@/lib/db-compat", () => ({
+  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
+}));
 
 /**
  * The same pin the unit setup applies (see `vitest.setup.ts`): the Fitbit

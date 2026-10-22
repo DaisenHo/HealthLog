@@ -1,9 +1,20 @@
 import { defineConfig } from "vitest/config";
 import { dirname, resolve } from "node:path";
+import { availableParallelism } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+function integrationWorkers(): number {
+  const pinned = Number.parseInt(
+    process.env.HEALTHLOG_INTEGRATION_WORKERS ?? "",
+    10,
+  );
+  if (Number.isInteger(pinned) && pinned > 0) return pinned;
+  // Half the cores: the other half runs Postgres and the container runtime.
+  return Math.max(1, Math.min(8, Math.floor(availableParallelism() / 2)));
+}
 
 // Integration suite — boots a real Postgres in a testcontainer and runs
 // migrations against it. Slow (container boot ~5–15s on a cold pull),
@@ -30,11 +41,16 @@ export default defineConfig({
     // budget and beforeAll/afterAll twice that.
     testTimeout: 60_000,
     hookTimeout: 120_000,
-    // Run sequentially in a single fork so files reuse one container and
-    // amortise the migration-apply cost. Vitest 4 moved these to the top
-    // level (the old `poolOptions.forks.singleFork` was removed).
+    // Files run in parallel, one database per worker: global setup migrates a
+    // template once and each worker clones it on its first file (see
+    // `tests/integration/worker-database.ts`). The worker count follows the
+    // host unless `HEALTHLOG_INTEGRATION_WORKERS` pins it; CI pins it to what
+    // a runner shared with the Postgres container can carry.
     pool: "forks",
-    fileParallelism: false,
+    fileParallelism: true,
+    maxWorkers: integrationWorkers(),
+    // Order dependence is looked for on purpose by shuffling file order
+    // (`--sequence.shuffle`), not by keeping the suite serial.
     // v1.4.37 — switched from `isolate: false` to `isolate: true`.
     // The previous setting reused the module graph across files inside
     // one fork; mock declarations (`vi.mock("@/lib/notifications/...")`,
@@ -48,8 +64,8 @@ export default defineConfig({
     // expensive boot cost is unaffected.
     isolate: true,
     // One container for the whole run; tests truncate between them.
-    // Bridge the global Testcontainers URL into each isolated worker before
-    // application modules read DATABASE_URL at import time.
+    // Point each isolated worker at its own clone before application modules
+    // read DATABASE_URL at import time.
     setupFiles: ["./tests/integration/environment-setup.ts"],
     globalSetup: ["./tests/integration/global-setup.ts"],
   },

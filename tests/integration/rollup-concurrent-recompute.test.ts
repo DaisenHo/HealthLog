@@ -68,6 +68,7 @@ async function waitForRollupLockWaiter(timeoutMs = 5_000): Promise<boolean> {
       SELECT count(*)::bigint AS n
       FROM pg_stat_activity
       WHERE wait_event_type = 'Lock'
+        AND datname = current_database()
         AND query ILIKE '%measurement_rollups%'
     `;
     if (Number(rows[0]?.n ?? 0) > 0) return true;
