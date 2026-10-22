@@ -8612,7 +8612,7 @@
         "description": "Faça login pelo menos uma vez com uma chave de acesso."
       },
       "passwordLogin1": {
-        "title": "Old school",
+        "title": "Das antigas",
         "description": "Faça login pelo menos uma vez com nome de usuário e senha."
       },
       "loginStreak7": {
@@ -10674,12 +10674,12 @@
     },
     "plans": {
       "title": "Planos",
-      "pageDescription": "Planos do tipo \\\"se… então…\\\" acordados nas suas conversas com o Coach. Confirme uma proposta para torná-la parte da memória do Coach.",
+      "pageDescription": "Planos do tipo “se… então…” acordados nas suas conversas com o Coach. Confirme uma proposta para torná-la parte da memória do Coach.",
       "readOnlyNote": "O Coach não está disponível agora, mas você ainda pode ler e excluir seus planos.",
       "proposalTitle": "Proposta de plano",
       "ifThen": "Se {cue}, então {action}.",
       "targetPrefix": "Alvo: {target}",
-      "reviewPrefix": "Check-in: {when}",
+      "reviewPrefix": "Revisão: {when}",
       "accept": "Aceitar plano",
       "decline": "Recusar",
       "accepted": "Plano aceito. O Coach o terá em mente.",
