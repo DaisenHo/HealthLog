@@ -74,6 +74,9 @@ describe("<BottomSheetContent>", () => {
       <BottomSheetContent>body</BottomSheetContent>,
     );
     expect(attr(html, "sheet-overlay")).toContain("touch-none");
+    expect(attr(html, "sheet-overlay")).toContain(
+      "motion-reduce:animate-none!",
+    );
   });
 
   it("drops the grip, the drag and the X offset when it is not draggable", () => {
@@ -123,7 +126,8 @@ describe("<BottomSheetContent>", () => {
     expect(BOTTOM_SHEET_CLASS).toContain("data-[state=open]:duration-260");
     expect(BOTTOM_SHEET_CLASS).toContain("data-[state=closed]:duration-220");
     expect(BOTTOM_SHEET_CLASS).toContain("ease-out");
-    expect(BOTTOM_SHEET_CLASS).toContain("motion-reduce:animate-none");
+    // Important: the data-state animation outranks a plain media variant.
+    expect(BOTTOM_SHEET_CLASS).toContain("motion-reduce:animate-none!");
     expect(BOTTOM_SHEET_CLASS).toContain("max-h-[90dvh]");
   });
 });
