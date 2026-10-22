@@ -14,9 +14,12 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { locales, type Locale } from "@/lib/i18n/config";
+
 import {
   collectNumericLeaves,
   findUnverifiedCoachNumbers,
+  hasPopulationNormFraming,
   stripUnverifiedNumbers,
   UNVERIFIED_ELISION_MARK,
   unitWordBank,
@@ -657,5 +660,35 @@ describe("Brazilian Portuguese population-norm framing", () => {
     "Os valores de referência da glicemia em jejum vão de 70 a 99 mg/dL.",
   ])("exempts the reference figures in: %s", (prose) => {
     expect(findUnverifiedCoachNumbers(prose, payloads, "pt-BR")).toEqual([]);
+  });
+});
+
+/**
+ * Each locale's population-norm bank lives in its own module. One reference
+ * sentence per locale, worded so the English bank (which always runs too)
+ * cannot be what matched it, pins that every module is wired and fires.
+ */
+describe("population-norm banks, one per locale", () => {
+  const REFERENCE_SENTENCE: Record<Locale, string> = {
+    en: "Healthy adults usually sleep 7 to 9 hours.",
+    de: "Gesunde Erwachsene schlafen 7 bis 9 Stunden.",
+    fr: "La plupart des adultes dorment 7 à 9 heures.",
+    es: "Los adultos sanos duermen de 7 a 9 horas.",
+    it: "Gli adulti sani dormono da 7 a 9 ore.",
+    pl: "Większość dorosłych potrzebuje od 7 do 9 godzin snu.",
+    nl: "Gezonde volwassenen slapen 7 tot 9 uur.",
+    ko: "건강한 성인은 7~9시간 자요.",
+    "pt-BR": "A maioria dos adultos precisa de 7 a 9 horas de sono.",
+  };
+
+  it.each(locales)("%s reads its reference sentence as a norm", (locale) => {
+    expect(hasPopulationNormFraming(REFERENCE_SENTENCE[locale], locale)).toBe(
+      true,
+    );
+    if (locale !== "en") {
+      expect(hasPopulationNormFraming(REFERENCE_SENTENCE[locale], "en")).toBe(
+        false,
+      );
+    }
   });
 });
