@@ -16,7 +16,11 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 
-import { readSourceText, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -181,7 +185,10 @@ describe("the recent-proof gate", () => {
   });
 
   it("the gate reads the session's own stamps, and only a second factor on an enrolled account", () => {
-    const src = read("lib/api-handler.ts");
+    const src = readSource(
+      "src/lib/api-handler.ts",
+      "export async function assertRecentCookieProof(",
+    );
     const start = src.indexOf("export async function assertRecentCookieProof(");
     expect(start).toBeGreaterThan(-1);
     const body = src.slice(start, src.indexOf("\nexport ", start + 1));

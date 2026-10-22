@@ -41,7 +41,11 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 
-import { readSourceText, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -80,7 +84,10 @@ function functionBody(src: string, name: string): string {
   return "";
 }
 
-const API_HANDLER = read("lib/api-handler.ts");
+const API_HANDLER = readSource("src/lib/api-handler.ts", [
+  "requireRecordAuth",
+  "requireGuardianAuth",
+]);
 
 /** The two helpers that resolve a record and therefore must consult the fence. */
 const FENCED_RESOLVERS = ["requireRecordAuth", "requireGuardianAuth"] as const;
@@ -180,8 +187,11 @@ describe("the fence runs in exactly two auth helpers", () => {
     // client's context is unknown; the switch endpoint is the way out of a
     // context that cannot be proved. Fencing either would make an unprovable
     // context unrecoverable.
-    const me = read("app/api/auth/me/route.ts");
-    const sw = read("app/api/account/switch/route.ts");
+    const me = readSource("src/app/api/auth/me/route.ts", "requireActorAuth");
+    const sw = readSource(
+      "src/app/api/account/switch/route.ts",
+      "requireActorAuth",
+    );
     expect(me).toContain("requireActorAuth");
     expect(sw).toContain("requireActorAuth");
     expect(me).not.toContain("assertRecordSessionFence");
@@ -228,7 +238,10 @@ describe("the epoch has one writer and a closed reader set", () => {
   });
 
   it("is consulted by the idempotency wrapper, above the cache", () => {
-    const src = read("lib/idempotency.ts");
+    const src = readSource(
+      "src/lib/idempotency.ts",
+      "refuseStaleRecordSessionClaim(claim)",
+    );
     const fence = src.indexOf("refuseStaleRecordSessionClaim(claim)");
     const cache = src.indexOf("findCached(ctx)");
     const claimRow = src.indexOf("claimKey(ctx)");

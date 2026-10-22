@@ -25,7 +25,11 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 
-import { readSourceText, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -256,7 +260,10 @@ describe("S6 — the erasure routes accept a fresh-factor elevation", () => {
     // A password-proved elevation must not erase an account, and the gate
     // must not grow a second, inline factor check beside the elevation: one
     // mint surface, one redemption path.
-    const src = read("lib/api-handler.ts");
+    const src = readSource(
+      "src/lib/api-handler.ts",
+      "export async function requireFreshMfaOrElevationIfEnrolled(",
+    );
     const start = src.indexOf(
       "export async function requireFreshMfaOrElevationIfEnrolled(",
     );
@@ -307,7 +314,10 @@ describe("S2 — mint and redeem happen in exactly one place each", () => {
 
 describe("S3 — requireAdmin stays cookie-only", () => {
   it("resolves through getSession and nothing else", () => {
-    const src = read("lib/api-handler.ts");
+    const src = readSource("src/lib/api-handler.ts", [
+      "export async function requireAdmin(",
+      "export async function requireCookieAuth(",
+    ]);
     const body = src.slice(
       src.indexOf("export async function requireAdmin("),
       src.indexOf("export async function requireCookieAuth("),
@@ -335,7 +345,10 @@ describe("S4 — the mint surface refuses a cookie", () => {
   });
 
   it("requireBearerAuth never consults the session cookie", () => {
-    const src = read("lib/api-handler.ts");
+    const src = readSource("src/lib/api-handler.ts", [
+      "export async function requireBearerAuth(",
+      "export const STEP_UP_ELEVATION_HEADER",
+    ]);
     const body = src.slice(
       src.indexOf("export async function requireBearerAuth("),
       src.indexOf("export const STEP_UP_ELEVATION_HEADER"),
@@ -372,7 +385,10 @@ describe("S5 — a password proof cannot satisfy a fresh-factor gate", () => {
   });
 
   it("the claim re-checks the factor rather than trusting the validation", () => {
-    const src = read("lib/auth/step-up.ts");
+    const src = readSource(
+      "src/lib/auth/step-up.ts",
+      "export async function claimStepUpElevation(",
+    );
     const claim = src.slice(
       src.indexOf("export async function claimStepUpElevation("),
     );

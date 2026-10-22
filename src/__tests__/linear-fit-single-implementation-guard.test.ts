@@ -10,7 +10,11 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { readSourceText, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -65,7 +69,12 @@ describe("one least-squares line", () => {
     // The implementation itself matches, so the sweep read real files.
     expect(
       HAND_ROLLED_SLOPE.test(
-        stripComments(readSourceText(join(SRC, "lib/stats/linear-fit.ts"))),
+        stripComments(
+          readSource(
+            "src/lib/stats/linear-fit.ts",
+            "export function linearFit",
+          ),
+        ),
       ),
     ).toBe(true);
   });
