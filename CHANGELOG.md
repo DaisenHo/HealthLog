@@ -66,6 +66,11 @@
 - Ending a session from the session list records correctly whether it was
   your own.
 - Values that round to zero no longer show as "-0".
+- The nightly measurement maintenance no longer reports every run as
+  failed: it recorded the table's bloat as a decimal where only whole
+  numbers were accepted, although the maintenance itself had run. (#1271)
+- Mood dimensions logged between local and UTC midnight count for today
+  again instead of going missing until the next day.
 - Sheets on a phone open without a slide when your device asks for reduced
   motion, and every control's accessible name now matches its visible
   label.
@@ -86,7 +91,8 @@
 Thanks to @dareoon for the Brazilian Portuguese translation (#1251), to
 @asmala for adding dengue and tuberculosis to the vaccine catalogue
 (#1266) and for asking the Coach to look further back in the lab history
-(#1263).
+(#1263), and to @mills1975 for spotting the failing maintenance job
+(#1271).
 
 ## [1.44.2] — 2026-10-22
 
