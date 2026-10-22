@@ -11064,7 +11064,16 @@
         "name": "Crisis Text Line"
       },
       "cvv": {
-        "name": "CVV, Centro de Valorização da Vida (24/7, gratuito y confidencial)"
+        "name": "CVV, Centro de Valorização da Vida (Brasil, 24/7, gratuito y confidencial)"
+      },
+      "samu": {
+        "name": "SAMU, urgencias médicas (Brasil)"
+      },
+      "sns24": {
+        "name": "SNS 24, asesoramiento psicológico (Portugal, 24/7, opción 4)"
+      },
+      "sosVozAmiga": {
+        "name": "SOS Voz Amiga (Portugal, todos los días de 15:30 a 0:30)"
       }
     },
     "instrumentDescription": {

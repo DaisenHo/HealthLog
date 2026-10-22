@@ -11064,7 +11064,16 @@
         "name": "Crisis Text Line"
       },
       "cvv": {
-        "name": "CVV, Centro de Valorização da Vida (24시간 연중무휴, 무료, 비밀 보장)"
+        "name": "CVV, Centro de Valorização da Vida (브라질, 24시간 연중무휴, 무료, 비밀 보장)"
+      },
+      "samu": {
+        "name": "SAMU 응급의료 서비스 (브라질)"
+      },
+      "sns24": {
+        "name": "SNS 24 심리 상담 (포르투갈, 24시간 연중무휴, 4번 선택)"
+      },
+      "sosVozAmiga": {
+        "name": "SOS Voz Amiga (포르투갈, 매일 15:30~00:30)"
       }
     },
     "instrumentDescription": {

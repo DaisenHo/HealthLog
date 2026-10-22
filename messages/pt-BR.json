@@ -11022,7 +11022,16 @@
         "name": "Crisis Text Line"
       },
       "cvv": {
-        "name": "CVV, Centro de Valorização da Vida (24 horas, gratuito, sigiloso)"
+        "name": "CVV, Centro de Valorização da Vida (Brasil, 24 horas, gratuito, sigiloso)"
+      },
+      "samu": {
+        "name": "SAMU, urgência médica (Brasil)"
+      },
+      "sns24": {
+        "name": "SNS 24, aconselhamento psicológico (Portugal, 24 horas, opção 4)"
+      },
+      "sosVozAmiga": {
+        "name": "SOS Voz Amiga (Portugal, todos os dias das 15h30 às 0h30)"
       }
     },
     "instrumentDescription": {
