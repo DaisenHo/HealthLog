@@ -11,6 +11,7 @@ import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Switch } from "@/components/ui/switch";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { useAboutMeSaveTimeoutMs } from "@/hooks/use-ai-capability";
 import {
   isConflict,
   readUpdatedAtToken,
@@ -72,6 +73,7 @@ export function AiProfileInclusionManager() {
       (section) => draft.includes(section) !== saved.includes(section),
     );
 
+  const saveTimeoutMs = useAboutMeSaveTimeoutMs();
   const save = useMutation({
     mutationKey: queryKeys.coachAboutMe(),
     mutationFn: (sections: HealthProfileAiSection[]) =>
@@ -84,6 +86,7 @@ export function AiProfileInclusionManager() {
           readUpdatedAtToken(queryClient, queryKeys.coachAboutMe()) ??
             undefined,
         ),
+        { signal: AbortSignal.timeout(saveTimeoutMs) },
       ),
     onSuccess: () => {
       setDraft(null);

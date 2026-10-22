@@ -17,7 +17,9 @@ import type {
 } from "@/lib/ai/schema";
 import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
-import { useAiCapability } from "@/hooks/use-ai-capability";
+import { useAiCapability, useAiProviderState } from "@/hooks/use-ai-capability";
+import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
+import { clientAbortMs } from "@/lib/ai/effective-timeout";
 import type { BriefingFailureClass } from "@/lib/insights/briefing-failure-marker";
 
 /**
@@ -116,16 +118,29 @@ const ADVISOR_TIMEOUT_MS = 8_000;
 
 /**
  * v1.15.18 — the user-initiated regenerate (`force`) POSTs an INLINE
- * generation: a ~1500-token warm completion that routinely runs longer
- * than the 8 s read budget. Bounding the force branch at 8 s silently
- * discarded a slow-but-successful generation — the abort returned a null
- * payload, the mutation only invalidated (re-reading the OLD cache), yet
- * the server had often already written the fresh briefing. Give the force
- * branch a generous 45 s client budget so a slow success is kept, not
- * dropped. The READ path stays fast at 8 s — only the explicit user tap
- * may wait. Per `.planning/v1.15.18-daily-briefing-audit.md` Fix 1b.
+ * generation that routinely runs longer than the 8 s read budget; bounding it
+ * at 8 s discarded a slow-but-successful generation.
+ *
+ * #1267 — the budget follows the person's response-timeout setting instead of
+ * a constant 45 s, which cut every regenerate on a slow local model while the
+ * server still had minutes left. The route makes up to two sequential model
+ * calls (the generation and its grounding retry), and a reasoning model that
+ * answered nothing is asked once more inside the first, so three calls at the
+ * per-call timeout, at least the briefing's own 180 s default each. Never
+ * shorter than the server: the abort is only for a request nobody answers.
  */
-const FORCE_ADVISOR_TIMEOUT_MS = 45_000;
+const FORCE_ADVISOR_MODEL_CALLS = 3;
+
+/** The client budget for a forced regenerate (exported for the test). */
+export function forceAdvisorTimeoutMs(
+  responseTimeoutMs: number | null | undefined,
+): number {
+  return clientAbortMs(
+    responseTimeoutMs,
+    FORCE_ADVISOR_MODEL_CALLS,
+    AI_BUDGETS.comprehensive.timeoutMs,
+  );
+}
 
 /**
  * v1.16.7 — poll cadence + ceiling while the server reports
@@ -146,7 +161,7 @@ export const ADVISOR_REVALIDATE_POLL_MAX_ATTEMPTS = 10;
  *
  * Async-truth contract, client end (the server end is documented at the head
  * of `src/app/api/insights/generate/route.ts`): the force POST generates
- * INLINE and keeps running after the client aborts at 45 s — the server
+ * INLINE and keeps running after the client aborts — the server
  * usually writes the fresh cache moments later. A page that knows work is
  * running must keep saying so until it can prove an outcome, so the timeout
  * is NOT surfaced as an error. Instead the hook remembers the baseline it was
@@ -276,12 +291,18 @@ interface AdvisorFetchResult {
  * no-briefing-today chain). The wire-contract test pins it.
  */
 export async function fetchAdvisor(
-  options: { force?: boolean } = {},
+  options: {
+    force?: boolean;
+    /** `ai.provider.responseTimeoutMs` from the account payload. */
+    responseTimeoutMs?: number | null;
+  } = {},
 ): Promise<AdvisorFetchResult> {
   const controller = new AbortController();
   const timeoutHandle = setTimeout(
     () => controller.abort(),
-    options.force ? FORCE_ADVISOR_TIMEOUT_MS : ADVISOR_TIMEOUT_MS,
+    options.force
+      ? forceAdvisorTimeoutMs(options.responseTimeoutMs)
+      : ADVISOR_TIMEOUT_MS,
   );
   let res: Response;
   try {
@@ -437,6 +458,7 @@ export function useInsightsAdvisorQuery(
   enabled: boolean,
 ): UseInsightsAdvisorResult {
   const briefing = useAiCapability("briefing");
+  const { responseTimeoutMs } = useAiProviderState();
   const queryClient = useQueryClient();
   // Refs #786 — settling state for a timed-out force regenerate (see the
   // contract comment above `AdvisorSettleState`). `settleOutcome` carries the
@@ -500,7 +522,7 @@ export function useInsightsAdvisorQuery(
   }
 
   const mutation = useMutation({
-    mutationFn: () => fetchAdvisor({ force: true }),
+    mutationFn: () => fetchAdvisor({ force: true, responseTimeoutMs }),
     onSuccess: (result) => {
       if (result.payload) {
         // A genuinely fresh generation landed — write it into the shared
@@ -509,7 +531,7 @@ export function useInsightsAdvisorQuery(
       } else {
         // No fresh payload (timeout / no-provider / transient). The server's
         // inline POST may STILL have written a fresh briefing after the
-        // client gave up at 45 s, so re-read the GET to converge — but the
+        // client gave up, so re-read the GET to converge — but the
         // honest toast is gated on `regenerateOutcome` below, not on this
         // invalidate.
         //

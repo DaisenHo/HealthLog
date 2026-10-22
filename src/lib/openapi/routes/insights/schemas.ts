@@ -1186,8 +1186,8 @@ export const dashboardSnapshotResponse = z
         "Latest reading per chartable metric, keyed by the iOS `MetricKind` raw value (the non-obvious raws: `oxygenSaturation`, `totalBodyWater`, `heartRateVariability`, `bodyMassIndex`, `walkingAsymmetryPercentage`, `walkingDoubleSupportPercentage`, `environmentalAudioExposure`, `headphoneAudioExposure`, `activeEnergyBurned`). Each entry carries `value`, `measuredAt` (ISO8601), and the canonical `unit`. Types the user has never logged are omitted.",
       ),
     // v1.18.6 — server-computed band / target math (audit finding #3),
-    // resolved from the user's own profile facts (DOB / gender / height /
-    // weight-target override). The dashboard reads these instead of
+    // resolved from the user's own profile facts (DOB / gender / height) and
+    // their own targets. The dashboard reads these instead of
     // recomputing client-side; always present (every sub-field falls back
     // to a neutral default rather than being omitted).
     targetBands: z
@@ -1201,7 +1201,7 @@ export const dashboardSnapshotResponse = z
           })
           .nullable()
           .describe(
-            "Personalised blood-pressure target numbers. Null when the profile has no date of birth.",
+            "Blood-pressure target numbers: the user's own target (`/api/user/thresholds`) where set, else the age-banded default. Null when there is neither a target nor a date of birth.",
           ),
         bpSysRange: z
           .object({
@@ -1212,7 +1212,7 @@ export const dashboardSnapshotResponse = z
           })
           .nullable()
           .describe(
-            "Systolic traffic-light range. Null when the profile has no date of birth.",
+            "Systolic traffic-light range, the user's own target winning over the age default. Null when there is neither a target nor a date of birth.",
           ),
         bpDiaRange: z
           .object({
@@ -1223,7 +1223,7 @@ export const dashboardSnapshotResponse = z
           })
           .nullable()
           .describe(
-            "Diastolic traffic-light range. Null when the profile has no date of birth.",
+            "Diastolic traffic-light range, the user's own target winning over the age default. Null when there is neither a target nor a date of birth.",
           ),
         pulseDisplayRange: z
           .object({
@@ -1233,7 +1233,7 @@ export const dashboardSnapshotResponse = z
             orangeMax: z.number(),
           })
           .describe(
-            "Resting-pulse display range. Always present — falls back to the AHA reference range with no date of birth.",
+            "Resting-pulse display range: the user's own target where set, else the age / sex percentile band (the AHA reference range with no date of birth). Always present.",
           ),
         pulseBands: z
           .array(
@@ -1246,11 +1246,13 @@ export const dashboardSnapshotResponse = z
             }),
           )
           .describe(
-            "Resting-pulse chart bands. Always present — AHA fallback with no date of birth.",
+            "Resting-pulse chart bands, drawn from the same range as `pulseDisplayRange`. Always present.",
           ),
         bodyFatRange: z
           .object({ min: z.number(), max: z.number() })
-          .describe("Gender-aware body-fat target range. Always present."),
+          .describe(
+            "Body-fat target range: the user's own target where set, else the gender-aware default. Always present.",
+          ),
         bodyFatBands: z
           .array(
             z.object({
@@ -1261,7 +1263,9 @@ export const dashboardSnapshotResponse = z
               strokeOpacity: z.number().optional(),
             }),
           )
-          .describe("Body-fat chart bands. Always present."),
+          .describe(
+            "Body-fat chart bands, drawn from the same range as `bodyFatRange`. Always present.",
+          ),
         weightRange: z
           .object({
             greenMin: z.number(),

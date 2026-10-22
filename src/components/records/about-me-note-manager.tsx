@@ -38,7 +38,10 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { SettingsInfoTile } from "@/components/settings/_info-tile";
 import { Label } from "@/components/ui/label";
 import { ConfirmButton } from "@/components/ui/confirm-button";
-import { useAiCapability } from "@/hooks/use-ai-capability";
+import {
+  useAboutMeSaveTimeoutMs,
+  useAiCapability,
+} from "@/hooks/use-ai-capability";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
@@ -82,6 +85,7 @@ export function AboutMeNoteManager() {
   // there is a note to clear.
   const hasNote = savedNote.length > 0;
 
+  const saveTimeoutMs = useAboutMeSaveTimeoutMs();
   const save = useMutation({
     mutationKey: queryKeys.coachAboutMe(),
     // Send only the note. `conditions` / `coachFocus` / `allergies` are
@@ -93,6 +97,7 @@ export function AboutMeNoteManager() {
       return apiPut<AboutMeData>(
         "/api/coach/about-me",
         withBaseToken(input, query.data?.updatedAt ?? undefined),
+        { signal: AbortSignal.timeout(saveTimeoutMs) },
       );
     },
     onSuccess: (next) => {

@@ -8,7 +8,10 @@ import type {
   AiConsentState,
   AiProviderState,
 } from "@/lib/ai/capabilities/types";
-import { PROVIDER_DEFAULT_TIMEOUT_MS } from "@/lib/ai/effective-timeout";
+import {
+  clientAbortMs,
+  PROVIDER_DEFAULT_TIMEOUT_MS,
+} from "@/lib/ai/effective-timeout";
 import type { CoachReasoningState } from "@/lib/ai/reasoning/resolve";
 import type { AiUsageState } from "@/lib/ai/usage-level";
 
@@ -67,6 +70,18 @@ export function useAiProviderState(): AiProviderState {
 function useAiProviderStateInner(): AiProviderState {
   const { user } = useAuth();
   return user?.ai?.provider ?? NO_PROVIDER_STATE;
+}
+
+/**
+ * #1267 — the timeout for a save of `PUT /api/coach/about-me`. A save that
+ * changes the text or the shared sections waits on one model call (the
+ * clarifying questions) before it answers, so the fixed 15 s request default
+ * reported a failed save while a slow model was still within the person's
+ * response timeout, and the server went on to commit it.
+ */
+export function useAboutMeSaveTimeoutMs(): number {
+  const { responseTimeoutMs } = useAiProviderState();
+  return clientAbortMs(responseTimeoutMs, 1);
 }
 
 /**

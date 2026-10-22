@@ -15,7 +15,7 @@
  * so the band/target math lives in exactly one place. `buildTargetBands`
  * is kept as an alias for the snapshot-era import sites.
  */
-import { getBpTargets, type BpTargets } from "@/lib/analytics/bp-targets";
+import type { BpTargets } from "@/lib/analytics/bp-targets";
 import {
   buildBandsFromTrafficRange,
   buildTrafficLightBands,
@@ -30,16 +30,27 @@ import {
   getPersonalizedPulseTarget,
 } from "@/lib/analytics/pulse-targets";
 import { binaryReferenceSex, type ProfileSex } from "@/lib/profile/sex";
-import { getEffectiveRange } from "@/lib/analytics/effective-range";
+import {
+  getEffectiveRange,
+  resolveEffectiveBpTargets,
+  resolveThresholdOverride,
+  type ThresholdMetric,
+} from "@/lib/analytics/effective-range";
 
 export interface DashboardTargetBands {
-  /** Personalised BP target numbers (null when no DOB). */
+  /**
+   * BP target numbers: the user's own band where they set one, else the age
+   * default. Null when neither exists (no target and no DOB).
+   */
   bpTargets: BpTargets | null;
-  /** Systolic traffic range (null when no DOB). */
+  /** Systolic traffic range, same precedence (null without target or DOB). */
   bpSysRange: TrafficRange | null;
-  /** Diastolic traffic range (null when no DOB). */
+  /** Diastolic traffic range, same precedence (null without target or DOB). */
   bpDiaRange: TrafficRange | null;
-  /** Resting-pulse display range (always present — AHA fallback). */
+  /**
+   * Resting-pulse display range: the user's own target, else the
+   * age / sex percentile band (AHA fallback). Always present.
+   */
   pulseDisplayRange: {
     greenMin: number;
     greenMax: number;
@@ -48,7 +59,7 @@ export interface DashboardTargetBands {
   };
   /** Resting-pulse chart bands (always present — AHA fallback). */
   pulseBands: ValueBand[];
-  /** Body-fat target range (gender-aware; always present). */
+  /** Body-fat target range: own target, else gender-aware. Always present. */
   bodyFatRange: { min: number; max: number };
   /** Body-fat chart bands (always present). */
   bodyFatBands: ValueBand[];
@@ -66,110 +77,92 @@ export interface DashboardTargetBands {
  * DB read. The snapshot builder and the page fallback both call this so
  * they produce byte-identical numbers.
  *
- * v1.34 — `weightTargetOverride` is the user's OWN weight band as stored in
- * `User.thresholdsJson.WEIGHT`, in kg. When present it replaces the
- * height-derived WHO band on both the weight range and the weight chart bands:
- * a user who has answered "this is my target" must not keep reading a shaded
- * zone that ignores the answer. `null` keeps the height-derived band. Required
- * rather than optional so every call site is named by the compiler.
+ * `thresholdsJson` is the user's own targets blob as stored in
+ * `User.thresholdsJson` (`null` when there is none). Every metric the dashboard
+ * shades and that accepts a personal target reads it: weight, blood pressure,
+ * resting pulse and body fat. A target the person set replaces the computed
+ * default on both the tile's range and the chart's bands, so a shaded zone
+ * never ignores an answer given on `/targets`. Each override goes through
+ * `getEffectiveRange`, so its orange wings match the `/targets` page and the
+ * doctor report rather than a second convention. A metric without an override
+ * keeps exactly the band it drew before. Required rather than optional so
+ * every call site is named by the compiler.
+ *
+ * v1.34 introduced this for weight alone; the other three kept the age / sex
+ * default regardless of the person's own target until v1.44.1.
  */
 export function buildDashboardBands(profile: {
   dateOfBirth: Date | null;
   gender: ProfileSex;
   heightCm: number | null;
-  weightTargetOverride: { min: number; max: number } | null;
+  thresholdsJson: unknown;
 }): DashboardTargetBands {
-  const bpTargets = profile.dateOfBirth
-    ? getBpTargets(profile.dateOfBirth)
-    : null;
+  const rangeProfile = {
+    heightCm: profile.heightCm,
+    dateOfBirth: profile.dateOfBirth,
+    gender: profile.gender,
+  };
+  const ownTarget = (metric: ThresholdMetric) =>
+    resolveThresholdOverride(profile.thresholdsJson, metric);
+  const ownRange = (metric: ThresholdMetric): TrafficRange | null => {
+    const override = ownTarget(metric);
+    return override
+      ? getEffectiveRange(metric, rangeProfile, { [metric]: override }).range
+      : null;
+  };
+
+  const bpTargets = resolveEffectiveBpTargets(
+    rangeProfile,
+    profile.thresholdsJson,
+  );
   const pulseAge = getAgeFromDateOfBirth(profile.dateOfBirth);
   // The percentile and body-fat tables carry two sexes and no third row;
   // both helpers answer a null with a neutral midpoint rather than a side.
   const referenceSex = binaryReferenceSex(profile.gender);
-  const pulseTarget = getPersonalizedPulseTarget(pulseAge, referenceSex);
-  const bodyFatRange = getBodyFatTargetRange(referenceSex);
-  // v1.34 — an explicit target outranks the height-derived WHO band. Without
-  // this the dashboard kept shading a band the user had already answered, and
-  // the answer lived on `/targets` where nothing else could see it. The
-  // override is routed through `getEffectiveRange` rather than widened here,
-  // so the orange wings match the `/targets` page and the doctor report
-  // exactly instead of inventing a second convention. No height and no target
-  // → no band at all, unchanged.
-  const weightRange = profile.weightTargetOverride
-    ? getEffectiveRange(
-        "WEIGHT",
-        {
-          heightCm: profile.heightCm,
-          dateOfBirth: profile.dateOfBirth,
-          gender: profile.gender,
-        },
-        { WEIGHT: profile.weightTargetOverride },
-      ).range
-    : profile.heightCm
-      ? buildWeightRangeFromHeight(profile.heightCm)
-      : null;
+  const defaultPulse = getPersonalizedPulseTarget(pulseAge, referenceSex);
+  const pulseRange: TrafficRange = ownRange("PULSE") ?? {
+    greenMin: defaultPulse.greenMin,
+    greenMax: defaultPulse.greenMax,
+    orangeMin: defaultPulse.orangeMin,
+    orangeMax: defaultPulse.orangeMax,
+  };
+  const ownBodyFat = ownRange("BODY_FAT");
+  const bodyFatRange = ownBodyFat
+    ? { min: ownBodyFat.greenMin, max: ownBodyFat.greenMax }
+    : getBodyFatTargetRange(referenceSex);
+  // No height and no target → no weight band at all, unchanged.
+  const weightRange =
+    ownRange("WEIGHT") ??
+    (profile.heightCm ? buildWeightRangeFromHeight(profile.heightCm) : null);
   const weightBands = weightRange
     ? buildBandsFromTrafficRange(weightRange, {
         lowerBound: 30,
         upperBound: 250,
       })
     : null;
-  const bpSysRange = bpTargets
-    ? buildTrafficRange(bpTargets.sysLow, bpTargets.sysHigh)
-    : null;
-  const bpDiaRange = bpTargets
-    ? buildTrafficRange(bpTargets.diaLow, bpTargets.diaHigh)
-    : null;
-  const pulseBands = [
-    {
-      min: 30,
-      max: pulseTarget.orangeMin,
-      color: "var(--destructive)",
-      opacity: 0.16,
-    },
-    {
-      min: pulseTarget.orangeMin,
-      max: pulseTarget.greenMin,
-      color: "var(--warning)",
-      opacity: 0.18,
-    },
-    {
-      min: pulseTarget.greenMin,
-      max: pulseTarget.greenMax,
-      color: "var(--success)",
-      opacity: 0.2,
-    },
-    {
-      min: pulseTarget.greenMax,
-      max: pulseTarget.orangeMax,
-      color: "var(--warning)",
-      opacity: 0.18,
-    },
-    {
-      min: pulseTarget.orangeMax,
-      max: 220,
-      color: "var(--destructive)",
-      opacity: 0.16,
-    },
-  ].filter((band) => band.max > band.min);
-  const bodyFatBands = buildTrafficLightBands(
-    bodyFatRange.min,
-    bodyFatRange.max,
-    {
-      lowerBound: 2,
-      upperBound: 55,
-    },
-  );
+  // The tile colours a reading against the same band the chart shades: the
+  // person's own range with its effective wings, else the age default's.
+  const bpSysRange =
+    ownRange("BLOOD_PRESSURE_SYS") ??
+    (bpTargets ? buildTrafficRange(bpTargets.sysLow, bpTargets.sysHigh) : null);
+  const bpDiaRange =
+    ownRange("BLOOD_PRESSURE_DIA") ??
+    (bpTargets ? buildTrafficRange(bpTargets.diaLow, bpTargets.diaHigh) : null);
+  const pulseBands = buildBandsFromTrafficRange(pulseRange, {
+    lowerBound: 30,
+    upperBound: 220,
+  });
+  const bodyFatBands = ownBodyFat
+    ? buildBandsFromTrafficRange(ownBodyFat, { lowerBound: 2, upperBound: 55 })
+    : buildTrafficLightBands(bodyFatRange.min, bodyFatRange.max, {
+        lowerBound: 2,
+        upperBound: 55,
+      });
   return {
     bpTargets,
     bpSysRange,
     bpDiaRange,
-    pulseDisplayRange: {
-      greenMin: pulseTarget.greenMin,
-      greenMax: pulseTarget.greenMax,
-      orangeMin: pulseTarget.orangeMin,
-      orangeMax: pulseTarget.orangeMax,
-    },
+    pulseDisplayRange: pulseRange,
     pulseBands,
     bodyFatRange,
     bodyFatBands,
@@ -187,7 +180,7 @@ export interface BandProfile {
   dateOfBirth: Date | null;
   gender: ProfileSex;
   heightCm: number | null;
-  weightTargetOverride: { min: number; max: number } | null;
+  thresholdsJson: unknown;
 }
 
 /**
@@ -220,6 +213,6 @@ export function viewerBandProfile(
     dateOfBirth: null,
     gender: null,
     heightCm: null,
-    weightTargetOverride: null,
+    thresholdsJson: null,
   };
 }

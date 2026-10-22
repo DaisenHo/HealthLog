@@ -64,6 +64,7 @@ import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { insightResultSchema, type InsightResult } from "@/lib/ai/types";
 import { AI_BUDGETS, resolveInsightsMaxTokens } from "@/lib/ai/ai-budgets";
 import { resolveEffectiveTimeoutMs } from "@/lib/ai/effective-timeout";
+import { providerFailureKind } from "@/lib/ai/failure-kind";
 import {
   recordBriefingFailure,
   readBriefingFailure,
@@ -855,6 +856,10 @@ export const POST = apiHandler((request: NextRequest) =>
             : "provider-error",
         locale,
         httpStatus: failureHttpStatus,
+        failureKind:
+          e instanceof AllProvidersFailedError
+            ? (e.attempts[0]?.failureKind ?? null)
+            : providerFailureKind(e).failure,
       });
       if (e instanceof AllProvidersFailedError) {
         annotate({

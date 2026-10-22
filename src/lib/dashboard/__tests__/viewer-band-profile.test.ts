@@ -30,7 +30,7 @@ const DELEGATE_PROFILE = {
   dateOfBirth: new Date("1996-04-02T00:00:00Z"),
   gender: "FEMALE" as const,
   heightCm: 165,
-  weightTargetOverride: { min: 55, max: 62 },
+  thresholdsJson: { WEIGHT: { min: 55, max: 62 } },
 };
 
 describe("viewerBandProfile", () => {
@@ -45,7 +45,7 @@ describe("viewerBandProfile", () => {
       dateOfBirth: null,
       gender: null,
       heightCm: null,
-      weightTargetOverride: null,
+      thresholdsJson: null,
     });
   });
 });

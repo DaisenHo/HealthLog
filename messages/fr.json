@@ -6558,7 +6558,8 @@
           "medium": "Moyen",
           "high": "Élevé"
         },
-        "coachNote": "Dans le Coach, c'est la profondeur de réflexion des réglages du Coach qui s'applique."
+        "coachNote": "Dans le Coach, c'est la profondeur de réflexion des réglages du Coach qui s'applique.",
+        "backgroundNote": "Les tâches de fond comme le briefing quotidien n'utilisent pas ce réglage : elles réfléchissent au plus en Moyen, moins si l'opérateur fixe une limite plus basse, et pas du tout au niveau Économe."
       },
       "providerCardDescription": "Configurez la clé et le modèle de chaque fournisseur ; l’ordre ci-dessous décide lequel HealthLog sollicite en premier.",
       "runtimeTitle": "Vérifier et actualiser",

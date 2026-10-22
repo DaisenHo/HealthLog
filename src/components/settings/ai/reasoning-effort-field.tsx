@@ -5,7 +5,8 @@
  * Same Label + NativeSelect + hint layout as the model field above it.
  * The empty value is Default: nothing is sent and the model decides.
  * v1.41 — the Coach reads its own thinking depth from the Coach settings;
- * a line under the hint says so.
+ * a line under the hint says so. #1267 — so do the background jobs (the
+ * daily briefing among them); a second line says that too.
  * ──────────────────────────────────────────────────────────────── */
 
 import { Label } from "@/components/ui/label";
@@ -65,6 +66,15 @@ export function ReasoningEffortField({
         className="text-muted-foreground mt-1 text-xs"
       >
         {t("settings.ai.reasoning.coachNote")}
+      </p>
+      {/* #1267 — background jobs resolve their own level on the server
+          (`BACKGROUND_REASONING_LEVEL`, the operator's cap, the usage level);
+          this select never reaches them, so say so where it is set. */}
+      <p
+        data-slot="reasoning-effort-background-note"
+        className="text-muted-foreground mt-1 text-xs"
+      >
+        {t("settings.ai.reasoning.backgroundNote")}
       </p>
     </div>
   );

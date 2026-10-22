@@ -105,28 +105,28 @@ describe("buildTargetBands — server/client parity", () => {
     dateOfBirth: Date | null;
     gender: "MALE" | "FEMALE" | null;
     heightCm: number | null;
-    weightTargetOverride: { min: number; max: number } | null;
+    thresholdsJson: unknown;
   }> = [
     {
       name: "male 180cm with DOB",
       dateOfBirth: new Date("1985-06-15T00:00:00.000Z"),
       gender: "MALE",
       heightCm: 180,
-      weightTargetOverride: null,
+      thresholdsJson: null,
     },
     {
       name: "female 165cm with DOB",
       dateOfBirth: new Date("1970-01-01T00:00:00.000Z"),
       gender: "FEMALE",
       heightCm: 165,
-      weightTargetOverride: null,
+      thresholdsJson: null,
     },
     {
       name: "no-profile user (null DOB / gender / height)",
       dateOfBirth: null,
       gender: null,
       heightCm: null,
-      weightTargetOverride: null,
+      thresholdsJson: null,
     },
   ];
 
@@ -146,20 +146,20 @@ describe("buildTargetBands — server/client parity", () => {
       dateOfBirth: new Date("1985-06-15T00:00:00.000Z"),
       gender: "OTHER",
       heightCm: 180,
-      weightTargetOverride: null,
+      thresholdsJson: null,
     });
     const unanswered = buildTargetBands({
       dateOfBirth: new Date("1985-06-15T00:00:00.000Z"),
       gender: null,
       heightCm: 180,
-      weightTargetOverride: null,
+      thresholdsJson: null,
     });
     expect(other).toEqual(unanswered);
     const male = buildTargetBands({
       dateOfBirth: new Date("1985-06-15T00:00:00.000Z"),
       gender: "MALE",
       heightCm: 180,
-      weightTargetOverride: null,
+      thresholdsJson: null,
     });
     expect(other.bodyFatBands).not.toEqual(male.bodyFatBands);
   });
@@ -169,7 +169,7 @@ describe("buildTargetBands — server/client parity", () => {
       dateOfBirth: null,
       gender: null,
       heightCm: null,
-      weightTargetOverride: null,
+      thresholdsJson: null,
     });
     expect(bands.bpTargets).toBeNull();
     expect(bands.bpSysRange).toBeNull();
@@ -198,14 +198,14 @@ describe("buildTargetBands — user weight target", () => {
   it("replaces the height-derived band with the user's own", () => {
     const withTarget = buildTargetBands({
       ...profile,
-      weightTargetOverride: { min: 74, max: 78 },
+      thresholdsJson: { WEIGHT: { min: 74, max: 78 } },
     });
     expect(withTarget.weightRange?.greenMin).toBe(74);
     expect(withTarget.weightRange?.greenMax).toBe(78);
 
     const heightDerived = buildTargetBands({
       ...profile,
-      weightTargetOverride: null,
+      thresholdsJson: null,
     });
     expect(heightDerived.weightRange).not.toEqual(withTarget.weightRange);
     // The chart bands follow the same range, so tile and chart agree.
@@ -221,7 +221,7 @@ describe("buildTargetBands — user weight target", () => {
       dateOfBirth: null,
       gender: null,
       heightCm: null,
-      weightTargetOverride: { min: 60, max: 65 },
+      thresholdsJson: { WEIGHT: { min: 60, max: 65 } },
     });
     expect(bands.weightRange?.greenMin).toBe(60);
     expect(bands.weightBands?.length).toBeGreaterThan(0);
@@ -230,14 +230,132 @@ describe("buildTargetBands — user weight target", () => {
   it("leaves every non-weight band untouched", () => {
     const withTarget = buildTargetBands({
       ...profile,
-      weightTargetOverride: { min: 74, max: 78 },
+      thresholdsJson: { WEIGHT: { min: 74, max: 78 } },
     });
     const without = buildTargetBands({
       ...profile,
-      weightTargetOverride: null,
+      thresholdsJson: null,
     });
     expect(withTarget.bpTargets).toEqual(without.bpTargets);
     expect(withTarget.pulseBands).toEqual(without.pulseBands);
     expect(withTarget.bodyFatBands).toEqual(without.bodyFatBands);
+  });
+});
+
+/**
+ * The other metrics the dashboard shades take the person's own target the
+ * same way weight does. A blood-pressure, resting-pulse or body-fat target set
+ * on `/targets` used to leave the chart on the age / sex default, so the band
+ * under the line contradicted the band the person had just entered.
+ */
+describe("buildTargetBands — the user's own targets on every shaded metric", () => {
+  const profile = {
+    dateOfBirth: new Date("1985-06-15T00:00:00.000Z"),
+    gender: "MALE" as const,
+    heightCm: 180,
+  };
+  const without = buildTargetBands({ ...profile, thresholdsJson: null });
+  const greenOf = (bands: Array<{ min: number; max: number; color: string }>) =>
+    bands.find((band) => band.color === "var(--success)");
+
+  it("draws the blood-pressure zones and tile ranges from the own band", () => {
+    const bands = buildTargetBands({
+      ...profile,
+      thresholdsJson: {
+        BLOOD_PRESSURE_SYS: { min: 115, max: 125 },
+        BLOOD_PRESSURE_DIA: { min: 70, max: 78 },
+      },
+    });
+    expect(bands.bpTargets).toEqual({
+      sysLow: 115,
+      sysHigh: 125,
+      diaLow: 70,
+      diaHigh: 78,
+    });
+    expect(bands.bpTargets).not.toEqual(without.bpTargets);
+    expect(bands.bpSysRange).toEqual(
+      expect.objectContaining({ greenMin: 115, greenMax: 125 }),
+    );
+    expect(bands.bpDiaRange).toEqual(
+      expect.objectContaining({ greenMin: 70, greenMax: 78 }),
+    );
+  });
+
+  it("fills a one-sided blood-pressure target with the age default", () => {
+    const bands = buildTargetBands({
+      ...profile,
+      thresholdsJson: { BLOOD_PRESSURE_SYS: { min: 110, max: 128 } },
+    });
+    expect(bands.bpTargets?.sysLow).toBe(110);
+    expect(bands.bpTargets?.sysHigh).toBe(128);
+    expect(bands.bpTargets?.diaLow).toBe(without.bpTargets?.diaLow);
+    expect(bands.bpTargets?.diaHigh).toBe(without.bpTargets?.diaHigh);
+    expect(bands.bpDiaRange).toEqual(without.bpDiaRange);
+  });
+
+  it("draws a blood-pressure band from a target even without a date of birth", () => {
+    const bands = buildTargetBands({
+      dateOfBirth: null,
+      gender: null,
+      heightCm: null,
+      thresholdsJson: {
+        BLOOD_PRESSURE_SYS: { min: 115, max: 125 },
+        BLOOD_PRESSURE_DIA: { min: 70, max: 78 },
+      },
+    });
+    expect(bands.bpTargets).toEqual({
+      sysLow: 115,
+      sysHigh: 125,
+      diaLow: 70,
+      diaHigh: 78,
+    });
+  });
+
+  it("draws the resting-pulse bands and display range from the own band", () => {
+    const bands = buildTargetBands({
+      ...profile,
+      thresholdsJson: { PULSE: { min: 48, max: 58 } },
+    });
+    expect(bands.pulseDisplayRange).toEqual(
+      expect.objectContaining({ greenMin: 48, greenMax: 58 }),
+    );
+    expect(greenOf(bands.pulseBands)).toEqual(
+      expect.objectContaining({ min: 48, max: 58 }),
+    );
+    expect(bands.pulseBands).not.toEqual(without.pulseBands);
+  });
+
+  it("draws the body-fat bands and range from the own band", () => {
+    const bands = buildTargetBands({
+      ...profile,
+      thresholdsJson: { BODY_FAT: { min: 12, max: 16 } },
+    });
+    expect(bands.bodyFatRange).toEqual({ min: 12, max: 16 });
+    expect(greenOf(bands.bodyFatBands)).toEqual(
+      expect.objectContaining({ min: 12, max: 16 }),
+    );
+    expect(bands.bodyFatBands).not.toEqual(without.bodyFatBands);
+  });
+
+  it("ignores a malformed target and keeps the default band", () => {
+    const bands = buildTargetBands({
+      ...profile,
+      thresholdsJson: {
+        BLOOD_PRESSURE_SYS: { min: 130, max: 120 },
+        PULSE: { min: "fast", max: 60 },
+        BODY_FAT: null,
+      },
+    });
+    expect(bands).toEqual(without);
+  });
+
+  it("leaves the other metrics' bands alone", () => {
+    const bands = buildTargetBands({
+      ...profile,
+      thresholdsJson: { BLOOD_PRESSURE_SYS: { min: 115, max: 125 } },
+    });
+    expect(bands.pulseBands).toEqual(without.pulseBands);
+    expect(bands.bodyFatBands).toEqual(without.bodyFatBands);
+    expect(bands.weightBands).toEqual(without.weightBands);
   });
 });

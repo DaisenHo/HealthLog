@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.44.1
+  version: 1.44.2
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -63558,7 +63558,8 @@ components:
                     - diaHigh
                   additionalProperties: false
                 - type: "null"
-              description: Personalised blood-pressure target numbers. Null when the profile has no date of birth.
+              description: "Blood-pressure target numbers: the user's own target (`/api/user/thresholds`) where set, else the
+                age-banded default. Null when there is neither a target nor a date of birth."
             bpSysRange:
               anyOf:
                 - type: object
@@ -63578,7 +63579,8 @@ components:
                     - orangeMax
                   additionalProperties: false
                 - type: "null"
-              description: Systolic traffic-light range. Null when the profile has no date of birth.
+              description: Systolic traffic-light range, the user's own target winning over the age default. Null when there is
+                neither a target nor a date of birth.
             bpDiaRange:
               anyOf:
                 - type: object
@@ -63598,7 +63600,8 @@ components:
                     - orangeMax
                   additionalProperties: false
                 - type: "null"
-              description: Diastolic traffic-light range. Null when the profile has no date of birth.
+              description: Diastolic traffic-light range, the user's own target winning over the age default. Null when there is
+                neither a target nor a date of birth.
             pulseDisplayRange:
               type: object
               properties:
@@ -63616,7 +63619,8 @@ components:
                 - orangeMin
                 - orangeMax
               additionalProperties: false
-              description: Resting-pulse display range. Always present — falls back to the AHA reference range with no date of birth.
+              description: "Resting-pulse display range: the user's own target where set, else the age / sex percentile band (the AHA
+                reference range with no date of birth). Always present."
             pulseBands:
               type: array
               items:
@@ -63637,7 +63641,7 @@ components:
                   - max
                   - color
                 additionalProperties: false
-              description: Resting-pulse chart bands. Always present — AHA fallback with no date of birth.
+              description: Resting-pulse chart bands, drawn from the same range as `pulseDisplayRange`. Always present.
             bodyFatRange:
               type: object
               properties:
@@ -63649,7 +63653,7 @@ components:
                 - min
                 - max
               additionalProperties: false
-              description: Gender-aware body-fat target range. Always present.
+              description: "Body-fat target range: the user's own target where set, else the gender-aware default. Always present."
             bodyFatBands:
               type: array
               items:
@@ -63670,7 +63674,7 @@ components:
                   - max
                   - color
                 additionalProperties: false
-              description: Body-fat chart bands. Always present.
+              description: Body-fat chart bands, drawn from the same range as `bodyFatRange`. Always present.
             weightRange:
               anyOf:
                 - type: object

@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { useAboutMeSaveTimeoutMs } from "@/hooks/use-ai-capability";
 import { withBaseToken } from "@/lib/api/optimistic-token";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
@@ -90,12 +91,14 @@ export function FreeTextTakeOver({
       showErrorToast(t("records.life.takeOver.saveError"), { cause: error }),
   });
 
+  const saveTimeoutMs = useAboutMeSaveTimeoutMs();
   const clear = useMutation({
     mutationKey: queryKeys.coachAboutMe(),
     mutationFn: () =>
       apiPut(
         "/api/coach/about-me",
         withBaseToken({ [field]: "" }, aboutMe.data?.updatedAt ?? undefined),
+        { signal: AbortSignal.timeout(saveTimeoutMs) },
       ),
     onSuccess: () => {
       toastWrittenOutcome("success", t("records.life.takeOver.clearedToast"));

@@ -113,6 +113,7 @@ import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
 import { annotate } from "@/lib/logging/context";
 import { AI_BUDGETS, resolveInsightsMaxTokens } from "@/lib/ai/ai-budgets";
 import { resolveEffectiveTimeoutMs } from "@/lib/ai/effective-timeout";
+import { providerFailureKind } from "@/lib/ai/failure-kind";
 import { recordBriefingFailure } from "@/lib/insights/briefing-failure-marker";
 import { cachedPayloadCarriesBriefing } from "@/lib/insights/briefing-payload";
 import {
@@ -1286,6 +1287,10 @@ export async function generateComprehensiveInsight(
       reason,
       locale,
       httpStatus: typeof err.httpStatus === "number" ? err.httpStatus : null,
+      failureKind:
+        e instanceof AllProvidersFailedError
+          ? (e.attempts?.[0]?.failureKind ?? null)
+          : providerFailureKind(e).failure,
     });
     const credentialExpired =
       e instanceof AllProvidersFailedError && e.primaryCredentialExpired;
