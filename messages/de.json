@@ -10426,6 +10426,8 @@
       "yellow-fever": "Gelbfieber",
       "japanese-encephalitis": "Japanische Enzephalitis",
       "cholera": "Cholera",
+      "dengue": "Dengue",
+      "tuberculosis": "Tuberkulose",
       "td": "Td (Tetanus, Diphtherie)",
       "tdap": "Tdap (Tetanus, Diphtherie, Pertussis)",
       "tdap-ipv": "Tdap-IPV (Vierfachimpfung)",

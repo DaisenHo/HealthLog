@@ -33383,7 +33383,7 @@ components:
           maxLength: 100
         components:
           minItems: 1
-          maxItems: 26
+          maxItems: 28
           type: array
           items:
             type: string
@@ -33414,6 +33414,8 @@ components:
               - yellow-fever
               - japanese-encephalitis
               - cholera
+              - dengue
+              - tuberculosis
         typicalSeriesDoses:
           anyOf:
             - type: integer
@@ -33442,7 +33444,7 @@ components:
           maxLength: 100
         components:
           minItems: 1
-          maxItems: 26
+          maxItems: 28
           type: array
           items:
             type: string
@@ -33473,6 +33475,8 @@ components:
               - yellow-fever
               - japanese-encephalitis
               - cholera
+              - dengue
+              - tuberculosis
         typicalSeriesDoses:
           anyOf:
             - type: integer
