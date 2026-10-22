@@ -54,6 +54,9 @@ const MEDICATION_BACKUP_INCLUDE = {
       { id: "asc" },
     ] as const,
   },
+  // When the category was last set. Read for the disaster-recovery file,
+  // which gives the assignment back with its own timestamp.
+  categoryAssignment: { select: { updatedAt: true } },
   // What the drug was supposed to move. The biomarker is read by NAME
   // rather than by id, exactly as the lab results beside it are: a
   // portable restore mints a fresh biomarker id, and `(userId, name)` is
@@ -101,6 +104,8 @@ function serialiseMedicationRow(
           externalSource: m.externalSource,
           externalId: m.externalId,
           updatedAt: m.updatedAt.toISOString(),
+          categoryUpdatedAt:
+            m.categoryAssignment?.updatedAt.toISOString() ?? null,
         }
       : // No id: a portable restore mints a fresh one. The relation links
         // still name this drug, so the file says which row they mean.
@@ -206,7 +211,9 @@ function serialiseMedicationHistory(
     // counting toward the day's micronutrients. Canonical amount plus the
     // amount as entered, so the form shows what was typed.
     ingredients: m.ingredients.map((i) => ({
-      ...(disasterRecovery ? { id: i.id } : {}),
+      ...(disasterRecovery
+        ? { id: i.id, updatedAt: i.updatedAt.toISOString() }
+        : {}),
       nutrient: i.nutrient,
       amountPerUnit: i.amountPerUnit,
       unit: i.unit,
@@ -215,10 +222,21 @@ function serialiseMedicationHistory(
       source: i.source,
       createdAt: i.createdAt.toISOString(),
     })),
+    // The note follows the contract of every other sealed column: the
+    // disaster-recovery file carries the ciphertext verbatim (and the row's
+    // own last write), a portable file the decrypted text.
     courses: m.courses.map((c) => ({
       startsOn: dayKeyOfDate(c.startsOn),
       endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,
-      note: c.noteEncrypted ? decryptFromBytes(c.noteEncrypted) : null,
+      ...(disasterRecovery
+        ? {
+            note: null,
+            noteEncrypted: c.noteEncrypted
+              ? Buffer.from(c.noteEncrypted).toString("base64")
+              : null,
+            updatedAt: c.updatedAt.toISOString(),
+          }
+        : { note: c.noteEncrypted ? decryptFromBytes(c.noteEncrypted) : null }),
       createdAt: c.createdAt.toISOString(),
     })),
     // Titration: when the dose moved, to what, and why. The drug comes
@@ -473,11 +491,15 @@ export async function buildMedicationsBackupPart(
     prisma,
   );
   // The account's own categories, restored before the medications that name
-  // them by key. Labels travel decrypted so a file restores on an instance
-  // with a different key; every one is carried, hidden ones included,
-  // because a medication can still be filed under it.
+  // them by key. Every one is carried, hidden ones included, because a
+  // medication can still be filed under it. A portable file carries the
+  // label decrypted, so it restores on an instance with another key; a
+  // disaster-recovery file carries the ciphertext verbatim, like every other
+  // sealed column, and the row's own last write.
   const customMedicationCategories =
-    await readMedicationCategoryLabelsForBackup(userId, prisma);
+    await readMedicationCategoryLabelsForBackup(userId, prisma, {
+      disasterRecovery,
+    });
   // Where each archived era sits in its OWN drug's ordered list. Built once
   // here rather than per row, and scoped per medication because the
   // supersede pointer never crosses a drug — every route that writes it

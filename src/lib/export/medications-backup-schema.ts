@@ -109,6 +109,9 @@ export const medicationIngredientSchema = z
     enteredUnit: z.string().max(8).nullable().optional(),
     source: z.enum(["MANUAL", "LABEL_AI"]).default("MANUAL"),
     createdAt: isoDateTime.optional(),
+    // The row's last write. Disaster-recovery files only; a file without it
+    // restores the row stamped with the restore, as before.
+    updatedAt: isoDateTime.optional(),
   })
   .passthrough();
 /**
@@ -121,7 +124,11 @@ export const medicationCourseSchema = z
     startsOn: z.iso.date(),
     endsOn: z.iso.date().nullable(),
     note: z.string().max(280).nullable().optional(),
+    // The note's ciphertext, disaster-recovery files only. A file without it
+    // (any written before) carries the readable note, which the restore seals.
+    noteEncrypted: base64BytesSchema.nullable().optional(),
     createdAt: isoDateTime.optional(),
+    updatedAt: isoDateTime.optional(),
   })
   .passthrough();
 /**
@@ -248,12 +255,21 @@ export const medicationEfficacyTargetSchema = z
 export const customMedicationCategorySchema = z
   .object({
     key: z.string().regex(/^custom:[0-9a-f-]{36}$/),
-    label: z.string().trim().min(1).max(40),
+    // The readable label: a portable file, and every disaster-recovery file
+    // written before the label travelled as ciphertext.
+    label: z.string().trim().min(1).max(40).nullable().optional(),
+    // The label's ciphertext, as a disaster-recovery file carries it now.
+    labelEncrypted: base64BytesSchema.optional(),
     sortOrder: z.number().int().min(0).default(0),
     isActive: z.boolean().default(true),
     createdAt: isoDateTime.optional(),
+    updatedAt: isoDateTime.optional(),
   })
-  .passthrough();
+  .passthrough()
+  .refine((c) => c.labelEncrypted !== undefined || (c.label ?? "") !== "", {
+    message: "a custom category needs its label or its ciphertext",
+    path: ["label"],
+  });
 export const medicationSchema = z
   .object({
     id: z.string().min(1).optional(),
@@ -293,6 +309,9 @@ export const medicationSchema = z
     // whole file. Since v1.40 it may be `custom:<uuid>`, the key of an entry
     // in `customMedicationCategories`.
     category: z.string().max(64).optional(),
+    // When the category was last set. Disaster-recovery files only; without
+    // it the restored assignment is stamped with the restore, as before.
+    categoryUpdatedAt: isoDateTime.nullable().optional(),
     deliveryForm: z.enum(MedicationDeliveryForm).optional(),
     trackInjectionSites: z.boolean().optional(),
     allowedInjectionSites: z.array(z.enum(InjectionSite)).optional(),

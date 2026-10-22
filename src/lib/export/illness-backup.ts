@@ -94,6 +94,7 @@ export async function buildIllnessBackupSlice(
           symptoms: dayLog.symptomLinks.map((link) => ({
             key: link.symptom.key,
             severity: link.severity,
+            createdAt: link.createdAt.toISOString(),
           })),
         })),
       }))
@@ -168,7 +169,14 @@ async function restoreEpisodes(ctx: RestoreContext): Promise<void> {
     if (episode.parentConditionId) {
       await tx.illnessEpisode.update({
         where: { id: episode.id, userId: ownerId },
-        data: { parentConditionId: episode.parentConditionId },
+        // The pointer is a second write to the row; the row's own last write
+        // stays the one the file carries.
+        data: {
+          parentConditionId: episode.parentConditionId,
+          ...(episode.updatedAt
+            ? { updatedAt: new Date(episode.updatedAt) }
+            : {}),
+        },
       });
     }
   }
@@ -212,7 +220,15 @@ async function restoreDayLogs(ctx: RestoreContext): Promise<void> {
       const symptomLinks = dayLog.symptoms.flatMap((symptom) => {
         const symptomId = symptomByKey.get(symptom.key);
         return symptomId
-          ? [{ symptomId, severity: symptom.severity ?? null }]
+          ? [
+              {
+                symptomId,
+                severity: symptom.severity ?? null,
+                ...(symptom.createdAt
+                  ? { createdAt: new Date(symptom.createdAt) }
+                  : {}),
+              },
+            ]
           : [];
       });
       await tx.illnessDayLog.create({

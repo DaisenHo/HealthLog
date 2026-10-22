@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canonicalWorkoutTrimps } from "@/lib/insights/strain-score";
+import { canonicalWorkoutTrimps } from "@/lib/workouts/canonical-read";
 
 import {
   pickCanonicalWorkoutRows,

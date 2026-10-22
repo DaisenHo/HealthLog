@@ -21,6 +21,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  readSource,
   readSourceText,
   stripComments,
   walkSourceFiles,
@@ -59,8 +60,14 @@ describe("one Pearson correlation", () => {
   });
 
   it("both homes still hold their function", () => {
-    const engine = readSourceText(join(SRC, "lib/insights/correlations.ts"));
-    const wrapper = readSourceText(join(SRC, "lib/analytics/correlations.ts"));
+    const engine = readSource(
+      "src/lib/insights/correlations.ts",
+      "export function pearson",
+    );
+    const wrapper = readSource(
+      "src/lib/analytics/correlations.ts",
+      "export function significantPearsonCorrelation",
+    );
     expect(engine).toMatch(/export function pearson\s*\(/);
     expect(wrapper).toMatch(
       /export function significantPearsonCorrelation\s*\(/,

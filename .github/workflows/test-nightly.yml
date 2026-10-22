@@ -58,9 +58,12 @@ jobs:
           echo "FC_SEED=$(( $(date +%s%N) % 2147483647 ))" >> "$GITHUB_ENV"
 
       - name: Unit tests, shuffled
+        shell: bash
         env:
-          FC_NUM_RUNS: "500"
+          # Five times each property's own case count (tests/property/fast-check.ts).
+          FC_RUNS_FACTOR: "5"
         run: |
+          set -o pipefail
           echo "Order seed ${TEST_SEED}, property seed ${FC_SEED}" | tee -a "$GITHUB_STEP_SUMMARY"
           pnpm exec vitest run --sequence.shuffle --sequence.seed="${TEST_SEED}" \
             --reporter=default --reporter=json --outputFile.json=unit-report.json
@@ -104,14 +107,18 @@ jobs:
           echo "FC_SEED=$(( ${{ github.run_id }} % 2147483647 ))" >> "$GITHUB_ENV"
 
       - name: Integration tests, shuffled
+        shell: bash
         env:
           HEALTHLOG_INTEGRATION_WORKERS: "3"
-          FC_NUM_RUNS: "100"
+          # Four times each property's own case count; a property's timeout
+          # grows by the same factor (`propertyTimeout`).
+          FC_RUNS_FACTOR: "4"
           # Quoted for the reason given in integration.yml.
           API_TOKEN_HMAC_KEY: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
           ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
           SESSION_SECRET: "integration-tests"
         run: |
+          set -o pipefail
           echo "Order seed ${TEST_SEED}, property seed ${FC_SEED}" | tee -a "$GITHUB_STEP_SUMMARY"
           pnpm exec vitest run --config vitest.integration.config.mts \
             --shard=${{ matrix.shard }}/4 \
@@ -150,7 +157,9 @@ jobs:
           path: reports
 
       - name: Regenerate
+        shell: bash
         run: |
+          set -o pipefail
           shopt -s nullglob
           integration=(reports/nightly-integration-report-*/*.json)
           unit=(reports/nightly-unit-report/*.json)

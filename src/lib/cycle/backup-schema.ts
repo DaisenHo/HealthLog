@@ -122,6 +122,9 @@ export const cycleDayLogSchema = z
     updatedAt: isoDateTime.optional(),
     symptomKeys: z.array(z.string()).default([]),
     symptomSeverities: z.array(cycleSymptomSeveritySchema).default([]),
+    symptomLinkCreatedAt: z
+      .array(z.object({ key: z.string().min(1), createdAt: isoDateTime }))
+      .optional(),
   })
   .passthrough();
 /** Cycle-tracking preferences (one row per user). */

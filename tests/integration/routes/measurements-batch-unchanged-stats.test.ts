@@ -9,8 +9,9 @@
  *     `updatedAt`), and starts nothing: no rollup refold, no cache
  *     invalidation, no PR detection;
  *   - goes the old way as soon as one column differs (the value, the unit,
- *     the device), and for a tombstoned row (a resurrection), so those are
- *     written and start the tail as before;
+ *     the device, the source version, the sleep stage), and for a tombstoned
+ *     row (a resurrection), so those are written and start the tail as
+ *     before;
  *   - costs a handful of statements for a batch of them, instead of a
  *     reconciler transaction each.
  */
@@ -72,8 +73,14 @@ const prisma = getPrismaClient();
 const ROUTE = "/api/measurements/batch";
 const DAYS = ["2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04"];
 
-function stepsEntry(day: string, value: number, deviceType = "watch") {
+function stepsEntry(
+  day: string,
+  value: number,
+  deviceType = "watch",
+  externalSourceVersion?: string,
+) {
   return {
+    ...(externalSourceVersion ? { externalSourceVersion } : {}),
     hkIdentifier: "HKQuantityTypeIdentifierStepCount",
     value,
     unit: "count",
@@ -164,6 +171,65 @@ describe("an unchanged stats: re-post", () => {
     expect(tail.rollups).toBe(1);
     expect(tail.invalidations).toBeGreaterThanOrEqual(1);
     expect(tail.prs).toBe(1);
+  });
+
+  it("writes a re-post that changes only the source version, the device or the sleep stage", async () => {
+    // The overwrite contract of a `stats:` row covers these columns as much as
+    // the value: a re-post that only names a new HealthKit source version, a
+    // new device or a new sleep stage replaces the stored one.
+    const night = {
+      hkIdentifier: "HKCategoryTypeIdentifierSleepAnalysis",
+      value: 95,
+      unit: "category",
+      startDate: "2026-10-05T01:00:00.000Z",
+      endDate: "2026-10-05T02:35:00.000Z",
+      externalId: "stats:HKCategoryTypeIdentifierSleepAnalysis:2026-10-05",
+      sleepStage: 3,
+    };
+    const seeded = await post([night]);
+    expect(seeded.data.inserted).toBe(1);
+    const sleepRow = () =>
+      prisma.measurement.findFirstOrThrow({
+        where: { userId, externalId: night.externalId },
+        select: { syncVersion: true, sleepStage: true },
+      });
+    const sleepBefore = await sleepRow();
+    const before = (await storedVersions()).map((r) => r.syncVersion);
+    resetTail();
+
+    const res = await post([
+      stepsEntry(DAYS[0]!, 1000, "watch", "17.1"), // new source version
+      stepsEntry(DAYS[1]!, 1001, "phone"), // new device
+      { ...night, sleepStage: 4 }, // new sleep stage
+    ]);
+    expect(res.status).toBe(200);
+    expect(res.data.entries.map((e) => e.status)).toEqual([
+      "updated",
+      "updated",
+      "updated",
+    ]);
+
+    const after = await prisma.measurement.findMany({
+      where: { userId, externalId: { startsWith: "stats:HKQuantity" } },
+      orderBy: { externalId: "asc" },
+      select: {
+        syncVersion: true,
+        externalSourceVersion: true,
+        deviceType: true,
+      },
+    });
+    expect(after.map((r) => r.syncVersion)).toEqual([
+      before[0]! + 1,
+      before[1]! + 1,
+      before[2],
+      before[3],
+    ]);
+    expect(after[0]!.externalSourceVersion).toBe("17.1");
+    expect(after[1]!.deviceType).toBe("phone");
+    const sleepAfter = await sleepRow();
+    expect(sleepAfter.sleepStage).toBe("DEEP");
+    expect(sleepAfter.syncVersion).toBe(sleepBefore.syncVersion + 1);
+    expect(tail.rollups).toBe(1);
   });
 
   it("resurrects a tombstoned row the old way", async () => {

@@ -641,7 +641,7 @@
         "scaleMax": 5,
         "inverse": false,
         "userId": "round-trip-owner",
-        "labelEncrypted": "<sealed:Quiet>"
+        "labelEncrypted": "<sealed:v2:Quiet>"
       }
     ],
     "LabResult": [],
@@ -726,7 +726,7 @@
         "sortOrder": 0,
         "isActive": true,
         "userId": "round-trip-owner",
-        "labelEncrypted": "<sealed:Evenings>"
+        "labelEncrypted": "<sealed:v2:Evenings>"
       }
     ],
     "MoodTagHidden": [],

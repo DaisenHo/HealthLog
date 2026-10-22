@@ -9,6 +9,7 @@
  *   - the per-day idempotency key + insufficient-data gate.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { canonicalWorkoutTrimps } from "@/lib/workouts/canonical-read";
 
 /**
  * The post-mutation tail reads the real `@/lib/db` client, not the fake this
@@ -32,7 +33,6 @@ import {
   percentile,
   resolvePersonalReference,
   persistStrainScore,
-  canonicalWorkoutTrimps,
   canonicalDayActiveEnergy,
   STRAIN_ACTIVE_ENERGY_REFERENCE,
   STRAIN_SCORE_EXTERNAL_ID_PREFIX,

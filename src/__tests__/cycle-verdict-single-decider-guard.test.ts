@@ -24,7 +24,7 @@ import {
   mayBeCycleContext,
   parse,
 } from "./helpers/cycle-verdict-derivation";
-import { readSourceText } from "./helpers/source-files";
+import { readSource, readSourceText } from "./helpers/source-files";
 
 const ROOT = process.cwd();
 
@@ -110,19 +110,21 @@ describe("the surfaces that show the verdict actually read it", () => {
     // The BBT chart used to walk the calendar itself to find the cycle start,
     // which was a second copy of the same walk. It now takes the resolved
     // value as a prop, and the cycle page feeds it from the verdict.
-    const chart = readSourceText(
-      join(ROOT, "src/components/cycle/bbt-chart.tsx"),
+    const chart = readSource(
+      "src/components/cycle/bbt-chart.tsx",
+      "cycleStartDate",
     );
     expect(chart).toContain("cycleStartDate");
 
-    const paths = accessPaths(parseFile("src/components/cycle/cycle-view.tsx"));
+    const view = "src/components/cycle/cycle-view.tsx";
+    const paths = accessPaths(parse(view, readSource(view, "verdict")));
     expect([...paths]).toContain("verdict.cycleStartDate");
   });
 
   it("the calendar response type declares the verdict as always present", () => {
     // An optional verdict is a plausible default that lets a client fall back
     // to deriving its own.
-    const types = readSourceText(join(ROOT, "src/components/cycle/types.ts"));
+    const types = readSource("src/components/cycle/types.ts", "CycleVerdict");
     expect(types).toContain("verdict: CycleVerdict;");
     expect(types).not.toContain("verdict?:");
   });

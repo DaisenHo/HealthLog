@@ -19,6 +19,9 @@
  *     assertion then passes for the wrong reason. New ones go through
  *     `readSource(path, anchors)` or `readSourceFolder(dir, { floor })` in
  *     `helpers/source-files.ts`, which this count does not include.
+ *     `readSourceText` is the unanchored reader the sweeps use; called with a
+ *     fixed source path, directly or through a local wrapper that is, it is
+ *     the same read without the anchors, and it counts.
  *
  * A new offender fails; one that disappears (or loses casts) fails until
  * the lower number is written back with
@@ -29,7 +32,10 @@
  * the Prisma client entry itself, or a spy on every delegate, is not a
  * pattern in use and is not matched. The source-read check is a text
  * heuristic: a file that calls `readFileSync`/`readFile` and names a source
- * path (a literal ending in `.ts`, `.tsx`, `.js` or `.mjs`).
+ * path (a literal ending in `.ts`, `.tsx`, `.js` or `.mjs`), or that calls
+ * `readSourceText` with such a literal, or calls a local one-parameter wrapper
+ * of `readSourceText` with one. A wrapper fed from a list of paths is not
+ * matched.
  */
 import { describe, expect, it } from "vitest";
 import ts from "typescript";
@@ -45,6 +51,26 @@ const DB_MOCK =
 const HANDLER_STUB = /vi\.(?:do)?[mM]ock\(\s*["'`]@\/lib\/api-handler["'`]/;
 const READS_FILE = /\b(?:readFileSync|readFile)\s*\(/;
 const SOURCE_PATH = /["'`][^"'`\n]*\.(?:tsx?|mjs|js)["'`]/;
+/** `readSourceText(...)` whose argument names a source path literal. */
+const READ_SOURCE_TEXT_FIXED = new RegExp(
+  String.raw`\breadSourceText\(\s*(?:join\([^)]*?)?` + SOURCE_PATH.source,
+);
+/** A local wrapper whose one parameter becomes the `readSourceText` path. */
+const READ_SOURCE_TEXT_WRAPPER =
+  /(?:function\s+(\w+)|(?:const|let)\s+(\w+)\s*=\s*(?:async\s*)?)\s*\(\s*(\w+)\s*(?::\s*string)?[^)]*\)[^{=]*(?:=>|\{)[\s\S]{0,160}?readSourceText\(\s*(?:join\([^)]*?\b\3\b|\3\b)/g;
+
+/** Whether a test reads a fixed source path through `readSourceText`. */
+function readsSourceTextByPath(text: string): boolean {
+  if (!text.includes("readSourceText")) return false;
+  if (READ_SOURCE_TEXT_FIXED.test(text)) return true;
+  for (const m of text.matchAll(READ_SOURCE_TEXT_WRAPPER)) {
+    const name = m[1] ?? m[2];
+    if (new RegExp(`\\b${name}\\(\\s*` + SOURCE_PATH.source).test(text)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 function asNeverCount(rel: string, text: string): number {
   if (!text.includes("as never")) return 0;
@@ -68,7 +94,9 @@ function classifyTest(rel: string, text: string) {
     dbMock: routeTest && DB_MOCK.test(text),
     handlerStub: routeTest && HANDLER_STUB.test(text),
     asNever: asNeverCount(rel, text),
-    sourceRead: READS_FILE.test(text) && SOURCE_PATH.test(text),
+    sourceRead:
+      (READS_FILE.test(text) && SOURCE_PATH.test(text)) ||
+      readsSourceTextByPath(text),
   };
 }
 
@@ -143,6 +171,8 @@ describe("test realism ratchet", () => {
 });
 
 const READ_CALL = ["read", "File", "Sync"].join("");
+// Split for the same reason: this file must not match its own pattern.
+const READ_TEXT = ["read", "Source", "Text"].join("");
 
 describe("the classifier", () => {
   it("sees the shapes it counts", () => {
@@ -180,6 +210,32 @@ describe("the classifier", () => {
       asNever: 0,
       sourceRead: false,
     });
+  });
+
+  it("counts a fixed path read through the unanchored reader", () => {
+    const direct = `const src = ${READ_TEXT}(join(SRC, "lib/x.ts"));`;
+    const wrapped = [
+      `function read(rel: string): string {`,
+      `  return ${READ_TEXT}(join(SRC, rel));`,
+      `}`,
+      `const src = read("lib/api-handler.ts");`,
+    ].join("\n");
+    expect(classifyTest("__tests__/a.test.ts", direct).sourceRead).toBe(true);
+    expect(classifyTest("__tests__/a.test.ts", wrapped).sourceRead).toBe(true);
+  });
+
+  it("leaves an anchored read and a sweep through the reader alone", () => {
+    const anchored = 'const src = readSource("src/lib/x.ts", "anchor");';
+    const sweep = [
+      `function read(rel: string): string {`,
+      `  return ${READ_TEXT}(join(SRC, rel));`,
+      `}`,
+      `for (const rel of walkSourceFiles(SRC, { floor: 10 })) read(rel);`,
+    ].join("\n");
+    expect(classifyTest("__tests__/a.test.ts", anchored).sourceRead).toBe(
+      false,
+    );
+    expect(classifyTest("__tests__/a.test.ts", sweep).sourceRead).toBe(false);
   });
 
   it("counts a relative database mock and only under app/api", () => {

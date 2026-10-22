@@ -18,7 +18,10 @@ import {
   type CoachHistoryReach,
 } from "@/lib/ai/coach/history-reach";
 import { prisma } from "@/lib/db";
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  canonicalWorkoutsInRange,
+  readWorkoutsAroundRange,
+} from "@/lib/workouts/canonical-read";
 
 /** Own-history lookback for the sport-average comparison line. */
 const SPORT_CONTEXT_LOOKBACK_DAYS = 180;
@@ -47,28 +50,32 @@ export async function buildSportContext(
   const since = new Date(
     Date.now() - SPORT_CONTEXT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
   );
-  const rows = await prisma.workout.findMany({
-    // `userId` stays in the where clause — the universal tenancy narrow. The
-    // selected workout is not part of the baseline it is compared against.
-    where: {
-      userId,
-      sportType,
-      startedAt: { gte: since },
-      ...(excludeWorkoutId ? { id: { not: excludeWorkoutId } } : {}),
-    },
-    orderBy: [{ startedAt: "asc" }, { id: "asc" }],
-    take: SPORT_CONTEXT_MAX_ROWS,
-    select: {
-      id: true,
-      source: true,
-      startedAt: true,
-      sportType: true,
-      durationSec: true,
-      totalDistanceM: true,
-      avgHeartRate: true,
-    },
+  // `userId` stays in the where clause — the universal tenancy narrow. The
+  // selected workout is not part of the baseline it is compared against, and
+  // neither are its twins: the selected row stays in the read so its whole
+  // duplicate cluster can be left out after the pick. Dropping only the row in
+  // SQL left a twin from a second source behind as a session of its own.
+  const rows = await readWorkoutsAroundRange(
+    { from: since, to: null },
+    (bounds) =>
+      prisma.workout.findMany({
+        where: { userId, sportType, startedAt: bounds },
+        orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+        take: SPORT_CONTEXT_MAX_ROWS,
+        select: {
+          id: true,
+          source: true,
+          startedAt: true,
+          sportType: true,
+          durationSec: true,
+          totalDistanceM: true,
+          avgHeartRate: true,
+        },
+      }),
+  );
+  const canonical = canonicalWorkoutsInRange(rows, sourcePriorityJson, {
+    excludeClusterOf: excludeWorkoutId,
   });
-  const canonical = pickCanonicalWorkoutRows(rows, sourcePriorityJson);
   if (canonical.length === 0) return null;
 
   let durationSum = 0;

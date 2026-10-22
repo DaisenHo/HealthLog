@@ -372,9 +372,12 @@ describe("buildCoachSnapshot — Apple Health additive metrics (v1.4.23)", () =>
   // collapse, so a dual-device user's Coach prompt double-counted the
   // session and inflated `perSport`/`totalInWindow` vs. the app. Pin the fix.
   it("collapses a same-session cross-source workout pair to one, matching the UI", async () => {
-    const sharedStart = new Date("2026-06-03T06:30:00Z");
+    // Inside the 30-day window: the block keeps only the sessions that
+    // start in it.
+    const sharedStart = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
     const workouts = [
       {
+        id: "w-apple",
         sportType: "RUNNING",
         startedAt: sharedStart,
         durationSec: 1800,
@@ -385,6 +388,7 @@ describe("buildCoachSnapshot — Apple Health additive metrics (v1.4.23)", () =>
         source: "APPLE_HEALTH",
       },
       {
+        id: "w-withings",
         sportType: "RUNNING",
         // 90 s apart — same 5-minute bucket the picker uses.
         startedAt: new Date(sharedStart.getTime() + 90_000),

@@ -8,7 +8,7 @@
  */
 import { z } from "zod/v4";
 import { FamilyRelationship } from "@/generated/prisma/enums";
-import { isoDateTime } from "@/lib/export/backup-schema-kit";
+import { base64BytesSchema, isoDateTime } from "@/lib/export/backup-schema-kit";
 
 export const familyHistoryBackupSchema = z
   .object({
@@ -17,7 +17,9 @@ export const familyHistoryBackupSchema = z
     condition: z.string().min(1),
     ageAtOnset: z.number().int().nullable().optional(),
     note: z.string().nullable().optional(),
+    notesEncrypted: base64BytesSchema.nullable().optional(),
     createdAt: isoDateTime.optional(),
     updatedAt: isoDateTime.optional(),
+    deletedAt: isoDateTime.nullable().optional(),
   })
   .passthrough();

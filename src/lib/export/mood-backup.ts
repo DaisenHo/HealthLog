@@ -60,6 +60,7 @@ const MOOD_ENTRY_BACKUP_SELECT = {
  */
 const MOOD_ENTRY_TAG_LINK_SELECT = {
   rating: true,
+  createdAt: true,
   moodTag: { select: { key: true, kind: true } },
 } as const satisfies Prisma.MoodEntryTagLinkSelect;
 
@@ -69,9 +70,8 @@ const MOOD_ENTRY_TAG_LINK_SELECT = {
  * `moodEntryId` and `userId` are absent for the reasons the exclusion list in
  * `mood-backup-completeness.test.ts` states: the context rides inside its
  * entry and is re-bound to whatever id that entry got, and the owner is
- * re-derived from the restoring account. The two row stamps are absent for the
- * third reason there — they describe when the sub-row was written, not when
- * the day happened, and the entry already carries the moment that matters.
+ * re-derived from the restoring account. The two row stamps travel in the
+ * disaster-recovery file only, which gives the account back as it was.
  *
  * Named rather than inlined so the guard can compare it field-by-field against
  * the model, exactly as it does for the two selects above. This is the whole
@@ -97,6 +97,8 @@ const MOOD_CONTEXT_BACKUP_SELECT = {
   eventValence: true,
   eventAt: true,
   notesEncrypted: true,
+  createdAt: true,
+  updatedAt: true,
 } as const satisfies Prisma.MoodContextSelect;
 
 type BackupMoodContext = Prisma.MoodContextGetPayload<{
@@ -149,6 +151,8 @@ function serialiseMoodContext(
           notesEncrypted: moodContext.notesEncrypted
             ? Buffer.from(moodContext.notesEncrypted).toString("base64")
             : null,
+          createdAt: moodContext.createdAt.toISOString(),
+          updatedAt: moodContext.updatedAt.toISOString(),
         }
       : { note: readNote(moodContext.notesEncrypted, null) }),
     workStatus: moodContext.workStatus,
@@ -220,6 +224,11 @@ function serialiseMoodEntry(
           syncVersion: moodEntry.syncVersion,
           createdAt: moodEntry.createdAt.toISOString(),
           updatedAt: moodEntry.updatedAt.toISOString(),
+          // When each link was written, by tag key, for both link arms.
+          linkCreatedAt: moodEntry.tagLinks.map((tagLink) => ({
+            key: tagLink.moodTag.key,
+            createdAt: tagLink.createdAt.toISOString(),
+          })),
         }
       : { note: readNote(moodEntry.noteEncrypted, moodEntry.note) }),
     id: moodEntry.id,

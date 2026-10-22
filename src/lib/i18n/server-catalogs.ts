@@ -18,12 +18,23 @@
  * milliseconds.
  *
  * The directory is `messages/` under the working directory: the checkout in
- * development and tests, `/app` in the image, which copies it there.
+ * development and tests, `/app` in the image, which copies it there (and the
+ * image build checks every locale's file is there and parses).
+ *
+ * A catalog that cannot be read is not every request's problem. A missing or
+ * corrupt non-English catalog is logged once per process and that locale is
+ * served the English one; before, the read threw, and since the matchers
+ * iterate every locale, one bad file turned every request into a 500. The
+ * English catalog is the fallback itself, so a process without it cannot serve
+ * at all: the boot check (`assertDefaultCatalogReadable`) refuses to start one
+ * with a message that names the file.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { locales, type Locale } from "./config";
+import { emitSignal } from "@/lib/logging/signal";
+
+import { defaultLocale, locales, type Locale } from "./config";
 
 export type ServerCatalog = Record<string, unknown>;
 
@@ -51,11 +62,87 @@ export function serverCatalog(locale: Locale): ServerCatalog {
   if (!(locales as readonly string[]).includes(locale)) {
     throw new Error(`unknown locale: ${String(locale)}`);
   }
-  const parsed = JSON.parse(
-    readFileSync(join(catalogDirectory(), `${locale}.json`), "utf8"),
-  ) as ServerCatalog;
-  loaded.set(locale, parsed);
-  return parsed;
+  const read = readCatalog(locale);
+  if (read.ok) {
+    loaded.set(locale, read.catalog);
+    return read.catalog;
+  }
+  if (locale === defaultLocale) {
+    throw new Error(defaultCatalogMessage(read));
+  }
+  // Logged once: the fallback is cached under the locale, so the next read
+  // of it is a cache hit.
+  emitSignal({
+    action: "i18n.catalog.fallback",
+    level: "warn",
+    meta: { locale, reason: read.reason, fallback: defaultLocale },
+    error: read.error,
+  });
+  const fallback = serverCatalog(defaultLocale);
+  loaded.set(locale, fallback);
+  return fallback;
+}
+
+type CatalogRead =
+  | { ok: true; catalog: ServerCatalog }
+  | {
+      ok: false;
+      path: string;
+      reason: "missing" | "unreadable" | "corrupt";
+      error: unknown;
+    };
+
+function readCatalog(locale: Locale): CatalogRead {
+  const path = join(catalogDirectory(), `${locale}.json`);
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch (error) {
+    const missing = (error as NodeJS.ErrnoException)?.code === "ENOENT";
+    return {
+      ok: false,
+      path,
+      reason: missing ? "missing" : "unreadable",
+      error,
+    };
+  }
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (
+      parsed === null ||
+      typeof parsed !== "object" ||
+      Array.isArray(parsed)
+    ) {
+      return {
+        ok: false,
+        path,
+        reason: "corrupt",
+        error: new Error("the catalog is not a JSON object"),
+      };
+    }
+    return { ok: true, catalog: parsed as ServerCatalog };
+  } catch (error) {
+    return { ok: false, path, reason: "corrupt", error };
+  }
+}
+
+function defaultCatalogMessage(read: Extract<CatalogRead, { ok: false }>) {
+  const detail =
+    read.error instanceof Error ? read.error.message : String(read.error);
+  return (
+    `The ${defaultLocale} message catalog at ${read.path} is ${read.reason} ` +
+    `(${detail}). Every other locale falls back to it, so the server cannot ` +
+    `serve without it; the image must ship messages/*.json next to server.js.`
+  );
+}
+
+/**
+ * Boot check: read the English catalog now and throw a message naming the
+ * file when it is missing or does not parse, so a broken image stops at boot
+ * instead of failing every request.
+ */
+export function assertDefaultCatalogReadable(): void {
+  serverCatalog(defaultLocale);
 }
 
 /** Locales whose catalog this process has read so far (for tests and logs). */

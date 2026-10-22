@@ -12,18 +12,23 @@ import type { UnitPreference } from "@/lib/measurements/display-transform";
 function build(unitPreference: UnitPreference) {
   const snapshot: Record<string, unknown> = {};
   buildWorkoutsBlock({
-    workoutRows: [
-      {
-        sportType: "running",
-        startedAt: new Date("2026-09-20T07:00:00Z"),
-        durationSec: 1800,
-        totalEnergyKcal: 300,
-        totalDistanceM: 5000,
-        avgHeartRate: 150,
-        maxHeartRate: 170,
-        source: "APPLE_HEALTH",
-      },
-    ],
+    workoutRows: {
+      range: { from: null, to: null },
+      __windowed: true,
+      rows: [
+        {
+          id: "w1",
+          sportType: "running",
+          startedAt: new Date("2026-09-20T07:00:00Z"),
+          durationSec: 1800,
+          totalEnergyKcal: 300,
+          totalDistanceM: 5000,
+          avgHeartRate: 150,
+          maxHeartRate: 170,
+          source: "APPLE_HEALTH",
+        },
+      ],
+    },
     sourcePriorityJson: null,
     userTz: "UTC",
     snapshot,

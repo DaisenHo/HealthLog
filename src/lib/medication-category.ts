@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
 
 import type { Prisma } from "@/generated/prisma/client";
@@ -254,13 +255,16 @@ export async function listMedicationCategoryLabels(
 export async function readMedicationCategoryLabelsForBackup(
   userId: string,
   client: CategoryClient = prisma,
+  options: { disasterRecovery?: boolean } = {},
 ): Promise<
   Array<{
     key: string;
-    label: string;
+    label: string | null;
+    labelEncrypted?: string;
     sortOrder: number;
     isActive: boolean;
     createdAt: string;
+    updatedAt?: string;
   }>
 > {
   const rows = await client.medicationCategoryLabel.findMany({
@@ -272,14 +276,23 @@ export async function readMedicationCategoryLabelsForBackup(
       sortOrder: true,
       isActive: true,
       createdAt: true,
+      updatedAt: true,
     },
   });
   return rows.map((r) => ({
     key: r.key,
-    label: decryptCategoryLabel(r.labelEncrypted),
+    ...(options.disasterRecovery
+      ? {
+          label: null,
+          labelEncrypted: Buffer.from(r.labelEncrypted).toString("base64"),
+        }
+      : { label: decryptCategoryLabel(r.labelEncrypted) }),
     sortOrder: r.sortOrder,
     isActive: r.isActive,
     createdAt: r.createdAt.toISOString(),
+    ...(options.disasterRecovery
+      ? { updatedAt: r.updatedAt.toISOString() }
+      : {}),
   }));
 }
 

@@ -112,7 +112,13 @@ function buildMockPrisma() {
               feverC: null,
               noteEncrypted: encryptToBytes("Bad day."),
               updatedAt: new Date("2026-04-10T00:00:00.000Z"),
-              symptomLinks: [{ severity: 3, symptom: { key: "headache" } }],
+              symptomLinks: [
+                {
+                  severity: 3,
+                  symptom: { key: "headache" },
+                  createdAt: new Date("2026-04-10T07:00:00.000Z"),
+                },
+              ],
             },
           ],
         },
@@ -298,7 +304,13 @@ describe("buildRecordsBackupSection", () => {
             createdAt,
             updatedAt,
             deletedAt,
-            symptomLinks: [{ severity: 3, symptom: { key: "headache" } }],
+            symptomLinks: [
+              {
+                severity: 3,
+                symptom: { key: "headache" },
+                createdAt: new Date("2026-04-10T07:00:00.000Z"),
+              },
+            ],
           },
         ],
       },
@@ -384,7 +396,13 @@ describe("buildRecordsBackupSection", () => {
           createdAt: createdAt.toISOString(),
           updatedAt: updatedAt.toISOString(),
           deletedAt: deletedAt.toISOString(),
-          symptoms: [{ key: "headache", severity: 3 }],
+          symptoms: [
+            {
+              key: "headache",
+              severity: 3,
+              createdAt: "2026-04-10T07:00:00.000Z",
+            },
+          ],
         },
       ],
     });

@@ -16,7 +16,7 @@
 import { readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
-import { readSourceText } from "./helpers/source-files";
+import { readSource, readSourceText } from "./helpers/source-files";
 
 const ROOT = join(__dirname, "..", "..");
 const SRC = join(ROOT, "src");
@@ -85,7 +85,7 @@ function bareReads(): string[] {
 describe("raw SQL clock reads are anchored to UTC", () => {
   it("finds the anchored form across the swept files", () => {
     // The matcher must see something, or a broken walk would pass.
-    const passkey = readSourceText(join(SRC, "lib/auth/passkey.ts"));
+    const passkey = readSource("src/lib/auth/passkey.ts", ANCHORED);
     expect(passkey.match(ANCHORED)?.length).toBeGreaterThanOrEqual(3);
     expect(SQL_CLOCK.test("AND expires_at > NOW()")).toBe(true);
     expect(SQL_CLOCK.test("updated_at = now()")).toBe(true);

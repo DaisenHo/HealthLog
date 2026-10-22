@@ -19,7 +19,6 @@ import type { Job } from "pg-boss";
 
 import { caughtAs, logCaught } from "@/lib/logging/signal";
 
-import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma, toJson } from "@/lib/db";
 import { extractHealthConnectDb } from "@/lib/import/unzip-export-xml";
 import {
@@ -28,15 +27,10 @@ import {
 } from "@/lib/import/health-connect/import";
 import { HealthConnectImportError } from "@/lib/import/health-connect/reader";
 import { connectedDirectIntegrations } from "@/lib/import/health-connect/skip-packages";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/status-invalidation";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
-import { trackBackgroundTask } from "@/lib/logging/background-tasks";
+import { afterBulkImport } from "@/lib/jobs/import-tail";
 import { annotate } from "@/lib/logging/context";
 import { withBackgroundEvent } from "@/lib/logging/background";
-import {
-  recomputeUserRollups,
-  ROLLUP_FOLD_WINDOW_MS,
-} from "@/lib/rollups/measurement-rollups";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 export const HEALTH_CONNECT_IMPORT_QUEUE = "health-connect-import";
@@ -203,43 +197,13 @@ export async function runHealthConnectImport(
       },
     });
 
-    // The per-row tails are skipped on a bulk import; refold the rollups over
-    // what this import wrote, inside the window every other path keeps to,
-    // and re-warm the cached assessments of the types it touched.
-    let rollupFailed = false;
-    const span = result.measuredSpan;
-    if (span) {
-      try {
-        const windowStart = new Date(Date.now() - ROLLUP_FOLD_WINDOW_MS);
-        const spanFrom = new Date(span.from);
-        const from = spanFrom > windowStart ? spanFrom : windowStart;
-        const to = new Date(new Date(span.to).getTime() + 1);
-        if (to > from) await recomputeUserRollups(userId, { from, to });
-      } catch (err) {
-        rollupFailed = true;
-        console.warn(
-          `[health-connect-import] Rollup recompute failed for user ${userId}`,
-          err,
-        );
-      }
-    }
-    const touched = Object.entries(result.perType)
-      .filter(([, stat]) => stat.inserted + stat.updated > 0)
-      .map(([type]) => type as MeasurementType);
-    if (touched.length > 0) {
-      trackBackgroundTask(
-        invalidateStatusInsightsForTypes(userId, touched, {
-          // An export file the person chose to import, like the Apple Health
-          // import: narrated like a hand entry, not held to the sync gap.
-          source: "manual",
-        }).catch((err) => {
-          console.warn(
-            `[health-connect-import] status-insight invalidate failed for user ${userId}`,
-            err,
-          );
-        }),
-      );
-    }
+    // Rollups, measurement caches and status assessments over what the
+    // import wrote, as the Apple Health import does (`afterBulkImport`).
+    const { rollupFailed } = await afterBulkImport(
+      userId,
+      result,
+      "health-connect-import",
+    );
 
     annotate({
       action: { name: "import.health-connect.done" },

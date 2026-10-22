@@ -8,8 +8,13 @@
  * prints the seed and the shrunk counterexample, and
  * `FC_SEED=<seed> pnpm test <file>` replays it exactly.
  *
- * `FC_NUM_RUNS` scales the number of generated cases (the nightly run uses
- * more). The default keeps every property file well under a second or two.
+ * `FC_RUNS_FACTOR` multiplies every property's own case count (the nightly
+ * run sets it above 1). A factor rather than a count: each property states
+ * the number of cases its cost allows, a cheap law a few hundred and a
+ * database round trip a dozen, and a nightly count applied to all of them
+ * alike ran the round trip a hundred times against a timeout sized for
+ * twelve. `propertyTimeout` grows a test's own timeout by the same factor.
+ * The defaults keep every property file well under a second or two.
  */
 import fc from "fast-check";
 
@@ -21,20 +26,39 @@ function positiveInt(raw: string | undefined): number | null {
   return Number.isInteger(value) && value > 0 ? value : null;
 }
 
+function positiveNumber(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
 export const PROPERTY_SEED = positiveInt(process.env.FC_SEED) ?? DEFAULT_SEED;
 
-const SCALE = positiveInt(process.env.FC_NUM_RUNS);
+/** The multiplier on every property's case count; 1 on a pull request. */
+export const RUNS_FACTOR = positiveNumber(process.env.FC_RUNS_FACTOR) ?? 1;
 
-/** Parameters for `fc.assert`; `numRuns` is the PR-run default per property. */
+/**
+ * Parameters for `fc.assert`; `numRuns` is the property's own case count on a
+ * pull request, multiplied by `FC_RUNS_FACTOR` when it is set.
+ */
 export function propertyParameters<T>(
   numRuns = 100,
   overrides: fc.Parameters<T> = {},
 ): fc.Parameters<T> {
   return {
     seed: PROPERTY_SEED,
-    numRuns: SCALE ?? numRuns,
+    numRuns: Math.max(1, Math.round(numRuns * RUNS_FACTOR)),
     ...overrides,
   };
+}
+
+/**
+ * A test timeout for a property whose cases are expensive, grown by the same
+ * factor as its case count, so a nightly run with more cases does not run
+ * into a timeout sized for the pull-request count.
+ */
+export function propertyTimeout(baseMs: number): number {
+  return Math.ceil(baseMs * Math.max(1, RUNS_FACTOR));
 }
 
 /** Run a property with the shared parameters. */

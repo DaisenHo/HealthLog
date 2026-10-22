@@ -164,9 +164,11 @@ file needs isolation for a reason the classifier cannot see, put a
 `fast-check` properties live in `*.property.test.ts` files and take their
 parameters from `tests/property/fast-check.ts`. Pull requests run every
 property with a fixed seed, so a run is reproducible on any machine. The
-nightly run uses a fresh `FC_SEED` and more cases (`FC_NUM_RUNS`); a failure
-prints the seed and the shrunk counterexample, and
-`FC_SEED=<seed> pnpm test <file>` replays it.
+nightly run uses a fresh `FC_SEED` and multiplies every property's own case
+count by `FC_RUNS_FACTOR`; a failure prints the seed and the shrunk
+counterexample, and `FC_SEED=<seed> pnpm test <file>` replays it. A property
+whose cases are expensive states a small count and passes
+`propertyTimeout(baseMs)` as its test timeout, which grows by the same factor.
 
 Write a property when the code has a law: an inverse (encrypt and decrypt, a
 unit and its inverse, a wall clock and its instant), an invariant (a rate

@@ -81,6 +81,9 @@ export const biomarkerBackupSchema = z
     // The catalogue analyte the marker resolves to.
     analyteKey: z.string().nullable().optional(),
     context: z.string().nullable().optional(),
+    // The context's ciphertext, disaster-recovery files only. A file without
+    // it carries the readable context, which the restore seals.
+    contextEncrypted: base64BytesSchema.nullable().optional(),
     // The other spellings the marker answers to. Absent on
     // files written before them.
     aliases: z

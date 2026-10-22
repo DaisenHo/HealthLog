@@ -336,7 +336,7 @@ export const workoutPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Measurements"],
       summary: "List workouts (v1.4.32)",
       description:
-        "Paginated workout list with cross-source canonical-row dedup. The picker reads the per-user source-priority ladder and buckets by `(startedAt 5 min slot, sportType)` — twin workouts (Apple Watch + Withings ScanWatch) collapse to a single canonical row per cluster. Field names mirror the iOS handoff contract: `distanceM`, `activeEnergyKcal`, `avgHr`, `maxHr`.",
+        "Paginated workout list with cross-source canonical-row dedup. The picker reads the per-user source-priority ladder and clusters workouts of one sport whose starts lie less than five minutes after the cluster's first start — twin workouts (Apple Watch + Withings ScanWatch) collapse to a single canonical row per cluster. A twin just outside `since` / `until` still decides which row inside the range is canonical, so the list agrees with `canonicalId` on the detail. Field names mirror the iOS handoff contract: `distanceM`, `activeEnergyKcal`, `avgHr`, `maxHr`.",
       requestParams: {
         query: z.object({
           limit: z.coerce.number().int().min(1).max(200).optional(),

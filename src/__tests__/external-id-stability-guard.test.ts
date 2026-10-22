@@ -24,7 +24,11 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 
-import { readSourceText, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const VALIDATOR_MODULE = "@/lib/validations/external-id";
@@ -280,9 +284,9 @@ describe("identities derived outside a Zod schema stay inside the floor", () => 
     const b = body("lib/import/csv-measurements.ts");
     expect(b).toContain("isStableExternalId");
     expect(b).toContain('skip("unstable_external_id")');
-    expect(read("lib/import/csv-measurements.ts")).toContain(
-      '| "unstable_external_id"',
-    );
+    expect(
+      readSource("src/lib/import/csv-measurements.ts", "unstable_external_id"),
+    ).toContain('| "unstable_external_id"');
   });
 
   it("the MCP write path checks the key BEFORE it is hashed into an identity", () => {

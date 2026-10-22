@@ -20,6 +20,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  readSource,
   readSourceText,
   stripComments,
   walkSourceFiles,
@@ -87,10 +88,17 @@ describe("one standard deviation", () => {
   });
 
   it("the series API and the AI and MCP payload report the same spread", () => {
-    expect(read("app/api/measurements/series/route.ts")).toMatch(
-      /standardDeviation\(\s*values,\s*READING_SPREAD\s*\)/,
+    expect(
+      stripComments(
+        readSource(
+          "src/app/api/measurements/series/route.ts",
+          "READING_SPREAD",
+        ),
+      ),
+    ).toMatch(/standardDeviation\(\s*values,\s*READING_SPREAD\s*\)/);
+    const features = stripComments(
+      readSource("src/lib/insights/features.ts", "READING_SPREAD"),
     );
-    const features = read("lib/insights/features.ts");
     expect(
       features.match(/roundedSpread\(\s*vals,\s*READING_SPREAD\s*\)/g),
     ).toHaveLength(2);

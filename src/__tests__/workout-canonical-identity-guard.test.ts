@@ -31,11 +31,21 @@ const SRC = join(process.cwd(), "src");
 const PICKER = "lib/measurements/pick-canonical-workout-rows.ts";
 
 /**
- * Every production call site of the picker, frozen.
+ * The only module that hands rows to the picker: the windowed reader, which
+ * picks over rows it read with the duplicate-window margin. Every surface goes
+ * through it, and its output types make a read without the margin a compile
+ * error. The strain engine's per-cluster impulse sum lives there too and is
+ * handed the rows of the engine's own windowed read.
+ */
+const PICKER_CALLERS = ["lib/workouts/canonical-read.ts"];
+
+/**
+ * Every production read that decides which workout is canonical, frozen.
  *
- * Adding a surface that collapses workouts is a deliberate act: it must fetch
- * the identity fields or it silently disagrees with every other surface. Adding
- * the file here is the acknowledgement.
+ * Adding a surface that collapses workouts is a deliberate act: it must read
+ * through `readWorkoutsAroundRange` and fetch the identity fields, or it
+ * silently disagrees with every other surface. Adding the file here is the
+ * acknowledgement. The value is the file that owns the read's `select`.
  */
 const IDENTITY_OWNER: Record<string, string> = {
   "app/api/workouts/[id]/route.ts": "app/api/workouts/[id]/route.ts",
@@ -49,15 +59,15 @@ const IDENTITY_OWNER: Record<string, string> = {
   // The activity calendar counts workouts per day; a session two devices
   // recorded must count once there, as it does in the list.
   "lib/activity/calendar-read.ts": "lib/activity/calendar-read.ts",
-  // The only indirection in the set. The Coach block is handed rows it does not
-  // read itself; the snapshot builder fetches them in parallel with every other
-  // block's data. Recording the owner here rather than assuming the call site
-  // owns its own select is the whole point of this map.
-  "lib/ai/coach/snapshot-blocks/workouts-block.ts": "lib/ai/coach/snapshot.ts",
-  // The write path: the batch route runs the same picker over the rows it is
-  // about to insert, so a duplicate inside one batch is dropped by the rule
-  // the list later applies.
-  "app/api/workouts/batch/route.ts": "app/api/workouts/batch/route.ts",
+  // The Coach block is handed rows it does not read itself; the snapshot
+  // builder fetches them through this read in parallel with every other
+  // block's data.
+  "lib/ai/coach/snapshot-blocks/workouts-read.ts":
+    "lib/ai/coach/snapshot-blocks/workouts-read.ts",
+  // The write path: the batch route clusters the rows it is about to insert
+  // together with the stored rows around them, so a duplicate is dropped by
+  // the rule the list later applies.
+  "lib/workouts/batch-dedup.ts": "lib/workouts/batch-dedup.ts",
   // The day-total training impulse, the briefing's workout tally and the day
   // view's workout section: each counted a session synced by two services
   // twice while the list showed it once.
@@ -72,10 +82,16 @@ const IDENTITY_OWNER: Record<string, string> = {
 
 /**
  * How a call site proves its rows carry the duration. A read selects the
- * column; the batch route maps it off the row it computed for the insert.
+ * column; the batch route also maps it off the row it computed for the insert.
  */
-const IDENTITY_PROOF: Record<string, string> = {
-  "app/api/workouts/batch/route.ts": "durationSec: p.row.durationSec",
+const IDENTITY_PROOF: Record<string, string[]> = {
+  // These two select `WORKOUT_PICK_SELECT`, whose duration is checked below.
+  "lib/day/records.ts": ["select: WORKOUT_PICK_SELECT"],
+  "lib/insights/correlation-channel-series.ts": ["select: WORKOUT_PICK_SELECT"],
+  "lib/workouts/batch-dedup.ts": [
+    "durationSec: true",
+    "durationSec: p.row.durationSec",
+  ],
 };
 
 const EXPECTED_CALL_SITES = Object.keys(IDENTITY_OWNER).sort();
@@ -93,17 +109,13 @@ function read(rel: string): string {
 }
 
 /**
- * Lines that actually invoke the picker. Comment lines are excluded: a
- * docblock that names the picker is documentation rather than a call.
+ * Lines that actually invoke `call`. Comment lines are excluded: a docblock
+ * that names the function is documentation rather than a call.
  */
-function invokesPicker(source: string): boolean {
+function invokes(source: string, call: string): boolean {
   return source
     .split("\n")
-    .some(
-      (line) =>
-        line.includes("pickCanonicalWorkoutRows(") &&
-        !/^\s*(\*|\/\/|\/\*)/.test(line),
-    );
+    .some((line) => line.includes(call) && !/^\s*(\*|\/\/|\/\*)/.test(line));
 }
 
 describe("the picker's call-site set is frozen", () => {
@@ -114,12 +126,28 @@ describe("the picker's call-site set is frozen", () => {
     expect(sourceFiles().length).toBeGreaterThan(1500);
   });
 
-  it("has exactly the call sites this file acknowledges", () => {
+  it("hands rows to the picker only from the windowed reader", () => {
     const found = sourceFiles()
       .filter((rel) => rel !== PICKER)
-      .filter((rel) => invokesPicker(read(rel)));
+      .filter((rel) => invokes(read(rel), "pickCanonicalWorkoutRows("));
+
+    expect(found).toEqual(PICKER_CALLERS);
+  });
+
+  it("has exactly the windowed reads this file acknowledges", () => {
+    const found = sourceFiles()
+      .filter((rel) => rel !== "lib/workouts/canonical-read.ts")
+      .filter((rel) => invokes(read(rel), "readWorkoutsAroundRange("));
 
     expect(found).toEqual(EXPECTED_CALL_SITES);
+  });
+
+  it("scores strain only on the sessions of the windowed range", () => {
+    // The strain engine sums impulses over the rows of its windowed read; it
+    // must keep the sessions its range owns, not every cluster the margin read.
+    expect(read("lib/insights/strain-score.ts")).toContain(
+      "(at) => startsInRange(workouts.range, at)",
+    );
   });
 });
 
@@ -130,9 +158,20 @@ describe("every call site fetches the session identity", () => {
     // rows came from. Coarse in the safe direction — it can only fail to catch
     // a second unrelated select in the same file, never pass a caller that
     // fetches no duration at all.
-    expect(read(IDENTITY_OWNER[rel])).toContain(
-      IDENTITY_PROOF[rel] ?? "durationSec: true",
+    for (const proof of IDENTITY_PROOF[rel] ?? ["durationSec: true"]) {
+      expect(read(IDENTITY_OWNER[rel])).toContain(proof);
+    }
+  });
+});
+
+describe("the shared pick select carries the identity", () => {
+  it("selects durationSec", () => {
+    const reader = read("lib/workouts/canonical-read.ts");
+    const select = reader.slice(
+      reader.indexOf("export const WORKOUT_PICK_SELECT"),
+      reader.indexOf("} as const;"),
     );
+    expect(select).toContain("durationSec: true");
   });
 });
 

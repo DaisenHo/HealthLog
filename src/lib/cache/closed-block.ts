@@ -21,3 +21,20 @@ export function closedBlockUntouched(key: string, touchedFrom: Date): boolean {
   const match = CLOSED_BLOCK_RE.exec(key);
   return match !== null && Number(match[1]) <= touchedFrom.getTime();
 }
+
+/**
+ * The earliest `measuredAt` among rows a write touched: the `touchedFrom` a
+ * writer that knows every row it wrote hands to `invalidateUserMeasurements`.
+ * `undefined` for no rows, which makes the invalidation drop closed blocks too.
+ */
+export function earliestMeasuredAt(
+  rows: Iterable<{ measuredAt: Date }>,
+): Date | undefined {
+  let earliest: Date | undefined;
+  for (const row of rows) {
+    if (earliest === undefined || row.measuredAt < earliest) {
+      earliest = row.measuredAt;
+    }
+  }
+  return earliest;
+}

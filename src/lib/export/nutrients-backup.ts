@@ -33,6 +33,7 @@ export async function buildNutrientsBackupPart(
       source: true,
       externalSourceVersion: true,
       createdAt: true,
+      updatedAt: true,
     },
     orderBy: [{ day: "desc" }, { nutrient: "asc" }],
   });
@@ -46,6 +47,11 @@ export async function buildNutrientsBackupPart(
         source: n.source,
         externalSourceVersion: n.externalSourceVersion,
         createdAt: n.createdAt.toISOString(),
+        // The day's last write, for the disaster-recovery file, which gives
+        // the account back as it was.
+        ...(ctx.disasterRecovery
+          ? { updatedAt: n.updatedAt.toISOString() }
+          : {}),
       })),
     },
     counts: { nutrientDays: nutrientDays.length },
@@ -79,6 +85,7 @@ export async function restoreNutrientDays(ctx: RestoreContext): Promise<void> {
       source: n.source,
       externalSourceVersion: n.externalSourceVersion ?? null,
       ...(n.createdAt ? { createdAt: new Date(n.createdAt) } : {}),
+      ...(n.updatedAt ? { updatedAt: new Date(n.updatedAt) } : {}),
     })),
   });
 }

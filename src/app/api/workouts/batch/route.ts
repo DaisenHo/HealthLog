@@ -92,11 +92,11 @@ import {
   UNSTABLE_EXTERNAL_ID_REASON,
   type UnstableExternalIdShape,
 } from "@/lib/validations/external-id";
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
+import { batchWorkoutIndicesToKeep } from "@/lib/workouts/batch-dedup";
 import { WORKOUTS_WRITE_SCOPE } from "@/lib/workouts/scopes";
 import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
-import { Prisma, type MeasurementSource } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 // v1.4.25 — push-suppression threshold for workout PRs. A batch
 // larger than this fires the detection job with `silent: true` so a
@@ -508,29 +508,16 @@ async function postBatch(request: NextRequest): Promise<Response> {
     });
   }
 
-  // Write-time cross-source dedup through the one workout picker the reads
-  // use, with the same source ladder: one logical workout from two sources
-  // in one batch (or one HealthKit session re-sent under a new id) lands
-  // once. Rows the picker hides surface to the client as `duplicate`, so
-  // the sync cursor advances past them like the externalId case below.
-  const canonicalPrepared = pickCanonicalWorkoutRows(
-    prepared.map((p) => ({
-      index: p.index,
-      userId: p.row.userId,
-      sportType: p.row.sportType,
-      startedAt: p.row.startedAt as Date,
-      durationSec: p.row.durationSec,
-      // Zod's `measurementSourceEnum.optional().default("MANUAL")`
-      // guarantees `source` is set post-parse, but Prisma's
-      // `WorkoutCreateManyInput` types it optional.
-      source: (p.row.source ?? "MANUAL") as MeasurementSource,
-      avgHeartRate: p.row.avgHeartRate ?? null,
-      maxHeartRate: p.row.maxHeartRate ?? null,
-      metadata: p.row.metadata ?? null,
-    })),
+  // Write-time cross-source dedup through the one workout clustering the
+  // reads use (see `batchWorkoutIndicesToKeep`): one logical workout from two
+  // sources in one batch, or one HealthKit session re-sent under a new id,
+  // lands once. Rows hidden here surface to the client as `duplicate`, so the
+  // sync cursor advances past them like the externalId case below.
+  const survivingIndices = await batchWorkoutIndicesToKeep(
+    user.id,
+    prepared,
     userPriority?.sourcePriorityJson ?? null,
   );
-  const survivingIndices = new Set(canonicalPrepared.map((r) => r.index));
   const droppedByWriteDedup: number[] = [];
   for (const p of prepared) {
     if (!survivingIndices.has(p.index)) {
