@@ -559,6 +559,14 @@ describe("extractFeatures — v1.22 workouts block", () => {
   });
 
   it("counts a session synced by two services once", async () => {
+    // The cross-source picker groups sessions into fixed five-minute slots
+    // of the epoch (`pick-canonical-workout-rows.ts`). With a start taken
+    // from the real clock, the 30 s gap between the two copies crossed a
+    // slot edge whenever the test ran in the last 30 s of a slot, and the
+    // pair counted twice. The clock is pinned to an instant well inside a
+    // slot, so the case tests the collapse rather than the time of day.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-10-22T12:02:00Z"));
     const startedAt = new Date(Date.now() - 1 * DAY_MS);
     prismaMock.workout.findMany.mockResolvedValue([
       {
@@ -576,10 +584,14 @@ describe("extractFeatures — v1.22 workouts block", () => {
         totalDistanceM: 5010,
       },
     ]);
-    const f = await extractFeatures("user-1", false);
-    expect(f.workouts?.last7.count).toBe(1);
-    expect(f.workouts?.last7.totalDurationMin).toBe(30);
-    expect(f.workouts?.last7.totalDistanceKm).toBe(5);
+    try {
+      const f = await extractFeatures("user-1", false);
+      expect(f.workouts?.last7.count).toBe(1);
+      expect(f.workouts?.last7.totalDurationMin).toBe(30);
+      expect(f.workouts?.last7.totalDistanceKm).toBe(5);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
