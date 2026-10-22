@@ -12,11 +12,13 @@
 import { Buffer } from "node:buffer";
 
 import type { Prisma } from "@/generated/prisma/client";
-import type { BackupPayload } from "@/lib/validations/backup";
+import type {
+  BackupMeasurement,
+  BackupPayload,
+} from "@/lib/validations/backup";
 import type { StreamedBackup } from "@/lib/export/streamed-backup";
 import type { RestoreSkipLog } from "@/lib/export/restore-skips";
 import type { AccountSettingsRestoreResult } from "@/lib/export/account-settings-restore";
-import type { MeasurementRestorePrepass } from "@/lib/export/measurements-backup";
 
 /**
  * The steps after the measurements that report as sections, in order. The
@@ -142,6 +144,21 @@ export interface RestoreLinks {
   labResultIdBySourceId: Map<string, string>;
   /** Illness: the episode ids the file carries, all of which are written. */
   episodeIds: Set<string>;
+}
+
+/**
+ * What the file's first read noted about its readings as a whole, for the
+ * measurement step (`createMeasurementRestorePrepass` in
+ * `measurements-restore.ts` builds it). Declared here so a module that only
+ * names the restore context does not import the restore itself.
+ */
+export interface MeasurementRestorePrepass {
+  /** Called for every reading as the first read checks it. */
+  note(row: BackupMeasurement): void;
+  /** The live `stats:` ids of the folded types, keyed by source and type. */
+  readonly liveFoldStatsIds: ReadonlySet<string>;
+  /** A row the migration's rule leaves out under either type. */
+  isShadowedLegacyRmssd(row: BackupMeasurement): boolean;
 }
 
 /** What the steps report back to the orchestrator once they are done. */

@@ -15,7 +15,7 @@ import {
   describeBackupKeyProblem,
 } from "@/lib/export/backup-key-ids";
 import { findIncompleteDocument } from "@/lib/export/documents-backup";
-import type { MeasurementRestorePrepass } from "@/lib/export/measurements-backup";
+import type { MeasurementRestorePrepass } from "@/lib/export/restore-context";
 import type {
   RestoreBackupInput,
   RestoreBackupOutcome,

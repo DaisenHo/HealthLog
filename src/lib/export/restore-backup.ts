@@ -35,14 +35,12 @@ import {
   RESTORE_CLEAR_STEPS,
   RESTORE_STEPS,
 } from "@/lib/export/backup-domains";
-import {
-  createMeasurementRestorePrepass,
-  type MeasurementRestorePrepass,
-} from "@/lib/export/measurements-backup";
+import { createMeasurementRestorePrepass } from "@/lib/export/measurements-restore";
 import {
   emptyRestoreLinks,
   orderedCleared,
   RESTORE_SECTION_STEPS,
+  type MeasurementRestorePrepass,
   type RestoreCleared,
   type RestoreContext,
   type RestoreSectionStep,

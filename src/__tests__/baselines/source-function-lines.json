@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 413,
-  "total": 149647,
+  "count": 410,
+  "total": 148267,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -319,11 +319,8 @@
     "lib/documents/fenced-chat.ts :: streamFencedReply": 309,
     "lib/documents/ingest.ts :: ingestDocument": 272,
     "lib/export/backup-json-scan.ts :: scanBackupJson": 225,
-    "lib/export/full-backup-payload.ts :: buildFullBackupPayload": 804,
-    "lib/export/full-backup-payload.ts :: buildFullBackupPayload > medications.map(arg) #3": 268,
     "lib/export/profile-backup.ts :: buildProfileBackupSection": 270,
     "lib/export/profile-backup.ts :: restoreProfileData": 291,
-    "lib/export/records-backup.ts :: buildRecordsBackupSection": 308,
     "lib/export/vaccinations-backup.ts :: restoreVaccinationsData": 216,
     "lib/export/visits-backup.ts :: restoreVisitsData": 261,
     "lib/fhir/build-bundle.ts :: buildFhirDocumentBundle": 363,

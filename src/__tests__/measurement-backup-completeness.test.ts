@@ -19,24 +19,27 @@
  * backup-relevant; converting every model at once buys exclusion-list churn
  * rather than safety.
  *
+ * Both backup ends of the measurements live in the measurements domain
+ * (`src/lib/export/measurements-backup.ts` out, `measurements-restore.ts`
+ * back), so the guard checks the restore half too: every carried column is
+ * written back by `toRestoredMeasurementData`.
+ *
  * Mutation check: comment out `sleepStage: true` in `MEASUREMENT_BACKUP_SELECT`
  * and this goes red naming that column; add a scalar to the model without
- * adding it to the select and it goes red naming the new one.
+ * adding it to the select and it goes red naming the new one; drop a key from
+ * `toRestoredMeasurementData` and the restore case goes red naming it.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, it, expect } from "vitest";
 
+import { readSource } from "./helpers/source-files";
+
 const ROOT = process.cwd();
 const SCHEMA = join(ROOT, "prisma", "schema.prisma");
-const BACKUP_BUILDER = join(
-  ROOT,
-  "src",
-  "lib",
-  "export",
-  "full-backup-payload.ts",
-);
+const BACKUP_MODULE = "src/lib/export/measurements-backup.ts";
+const RESTORE_MODULE = "src/lib/export/measurements-restore.ts";
 const PROFILE_BACKUP_BUILDER = join(
   ROOT,
   "src",
@@ -105,17 +108,49 @@ function selectFields(source: string): string[] {
   );
 }
 
+/** The text of one top-level function, from its declaration to its end. */
+function functionBody(source: string, declaration: string): string {
+  const start = source.indexOf(declaration);
+  expect(start, `${declaration} not found`).toBeGreaterThan(-1);
+  const end = source.indexOf("\n}\n", start);
+  expect(end).toBeGreaterThan(start);
+  return source.slice(start, end);
+}
+
 /**
  * Fields either serialization arm actually emits. The two arms share one
  * restorable wire format, so this is a union and therefore a weaker claim than
  * the select comparison: it catches a column that is selected and then written
- * to neither payload, not a column carried by only one arm.
+ * to neither payload, not a column carried by only one arm. Read from the
+ * serialiser alone, because the restore beside it spells its rows the same
+ * way and would answer for a column the export dropped.
  */
 function serialisedFields(source: string): Set<string> {
+  const body = functionBody(source, "function serialiseMeasurement(");
   return new Set(
-    [...source.matchAll(/([a-zA-Z_$][\w$]*): measurement\./g)].map((m) => m[1]),
+    [...body.matchAll(/([a-zA-Z_$][\w$]*): measurement\./g)].map((m) => m[1]),
   );
 }
+
+/** Keys the restore writes for each row, the same file's other half. */
+function restoredFields(source: string): Set<string> {
+  const body = functionBody(source, "function toRestoredMeasurementData(");
+  return new Set(
+    [
+      ...body.matchAll(
+        /^ {4}(?:\.\.\.\(measurement\.([a-zA-Z_$][\w$]*)|([a-zA-Z_$][\w$]*):)/gm,
+      ),
+    ].map((m) => m[1] ?? m[2]),
+  );
+}
+
+/**
+ * Selected columns the per-row restore data does not write, with the reason.
+ * `id` is written beside it, from the file's id, by the batch insert.
+ */
+const RESTORED_ELSEWHERE: Record<string, string> = {
+  id: "written beside the row data by the batch insert, from the file's own id",
+};
 
 function interfaceFields(source: string, name: string): Set<string> {
   const start = source.indexOf(`export interface ${name} {`);
@@ -139,7 +174,13 @@ function emittedModelFields(source: string, variable: string): Set<string> {
 
 describe("measurement backup completeness", () => {
   const schema = readFileSync(SCHEMA, "utf8");
-  const source = readFileSync(BACKUP_BUILDER, "utf8");
+  const source = readSource(BACKUP_MODULE, [
+    "const MEASUREMENT_BACKUP_SELECT = {",
+    "function serialiseMeasurement(",
+  ]);
+  const restoreSource = readSource(RESTORE_MODULE, [
+    "function toRestoredMeasurementData(",
+  ]);
   const models = declaredModels(schema);
   const columns = scalarFields(modelBlock(schema, "Measurement"), models);
   const selected = selectFields(source);
@@ -177,6 +218,18 @@ describe("measurement backup completeness", () => {
       dropped,
       `selected but serialized by neither arm: ${dropped}`,
     ).toHaveLength(0);
+  });
+
+  it("the restore writes every carried column back", () => {
+    const restored = restoredFields(restoreSource);
+    expect(restored.size).toBeGreaterThan(15);
+    const unwritten = selected.filter(
+      (c) => !restored.has(c) && !(c in RESTORED_ELSEWHERE),
+    );
+    expect(
+      unwritten,
+      `carried in the file but never written back: ${unwritten}`,
+    ).toEqual([]);
   });
 
   it("the exclusion list carries no stale entry", () => {

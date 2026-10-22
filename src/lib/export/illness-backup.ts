@@ -2,12 +2,108 @@
  * The illness history: episodes, their day logs, and the symptoms each day
  * recorded. Both backup ends in one file.
  */
+import { Buffer } from "node:buffer";
+
+import type { PrismaClient } from "@/generated/prisma/client";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import {
+  toIllnessEpisodeDTO,
+  toIllnessDayLogDTO,
+  dayLogSymptomInclude,
+  type IllnessEpisodeDTO,
+  type IllnessDayLogDTO,
+} from "@/lib/illness/dto";
 import {
   decodeEncryptedBytes,
   type RestoreContext,
 } from "@/lib/export/restore-context";
 import { recordUnknownKeys } from "@/lib/export/restore-skips";
+
+// ── Export ───────────────────────────────────────────────────────────────────
+
+type CanonicalIllnessDayLog = IllnessDayLogDTO & {
+  noteEncrypted?: string | null;
+  tz?: string | null;
+  createdAt?: string;
+  deletedAt?: string | null;
+};
+
+export type CanonicalIllnessEpisode = IllnessEpisodeDTO & {
+  noteEncrypted?: string | null;
+  /** The body site's ciphertext, disaster-recovery purpose only (v1.39.2). */
+  bodySiteEncrypted?: string | null;
+  deletedAt?: string | null;
+  dayLogs: CanonicalIllnessDayLog[];
+};
+
+/** The illness slice of the records section: episodes with their day logs. */
+export async function buildIllnessBackupSlice(
+  prisma: Pick<PrismaClient, "illnessEpisode">,
+  userId: string,
+  disasterRecovery: boolean,
+): Promise<{ illnessEpisodes: CanonicalIllnessEpisode[] }> {
+  const episodeRows = await prisma.illnessEpisode.findMany({
+    where: disasterRecovery ? { userId } : { userId, deletedAt: null },
+    orderBy: { onsetAt: "desc" },
+    include: {
+      dayLogs: {
+        ...(disasterRecovery ? {} : { where: { deletedAt: null } }),
+        orderBy: { date: "asc" },
+        include: dayLogSymptomInclude,
+      },
+    },
+  });
+
+  const illnessEpisodes: CanonicalIllnessEpisode[] = disasterRecovery
+    ? episodeRows.map((row) => ({
+        id: row.id,
+        label: row.label,
+        type: row.type,
+        lifecycle: row.lifecycle,
+        onsetAt: row.onsetAt.toISOString(),
+        resolvedAt: row.resolvedAt?.toISOString() ?? null,
+        parentConditionId: row.parentConditionId,
+        note: null,
+        noteEncrypted: row.noteEncrypted
+          ? Buffer.from(row.noteEncrypted).toString("base64")
+          : null,
+        // Ciphertext verbatim, like the note: the disaster-recovery file never
+        // carries the site in the clear.
+        bodySite: null,
+        bodySiteEncrypted: row.bodySiteEncrypted
+          ? Buffer.from(row.bodySiteEncrypted).toString("base64")
+          : null,
+        laterality: row.laterality,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+        deletedAt: row.deletedAt?.toISOString() ?? null,
+        dayLogs: row.dayLogs.map((dayLog) => ({
+          id: dayLog.id,
+          episodeId: dayLog.episodeId,
+          date: dayLog.date,
+          functionalImpact: dayLog.functionalImpact,
+          feverC: dayLog.feverC,
+          note: null,
+          noteEncrypted: dayLog.noteEncrypted
+            ? Buffer.from(dayLog.noteEncrypted).toString("base64")
+            : null,
+          tz: dayLog.tz,
+          createdAt: dayLog.createdAt.toISOString(),
+          updatedAt: dayLog.updatedAt.toISOString(),
+          deletedAt: dayLog.deletedAt?.toISOString() ?? null,
+          symptoms: dayLog.symptomLinks.map((link) => ({
+            key: link.symptom.key,
+            severity: link.severity,
+          })),
+        })),
+      }))
+    : episodeRows.map((row) => ({
+        ...toIllnessEpisodeDTO(row),
+        dayLogs: row.dayLogs.map(toIllnessDayLogDTO),
+      }));
+
+  return { illnessEpisodes };
+}
 
 // ── Restore ──────────────────────────────────────────────────────────────────
 

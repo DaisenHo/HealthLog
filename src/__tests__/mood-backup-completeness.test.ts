@@ -36,15 +36,12 @@ import { join } from "node:path";
 
 import { describe, it, expect } from "vitest";
 
+import { readSource } from "./helpers/source-files";
+
 const ROOT = process.cwd();
 const SCHEMA = join(ROOT, "prisma", "schema.prisma");
-const BACKUP_BUILDER = join(
-  ROOT,
-  "src",
-  "lib",
-  "export",
-  "full-backup-payload.ts",
-);
+/** The mood domain's export half, where the selects and serialisers live. */
+const BACKUP_MODULE = "src/lib/export/mood-backup.ts";
 
 /**
  * Columns the backup is correct to omit, each with the reason. The reasons are
@@ -175,7 +172,15 @@ function serialisedFields(source: string, variable: string): Set<string> {
 
 describe("mood backup completeness", () => {
   const schema = readFileSync(SCHEMA, "utf8");
-  const source = stripCommentLines(readFileSync(BACKUP_BUILDER, "utf8"));
+  const source = stripCommentLines(
+    readSource(BACKUP_MODULE, [
+      "const MOOD_ENTRY_BACKUP_SELECT = {",
+      "const MOOD_CONTEXT_BACKUP_SELECT = {",
+      "const MOOD_ENTRY_TAG_LINK_SELECT = {",
+      "function serialiseMoodEntry(",
+      "function serialiseMoodContext(",
+    ]),
+  );
   const models = declaredModels(schema);
 
   const entryColumns = scalarFields(modelBlock(schema, "MoodEntry"), models);

@@ -238,12 +238,19 @@ export const BACKED_UP_MODELS = [
  * live, and the guard reads those files instead of guessing which ones matter.
  */
 export const BACKUP_WRITER_FILES: readonly string[] = [
-  "src/lib/export/full-backup-payload.ts",
-  // Measurements are read through this pager, not directly. The guard caught
-  // its absence from this list on the first run — the same "the caller
-  // delegates" mistake the list exists to prevent, made while writing the list.
+  "src/lib/export/measurements-backup.ts",
+  "src/lib/export/labs-backup.ts",
+  "src/lib/export/illness-backup.ts",
+  "src/lib/export/allergies-backup.ts",
+  "src/lib/export/family-history-backup.ts",
+  "src/lib/export/workouts-backup.ts",
+  "src/lib/export/nutrients-backup.ts",
+  "src/lib/export/documents-backup.ts",
+  "src/lib/export/medications-backup.ts",
+  "src/lib/export/mood-backup.ts",
+  // Measurements are read through this pager, not directly — the "caller
+  // delegates" mistake this list exists to prevent, caught on its first run.
   "src/lib/export/paged-measurements.ts",
-  "src/lib/export/records-backup.ts",
   // The illness day-log's symptom include is a shared constant living here,
   // not a literal in the records writer. Same "the caller delegates" shape as
   // the measurement pager above, found the same way: by a check that stopped
@@ -273,7 +280,7 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   // reasons for that live in the module itself.
   "src/lib/export/sensitive-backup.ts",
   // What a document was filed against and what was read out of it. The
-  // documents themselves are read by `records-backup.ts`; these two read
+  // documents themselves are read by `documents-backup.ts`; these two read
   // through their OWN delegates here, for the reason the visits comment gives.
   "src/lib/export/document-filing-backup.ts",
   // The bests and the badges, and the environmental history with the location
@@ -300,30 +307,22 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   // ends beside each other, each through its OWN delegate.
   "src/lib/export/relation-links-backup.ts",
   "src/lib/cycle/backup.ts",
-  // The medication category is read through the one helper that normalises
-  // it; the payload writer calls the helper rather than the delegate. The
-  // same "the caller delegates" shape as the measurement pager.
+  // The medication category, read and written through its one helper.
   "src/lib/medication-category.ts",
 ];
 
 const WRITER_FILES_WITHOUT_RESTORE = new Set([
-  "src/lib/export/full-backup-payload.ts",
+  "src/lib/export/measurements-backup.ts",
+  "src/lib/export/medications-backup.ts",
+  "src/lib/export/mood-backup.ts",
   "src/lib/export/paged-measurements.ts",
-  "src/lib/export/records-backup.ts",
   "src/lib/illness/dto.ts",
 ]);
 
 export const BACKUP_RESTORE_FILES: readonly string[] = [
-  "src/lib/export/measurements-backup.ts",
+  "src/lib/export/measurements-restore.ts",
   "src/lib/export/medications-restore.ts",
   "src/lib/export/mood-restore.ts",
-  "src/lib/export/labs-backup.ts",
-  "src/lib/export/illness-backup.ts",
-  "src/lib/export/allergies-backup.ts",
-  "src/lib/export/family-history-backup.ts",
-  "src/lib/export/workouts-backup.ts",
-  "src/lib/export/nutrients-backup.ts",
-  "src/lib/export/documents-backup.ts",
   ...BACKUP_WRITER_FILES.filter(
     (file) => !WRITER_FILES_WITHOUT_RESTORE.has(file),
   ),

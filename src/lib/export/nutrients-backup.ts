@@ -1,7 +1,56 @@
 /**
  * The nutrient day totals, with both backup ends in one file.
  */
+import type {
+  BackupExportContext,
+  BackupExportPart,
+} from "@/lib/export/export-context";
 import type { RestoreContext } from "@/lib/export/restore-context";
+
+// ── Export ───────────────────────────────────────────────────────────────────
+
+/**
+ * Nutrient day totals were absent from every export path, which contradicted
+ * the schema's own reason for denormalising the unit column ("rows stay
+ * self-describing in exports even if the catalog ever drifts"). `source` is
+ * part of the composite PK, so it has to ride along or a restore cannot tell
+ * a manual water entry from a synced day total. The table carries no
+ * tombstone, so both purposes read the same shape. `externalSourceVersion`
+ * is the source's own version marker, stored so the sync can replay it back
+ * unchanged; `createdAt` is when the day first arrived. Neither can be
+ * rebuilt after a restore.
+ */
+export async function buildNutrientsBackupPart(
+  ctx: BackupExportContext,
+): Promise<BackupExportPart> {
+  const nutrientDays = await ctx.prisma.nutrientIntakeDay.findMany({
+    where: { userId: ctx.userId },
+    select: {
+      day: true,
+      nutrient: true,
+      amount: true,
+      unit: true,
+      source: true,
+      externalSourceVersion: true,
+      createdAt: true,
+    },
+    orderBy: [{ day: "desc" }, { nutrient: "asc" }],
+  });
+  return {
+    section: {
+      nutrientDays: nutrientDays.map((n) => ({
+        day: n.day,
+        nutrient: n.nutrient,
+        amount: n.amount,
+        unit: n.unit,
+        source: n.source,
+        externalSourceVersion: n.externalSourceVersion,
+        createdAt: n.createdAt.toISOString(),
+      })),
+    },
+    counts: { nutrientDays: nutrientDays.length },
+  };
+}
 
 // ── Restore ──────────────────────────────────────────────────────────────────
 

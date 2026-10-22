@@ -1,11 +1,58 @@
 /**
  * The allergy record, with both backup ends in one file.
  */
+import { Buffer } from "node:buffer";
+
+import type { PrismaClient } from "@/generated/prisma/client";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { toAllergyDTO, type AllergyDTO } from "@/lib/records/dto";
 import {
   decodeEncryptedBytes,
   type RestoreContext,
 } from "@/lib/export/restore-context";
+
+// ── Export ───────────────────────────────────────────────────────────────────
+
+export type CanonicalAllergy = AllergyDTO & {
+  reactionEncrypted?: string | null;
+  notesEncrypted?: string | null;
+  deletedAt?: string | null;
+};
+
+/** The allergy slice of the records section. */
+export async function buildAllergiesBackupSlice(
+  prisma: Pick<PrismaClient, "allergy">,
+  userId: string,
+  disasterRecovery: boolean,
+): Promise<{ allergies: CanonicalAllergy[] }> {
+  const allergyRows = await prisma.allergy.findMany({
+    where: disasterRecovery ? { userId } : { userId, deletedAt: null },
+    orderBy: { createdAt: "desc" },
+  });
+  const allergies: CanonicalAllergy[] = disasterRecovery
+    ? allergyRows.map((row) => ({
+        id: row.id,
+        substance: row.substance,
+        category: row.category,
+        type: row.type,
+        severity: row.severity,
+        status: row.status,
+        onsetAt: row.onsetAt?.toISOString() ?? null,
+        reaction: null,
+        note: null,
+        reactionEncrypted: row.reactionEncrypted
+          ? Buffer.from(row.reactionEncrypted).toString("base64")
+          : null,
+        notesEncrypted: row.notesEncrypted
+          ? Buffer.from(row.notesEncrypted).toString("base64")
+          : null,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+        deletedAt: row.deletedAt?.toISOString() ?? null,
+      }))
+    : allergyRows.map(toAllergyDTO);
+  return { allergies };
+}
 
 // ── Restore ──────────────────────────────────────────────────────────────────
 

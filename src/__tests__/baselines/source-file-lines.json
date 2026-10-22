@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 128,
-  "total": 153023,
+  "count": 126,
+  "total": 150668,
   "entries": {
     "app/api/dashboard/summary/route.ts": 1032,
     "app/api/documents/inbound/route.ts": 811,
@@ -68,11 +68,9 @@
     "lib/dashboard/snapshot.ts": 1549,
     "lib/day/records.ts": 1175,
     "lib/doctor-report/collect.ts": 803,
-    "lib/export/backup-plan.ts": 854,
+    "lib/export/backup-plan.ts": 853,
     "lib/export/coach-backup.ts": 1070,
-    "lib/export/full-backup-payload.ts": 1520,
     "lib/export/profile-backup.ts": 1019,
-    "lib/export/records-backup.ts": 834,
     "lib/fitbit/client.ts": 1529,
     "lib/fitbit/sync-core.ts": 968,
     "lib/gamification/achievements-result.ts": 1094,

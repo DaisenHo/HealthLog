@@ -2,8 +2,75 @@
  * The workout summaries, with both backup ends in one file. GPS routes and
  * per-sample series do not travel, and the file's manifest says so.
  */
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { toJson } from "@/lib/db";
 import type { RestoreContext } from "@/lib/export/restore-context";
+
+// ── Export ───────────────────────────────────────────────────────────────────
+
+export interface WorkoutBackupEntry {
+  /** Present in canonical DR payloads for manual workouts without externalId. */
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  sportType: string;
+  startedAt: string;
+  endedAt: string;
+  durationSec: number;
+  totalEnergyKcal: number | null;
+  totalDistanceM: number | null;
+  avgHeartRate: number | null;
+  maxHeartRate: number | null;
+  minHeartRate: number | null;
+  stepCount: number | null;
+  elevationM: number | null;
+  pauseDurationSec: number | null;
+  source: string;
+  externalId: string | null;
+  /** Canonical DR only; portable workout summaries keep their existing shape. */
+  metadata?: Prisma.JsonValue;
+  /** Canonical DR only, beside `metadata`: the source's own version marker. */
+  externalSourceVersion?: string | null;
+}
+
+/** The workout slice of the records section: the summaries. */
+export async function buildWorkoutsBackupSlice(
+  prisma: Pick<PrismaClient, "workout">,
+  userId: string,
+  disasterRecovery: boolean,
+): Promise<{ workouts: WorkoutBackupEntry[] }> {
+  const workoutRows = await prisma.workout.findMany({
+    where: { userId },
+    orderBy: { startedAt: "desc" },
+  });
+
+  const workouts: WorkoutBackupEntry[] = workoutRows.map((w) => ({
+    ...(disasterRecovery
+      ? {
+          id: w.id,
+          createdAt: w.createdAt.toISOString(),
+          updatedAt: w.updatedAt.toISOString(),
+          ...(w.metadata == null ? {} : { metadata: w.metadata }),
+          externalSourceVersion: w.externalSourceVersion,
+        }
+      : {}),
+    sportType: w.sportType,
+    startedAt: w.startedAt.toISOString(),
+    endedAt: w.endedAt.toISOString(),
+    durationSec: w.durationSec,
+    totalEnergyKcal: w.totalEnergyKcal,
+    totalDistanceM: w.totalDistanceM,
+    avgHeartRate: w.avgHeartRate,
+    maxHeartRate: w.maxHeartRate,
+    minHeartRate: w.minHeartRate,
+    stepCount: w.stepCount,
+    elevationM: w.elevationM,
+    pauseDurationSec: w.pauseDurationSec,
+    source: w.source,
+    externalId: w.externalId,
+  }));
+  return { workouts };
+}
 
 // ── Restore ──────────────────────────────────────────────────────────────────
 

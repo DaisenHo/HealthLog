@@ -14,8 +14,42 @@
  * (`restoreInstanceSettings`), not one the account restore assumes.
  */
 import { DEFAULT_REASONING_MAX_EFFORT } from "@/lib/ai/reasoning/levels";
+import type {
+  BackupExportContext,
+  BackupExportPart,
+} from "@/lib/export/export-context";
 import type { RestoreContext } from "@/lib/export/restore-context";
 import { foldLegacyCoachAvailability } from "@/lib/modules/operator-availability";
+
+// ── Export ───────────────────────────────────────────────────────────────────
+
+/**
+ * The instance settings slice: the singleton row, in a disaster-recovery
+ * payload only, with its timestamps and its quota made JSON-safe.
+ */
+export async function buildAppSettingsBackupPart(
+  ctx: BackupExportContext,
+): Promise<BackupExportPart> {
+  const appSettings = ctx.disasterRecovery
+    ? await ctx.prisma.appSettings.findUnique({ where: { id: "singleton" } })
+    : null;
+  return {
+    section: {
+      appSettings:
+        ctx.disasterRecovery && appSettings
+          ? {
+              ...appSettings,
+              adminCodexTokenExpiresAt:
+                appSettings.adminCodexTokenExpiresAt?.toISOString() ?? null,
+              adminCodexConnectedAt:
+                appSettings.adminCodexConnectedAt?.toISOString() ?? null,
+              documentQuotaBytes: appSettings.documentQuotaBytes.toString(),
+            }
+          : null,
+    },
+    counts: {},
+  };
+}
 
 // ── Restore ──────────────────────────────────────────────────────────────────
 

@@ -4,7 +4,9 @@
  * Each domain keeps its schema slice, its export and its restore together in
  * its own module (`<domain>-backup.ts`, with `-restore.ts` and
  * `-backup-schema.ts` beside it where those are large). This file only says
- * in which order the restore calls them. The order is the whole content:
+ * in which order the restore calls them (the export's order, which is the
+ * file's key order, is `backup-export-sections.ts`). The order is the whole
+ * content:
  *
  *   - The account is emptied first, child before parent wherever a count
  *     is reported, because a parent's delete cascades into its children and
@@ -53,7 +55,7 @@ import {
   clearMeasurementRollups,
   clearMeasurements,
   restoreMeasurements,
-} from "@/lib/export/measurements-backup";
+} from "@/lib/export/measurements-restore";
 import {
   clearIntakeEvents,
   clearMedications,

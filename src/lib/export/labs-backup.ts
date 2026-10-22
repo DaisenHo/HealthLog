@@ -6,14 +6,270 @@
  * restore mints fresh marker ids, and `(userId, name)` is what the catalogue
  * is unique on, so the name is what survives the trip.
  */
-import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
-import { encryptNoteToBytes } from "@/lib/labs/store";
+import { Buffer } from "node:buffer";
+
+import type { PrismaClient } from "@/generated/prisma/client";
+import {
+  decryptContextFromBytes,
+  encryptContextToBytes,
+} from "@/lib/labs/biomarker-store";
+import { decryptNoteFromBytes, encryptNoteToBytes } from "@/lib/labs/store";
 import { foldForMatch } from "@/lib/i18n/fold-for-match";
-import { annotate } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
+import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
 import {
   decodeEncryptedBytes,
   type RestoreContext,
 } from "@/lib/export/restore-context";
+
+// ── Export ───────────────────────────────────────────────────────────────────
+
+/**
+ * Decrypt an encrypted free-text column for a portable export, or say plainly
+ * that this one could not be read.
+ *
+ * A fail-soft decrypt answers `null` on a wrong or dropped key. In a list view
+ * that is right — one bad row must not take the page down. In an export it is
+ * not: `null` is exactly what a column that was never written looks like, so
+ * the restore importer writes nothing and a note the person did write
+ * disappears without anyone being told. The Coach transcript and the doctor
+ * report both refuse that trade, one with a placeholder sentence and one with
+ * a rendered flag; this follows the same rule.
+ *
+ * The warning the soft helpers emitted is kept, so a systemic key gap still
+ * shows up in the wide event rather than only in the file.
+ */
+function readForExport(
+  buf: Uint8Array | null,
+  label: string,
+  decode: (bytes: Uint8Array) => string,
+): string | null {
+  if (!buf || buf.byteLength === 0) return null;
+  try {
+    return decode(buf);
+  } catch (err) {
+    getEvent()?.addWarning(
+      `${label} decrypt failed: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
+    return UNREADABLE_EXPORT_MARKER;
+  }
+}
+
+export interface LabResultBackupEntry {
+  /** Present in canonical DR payloads so rows keep a stable identity. */
+  id?: string;
+  /** The source row's id in a portable payload, for the relation links. */
+  ref?: string;
+  panel: string | null;
+  analyte: string;
+  value: number | null;
+  valueText: string | null;
+  unit: string;
+  referenceLow: number | null;
+  referenceHigh: number | null;
+  /** The window the reading's own source report printed, verbatim + derived. */
+  sourceReferenceLow: number | null;
+  sourceReferenceHigh: number | null;
+  sourceReferenceText: string | null;
+  /**
+   * The value and unit the source report printed, kept when a write
+   * converted the reading into its marker's unit.
+   */
+  sourceValue?: number | null;
+  sourceUnit?: string | null;
+  takenAt: string;
+  source: string;
+  /** Human-readable cross-reference into `biomarkers` below, not an id. */
+  /** Stable canonical FK; legacy portable payloads use biomarkerName. */
+  biomarkerId?: string | null;
+  biomarkerName: string | null;
+  note: string | null;
+  /** Base64 ciphertext in canonical DR payloads. */
+  noteEncrypted?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+}
+
+export interface BiomarkerBackupEntry {
+  /** Present in canonical DR payloads; name remains the natural key. */
+  id?: string;
+  name: string;
+  unit: string;
+  lowerBound: number | null;
+  upperBound: number | null;
+  panel: string | null;
+  hidden: boolean;
+  context: string | null;
+  /** The catalogue key the marker's name and unit resolve to. */
+  analyteKey?: string | null;
+  /**
+   * The other spellings the marker answers to, with where
+   * each came from. Absent on files written before them.
+   */
+  aliases?: BiomarkerAliasBackupEntry[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BiomarkerAliasBackupEntry {
+  /** Present in canonical DR payloads. */
+  id?: string;
+  name: string;
+  source: "MERGE" | "IMPORT_CHOICE" | "MANUAL";
+  createdAt?: string;
+}
+
+/**
+ * One marker folded into another. The target travels by id
+ * in a disaster-recovery file and by name in both, the way a lab result's
+ * marker does; the source is gone, so its id and name are the record.
+ */
+export interface BiomarkerMergeBackupEntry {
+  id?: string;
+  targetBiomarkerId?: string;
+  targetName: string;
+  sourceBiomarkerId: string;
+  sourceName: string;
+  readingCount: number;
+  mergedAt: string;
+}
+
+/** The lab slice of the records section: results, markers, merge ledger. */
+export async function buildLabsBackupSlice(
+  prisma: Pick<
+    PrismaClient,
+    "labResult" | "biomarker" | "biomarkerAlias" | "biomarkerMerge"
+  >,
+  userId: string,
+  disasterRecovery: boolean,
+): Promise<{
+  labResults: LabResultBackupEntry[];
+  biomarkers: BiomarkerBackupEntry[];
+  biomarkerMerges: BiomarkerMergeBackupEntry[];
+}> {
+  const [labResultRows, biomarkerRows, biomarkerAliasRows, biomarkerMergeRows] =
+    await Promise.all([
+      prisma.labResult.findMany({
+        where: disasterRecovery ? { userId } : { userId, deletedAt: null },
+        orderBy: { takenAt: "desc" },
+        include: { biomarker: { select: { name: true } } },
+      }),
+      prisma.biomarker.findMany({
+        where: { userId },
+        orderBy: { name: "asc" },
+      }),
+      prisma.biomarkerAlias.findMany({
+        where: { userId },
+        orderBy: [{ biomarkerId: "asc" }, { nameFolded: "asc" }],
+        select: {
+          id: true,
+          biomarkerId: true,
+          name: true,
+          source: true,
+          createdAt: true,
+        },
+      }),
+      prisma.biomarkerMerge.findMany({
+        where: { userId },
+        orderBy: { mergedAt: "asc" },
+        include: { target: { select: { name: true } } },
+      }),
+    ]);
+
+  const labResults: LabResultBackupEntry[] = labResultRows.map((r) => ({
+    ...(disasterRecovery
+      ? {
+          id: r.id,
+          biomarkerId: r.biomarkerId,
+          noteEncrypted: r.noteEncrypted
+            ? Buffer.from(r.noteEncrypted).toString("base64")
+            : null,
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+          deletedAt: r.deletedAt?.toISOString() ?? null,
+          note: null,
+        }
+      : {
+          // No id: a portable restore mints a fresh one. The relation links
+          // still name this row, so the file says which row they mean.
+          ref: r.id,
+          note: readForExport(
+            r.noteEncrypted,
+            "lab note",
+            decryptNoteFromBytes,
+          ),
+        }),
+    panel: r.panel,
+    analyte: r.analyte,
+    value: r.value,
+    valueText: r.valueText,
+    unit: r.unit,
+    referenceLow: r.referenceLow,
+    referenceHigh: r.referenceHigh,
+    sourceReferenceLow: r.sourceReferenceLow,
+    sourceReferenceHigh: r.sourceReferenceHigh,
+    sourceReferenceText: r.sourceReferenceText,
+    sourceValue: r.sourceValue,
+    sourceUnit: r.sourceUnit,
+    takenAt: r.takenAt.toISOString(),
+    source: r.source,
+    biomarkerName: r.biomarker?.name ?? null,
+  }));
+
+  const aliasesByMarker = new Map<string, BiomarkerAliasBackupEntry[]>();
+  for (const alias of biomarkerAliasRows) {
+    const list = aliasesByMarker.get(alias.biomarkerId) ?? [];
+    list.push({
+      name: alias.name,
+      source: alias.source as BiomarkerAliasBackupEntry["source"],
+      ...(disasterRecovery
+        ? { id: alias.id, createdAt: alias.createdAt.toISOString() }
+        : {}),
+    });
+    aliasesByMarker.set(alias.biomarkerId, list);
+  }
+
+  const biomarkerMerges: BiomarkerMergeBackupEntry[] = biomarkerMergeRows.map(
+    (m) => ({
+      ...(disasterRecovery
+        ? { id: m.id, targetBiomarkerId: m.targetBiomarkerId }
+        : {}),
+      targetName: m.target.name,
+      sourceBiomarkerId: m.sourceBiomarkerId,
+      sourceName: m.sourceName,
+      readingCount: m.readingCount,
+      mergedAt: m.mergedAt.toISOString(),
+    }),
+  );
+
+  const biomarkers: BiomarkerBackupEntry[] = biomarkerRows.map((b) => ({
+    ...(disasterRecovery
+      ? {
+          id: b.id,
+          createdAt: b.createdAt.toISOString(),
+          updatedAt: b.updatedAt.toISOString(),
+        }
+      : {}),
+    name: b.name,
+    unit: b.unit,
+    lowerBound: b.lowerBound,
+    upperBound: b.upperBound,
+    panel: b.panel,
+    hidden: b.hidden,
+    context: readForExport(
+      b.contextEncrypted,
+      "biomarker context",
+      decryptContextFromBytes,
+    ),
+    analyteKey: b.analyteKey,
+    aliases: aliasesByMarker.get(b.id) ?? [],
+  }));
+
+  return { labResults, biomarkers, biomarkerMerges };
+}
 
 // ── Restore ──────────────────────────────────────────────────────────────────
 
