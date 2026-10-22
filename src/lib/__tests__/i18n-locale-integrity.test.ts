@@ -345,6 +345,62 @@ describe("i18n locale file integrity", () => {
     },
   );
 
+  /**
+   * Placeholder parity. `t()` replaces `{name}` tokens literally, so a
+   * translation that renames one ("{when}" for "{date}") renders the raw
+   * token, and one that drops one ("Plano limitado" for "Your {provider}
+   * plan does not include {list}") loses the information the sentence was
+   * for. Neither breaks the key-parity check above, which is how 38 of them
+   * reached a bundle unnoticed.
+   *
+   * A singular plural form (`…One`) may name the count in words instead of
+   * `{count}`, or name it where English does not.
+   */
+  function placeholderSet(value: string, singular: boolean): string {
+    const names = new Set(
+      [...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]),
+    );
+    if (singular) names.delete("count");
+    return [...names].sort().join(",");
+  }
+
+  it.each(NON_EN_LOCALES)(
+    "$locale uses exactly the English placeholders",
+    ({ locale, path }) => {
+      const enFlat: [string, string][] = [];
+      flattenValues(JSON.parse(readFileSync(EN_PATH, "utf8")), "", enFlat);
+      const other = new Map<string, string>();
+      const otherFlat: [string, string][] = [];
+      flattenValues(JSON.parse(readFileSync(path, "utf8")), "", otherFlat);
+      for (const [key, value] of otherFlat) other.set(key, value);
+
+      // A floor, so an empty or unreadable English bundle cannot pass.
+      requireFloor(
+        "English strings carrying a placeholder",
+        enFlat.filter(([, value]) => /\{\w+\}/.test(value)),
+        1000,
+      );
+      const drift = enFlat
+        .filter(([key, enValue]) => {
+          const value = other.get(key);
+          if (value === undefined) return false;
+          const singular = key.endsWith("One");
+          return (
+            placeholderSet(value, singular) !==
+            placeholderSet(enValue, singular)
+          );
+        })
+        .map(
+          ([key, enValue]) =>
+            `  ${key}: en {${placeholderSet(enValue, false)}} vs ${locale} {${placeholderSet(other.get(key) ?? "", false)}}`,
+        );
+      expect(
+        drift,
+        `Translations whose placeholders differ from English:\n${drift.join("\n")}`,
+      ).toEqual([]);
+    },
+  );
+
   it("DE locale renders Health Score pillar labels in German", () => {
     const de = JSON.parse(readFileSync(DE_PATH, "utf8")) as Record<
       string,
