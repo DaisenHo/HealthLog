@@ -92,6 +92,13 @@ const FINALITY_PHRASES: Record<string, readonly string[]> = {
   pl: ["nie można cofnąć", "nie można tego cofnąć", "trwale", "nieodwracaln"],
   ko: ["되돌릴 수 없", "복구할 수 없", "영구", "완전히 삭제"],
   nl: ["niet ongedaan", "definitief", "permanent", "onherroepelijk"],
+  "pt-BR": [
+    "não pode ser desfeit",
+    "não é possível desfazer",
+    "permanentemente",
+    "definitivamente",
+    "irreversível",
+  ],
 };
 
 /** Per-locale phrase that promises the short undo window. */
@@ -104,6 +111,7 @@ const UNDO_PHRASES: Record<string, string> = {
   pl: "cofnąć",
   ko: "되돌릴 수 있",
   nl: "ongedaan maken",
+  "pt-BR": "desfazer",
 };
 
 /** Confirmation bodies whose surface renders an Undo affordance. */
@@ -189,6 +197,7 @@ describe("sleep debt is labelled as a balance, not a summed deficit", () => {
     pl: ["skumulowan", "niedobór", "niedoboru"],
     ko: ["누적", "부족분", "적자", "쌓인"],
     nl: ["cumulatief", "opgeteld", "tekort", "opgebouwd"],
+    "pt-BR": ["acumulad", "déficit", "deficit", "somad"],
   };
 
   for (const locale of LOCALES) {
@@ -326,6 +335,17 @@ describe("the mood prognosis never states a cause", () => {
       "verlaagt je",
       "verhoogt je",
     ],
+    "pt-BR": [
+      "porque",
+      "por causa de",
+      "devido a",
+      "provoca",
+      "leva a",
+      "melhora o seu",
+      "melhora a sua",
+      "piora o seu",
+      "piora a sua",
+    ],
   };
 
   /** Every leaf string under `insights.mood.prognosis`, flattened. */
@@ -430,6 +450,12 @@ describe("the MCP token copy never claims the mint is read-only", () => {
       "alleen-lezentoken",
       "token met alleen leesrechten",
     ],
+    "pt-BR": [
+      "token somente leitura",
+      "token de somente leitura",
+      "token só de leitura",
+      "token apenas de leitura",
+    ],
   };
 
   for (const locale of LOCALES) {
@@ -480,6 +506,7 @@ describe("AI consent withdrawal copy matches what withdrawing does", () => {
     pl: ["własnym kluczu", "lokalnym modelu"],
     ko: ["자신의 키", "로컬 모델"],
     nl: ["eigen sleutel", "lokaal model"],
+    "pt-BR": ["sua própria chave", "modelo local"],
   };
 
   for (const locale of LOCALES) {

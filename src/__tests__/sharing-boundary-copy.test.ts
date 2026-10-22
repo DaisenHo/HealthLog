@@ -105,7 +105,7 @@ describe("the published boundary matches the one the code draws", () => {
     expect(accessDescription()).toMatch(/allergies, family history/i);
   });
 
-  it("keeps the refusal paragraph honest in all six locales", () => {
+  it("keeps the refusal paragraph honest in every locale", () => {
     // The delegate-facing half. It is shown on a page sharing does NOT cover,
     // so a sentence that over-claims there is read at the exact moment
     // somebody is working out where the edge is.
@@ -125,7 +125,7 @@ describe("the published boundary matches the one the code draws", () => {
       // And it must still say the account itself stays with its owner —
       // dropping that would fix one over-claim by removing the boundary.
       expect(text, locale).toMatch(
-        /konto|account|compte|cuenta|konta|koncie|계정/i,
+        /konto|account|compte|cuenta|konta|koncie|conta|계정/i,
       );
     }
     expect(missing).toEqual([]);
