@@ -17,6 +17,7 @@
  * (`PUT /api/auth/me/ai-usage`); a managed profile has no choice of its own
  * and follows the instance default.
  */
+import { readOperatorRow } from "@/lib/settings/operator-row";
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import { memoizePerRequest } from "@/lib/request-cache";
@@ -83,14 +84,7 @@ export function aiUsageSettingsFromRow(
 export function loadAiUsageSettings(): Promise<AiUsageSettings> {
   const read = async (): Promise<AiUsageSettings> => {
     try {
-      const row = await prisma.appSettings.findUnique({
-        where: { id: "singleton" },
-        select: {
-          aiUsageMaxLevel: true,
-          aiUsageDefaultLevel: true,
-          aiSyncRegenGapHours: true,
-        },
-      });
+      const row = await readOperatorRow();
       return aiUsageSettingsFromRow(row);
     } catch {
       getEvent()?.addWarning(
