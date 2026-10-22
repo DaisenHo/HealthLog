@@ -10428,6 +10428,8 @@
       "yellow-fever": "Febbre gialla",
       "japanese-encephalitis": "Encefalite giapponese",
       "cholera": "Colera",
+      "dengue": "Dengue",
+      "tuberculosis": "Tubercolosi",
       "td": "Td (tetano, difterite)",
       "tdap": "Tdap (tetano, difterite, pertosse)",
       "tdap-ipv": "Tdap-IPV (tetravalente)",

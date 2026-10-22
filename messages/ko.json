@@ -10428,6 +10428,8 @@
       "yellow-fever": "황열",
       "japanese-encephalitis": "일본뇌염",
       "cholera": "콜레라",
+      "dengue": "뎅기열",
+      "tuberculosis": "결핵",
       "td": "Td(파상풍, 디프테리아)",
       "tdap": "Tdap(파상풍, 디프테리아, 백일해)",
       "tdap-ipv": "Tdap-IPV(4종 혼합)",

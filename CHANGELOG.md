@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **Dengue and tuberculosis in the vaccine catalogue.** Dengue is listed
+  with the travel vaccines (two doses three months apart) and tuberculosis
+  with the childhood ones (one dose at birth); neither has a booster. Each
+  cites its WHO position paper, and searching "bcg" finds tuberculosis.
+
 ## [1.44.2] — 2026-10-22
 
 ### Changed
