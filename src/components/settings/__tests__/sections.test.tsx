@@ -112,7 +112,7 @@ vi.mock("@/components/settings/thresholds-editor-section", () => ({
 }));
 import { I18nProvider } from "@/lib/i18n/context";
 import { SettingsSectionFrame } from "./section-frame-harness";
-import type { SettingsSectionSlug } from "../section-slugs";
+import type { SettingsSectionSlug } from "@/lib/settings/section-slugs";
 import { AboutSection } from "../about-section";
 import { AccountSection } from "../account-section";
 import { AdvancedSection } from "../advanced-section";

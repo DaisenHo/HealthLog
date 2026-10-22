@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 type Provider = "google_health" | "withings";
 type UserStatus = "complete" | "partial" | "failed" | "parked" | "skipped";
@@ -45,9 +46,9 @@ const googleHandlerSource = readFileSync(
   join(process.cwd(), "src/lib/jobs/reminder/google-health-sync.ts"),
   "utf8",
 );
-const googleSyncSource = readFileSync(
-  join(process.cwd(), "src/lib/google-health/sync.ts"),
-  "utf8",
+const googleSyncSource = readSource(
+  "src/lib/google-health/sync.ts",
+  "export async function syncUserGoogleHealth(",
 );
 const withingsHandlerSource = readFileSync(
   join(process.cwd(), "src/lib/jobs/reminder/withings-sync.ts"),

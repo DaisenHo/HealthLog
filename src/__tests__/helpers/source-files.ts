@@ -50,7 +50,7 @@
  * worktrees, each a full second copy of the tree that would double every
  * match. Every caller roots at `src/`, `e2e/` or a subtree of one.
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, sep } from "node:path";
 
 export function walkSourceFiles(
@@ -228,4 +228,83 @@ export function scanSourceMatches(
     matches,
     options.matchFloor,
   ) as SourceMatch[];
+}
+
+/** Something a file must still contain for a read of it to mean anything. */
+export type SourceAnchor = string | RegExp;
+
+function anchorCount(text: string, anchor: SourceAnchor): number {
+  if (typeof anchor === "string") return text.split(anchor).length - 1;
+  const flags = anchor.flags.includes("g") ? anchor.flags : `${anchor.flags}g`;
+  return [...text.matchAll(new RegExp(anchor.source, flags))].length;
+}
+
+/**
+ * Read one source file by path, and prove it is still the file the guard is
+ * about.
+ *
+ * A guard that reads a fixed path and asserts that something is ABSENT
+ * (`expect(source).not.toMatch(…)`) is green on a file that has been split:
+ * the code it watched moved next door, the old path holds whatever is left,
+ * and the absence is true for the wrong reason. A missing file at least
+ * throws; a file that kept its name but lost its contents does not.
+ *
+ * So the caller names at least one anchor: a string or pattern the watched
+ * code itself carries (the function the guard is about, the call it pins).
+ * Every anchor must match at least once, or this throws and names the file,
+ * which is the moment to point the guard at the new home (or at a folder
+ * with `readSourceFolder`). `rel` is relative to the repository root.
+ */
+export function readSource(
+  rel: string,
+  anchors: SourceAnchor | readonly SourceAnchor[],
+): string {
+  const list = (Array.isArray(anchors) ? anchors : [anchors]) as SourceAnchor[];
+  if (list.length === 0) {
+    throw new Error(
+      `readSource(${rel}): name at least one anchor the watched code carries.`,
+    );
+  }
+  const path = join(process.cwd(), rel);
+  if (!existsSync(path)) {
+    throw new Error(
+      `readSource(${rel}): the file does not exist. If it was split or moved, ` +
+        `point the guard at the new location or scan the folder with ` +
+        `readSourceFolder and a floor.`,
+    );
+  }
+  const text = readFileSync(path, "utf8");
+  const lost = list.filter((anchor) => anchorCount(text, anchor) === 0);
+  if (lost.length > 0) {
+    throw new Error(
+      `readSource(${rel}): the file no longer contains ${lost
+        .map(String)
+        .join(", ")}. The code this guard watches has moved; a negative ` +
+        `assertion on this file would now pass for the wrong reason.`,
+    );
+  }
+  return text;
+}
+
+/**
+ * Read every source file under a folder (relative to the repository root),
+ * with a floor on how many it found: the folder-scan form of `readSource`
+ * for a guard whose subject was split into several files. Returns
+ * `[path relative to the folder, text]` pairs, sorted.
+ */
+export function readSourceFolder(
+  relDir: string,
+  options: {
+    floor: number;
+    include?: (rel: string) => boolean;
+    extensions?: readonly string[];
+  },
+): Array<[string, string]> {
+  const root = join(process.cwd(), relDir);
+  const files = walkSourceFiles(root, {
+    floor: options.floor,
+    extensions: options.extensions,
+  }).filter(options.include ?? (() => true));
+  requireFloor(`readSourceFolder(${relDir})`, files, options.floor);
+  return files.map((rel) => [rel, readFileSync(join(root, rel), "utf8")]);
 }

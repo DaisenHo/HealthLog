@@ -16,7 +16,7 @@ import {
   lowStockTriggerDays,
   supplyRunwayDates,
   type RunwaySchedule,
-} from "@/components/medications/detail/supply-runway";
+} from "@/lib/medications/supply-runway";
 
 function schedule(partial: Partial<RunwaySchedule>): RunwaySchedule {
   return {

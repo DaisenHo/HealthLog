@@ -41,6 +41,7 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import { PasswordCard } from "../password-card";
 import { SecuritySection } from "../security-section";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 const SLOT = 'data-slot="settings-password-card"';
 
@@ -108,9 +109,9 @@ describe("change-password card placement", () => {
   });
 
   it("left no password form behind in the Account section", () => {
-    const account = readFileSync(
-      join(ROOT, "src/components/settings/account-section/index.tsx"),
-      "utf8",
+    const account = readSource(
+      "src/components/settings/account-section/index.tsx",
+      "export function AccountSection",
     );
     for (const marker of [
       "settings.passwordTitle",

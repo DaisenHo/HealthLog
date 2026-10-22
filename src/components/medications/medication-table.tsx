@@ -28,7 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MedicationStatusPill } from "@/components/medications/card-parts/medication-status-pill";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
-import { estimateRunwayDays } from "@/components/medications/detail/supply-runway";
+import { estimateRunwayDays } from "@/lib/medications/supply-runway";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
 import { reduceCurrentWindowStatus } from "@/lib/medications/window-status";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";

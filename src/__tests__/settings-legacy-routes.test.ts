@@ -19,7 +19,7 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import nextConfig from "../../next.config";
-import { SETTINGS_SECTION_SLUGS } from "@/components/settings/section-slugs";
+import { SETTINGS_SECTION_SLUGS } from "@/lib/settings/section-slugs";
 import { LAYOUT_GROUP_IDS } from "@/components/settings/layout-groups";
 import { MODULE_SETTINGS_PAGE_IDS } from "@/components/settings/module-settings-page-ids";
 import {

@@ -88,7 +88,7 @@ import { PhaseConfigSheet } from "@/components/medications/sections/phase-config
 import { SideEffectsSection } from "@/components/medications/side-effects-section";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { TitrationTimeline } from "@/components/medications/titration-timeline";
-import { estimateRunwayDays } from "@/components/medications/detail/supply-runway";
+import { estimateRunwayDays } from "@/lib/medications/supply-runway";
 import type { SupplySummary } from "@/lib/medications/inventory/summary";
 import { MedicationWizardDialog } from "@/components/medications/wizard/medication-wizard-dialog";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";

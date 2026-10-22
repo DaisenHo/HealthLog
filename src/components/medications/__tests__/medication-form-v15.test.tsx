@@ -24,10 +24,8 @@ import {
   weekdayIndexesToTokens,
   weekdayIndexToToken,
 } from "@/components/medications/scheduling/legacy-bridge";
-import {
-  DEFAULT_SUB_CONTROLS,
-  type WeekdayToken,
-} from "@/components/medications/scheduling/types";
+import { DEFAULT_SUB_CONTROLS } from "@/components/medications/scheduling/types";
+import { type WeekdayToken } from "@/lib/medications/scheduling/weekday-tokens";
 
 describe("weekdayIndexToToken", () => {
   it("maps Sunday-anchored 0..6 to SU/MO/TU/WE/TH/FR/SA", () => {

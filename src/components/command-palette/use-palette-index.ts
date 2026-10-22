@@ -14,7 +14,7 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
   buildPaletteIndex,
   type PaletteEntry,
-} from "@/lib/command-palette/build-index";
+} from "@/components/command-palette/build-index";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   MODULE_REGISTRY,

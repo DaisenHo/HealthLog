@@ -5,7 +5,7 @@ import type { APIRequestContext } from "@playwright/test";
 
 import { ADMIN_SECTION_SLUGS } from "@/components/admin/section-slugs";
 import { MODULE_SETTINGS_PAGE_IDS } from "@/components/settings/module-settings-page-ids";
-import { SETTINGS_SECTION_SLUGS } from "@/components/settings/section-slugs";
+import { SETTINGS_SECTION_SLUGS } from "@/lib/settings/section-slugs";
 
 import { expect, test } from "./setup/test";
 import { MOBILE_ROUTES_STORAGE_STATE_PATH } from "./setup/global-setup";
