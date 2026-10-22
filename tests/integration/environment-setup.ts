@@ -1,5 +1,6 @@
-import { afterEach, inject, vi } from "vitest";
+import { afterEach, beforeEach, inject, vi } from "vitest";
 
+import { quarantineEntryFor } from "../quarantine/quarantine";
 import { prepareWorkerDatabase } from "./worker-database";
 
 // Each worker runs against its own clone of the migrated template (see
@@ -33,6 +34,14 @@ afterEach(async () => {
   const { settleBackgroundTasks } =
     await import("@/lib/logging/background-tasks");
   await settleBackgroundTasks();
+});
+
+/** The flaky-test quarantine, as in the unit setup (`vitest.setup.ts`). */
+beforeEach((context) => {
+  const entry = quarantineEntryFor(context.task);
+  if (entry) {
+    context.skip(`quarantined until ${entry.expires} (${entry.issue})`);
+  }
 });
 
 /**
