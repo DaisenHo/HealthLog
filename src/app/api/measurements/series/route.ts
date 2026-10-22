@@ -14,6 +14,7 @@
  * window, judged by that direction) and `referenceLines` (the person's own
  * target lines, else the clinical ones, in the unit of the points).
  */
+import { readDenseSeries } from "@/lib/measurements/dense-series-read";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { prisma } from "@/lib/db";
@@ -33,14 +34,7 @@ import { readSleepNights } from "@/lib/measurements/list/sleep-nights";
 import { VALUE_RANGES } from "@/lib/validations/measurement";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
-import {
-  dayWeightedRows,
-  hourWeightSql,
-  readingsMean,
-  weightedHourMeanSql,
-  windowMeanSql,
-  zoneDayFrame,
-} from "@/lib/measurements/day-mean";
+import { readingsMean } from "@/lib/measurements/day-mean";
 import { seriesRowsFrom } from "@/lib/measurements/series-canonical";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
 import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
@@ -461,135 +455,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // weighted mean of its local hours' means, so a workout hour with hundreds
     // of times the readings does not outweigh the rest of the day (see
     // `day-statistic.ts`). The hour grain is already one mean per hour.
-    const hourWeighted = grain === "day" && usesHourlyMeanDay(type);
-    const bucketRows = await prisma.$queryRawUnsafe<
-      Array<{
-        bucket_start: Date;
-        mean: number;
-        min_value: number;
-        max_value: number;
-      }>
-    >(
-      hourWeighted
-        ? `
-      WITH localized AS (
-        SELECT
-          m."value",
-          m."value_min",
-          m."value_max",
-          date_trunc(
-            'hour',
-            (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE $3
-          ) AS local_hour
-        FROM ${seriesRows}
-        WHERE m."measured_at" >= $4
-      ),
-      hourly AS (
-        SELECT
-          date_trunc($2, local_hour)                              AS local_day,
-          AVG("value")                                            AS hour_mean,
-          COUNT(*)                                                AS n,
-          MIN(COALESCE("value_min", "value"))                     AS min_value,
-          MAX(COALESCE("value_max", "value"))                     AS max_value
-        FROM localized
-        GROUP BY local_hour
-      )
-      SELECT
-        local_day AT TIME ZONE $3                                AS bucket_start,
-        ${weightedHourMeanSql("hour_mean", hourWeightSql("n"))}::double precision AS mean,
-        MIN(min_value)::double precision                         AS min_value,
-        MAX(max_value)::double precision                         AS max_value
-      FROM hourly
-      GROUP BY local_day
-      ORDER BY bucket_start ASC
-    `
-        : `
-      WITH localized AS (
-        SELECT
-          m."value",
-          m."value_min",
-          m."value_max",
-          date_trunc(
-            $2,
-            (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE $3
-          ) AS local_day
-        FROM ${seriesRows}
-        WHERE m."measured_at" >= $4
-      )
-      SELECT
-        local_day AT TIME ZONE $3                                AS bucket_start,
-        AVG("value")::double precision                           AS mean,
-        MIN(COALESCE("value_min", "value"))::double precision    AS min_value,
-        MAX(COALESCE("value_max", "value"))::double precision    AS max_value
-      FROM localized
-      GROUP BY local_day
-      ORDER BY bucket_start ASC
-    `,
-      user.id,
+    const { bucketRows, rawAgg } = await readDenseSeries({
+      userId: user.id,
+      type,
       grain,
       userTz,
       since,
-    );
-    // Stats stay aggregated over the RAW rows (not the day buckets) so the
-    // strip's mean/min/max/stdDev/count are the same figures the raw path
-    // computed: `AVG`/`MIN`/`MAX` over `value`, `STDDEV_POP` matching the
-    // JS population-variance helper, exact row count. Aggregate-only —
-    // no row transfer. For an hourly-mean type (pulse) the mean is the mean
-    // of the local days' values, each day the mean of its local hours'
-    // means, so it is the mean of the day points the chart draws; count,
-    // min, max and the spread stay over every reading.
-    const [rawAgg] = usesHourlyMeanDay(type)
-      ? await prisma.$queryRawUnsafe<
-          Array<{
-            n: number;
-            mean: number | null;
-            min: number | null;
-            max: number | null;
-            sd: number | null;
-          }>
-        >(
-          `
-      WITH src AS (
-        SELECT m.*
-        FROM ${seriesRows}
-        WHERE m."measured_at" >= $2
-      )
-      SELECT
-        COUNT(*)::int                            AS n,
-        ${windowMeanSql({ typeColumn: 'm."type"', value: 'm."value"', weight: "m.day_weight" })}::double precision
-                                                 AS mean,
-        MIN(m."value")::double precision         AS min,
-        MAX(m."value")::double precision         AS max,
-        STDDEV_POP(m."value")::double precision  AS sd
-      FROM ${dayWeightedRows("src", zoneDayFrame("$3"))} m
-      GROUP BY m."type"
-    `,
-          user.id,
-          since,
-          userTz,
-        )
-      : await prisma.$queryRawUnsafe<
-          Array<{
-            n: number;
-            mean: number | null;
-            min: number | null;
-            max: number | null;
-            sd: number | null;
-          }>
-        >(
-          `
-      SELECT
-        COUNT(*)::int                            AS n,
-        AVG(m."value")::double precision         AS mean,
-        MIN(m."value")::double precision         AS min,
-        MAX(m."value")::double precision         AS max,
-        STDDEV_POP(m."value")::double precision  AS sd
-      FROM ${seriesRows}
-      WHERE m."measured_at" >= $2
-    `,
-          user.id,
-          since,
-        );
+      seriesRows,
+    });
     const round2 = (v: number) => Math.round(v * 100) / 100;
     const dayId = (d: Date) =>
       grain === "day"
