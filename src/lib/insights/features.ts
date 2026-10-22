@@ -14,7 +14,12 @@ import {
   SCHEDULE_COMPLIANCE_SELECT,
 } from "@/lib/analytics/compliance";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
-import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
+import {
+  DEFAULT_TIMEZONE,
+  daysBetweenDateKeys,
+  userDayKey,
+} from "@/lib/tz/format";
+import { dateOnlyKey } from "@/lib/tz/date-only";
 import { readingsMean } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { isCurrentForTodayClaim } from "@/lib/insights/measurement-freshness";
@@ -1035,6 +1040,8 @@ async function readMoodFeature(
 
   type MoodDayPoint = {
     measuredAt: Date;
+    /** The entry's own calendar day label (`MoodEntry.date`). */
+    dayKey: string;
     value: number;
     count: number;
   };
@@ -1045,6 +1052,8 @@ async function readMoodFeature(
   if (moodRollupDayRows.length > 0) {
     moodDailyPoints = moodRollupDayRows.map((r) => ({
       measuredAt: r.bucketStart,
+      // The rollup encodes the day label as that label's UTC midnight.
+      dayKey: dateOnlyKey(r.bucketStart),
       value: r.mean,
       count: r.count,
     }));
@@ -1076,10 +1085,18 @@ async function readMoodFeature(
       // Bucket per `date` (TZ-anchored YYYY-MM-DD label, same key the
       // rollup tier would emit for Berlin-anchored single-entry days)
       // so the fallback shape matches the rollup-tier shape.
-      const byDay = new Map<string, { sum: number; count: number; ts: Date }>();
+      const byDay = new Map<
+        string,
+        { dayKey: string; sum: number; count: number; ts: Date }
+      >();
       for (const e of moodEntriesRaw) {
         const k = e.date;
-        const cur = byDay.get(k) ?? { sum: 0, count: 0, ts: e.moodLoggedAt };
+        const cur = byDay.get(k) ?? {
+          dayKey: k,
+          sum: 0,
+          count: 0,
+          ts: e.moodLoggedAt,
+        };
         cur.sum += e.score;
         cur.count += 1;
         // Pin the bucket's measuredAt to the latest entry's timestamp
@@ -1090,6 +1107,7 @@ async function readMoodFeature(
       moodDailyPoints = Array.from(byDay.values())
         .map((b) => ({
           measuredAt: b.ts,
+          dayKey: b.dayKey,
           value: b.sum / b.count,
           count: b.count,
         }))
@@ -1134,11 +1152,17 @@ async function readMoodFeature(
       }
     }
 
-    const oldest = moodDailyPoints[0].measuredAt;
-    const newest = moodDailyPoints[moodDailyPoints.length - 1].measuredAt;
-    const spanDays = Math.round(
-      (newest.getTime() - oldest.getTime()) / (24 * 60 * 60 * 1000),
+    // Ages and span in calendar days: the entries' own day labels against
+    // the reader's today. A rollup point sits at its label's UTC midnight,
+    // and elapsed hours rounded to days called a morning entry a day old
+    // from noon UTC on, so the answer depended on the hour of the question.
+    const todayKey = userDayKey(
+      new Date(moodNow),
+      await resolveUserTimezone(userId),
     );
+    const oldestKey = moodDailyPoints[0].dayKey;
+    const newestKey = moodDailyPoints[moodDailyPoints.length - 1].dayKey;
+    const spanDays = daysBetweenDateKeys(oldestKey, newestKey);
     const avgDaysBetween =
       moodTotalEntries > 1
         ? Math.round((spanDays / (moodTotalEntries - 1)) * 10) / 10
@@ -1158,12 +1182,8 @@ async function readMoodFeature(
         count: moodTotalEntries,
         spanDays,
         avgDaysBetween,
-        oldestDaysAgo: Math.round(
-          (moodNow - oldest.getTime()) / (24 * 60 * 60 * 1000),
-        ),
-        newestDaysAgo: Math.round(
-          (moodNow - newest.getTime()) / (24 * 60 * 60 * 1000),
-        ),
+        oldestDaysAgo: daysBetweenDateKeys(oldestKey, todayKey),
+        newestDaysAgo: daysBetweenDateKeys(newestKey, todayKey),
       },
     };
   }

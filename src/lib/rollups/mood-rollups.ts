@@ -192,7 +192,11 @@ export async function recomputeUserMoodRollups(
   const granularities = opts.granularities ?? ALL_MOOD_GRANULARITIES;
   const fiveYearsAgo = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
   const from = opts.from ?? fiveYearsAgo;
-  const to = opts.to ?? new Date();
+  // A day label runs up to fourteen hours ahead of UTC (the zones east of
+  // it), so the open-ended fold reaches a day past now: bounded by now, the
+  // fold left out the reader's today between their local midnight and UTC
+  // midnight, and every read of the tier saw yesterday as the newest day.
+  const to = opts.to ?? new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   if (opts.replace) {
     // Empty the folded granularities first so the refold below is the
