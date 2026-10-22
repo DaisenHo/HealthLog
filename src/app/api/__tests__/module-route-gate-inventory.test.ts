@@ -507,9 +507,9 @@ const REQUIRED_TREE_MODULE: Readonly<Record<string, ModuleKey>> = {
 const BEHAVIOURAL_GATE_TESTS: ReadonlyArray<{ path: string; proves: string }> =
   [
     {
-      path: "src/app/api/fhir/__tests__/module-gate.test.ts",
+      path: "tests/integration/routes/fhir-module-gate.test.ts",
       proves:
-        "every /api/fhir data route 403s with module.disabled when doctorReport is off",
+        "every /api/fhir data route, search and read, 403s with module.disabled when doctorReport is off (real database, real handler)",
     },
     {
       path: "src/lib/fhir/__tests__/rest-module-backstop.test.ts",

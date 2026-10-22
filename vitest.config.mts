@@ -1,9 +1,37 @@
 import { defineConfig } from "vitest/config";
+import { globSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { createDurationSequencer } from "./tests/durations/sequencer";
+import { classifyUnitFiles } from "./tests/unit-projects";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+/**
+ * Three projects, decided per file from its source (`tests/unit-projects.ts`):
+ * `guards` and `unit` share a module graph inside a worker (`isolate:
+ * false`), because their files neither mock nor stub anything; `isolated`
+ * keeps one fresh graph per file for the ones that do. Run one with
+ * `pnpm test --project guards`.
+ */
+const projectFiles = classifyUnitFiles(
+  __dirname,
+  globSync(
+    [
+      "src/**/*.test.{ts,tsx}",
+      "scripts/__tests__/**/*.test.ts",
+      "eslint-plugins/**/__tests__/**/*.test.mjs",
+      "tests/**/*.test.ts",
+    ],
+    {
+      cwd: __dirname,
+      exclude: (path) =>
+        path.startsWith("tests/integration") || path.includes("node_modules"),
+    },
+  ).sort(),
+);
 
 export default defineConfig({
   test: {
@@ -22,6 +50,11 @@ export default defineConfig({
     // locale synchronously (production gets the active bundle as an RSC
     // prop instead — see src/lib/i18n/load-locale.ts).
     setupFiles: ["./vitest.setup.ts"],
+    // `--shard` splits by measured duration rather than file count, and files
+    // start longest first. See `tests/durations/sequencer.ts`.
+    sequence: {
+      sequencer: createDurationSequencer("tests/durations/unit.json", 0.4),
+    },
     // Default `pnpm test` keeps unit tests only — integration suite uses
     // testcontainers and runs separately via `pnpm test:integration`.
     exclude: [
@@ -40,6 +73,20 @@ export default defineConfig({
       ".wt-*/**",
       ".claude/worktrees/**",
       ".worktrees/**",
+    ],
+    projects: [
+      {
+        extends: true,
+        test: { name: "guards", include: projectFiles.guards, isolate: false },
+      },
+      {
+        extends: true,
+        test: { name: "unit", include: projectFiles.shared, isolate: false },
+      },
+      {
+        extends: true,
+        test: { name: "isolated", include: projectFiles.isolated },
+      },
     ],
     coverage: {
       provider: "v8",

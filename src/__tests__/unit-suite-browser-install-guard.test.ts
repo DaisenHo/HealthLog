@@ -23,8 +23,14 @@ import { join } from "node:path";
 
 const WORKFLOWS = join(process.cwd(), ".github", "workflows");
 
-/** `run: pnpm test` — the whole unit suite, geometry check included. */
-const RUNS_UNIT_SUITE = /^\s*(?:-\s*)?run:\s*pnpm test\s*$/m;
+/**
+ * `run: pnpm test`, or a direct `vitest run` of the unit config with flags
+ * only (the sharded CI job, the nightly shuffled run): the whole unit suite
+ * or a slice of it, geometry check included. A run that names a path or
+ * another `--config` is a different, narrower suite and does not count.
+ */
+const RUNS_UNIT_SUITE =
+  /^\s*(?:-\s*)?run:\s*pnpm test\s*$|pnpm exec vitest run(?![^\n]*--config)(?=\s*$|\s+--)/m;
 const INSTALLS_BROWSER = /playwright install --only-shell chromium/;
 
 describe("the browser the unit suite measures with", () => {

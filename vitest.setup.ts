@@ -18,8 +18,9 @@
  * Server-side translation (`getServerTranslator`, `shared-resolve`) holds
  * every catalog on its own and needs no priming.
  */
-import { afterEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 import { settleBackgroundTasks } from "@/lib/logging/background-tasks";
+import { quarantineEntryFor } from "./tests/quarantine/quarantine";
 import { primeMessages } from "@/lib/i18n/load-locale";
 import enMessages from "./messages/en.json";
 
@@ -42,6 +43,17 @@ primeMessages("en", enMessages);
  */
 afterEach(async () => {
   await settleBackgroundTasks();
+});
+
+/**
+ * Skip a test on the flaky-test quarantine list until its entry expires. See
+ * `tests/quarantine/quarantine.ts` and docs/contributing/testing.md.
+ */
+beforeEach((context) => {
+  const entry = quarantineEntryFor(context.task);
+  if (entry) {
+    context.skip(`quarantined until ${entry.expires} (${entry.issue})`);
+  }
 });
 
 /**

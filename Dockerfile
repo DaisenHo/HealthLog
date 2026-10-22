@@ -4,6 +4,9 @@ RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# The dependency patches pnpm-workspace.yaml names; the frozen install
+# refuses to run without them.
+COPY patches patches
 COPY scripts/prepare.mjs scripts/prepare.mjs
 RUN pnpm install --frozen-lockfile --prod=false
 

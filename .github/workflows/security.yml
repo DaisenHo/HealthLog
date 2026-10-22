@@ -15,10 +15,71 @@ permissions:
   contents: read
 
 jobs:
-  quality:
-    name: Lint, Typecheck & Test
+  # The static checks: everything in the old single quality job except the
+  # unit suite, which runs sharded below.
+  static:
+    name: Lint, Typecheck & OpenAPI
     runs-on: ubuntu-24.04
     if: github.event_name != 'schedule'
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:generate
+
+      # Blocking since v1.15.20 — the settings-split refactor that kept
+      # this warn-only is long done and the tree lints clean.
+      - name: ESLint
+        run: pnpm lint
+
+      # Prettier formatting gate. The format pass excludes generator-owned
+      # artifacts via .prettierignore (notably docs/api/openapi.yaml, which
+      # the OpenAPI drift check below enforces byte-for-byte).
+      - name: Prettier format check
+        run: pnpm format:check
+
+      - name: TypeScript strict check
+        run: pnpm typecheck
+
+      # OpenAPI spec drift gate — hard-fail (flipped from warn-only in v1.4.25).
+      #
+      # The Zod registry is the source of truth for the public API contract.
+      # Any route signature change must be reflected in `docs/api/openapi.yaml`
+      # so downstream consumers (notably the v1.5 iOS Swift codegen) stay in
+      # lockstep. If this step fails, run `pnpm openapi:generate` locally and
+      # commit the regenerated spec.
+      - name: OpenAPI spec drift check
+        run: |
+          pnpm openapi:generate
+          if ! git diff --exit-code docs/api/openapi.yaml; then
+            echo "::error::OpenAPI drift detected — regenerate the spec via 'pnpm openapi:generate' and commit the result. The Zod registry under src/lib/openapi/ is the source of truth for the public API contract."
+            exit 1
+          fi
+          echo "::notice::OpenAPI spec in sync with Zod source schemas."
+
+  # The unit suite in three slices of about equal duration. `--shard` goes
+  # through the duration sequencer in `vitest.config.mts`, which deals files
+  # out by their measured time (`tests/durations/unit.json`) instead of by
+  # count. Each slice uploads its JSON report, which is what
+  # `scripts/test-durations.mjs` regenerates the timing file from.
+  unit:
+    runs-on: ubuntu-24.04
+    if: github.event_name != 'schedule'
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    name: unit shard ${{ matrix.shard }}/3
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -38,7 +99,8 @@ jobs:
       # real browser and measures the boxes. Without a browser here it caught
       # its own launch failure and passed anyway, so from its first day until
       # v1.38 it measured nothing on any run of this job. The browser is part
-      # of the gate now; the test refuses to skip when CI is set.
+      # of the gate now; the test refuses to skip when CI is set. Every slice
+      # installs it, because the sequencer decides which slice the file lands in.
       #
       # Headless shell only: `chromium.launch()` resolves to
       # chromium_headless_shell, which is what the failing runs named, and the
@@ -54,38 +116,40 @@ jobs:
 
       - run: pnpm exec playwright install --only-shell chromium
 
-      # Blocking since v1.15.20 — the settings-split refactor that kept
-      # this warn-only is long done and the tree lints clean.
-      - name: ESLint
-        run: pnpm lint
-
-      # Prettier formatting gate. The format pass excludes generator-owned
-      # artifacts via .prettierignore (notably docs/api/openapi.yaml, which
-      # the OpenAPI drift check below enforces byte-for-byte).
-      - name: Prettier format check
-        run: pnpm format:check
-
-      - name: TypeScript strict check
-        run: pnpm typecheck
-
+      # vitest directly, not `pnpm test --`: pnpm hands the separator through
+      # literally and the shard flag would never reach vitest.
       - name: Unit tests
-        run: pnpm test
+        run: >-
+          pnpm exec vitest run --shard=${{ matrix.shard }}/3
+          --reporter=default --reporter=json
+          --outputFile.json=unit-report-${{ matrix.shard }}.json
 
-      # OpenAPI spec drift gate — hard-fail (flipped from warn-only in v1.4.25).
-      #
-      # The Zod registry is the source of truth for the public API contract.
-      # Any route signature change must be reflected in `docs/api/openapi.yaml`
-      # so downstream consumers (notably the v1.5 iOS Swift codegen) stay in
-      # lockstep. If this step fails, run `pnpm openapi:generate` locally and
-      # commit the regenerated spec.
-      - name: OpenAPI spec drift check
+      - name: Upload the timing report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unit-report-${{ matrix.shard }}
+          path: unit-report-${{ matrix.shard }}.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Branch protection requires a check named exactly "Lint, Typecheck & Test".
+  # That used to be one job running everything in turn; it is now this one,
+  # which answers for the static checks and every unit slice, so a half-green
+  # set cannot satisfy the gate.
+  quality:
+    name: Lint, Typecheck & Test
+    runs-on: ubuntu-24.04
+    needs: [static, unit]
+    if: always() && github.event_name != 'schedule'
+    timeout-minutes: 5
+    steps:
+      - name: The static checks and every unit slice finished green
         run: |
-          pnpm openapi:generate
-          if ! git diff --exit-code docs/api/openapi.yaml; then
-            echo "::error::OpenAPI drift detected — regenerate the spec via 'pnpm openapi:generate' and commit the result. The Zod registry under src/lib/openapi/ is the source of truth for the public API contract."
+          if [ "${{ needs.static.result }}" != "success" ] || [ "${{ needs.unit.result }}" != "success" ]; then
+            echo "static: ${{ needs.static.result }}, unit: ${{ needs.unit.result }}"
             exit 1
           fi
-          echo "::notice::OpenAPI spec in sync with Zod source schemas."
 
   # Not on pull requests. `pnpm audit` answers a question about the published
   # advisory database, not about the diff: the same lockfile passes on Monday
