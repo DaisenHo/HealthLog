@@ -4,8 +4,8 @@
  * restored into a fresh account, and read back there.
  *
  * The table below has one entry per write, and every `User` column the backup
- * classifies as a `SETTING` (`USER_COLUMN_BACKUP_CLASS` in
- * `src/lib/export/backup-plan.ts`) appears in exactly one entry. A new setting
+ * classifies as a `SETTING` (a codec in `ACCOUNT_SETTING_CODECS`,
+ * `src/lib/export/account-settings-backup.ts`) appears in exactly one entry. A new setting
  * column fails the inventory case until it is given an entry, which is the
  * point: the class of bug this file exists for is a setting that is stored but
  * not read back, read back but not published, or published but dropped by the
@@ -29,7 +29,7 @@ import type { User } from "@/generated/prisma/client";
 import {
   USER_COLUMN_BACKUP_CLASS,
   type AccountSettingColumn,
-} from "@/lib/export/backup-plan";
+} from "@/lib/export/account-settings-backup";
 
 import { GET as getMe } from "@/app/api/auth/me/route";
 import * as profile from "@/app/api/user/profile/route";

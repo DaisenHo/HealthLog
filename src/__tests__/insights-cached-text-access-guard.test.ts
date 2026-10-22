@@ -25,7 +25,7 @@ const SEALED_ALLOWED: Readonly<Record<string, string>> = {
   "lib/insights/cached-text-cipher.ts": "the one module that owns the column",
   "lib/crypto/encrypted-columns.ts":
     "the registry of every ciphertext-bearing column",
-  "lib/export/backup-plan.ts":
+  "lib/export/account-settings-classes.ts":
     "the backup classification names every User column",
   "lib/data-wipe/wipe-plan.ts": "the wipe reset names every User column",
 };

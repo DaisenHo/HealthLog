@@ -100,7 +100,7 @@ import { restoreOnboardingData } from "@/lib/export/onboarding-backup";
 import {
   restoreAccountSettings,
   type AccountSettingsRestoreResult,
-} from "@/lib/export/account-settings-backup";
+} from "@/lib/export/account-settings-restore";
 import { refreshTextsAfterUnitChange } from "@/lib/insights/unit-change-refresh";
 import { restoreVisitsData } from "@/lib/export/visits-backup";
 import { restoreVaccinationsData } from "@/lib/export/vaccinations-backup";
