@@ -7430,6 +7430,7 @@
         "lastReceived": "Última recepción {relative}",
         "lastNewValue": "Último valor nuevo {relative}",
         "lastBackground": "Última vez en segundo plano {relative}",
+        "lastDuplicate": "Último reenvío sin datos nuevos {relative}",
         "never": "Aún no recibido",
         "lastBackfill": "Historial recuperado {relative}",
         "lastEnteredHere": "Último registro aquí {relative}"

@@ -201,7 +201,7 @@ const bulkIntakePayload = z
       .enum(["foreground", "background", "push", "manual", "backfill"])
       .optional()
       .describe(
-        'Diagnostic-only, the same field `POST /api/measurements/batch` takes (since v1.42.4): what woke the client for this sync. `backfill` (v1.43, only when `features.syncTriggerBackfill` is `true`) marks a history catch-up, which moves only the `MEDICATION_DOSE` entry\'s `lastBackfillAt` and leaves its live stamps and the sync checkpoint alone. When the batch carries entries with `source: "APPLE_HEALTH"` that land (`inserted`, `updated` or `duplicate`), it is recorded on the `MEDICATION_DOSE` entry of `metricFreshness` in `GET /api/integrations/healthkit` as `lastTrigger`, and a `background` value also dates its `lastBackgroundAt`. It changes no dose row. Optional; omitted records a null trigger.',
+        "Diagnostic-only, the same field `POST /api/measurements/batch` takes (since v1.42.4): what woke the client for this sync. `backfill` (v1.43, only when `features.syncTriggerBackfill` is `true`) marks a history catch-up, which moves only the `MEDICATION_DOSE` entry's `lastBackfillAt` and leaves its live stamps and the sync checkpoint alone. When the batch brings at least one new or changed entry with `source: \"APPLE_HEALTH\"` (`inserted` or `updated`), it is recorded on the `MEDICATION_DOSE` entry of `metricFreshness` in `GET /api/integrations/healthkit` as `lastTrigger`, and a `background` value also dates its `lastBackgroundAt`. Since v1.45 a batch whose Apple Health entries are all `duplicate` moves only that entry's `lastSeenDuplicateAt`. It changes no dose row. Optional; omitted records a null trigger.",
       ),
   })
   .meta({

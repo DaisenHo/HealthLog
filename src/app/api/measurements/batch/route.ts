@@ -657,6 +657,11 @@ async function postBatch(request: NextRequest): Promise<Response> {
    * and in nothing that starts work.
    */
   let unchangedStatsCount = 0;
+  /**
+   * The `stats:` re-posts answered `updated` without a write because nothing
+   * changed. Not an arrival of their type (#1259).
+   */
+  const unchangedStatsRows = new Set<Prepared>();
   let duplicateCount = 0;
   let failedCount = 0;
   // v1.44 — subset of `insertedCount` written by the set-based insert.
@@ -1050,6 +1055,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
       if (statsRow && isUnchangedStatsRow(p)) {
         results[p.index] = { index: p.index, status: "updated" };
         unchangedStatsCount++;
+        unchangedStatsRows.add(p);
         pushMergeCandidate(p);
         continue;
       }
@@ -1103,6 +1109,8 @@ async function postBatch(request: NextRequest): Promise<Response> {
   let hourInsertedCount = 0;
   let hourUpdatedCount = 0;
   const hourLanded: HourBucketWrite[] = [];
+  /** The landed hours that wrote a new or different value (#1259). */
+  const hourChanged = new Set<HourBucketWrite>();
   if (hourWrites.length > 0 && accountTz) {
     const { writes, superseded } = combineHourWrites(hourWrites);
     for (const index of superseded) {
@@ -1124,11 +1132,17 @@ async function postBatch(request: NextRequest): Promise<Response> {
       for (const { write, contributors } of writes) {
         const status = statuses.get(write.index) ?? "inserted";
         for (const index of contributors) {
-          results[index] = { index, status };
+          // An hour posted again with the same value reads `updated` on the
+          // wire, as before; only the arrival ledger tells the two apart.
+          results[index] = {
+            index,
+            status: status === "inserted" ? "inserted" : "updated",
+          };
           if (status === "inserted") hourInsertedCount++;
           else hourUpdatedCount++;
         }
         hourLanded.push(write);
+        if (status !== "unchanged") hourChanged.add(write);
       }
     } catch (err) {
       for (const { contributors } of writes) {
@@ -1211,7 +1225,11 @@ async function postBatch(request: NextRequest): Promise<Response> {
       syncTrigger === "background" || syncTrigger === "push";
     // v1.42 (#1173) — what this sync brought per type, for the per-type
     // freshness list on the Apple Health card. Apple Health rows only, and
-    // under the same conditions as the checkpoint beside it.
+    // under the same conditions as the checkpoint beside it. Since #1259 only
+    // a new or changed row makes a type arrive: a duplicate, an unchanged
+    // `stats:` re-post and an hour posted again with its stored value are
+    // carried (`accepted`) but bring nothing (`newSamples`), so a replay or a
+    // retry cannot make a stalled type look live.
     const arrivals = new Map<MeasurementType, HealthKitTypeArrival>();
     for (const p of prepared) {
       if (p.row.source !== "APPLE_HEALTH") continue;
@@ -1226,14 +1244,17 @@ async function postBatch(request: NextRequest): Promise<Response> {
       const type = p.row.type as MeasurementType;
       const entry = arrivals.get(type) ?? { accepted: 0, newSamples: 0 };
       entry.accepted += 1;
-      if (status !== "duplicate") entry.newSamples += 1;
+      if (status !== "duplicate" && !unchangedStatsRows.has(p)) {
+        entry.newSamples += 1;
+      }
       arrivals.set(type, entry);
     }
-    // The hours the phone posted are an arrival of their type as well.
+    // The hours the phone posted are carried by their type as well, and
+    // bring something only when the slot's value changed.
     for (const w of hourLanded) {
       const entry = arrivals.get(w.type) ?? { accepted: 0, newSamples: 0 };
       entry.accepted += 1;
-      entry.newSamples += 1;
+      if (hourChanged.has(w)) entry.newSamples += 1;
       arrivals.set(w.type, entry);
     }
     if (arrivals.size > 0) {

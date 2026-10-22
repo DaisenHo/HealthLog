@@ -159,7 +159,7 @@ describe("migration 0401 over enum-typed ledger rows", () => {
     await recordHealthKitTypeArrivals(prisma, {
       userId: USER,
       counts: new Map([
-        ["WEIGHT", { accepted: 1, newSamples: 0 }],
+        ["WEIGHT", { accepted: 1, newSamples: 1 }],
         ["MEDICATION_DOSE", { accepted: 2, newSamples: 2 }],
       ]),
       trigger: "foreground",

@@ -28534,11 +28534,12 @@ components:
             /api/integrations/healthkit`, never `lastReceivedAt`, `lastTrigger`, `lastBackgroundAt`, `lastSyncTrigger`,
             `lastBackgroundSyncAt` or the sync checkpoint. Recorded on the ingest wide event and kept on the account as
             `lastSyncTrigger` — plus `lastBackgroundSyncAt` for a `background` or `push` trigger — both readable from
-            `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the batch carried
-            (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` / `lastNewSampleAt` on each
-            `metricFreshness` entry of that read, plus `lastBackgroundAt` (since v1.42.4) for a `background` trigger. It
-            does not affect dedup, attribution, or how any sample is stored. Optional and backward-compatible: pre-#66
-            clients omit it.'
+            `GET /api/integrations/healthkit`. Since v1.42 it is also recorded per measurement type the batch brought
+            something new or changed for (Apple Health rows only), served as `lastReceivedAt` / `lastTrigger` /
+            `lastNewSampleAt` on each `metricFreshness` entry of that read, plus `lastBackgroundAt` (since v1.42.4) for
+            a `background` trigger. Since v1.45 a type the batch carried with duplicates only (an unchanged `stats:`
+            re-post included) moves only its `lastSeenDuplicateAt`. It does not affect dedup, attribution, or how any
+            sample is stored. Optional and backward-compatible: pre-#66 clients omit it.'
           type: string
           enum:
             - foreground
@@ -29178,10 +29179,11 @@ components:
           description: "Diagnostic-only, the same field `POST /api/measurements/batch` takes (since v1.42.4): what woke the client
             for this sync. `backfill` (v1.43, only when `features.syncTriggerBackfill` is `true`) marks a history
             catch-up, which moves only the `MEDICATION_DOSE` entry's `lastBackfillAt` and leaves its live stamps and the
-            sync checkpoint alone. When the batch carries entries with `source: \"APPLE_HEALTH\"` that land (`inserted`,
-            `updated` or `duplicate`), it is recorded on the `MEDICATION_DOSE` entry of `metricFreshness` in `GET
-            /api/integrations/healthkit` as `lastTrigger`, and a `background` value also dates its `lastBackgroundAt`.
-            It changes no dose row. Optional; omitted records a null trigger."
+            sync checkpoint alone. When the batch brings at least one new or changed entry with `source:
+            \"APPLE_HEALTH\"` (`inserted` or `updated`), it is recorded on the `MEDICATION_DOSE` entry of
+            `metricFreshness` in `GET /api/integrations/healthkit` as `lastTrigger`, and a `background` value also dates
+            its `lastBackgroundAt`. Since v1.45 a batch whose Apple Health entries are all `duplicate` moves only that
+            entry's `lastSeenDuplicateAt`. It changes no dose row. Optional; omitted records a null trigger."
           type: string
           enum:
             - foreground
@@ -81003,11 +81005,14 @@ components:
           description: This type has gone quiet while the source around it reads healthy — the dead-pipe signature (e.g. a single
             revoked HealthKit permission). Only ever true when the verdict is `fresh`.
         lastReceivedAt:
-          description: "When a live sync batch last carried this type (inserted, updated or duplicate entries all count). Null
-            when no live sync has carried it yet: a type that so far came only from the export import, or from before
-            v1.42. `lastSeenAt` is when the newest sample was TAKEN; this is when the server last RECEIVED the type.
-            Omitted on the `WORKOUTS` entry, which the ledger does not cover, and on every entry when the ledger read
-            failed."
+          description: "When a live sync batch last brought a new or changed row of this type. Since v1.45 a batch that carried
+            the type with duplicates only (an unchanged `stats:` re-post or an hour posted again with its stored value
+            included) does not move it, nor `lastTrigger` or `lastBackgroundAt`; it moves `lastSeenDuplicateAt`. Before
+            v1.45 duplicates counted too, so a stored value can still date from a duplicates-only batch. Null when no
+            live sync has brought anything for it yet: a type that so far came only from the export import, or from
+            before v1.42. `lastSeenAt` is when the newest sample was TAKEN; this is when the server last RECEIVED the
+            type. Omitted on the `WORKOUTS` entry, which the ledger does not cover, and on every entry when the ledger
+            read failed."
           anyOf:
             - type: string
               format: date-time
@@ -81027,6 +81032,7 @@ components:
             - type: "null"
         lastNewSampleAt:
           description: When a live sync batch last brought a new or updated sample of this type, as opposed to duplicates only.
+            Since v1.45 this moves together with `lastReceivedAt`; the two differ only on a row last written before.
             Null when none has. Same omission rules as `lastReceivedAt`.
           anyOf:
             - type: string
@@ -81040,6 +81046,16 @@ components:
             background as far as the server recorded: before v1.42.4 only the latest arrival was kept, so a type whose
             latest arrival then was a background one starts with that date and every other type starts null. Same
             omission rules as `lastReceivedAt`.'
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        lastSeenDuplicateAt:
+          description: v1.45 — when a live sync batch last carried this type with duplicates only, nothing new or changed. Later
+            than `lastReceivedAt` means the phone keeps sending the type but nothing new has arrived since
+            `lastReceivedAt`. Null when no duplicates-only batch was recorded for an existing ledger row since v1.45.
+            Same omission rules as `lastReceivedAt`; absent on older servers.
           anyOf:
             - type: string
               format: date-time

@@ -230,12 +230,17 @@ export function combineHourWrites(entries: readonly HourBucketEntry[]): {
   return { writes, superseded };
 }
 
+/** What one hour write did to its slot. */
+export type HourBucketWriteStatus = "inserted" | "updated" | "unchanged";
+
 /**
  * Store a batch's hours, one transaction per (type, day). Returns the
  * per-entry status: `inserted` for the first value of a slot, `updated` when
- * it replaced one. A later entry for the same slot in one batch wins, and the
- * earlier ones read `updated` too, since the slot already held a value when
- * they were applied in order.
+ * it replaced one, `unchanged` when the slot already held exactly this value
+ * (a re-post that changed nothing; the wire still reports it `updated`, but
+ * it is not an arrival of the type, #1259). A later entry for the same slot
+ * in one batch wins, and the earlier ones read `updated` too, since the slot
+ * already held a value when they were applied in order.
  *
  * Serialised against the nightly drain's merge for the same day by the
  * drain's own advisory lock (keyed on the day's `stats:` id), so a bucket
@@ -246,8 +251,8 @@ export async function writeHourBuckets(
   userId: string,
   timezone: string,
   writes: readonly HourBucketWrite[],
-): Promise<Map<number, "inserted" | "updated">> {
-  const statuses = new Map<number, "inserted" | "updated">();
+): Promise<Map<number, HourBucketWriteStatus>> {
+  const statuses = new Map<number, HourBucketWriteStatus>();
   const groups = new Map<string, HourBucketWrite[]>();
   for (const w of writes) {
     const key = `${w.type}::${w.dateKey}`;
@@ -282,7 +287,14 @@ export async function writeHourBuckets(
           ? [...existing.hourlyIncrements]
           : new Array<number>(PROFILE_HOURS).fill(HOUR_NOT_POSTED);
       for (const w of group) {
-        statuses.set(w.index, increments[w.hour] >= 0 ? "updated" : "inserted");
+        statuses.set(
+          w.index,
+          increments[w.hour] < 0
+            ? "inserted"
+            : increments[w.hour] === w.value
+              ? "unchanged"
+              : "updated",
+        );
         increments[w.hour] = w.value;
       }
       const bucketCount = postedHours(increments);

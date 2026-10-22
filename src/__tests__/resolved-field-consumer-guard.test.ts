@@ -471,6 +471,17 @@ const V143_FIELDS: ResolvedFieldEntry[] = [
       },
     ],
   },
+  {
+    field:
+      "GET /api/integrations/healthkit metricFreshness[].lastSeenDuplicateAt",
+    props: [],
+    readers: [
+      {
+        file: "src/components/settings/integrations/apple-health-card.tsx",
+        pattern: /entry\.lastSeenDuplicateAt/,
+      },
+    ],
+  },
 ];
 
 /**

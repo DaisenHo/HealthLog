@@ -138,7 +138,7 @@ describe("per-type arrival ledger (#1173)", () => {
     }
   });
 
-  it("moves the arrival but keeps the last new value on a duplicates-only re-send", async () => {
+  it("keeps the arrival and dates the re-send on a duplicates-only batch (#1259)", async () => {
     await armSession();
     const weight = entry(
       "HKQuantityTypeIdentifierBodyMass",
@@ -158,12 +158,14 @@ describe("per-type arrival ledger (#1173)", () => {
       where: { userId_type: { userId: USER_ID, type: "WEIGHT" } },
     });
 
-    expect(second.lastTrigger).toBe("background");
-    expect(second.lastReceivedAt.getTime()).toBeGreaterThan(
-      first.lastReceivedAt.getTime(),
-    );
+    expect(second.lastTrigger).toBe("foreground");
+    expect(second.lastReceivedAt).toEqual(first.lastReceivedAt);
+    expect(second.lastBackgroundAt).toBeNull();
     expect(second.lastNewSampleAt?.toISOString()).toBe(
       first.lastNewSampleAt?.toISOString(),
+    );
+    expect(second.lastSeenDuplicateAt?.getTime()).toBeGreaterThan(
+      first.lastReceivedAt.getTime(),
     );
   });
 

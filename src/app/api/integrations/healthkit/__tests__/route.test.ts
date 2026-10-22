@@ -617,6 +617,7 @@ describe("GET /api/integrations/healthkit — sync health", () => {
       lastNewSampleAt: null,
       lastBackgroundAt: backgroundAt.toISOString(),
       lastBackfillAt: null,
+      lastSeenDuplicateAt: null,
     });
     expect(byType.PULSE).toMatchObject({ lastBackgroundAt: null });
   });

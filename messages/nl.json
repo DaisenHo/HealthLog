@@ -7430,6 +7430,7 @@
         "lastReceived": "Laatst ontvangen {relative}",
         "lastNewValue": "Laatste nieuwe waarde {relative}",
         "lastBackground": "Laatst op de achtergrond {relative}",
+        "lastDuplicate": "Laatst opnieuw verzonden zonder nieuwe waarden {relative}",
         "never": "Nog niet ontvangen",
         "lastBackfill": "Geschiedenis bijgewerkt {relative}",
         "lastEnteredHere": "Laatst hier ingevoerd {relative}"

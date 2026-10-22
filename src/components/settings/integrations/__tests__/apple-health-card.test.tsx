@@ -449,6 +449,32 @@ describe("<AppleHealthCard> — per-type arrivals (#1173)", () => {
     expect(out).toContain("Last new value 3 d ago");
   });
 
+  // #1259 — a duplicates-only batch no longer moves the arrival; the card
+  // says the phone kept sending the type without hiding when it last brought
+  // something.
+  it("names a later re-send with nothing new beside the last arrival", () => {
+    const out = html({
+      ...base,
+      lastReceivedAt: hoursAgo(20),
+      lastTrigger: "foreground",
+      lastNewSampleAt: hoursAgo(20),
+      lastSeenDuplicateAt: hoursAgo(1),
+    });
+    expect(out).toContain("Last received 20 h ago");
+    expect(out).toContain("Last re-sent with nothing new 1 h ago");
+  });
+
+  it("does not name a re-send older than the last arrival", () => {
+    const out = html({
+      ...base,
+      lastReceivedAt: hoursAgo(1),
+      lastTrigger: "foreground",
+      lastNewSampleAt: hoursAgo(1),
+      lastSeenDuplicateAt: hoursAgo(5),
+    });
+    expect(out).not.toContain("Last re-sent");
+  });
+
   // v1.42.4 — opening the app to look starts a foreground sync; the earlier
   // background arrival must stay visible beside it.
   it("keeps the last background arrival visible after a later foreground one", () => {

@@ -192,11 +192,24 @@ export function ArrivalDetail({
         : "settings.appleHealth.delivery.trigger.unknown",
     ),
   ];
-  // Only worth a mention when the last arrival brought duplicates alone.
+  // Only worth a mention on a row last written before duplicates stopped
+  // counting as an arrival (#1259); since then the two move together.
   if (entry.lastNewSampleAt && entry.lastNewSampleAt !== entry.lastReceivedAt) {
     parts.push(
       t("settings.appleHealth.freshness.lastNewValue", {
         relative: relative(entry.lastNewSampleAt),
+      }),
+    );
+  }
+  // The phone kept re-sending the type after its last new value: the
+  // arrival above stays put, and this says the type is still being sent.
+  if (
+    entry.lastSeenDuplicateAt &&
+    Date.parse(entry.lastSeenDuplicateAt) > Date.parse(entry.lastReceivedAt)
+  ) {
+    parts.push(
+      t("settings.appleHealth.freshness.lastDuplicate", {
+        relative: relative(entry.lastSeenDuplicateAt),
       }),
     );
   }

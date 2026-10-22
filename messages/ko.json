@@ -7430,6 +7430,7 @@
         "lastReceived": "마지막 수신 {relative}",
         "lastNewValue": "마지막 새 값 {relative}",
         "lastBackground": "마지막 백그라운드 수신 {relative}",
+        "lastDuplicate": "새 값 없이 마지막 재전송 {relative}",
         "never": "아직 수신되지 않음",
         "lastBackfill": "기록 보충 {relative}",
         "lastEnteredHere": "여기에서 마지막 입력 {relative}"
