@@ -76,15 +76,17 @@ describe("callRoute's contract check", () => {
     ).rejects.toThrow(/answered 409, which the contract does not declare/);
   });
 
-  it("refuses a 403 that is not the generic scope refusal", async () => {
+  it("refuses the scope gate's 403 on an operation that declares none", async () => {
+    // `/api/version` takes no credential, so no 403 is declared on it; the
+    // generic refusal is accepted only where the contract says so.
     await expect(
       callRoute(
         answering(403, {
           data: null,
-          error: "nope",
-          meta: { errorCode: "http.forbidden" },
+          error: "Insufficient scope",
+          meta: { errorCode: "auth.scope.insufficient" },
         }),
-        { method: "GET", route: "/api/tokens", auth: anonymous },
+        { method: "GET", route: "/api/version", auth: anonymous },
       ),
     ).rejects.toThrow(/answered 403/);
   });
