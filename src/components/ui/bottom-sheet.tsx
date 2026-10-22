@@ -148,6 +148,7 @@ export function BottomSheetContent({
   const openerRef = React.useRef<HTMLElement | null>(null);
   const initial: SheetSnap = preview ? "preview" : "full";
   const [snap, setSnap] = React.useState<SheetSnap>(initial);
+  const [node, setNode] = React.useState<HTMLDivElement | null>(null);
 
   const drag = useSheetDrag({
     enabled: draggable,
@@ -158,11 +159,13 @@ export function BottomSheetContent({
     contentRef,
     overlayRef,
     probeRef,
+    node,
   });
 
   const setContent = React.useCallback(
     (node: HTMLDivElement | null) => {
       contentRef.current = node;
+      setNode(node);
       if (typeof ref === "function") ref(node);
       else if (ref) ref.current = node;
     },

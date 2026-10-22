@@ -422,6 +422,14 @@ export interface UseSheetDragArgs {
   contentRef: React.RefObject<HTMLElement | null>;
   overlayRef: React.RefObject<HTMLElement | null>;
   probeRef: React.RefObject<HTMLElement | null>;
+  /**
+   * The mounted sheet element, as state rather than a ref. The sheet is
+   * portaled and mounts only while open, often long after the component
+   * that owns it (the More sheet's content is rendered, closed, from the
+   * first paint); the touch listeners below must be attached when the
+   * element appears, which a ref cannot announce.
+   */
+  node: HTMLElement | null;
 }
 
 export interface SheetDragHandlers {
@@ -441,6 +449,7 @@ export function useSheetDrag({
   contentRef,
   overlayRef,
   probeRef,
+  node,
 }: UseSheetDragArgs): SheetDragHandlers {
   const latest = useRef({ hasPreview, snap, onSnap, onClose });
   useEffect(() => {
@@ -463,8 +472,8 @@ export function useSheetDrag({
   }, [contentRef, overlayRef, probeRef]);
 
   useEffect(() => {
-    if (!enabled) return;
-    const content = contentRef.current;
+    if (!enabled || !node) return;
+    const content = node;
     const overlay = overlayRef.current;
     const drag = controller();
     const onContentTouch = (event: TouchEvent) => drag.touchMove(event);
@@ -472,14 +481,14 @@ export function useSheetDrag({
     const onOverlayTouch = (event: TouchEvent) => {
       if (event.cancelable) event.preventDefault();
     };
-    content?.addEventListener("touchmove", onContentTouch, { passive: false });
+    content.addEventListener("touchmove", onContentTouch, { passive: false });
     overlay?.addEventListener("touchmove", onOverlayTouch, { passive: false });
     return () => {
-      content?.removeEventListener("touchmove", onContentTouch);
+      content.removeEventListener("touchmove", onContentTouch);
       overlay?.removeEventListener("touchmove", onOverlayTouch);
       drag.dispose();
     };
-  }, [enabled, controller, contentRef, overlayRef]);
+  }, [enabled, node, controller, overlayRef]);
 
   if (!enabled) return {};
   return {
