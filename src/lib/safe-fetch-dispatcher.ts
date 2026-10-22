@@ -147,6 +147,14 @@ let cachedOperatorApproved: Agent | null = null;
 
 function createPinnedDispatcher(policy: AddressPolicy): Agent {
   return new Agent({
+    // #1267 — undici's own 300 s header and body timers would cut a call the
+    // caller allowed longer: a local model with a 600 s response timeout
+    // answers a non-streamed completion only when it is done, so its headers
+    // can take longer than 300 s, and the failure surfaced as a bare
+    // "network" error. Every `safeFetch` call carries its own
+    // `AbortSignal.timeout`, so that signal is the one deadline.
+    headersTimeout: 0,
+    bodyTimeout: 0,
     connect: {
       lookup:
         policy === "public" ? pinnedPublicLookup : pinnedOperatorApprovedLookup,
