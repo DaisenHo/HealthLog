@@ -93,11 +93,12 @@ jobs:
       - run: NODE_OPTIONS=--max-old-space-size=8192 pnpm build
 
       # Client-bundle budget gate — rides this job because it is the one
-      # place CI already has a production build on disk. Catches the
-      # regressions the dead webpack-era tooling (ANALYZE=1, the old
-      # bundle-report) let through: a statically imported message catalog
-      # (~100 KB gz on every route) or a chart import bypassing the shared
-      # chart-runtime boundary (a duplicated ~92 KB gz recharts chunk).
+      # place CI already has a production build on disk. Measures the first
+      # load of every page (files deduplicated by content hash) against its
+      # baseline, the p95 and max across pages, and the distinct client code
+      # (modules deduplicated by id); see the script header. Catches a
+      # statically imported message catalog, a duplicated recharts chunk, or
+      # a heavy module (Zod) pulled into a page that had none.
       - run: pnpm bundle-check
 
       - run: pnpm exec playwright test --shard=${{ matrix.shard }}/3
