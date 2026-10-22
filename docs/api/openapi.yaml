@@ -24785,6 +24785,93 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /api/admin/backups/upload:
+    post:
+      tags:
+        - Admin
+      summary: Store an uploaded backup file as a new copy
+      description: "Reads a backup file, checks it, and stores it encrypted as a new copy beside the weekly one; it does NOT
+        restore anything. Restoring is the separate `POST /api/admin/backups/{id}/restore`, so an operator can review
+        what was uploaded first. The file goes up as the raw request body, plain JSON or gzip-compressed JSON (sniffed
+        from the bytes, not the content type), up to 512 MB as sent; or, for a file up to 10 MB, as
+        `multipart/form-data` with one `file` field. It is read as a stream, checked as it arrives, and stored in the
+        same pass; a file that fails any check leaves nothing behind. It is refused when it is not valid JSON, fails the
+        backup schema, was written by a newer schema version than this server reads, needs an encryption key this server
+        does not hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds` naming them), or belongs to an account
+        that does not exist here. Three uploads a minute per administrator. Admin session cookie required; Bearer tokens
+        cannot reach admin endpoints. A browser session needs a fresh proof as well as a live one: a sign-in or `POST
+        /api/auth/reproof` within the last five minutes (with a second factor, on an account that has one). Without it
+        the answer is 401 `auth.reproof.required`, with `meta.methods` naming the proofs the account can give."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties: {}
+              description: The backup document, as `GET /api/admin/backups/{id}/download` or the account export wrote it.
+          application/gzip:
+            schema:
+              type: string
+              format: binary
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The backup file, plain or gzip-compressed, up to 10 MB.
+              required:
+                - file
+      responses:
+        "201":
+          description: The file was stored as a new copy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminBackupUploadEnvelope"
+        "400":
+          description: A `multipart/form-data` body that could not be parsed as a form. Nothing was stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: "No session (`auth.missing`), or a session without a recent proof (`auth.reproof.required`, with
+            `meta.methods`). A Bearer token lands here too: the admin gate reads only the session cookie."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "403": *a25
+        "413":
+          description: "Too large: over 512 MB as sent (10 MB in a form), a gzip file that expands past what any backup this
+            server wrote does, or larger than the stored-copy limit once encrypted (`meta.errorCode` =
+            `backup.upload.too_large`, the numbers and the setting in the message). Nothing was stored."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "The file was refused and nothing was stored: no file in the request, not valid JSON or not readable as
+            gzip, failed the backup schema (`meta.issues`), an unsupported schema version, a key this server does not
+            hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds`), or an owner account that does not exist
+            here."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: More than three uploads in a minute by this administrator. Nothing was stored. The `Retry-After` and
+            `X-RateLimit-*` headers describe the bucket.
+          headers: *a8
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/admin/backups/{id}/download:
     get:
       tags:
@@ -88681,6 +88768,61 @@ components:
         - data
         - error
       additionalProperties: false
+    AdminBackupUploadEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/AdminBackupUploadResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    AdminBackupUploadResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "`DataBackup.id` of the stored copy; pass it to `POST /api/admin/backups/{id}/restore`."
+        valid:
+          type: boolean
+          const: true
+        summary:
+          $ref: "#/components/schemas/AdminBackupUploadSummary"
+      required:
+        - id
+        - valid
+        - summary
+      additionalProperties: false
+      description: The file was read, checked and stored as a new copy. Nothing was restored.
+    AdminBackupUploadSummary:
+      type: object
+      properties:
+        schemaVersion:
+          type: string
+        userId:
+          type: string
+        exportedAt:
+          type: string
+      required:
+        - schemaVersion
+        - userId
+        - exportedAt
+      additionalProperties:
+        type: integer
+        minimum: -9007199254740991
+        maximum: 9007199254740991
+      description: "What the stored file holds: its `schemaVersion`, the account it was exported from (`userId`) and when
+        (`exportedAt`), and one count per serialised class (`measurements`, `medications`, `intakeEvents`,
+        `moodEntries`, …). The set of counts grows with the backup format; read the ones you know and show the rest
+        generically."
     AdminBackupDocument:
       type: object
       propertyNames:
