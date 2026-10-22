@@ -171,9 +171,6 @@ describe("PATCH /api/auth/me/unit-preference", () => {
       route: ROUTE,
       headers: { "content-type": "application/json" },
       auth: await makeSession(user),
-      contract: {
-        skip: "the registry declares no 400 for this PATCH although the description names it",
-      },
     });
     expect(res.status).toBe(400);
     expect(await storedPreference(user.id)).toBe("metric");
@@ -199,9 +196,6 @@ describe("PATCH /api/auth/me/unit-preference", () => {
       body: "unitPreference=imperial",
       headers: { "content-type": "application/x-www-form-urlencoded" },
       auth: await makeSession(user),
-      contract: {
-        skip: "the registry declares no 415 for this PATCH although the description names it",
-      },
     });
     expect(res.status).toBe(415);
     expect(await storedPreference(user.id)).toBe("metric");

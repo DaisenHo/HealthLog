@@ -174,9 +174,6 @@ describe("PATCH /api/auth/me/disable-coach", () => {
       route: ROUTE,
       headers: { "content-type": "application/json" },
       auth: await makeSession(user),
-      contract: {
-        skip: "the registry declares no 400 for this PATCH, which answers one for a body that is not JSON",
-      },
     });
     expect(res.status).toBe(400);
     expect(res.error).toBe("Invalid JSON body");
