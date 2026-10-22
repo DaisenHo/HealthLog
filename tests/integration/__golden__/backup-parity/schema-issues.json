@@ -1,0 +1,454 @@
+{
+  "everySectionWrong": [
+    {
+      "code": "custom",
+      "path": [
+        "exportedAt"
+      ],
+      "message": "Expected ISO-8601 date-time string"
+    },
+    {
+      "origin": "string",
+      "code": "too_small",
+      "minimum": 1,
+      "inclusive": true,
+      "path": [
+        "userId"
+      ],
+      "message": "Too small: expected string to have >=1 characters"
+    },
+    {
+      "expected": "number",
+      "code": "invalid_type",
+      "path": [
+        "accountSettings",
+        "heightCm"
+      ],
+      "message": "Invalid input: expected number, received string"
+    },
+    {
+      "expected": "boolean",
+      "code": "invalid_type",
+      "path": [
+        "accountSettings",
+        "hasDiabetes"
+      ],
+      "message": "Invalid input: expected boolean, received string"
+    },
+    {
+      "expected": "number",
+      "code": "invalid_type",
+      "path": [
+        "measurements",
+        0,
+        "value"
+      ],
+      "message": "Invalid input: expected number, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "measurements",
+        0,
+        "unit"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "measurements",
+        0,
+        "measuredAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "medications",
+        0,
+        "name"
+      ],
+      "message": "Invalid input: expected string, received number"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "medications",
+        0,
+        "dose"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "array",
+      "code": "invalid_type",
+      "path": [
+        "medications",
+        0,
+        "schedules"
+      ],
+      "message": "Invalid input: expected array, received string"
+    },
+    {
+      "expected": "number",
+      "code": "invalid_type",
+      "path": [
+        "moodEntries",
+        0,
+        "score"
+      ],
+      "message": "Invalid input: expected number, received string"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "moodEntries",
+        0,
+        "loggedAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "labResults",
+        0,
+        "analyte"
+      ],
+      "message": "Invalid input: expected string, received null"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "labResults",
+        0,
+        "unit"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "labResults",
+        0,
+        "takenAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "labResults",
+        0,
+        "source"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "code": "invalid_value",
+      "values": [
+        "DOCTOR_REPORT",
+        "DISCHARGE_LETTER",
+        "LAB_RESULT",
+        "IMAGING",
+        "PRESCRIPTION",
+        "REFERRAL",
+        "INSURANCE",
+        "VACCINATION",
+        "SICK_NOTE",
+        "OTHER"
+      ],
+      "path": [
+        "documents",
+        0,
+        "kind"
+      ],
+      "message": "Invalid option: expected one of \"DOCTOR_REPORT\"|\"DISCHARGE_LETTER\"|\"LAB_RESULT\"|\"IMAGING\"|\"PRESCRIPTION\"|\"REFERRAL\"|\"INSURANCE\"|\"VACCINATION\"|\"SICK_NOTE\"|\"OTHER\""
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "documents",
+        0,
+        "mimeType"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "number",
+      "code": "invalid_type",
+      "path": [
+        "documents",
+        0,
+        "byteSize"
+      ],
+      "message": "Invalid input: expected number, received undefined"
+    },
+    {
+      "code": "invalid_value",
+      "values": [
+        "STORED",
+        "EXTRACTING",
+        "EXTRACTED",
+        "FAILED",
+        "CONFIRMED",
+        "DISCARDED"
+      ],
+      "path": [
+        "documents",
+        0,
+        "status"
+      ],
+      "message": "Invalid option: expected one of \"STORED\"|\"EXTRACTING\"|\"EXTRACTED\"|\"FAILED\"|\"CONFIRMED\"|\"DISCARDED\""
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "vaccinations",
+        0,
+        "occurredAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "vaccinations",
+        0,
+        "createdAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "vaccinations",
+        0,
+        "updatedAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "boolean",
+      "code": "invalid_type",
+      "path": [
+        "coachConversations",
+        0,
+        "documentScoped"
+      ],
+      "message": "Invalid input: expected boolean, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "coachConversations",
+        0,
+        "createdAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "coachConversations",
+        0,
+        "updatedAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "coachConversations",
+        0,
+        "messages",
+        0,
+        "id"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "coachConversations",
+        0,
+        "messages",
+        0,
+        "role"
+      ],
+      "message": "Invalid input: expected string, received number"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "coachConversations",
+        0,
+        "messages",
+        0,
+        "createdAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "environmentContexts",
+        0,
+        "date"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "number",
+      "code": "invalid_type",
+      "path": [
+        "environmentContexts",
+        0,
+        "lat"
+      ],
+      "message": "Invalid input: expected number, received undefined"
+    },
+    {
+      "expected": "number",
+      "code": "invalid_type",
+      "path": [
+        "environmentContexts",
+        0,
+        "lon"
+      ],
+      "message": "Invalid input: expected number, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "environmentContexts",
+        0,
+        "locationLabel"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "code": "invalid_value",
+      "values": [
+        "HOME",
+        "TRAVEL",
+        "DEVICE"
+      ],
+      "path": [
+        "environmentContexts",
+        0,
+        "source"
+      ],
+      "message": "Invalid option: expected one of \"HOME\"|\"TRAVEL\"|\"DEVICE\""
+    },
+    {
+      "code": "invalid_value",
+      "values": [
+        "MANUAL",
+        "WITHINGS",
+        "IMPORT",
+        "APPLE_HEALTH",
+        "COMPUTED",
+        "WHOOP",
+        "FITBIT",
+        "NIGHTSCOUT",
+        "POLAR",
+        "OURA",
+        "TELEGRAM",
+        "MCP",
+        "GOOGLE_HEALTH",
+        "STRAVA",
+        "EXTERNAL",
+        "HEALTH_CONNECT"
+      ],
+      "path": [
+        "ecgRecordings",
+        0,
+        "source"
+      ],
+      "message": "Invalid option: expected one of \"MANUAL\"|\"WITHINGS\"|\"IMPORT\"|\"APPLE_HEALTH\"|\"COMPUTED\"|\"WHOOP\"|\"FITBIT\"|\"NIGHTSCOUT\"|\"POLAR\"|\"OURA\"|\"TELEGRAM\"|\"MCP\"|\"GOOGLE_HEALTH\"|\"STRAVA\"|\"EXTERNAL\"|\"HEALTH_CONNECT\""
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "ecgRecordings",
+        0,
+        "externalRecordingId"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "ecgRecordings",
+        0,
+        "recordedAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "number",
+      "code": "invalid_type",
+      "path": [
+        "ecgRecordings",
+        0,
+        "samplingFrequency"
+      ],
+      "message": "Invalid input: expected number, received undefined"
+    },
+    {
+      "expected": "number",
+      "code": "invalid_type",
+      "path": [
+        "ecgRecordings",
+        0,
+        "sampleCount"
+      ],
+      "message": "Invalid input: expected number, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "ecgRecordings",
+        0,
+        "createdAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    },
+    {
+      "expected": "string",
+      "code": "invalid_type",
+      "path": [
+        "ecgRecordings",
+        0,
+        "updatedAt"
+      ],
+      "message": "Invalid input: expected string, received undefined"
+    }
+  ]
+}

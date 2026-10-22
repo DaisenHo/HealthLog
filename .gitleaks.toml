@@ -11,6 +11,9 @@ paths = [
   # All test files contain hardcoded fake tokens / idempotency-keys.
   '''(^|/)__tests__/''',
   '''\.test\.ts$''',
+  # Golden copies of the backup file written by the parity test: synthetic
+  # fixture values, and every `…Encrypted` value already opened to its text.
+  '''^tests/integration/__golden__/''',
   # OpenAPI spec contains example tokens (`hlk_example…`) used to document the schema.
   '''^docs/api/openapi\.yaml$''',
 ]

@@ -1,0 +1,806 @@
+{
+  "undecryptable": {
+    "outcome": {
+      "ok": false,
+      "status": 422,
+      "code": "backup.payload.undecryptable",
+      "message": "Backup payload could not be decrypted — either the key that wrote this copy is no longer in ENCRYPTION_KEYS, or the stored copy is not the one that was written. Nothing was changed.",
+      "meta": {
+        "errorCode": "backup.payload.undecryptable"
+      }
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "Invalid authentication tag length: 7"
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        }
+      ]
+    }
+  },
+  "schemaInvalid": {
+    "outcome": {
+      "ok": false,
+      "status": 422,
+      "code": "schema_invalid",
+      "message": "Backup payload failed schema validation"
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "schema_invalid",
+          "message": "measurements.0.type: Invalid option: expected one of \"WEIGHT\"|\"BLOOD_PRESSURE_SYS\"|\"BLOOD_PRESSURE_DIA\"|\"PULSE\"|\"BODY_FAT\"|\"SLEEP_DURATION\"|\"ACTIVITY_STEPS\"|\"BLOOD_GLUCOSE\"|\"TOTAL_BODY_WATER\"|\"BONE_MASS\"|\"OXYGEN_SATURATION\"|\"HEART_RATE_VARIABILITY\"|\"RESTING_HEART_RATE\"|\"ACTIVE_ENERGY_BURNED\"|\"FLIGHTS_CLIMBED\"|\"WALKING_RUNNING_DISTANCE\"|\"VO2_MAX\"|\"BODY_TEMPERATURE\"|\"FAT_FREE_MASS\"|\"FAT_MASS\"|\"MUSCLE_MASS\"|\"SKIN_TEMPERATURE\"|\"PULSE_WAVE_VELOCITY\"|\"VASCULAR_AGE\"|\"VISCERAL_FAT\"|\"AUDIO_EXPOSURE_ENV\"|\"AUDIO_EXPOSURE_HEADPHONE\"|\"TIME_IN_DAYLIGHT\"|\"WALKING_STEADINESS\"|\"AUDIO_EXPOSURE_EVENT\"|\"RESPIRATORY_RATE\"|\"BODY_MASS_INDEX\"|\"LEAN_BODY_MASS\"|\"WALKING_HEART_RATE_AVERAGE\"|\"WALKING_ASYMMETRY\"|\"WALKING_DOUBLE_SUPPORT\"|\"WALKING_STEP_LENGTH\"|\"WALKING_SPEED\"|\"CARDIO_RECOVERY\"|\"WRIST_TEMPERATURE\"|\"FALL_COUNT\"|\"SIX_MINUTE_WALK_DISTANCE\"|\"STAIR_ASCENT_SPEED\"|\"STAIR_DESCENT_SPEED\"|\"BREATHING_DISTURBANCES\"|\"IRREGULAR_RHYTHM_NOTIFICATION\"|\"HIGH_HEART_RATE_EVENT\"|\"LOW_HEART_RATE_EVENT\"|\"WALKING_STEADINESS_EVENT\"|\"BREATHING_DISTURBANCE_EVENT\"|\"RECOVERY_SCORE\"|\"STRESS_SCORE\"|\"STRAIN_SCORE\"|\"HRV_RMSSD\"|\"DAY_STRAIN\"|\"WORKOUT_STRAIN\"|\"SLEEP_PERFORMANCE\"|\"SLEEP_EFFICIENCY\"|\"SLEEP_CONSISTENCY\"|\"SLEEP_NEED\"|\"ENERGY_EXPENDITURE_KJ\"|\"AVERAGE_HEART_RATE\"|\"MAX_HEART_RATE\"|\"SLEEP_DISTURBANCE_COUNT\"|\"ANS_CHARGE\"|\"CARDIO_LOAD\"|\"SLEEP_SCORE\"|\"BODY_TEMPERATURE_DEVIATION\"|\"RESILIENCE\"|\"PHQ9_SCORE\"|\"GAD7_SCORE\"|\"GRIP_STRENGTH\"|\"PAIN_NRS\"|\"WAIST_CIRCUMFERENCE\"|\"WAIST_TO_HEIGHT\"|\"WHO5_SCORE\"|\"SCI_SCORE\"|\"EXERCISE_MINUTES\"|\"STAND_MINUTES\"|\"STAND_HOURS\"|\"MINDFUL_MINUTES\"|\"STATE_OF_MIND_VALENCE\"|\"INDOOR_CO2\"|\"INDOOR_TEMPERATURE\"|\"INDOOR_HUMIDITY\"|\"AFIB_BURDEN\""
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        }
+      ]
+    }
+  },
+  "stableIdMissing": {
+    "outcome": {
+      "ok": false,
+      "status": 422,
+      "code": "schema_invalid",
+      "message": "Backup payload failed schema validation"
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "schema_invalid",
+          "message": "measurements.0.id: Canonical v2 measurements require a stable id"
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        }
+      ]
+    }
+  },
+  "qualitativeMarkerWithNumbers": {
+    "outcome": {
+      "ok": false,
+      "status": 422,
+      "code": "schema_invalid",
+      "message": "Backup payload failed schema validation"
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      },
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "schema_invalid",
+          "message": "[\n  {\n    \"code\": \"custom\",\n    \"path\": [\n      \"labResults\",\n      0,\n      \"unit\"\n    ],\n    \"message\": \"A numeric lab reading needs its unit\"\n  },\n  {\n    \"code\": \"custom\",\n    \"path\": [\n      \"biomarkers\",\n      0,\n      \"unit\"\n    ],\n    \"message\": \"Biomarker \\\"Urine colour\\\" has numeric readings and needs its unit\"\n  }\n]"
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        }
+      ]
+    }
+  },
+  "incompatibleVersion": {
+    "outcome": {
+      "ok": false,
+      "status": 422,
+      "code": "incompatible_schema_version",
+      "message": "Backup schema version '99' is not supported by this server"
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      },
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "incompatible_schema_version",
+          "schemaVersion": "99"
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        }
+      ]
+    }
+  },
+  "ownerMismatch": {
+    "outcome": {
+      "ok": false,
+      "status": 409,
+      "code": "owner_mismatch",
+      "message": "Backup payload declares a different owner than the backup record"
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      },
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "owner_mismatch",
+          "declaredOwnerId": "someone-else"
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        }
+      ]
+    }
+  },
+  "sectionMissing": {
+    "outcome": {
+      "ok": false,
+      "status": 422,
+      "code": "backup.section.missing",
+      "message": "Backup is missing documents — the file's own manifest says it carries that section. Nothing was changed. Use a disaster-recovery snapshot, or export the account again.",
+      "meta": {
+        "errorCode": "backup.section.missing",
+        "sections": [
+          "documents"
+        ]
+      }
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      },
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.start",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "ownerUsername": "round-trip-owner",
+          "snapshotExportedAt": "2026-07-20T08:00:00.000Z",
+          "restoreInstanceSettings": false
+        }
+      },
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "section_missing",
+          "sections": [
+            "documents"
+          ]
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        }
+      ]
+    }
+  },
+  "metadataOnlyDocument": {
+    "outcome": {
+      "ok": false,
+      "status": 422,
+      "code": "document_ciphertext_missing",
+      "message": "Document 'metadata-only-document' is metadata-only and cannot be restored"
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      },
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.start",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "ownerUsername": "round-trip-owner",
+          "snapshotExportedAt": "2026-07-20T08:00:00.000Z",
+          "restoreInstanceSettings": false
+        }
+      },
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "document_ciphertext_missing",
+          "documentId": "metadata-only-document"
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        }
+      ]
+    }
+  },
+  "keyMissing": {
+    "outcome": {
+      "ok": false,
+      "status": 422,
+      "code": "backup.key.missing",
+      "message": "This backup holds 1 encrypted value written under encryption key 'v9', which is not in ENCRYPTION_KEYS on this server. Add that key back to ENCRYPTION_KEYS and restart, then try again. Nothing was changed.",
+      "meta": {
+        "errorCode": "backup.key.missing",
+        "keyIds": [
+          "v9"
+        ]
+      }
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      },
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 1
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "key_missing",
+          "missingKeyIds": [
+            "v9"
+          ],
+          "unreadableKeyIds": [],
+          "affectedValues": 1
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        }
+      ]
+    }
+  },
+  "intakeForUnknownMedication": {
+    "outcome": {
+      "ok": false,
+      "status": 500,
+      "code": "transaction_failed",
+      "message": "The restore could not be written and was rolled back. Nothing was changed.",
+      "meta": {
+        "cause": "other"
+      }
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      },
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "clearing",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "measurements",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.start",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "ownerUsername": "round-trip-owner",
+          "snapshotExportedAt": "2026-07-20T08:00:00.000Z",
+          "restoreInstanceSettings": false
+        }
+      },
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "transaction_failed",
+          "cause": "other",
+          "code": null,
+          "message": "Unknown medication references in intake events: a medication this file never carried. The backup records doses against medications it does not carry."
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        },
+        {
+          "meta": {
+            "restoreFailReason": "Unknown medication references in intake events: a medication this file never carried. The backup records doses against medications it does not carry.",
+            "restoreFailCause": "other",
+            "restoreFailCode": null,
+            "restoreTransactionTimeoutMs": 120001
+          }
+        }
+      ]
+    }
+  },
+  "labForUnknownMarker": {
+    "outcome": {
+      "ok": false,
+      "status": 500,
+      "code": "transaction_failed",
+      "message": "The restore could not be written and was rolled back. Nothing was changed.",
+      "meta": {
+        "cause": "other"
+      }
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      },
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "clearing",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "measurements",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 1,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 2,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 3,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 4,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.start",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "ownerUsername": "round-trip-owner",
+          "snapshotExportedAt": "2026-07-20T08:00:00.000Z",
+          "restoreInstanceSettings": false
+        }
+      },
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "transaction_failed",
+          "cause": "other",
+          "code": null,
+          "message": "Unknown biomarker reference: a-marker-the-file-never-carried"
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        },
+        {
+          "meta": {
+            "restoreFailReason": "Unknown biomarker reference: a-marker-the-file-never-carried",
+            "restoreFailCause": "other",
+            "restoreFailCode": null,
+            "restoreTransactionTimeoutMs": 120001
+          }
+        }
+      ]
+    }
+  },
+  "illnessWithUnknownParent": {
+    "outcome": {
+      "ok": false,
+      "status": 500,
+      "code": "transaction_failed",
+      "message": "The restore could not be written and was rolled back. Nothing was changed.",
+      "meta": {
+        "cause": "other"
+      }
+    },
+    "progress": [
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": null
+      },
+      {
+        "phase": "validating",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "clearing",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "measurements",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 0,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 1,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 2,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 3,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 4,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      },
+      {
+        "phase": "sections",
+        "sectionsDone": 5,
+        "sectionsTotal": 17,
+        "measurementsTotal": 0
+      }
+    ],
+    "audit": [
+      {
+        "action": "admin.backups.restore.start",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "ownerUsername": "round-trip-owner",
+          "snapshotExportedAt": "2026-07-20T08:00:00.000Z",
+          "restoreInstanceSettings": false
+        }
+      },
+      {
+        "action": "admin.backups.restore.failed",
+        "userId": "<actor>",
+        "details": {
+          "backupId": "<id:1>",
+          "ownerId": "round-trip-owner",
+          "reason": "transaction_failed",
+          "cause": "other",
+          "code": null,
+          "message": "Unknown illness parent: an-episode-the-file-never-carried"
+        }
+      }
+    ],
+    "effects": {
+      "invalidated": [],
+      "unitRefresh": [],
+      "foldRepair": [],
+      "annotations": [
+        {
+          "action": {
+            "name": "admin.backups.restore"
+          },
+          "meta": {
+            "id": "<id:1>",
+            "restore_instance_settings": false
+          }
+        },
+        {
+          "meta": {
+            "restoreFailReason": "Unknown illness parent: an-episode-the-file-never-carried",
+            "restoreFailCause": "other",
+            "restoreFailCode": null,
+            "restoreTransactionTimeoutMs": 120001
+          }
+        }
+      ]
+    }
+  }
+}

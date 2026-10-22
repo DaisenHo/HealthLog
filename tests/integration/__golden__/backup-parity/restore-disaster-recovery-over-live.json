@@ -1,0 +1,406 @@
+{
+  "outcome": {
+    "ok": true,
+    "response": {
+      "restored": true,
+      "summary": {
+        "schemaVersion": "2",
+        "userId": "round-trip-owner",
+        "exportedAt": "2026-08-01T00:00:00.000Z",
+        "measurements": 5,
+        "medications": 1,
+        "intakeEvents": 1,
+        "medicationSideEffects": 1,
+        "medicationEfficacyTargets": 1,
+        "medicationScheduleRevisions": 3,
+        "moodEntries": 1,
+        "cycles": 2,
+        "cycleDayLogs": 1,
+        "nutrientDays": 1,
+        "labResults": 1,
+        "biomarkers": 1,
+        "illnessEpisodes": 2,
+        "illnessDayLogs": 1,
+        "allergies": 1,
+        "familyHistory": 1,
+        "workouts": 1,
+        "documents": 1,
+        "documentConditionLinks": 1,
+        "extractedFacts": 1,
+        "healthProfile": 1,
+        "healthProfileFactRevisions": 1,
+        "customMetrics": 1,
+        "customMetricEntries": 2,
+        "correlationPatterns": 1,
+        "intradayProfiles": 1,
+        "healthScoreRecords": 1,
+        "onboardingRecords": 1,
+        "practitioners": 1,
+        "encounters": 1,
+        "encounterLinks": 3,
+        "vaccinations": 1,
+        "vaccinationLinks": 1,
+        "relationLinks": 5,
+        "customVaccines": 1,
+        "measurementReminders": 1,
+        "measurementReminderEvents": 2,
+        "coachConversations": 2,
+        "coachMessages": 3,
+        "coachFacts": 1,
+        "coachPlans": 1,
+        "coachReminders": 1,
+        "mentalHealthAssessments": 1,
+        "consentReceipts": 2,
+        "personalRecords": 3,
+        "userAchievements": 2,
+        "environmentContexts": 2,
+        "environmentTravelLocations": 1,
+        "dawarichDays": 1,
+        "ecgRecordings": 1
+      },
+      "skipped": {
+        "catalogueKeys": [],
+        "links": 0
+      },
+      "cleared": {
+        "measurements": 5,
+        "medications": 1,
+        "intakeEvents": 1,
+        "moodEntries": 1,
+        "notificationChannels": 0,
+        "pushSubscriptions": 0,
+        "telegramScheduledDeletions": 0,
+        "cycles": 2,
+        "cycleDayLogs": 1,
+        "cycleProfile": 1,
+        "labResults": 1,
+        "biomarkers": 1,
+        "nutrientDays": 1,
+        "illnessEpisodes": 2,
+        "allergies": 1,
+        "familyHistory": 1,
+        "workouts": 1,
+        "documents": 1,
+        "documentConditionLinks": 0,
+        "extractedFacts": 0,
+        "healthProfile": 1,
+        "healthProfileFactRevisions": 1,
+        "customMetrics": 1,
+        "correlationPatterns": 1,
+        "intradayProfiles": 1,
+        "healthScoreRecords": 1,
+        "onboardingRecords": 1,
+        "practitioners": 1,
+        "encounters": 1,
+        "encounterLinks": 0,
+        "vaccinations": 1,
+        "vaccinationLinks": 0,
+        "relationLinks": 0,
+        "customVaccines": 1,
+        "measurementReminders": 1,
+        "measurementReminderEvents": 2,
+        "coachConversations": 2,
+        "coachMessages": 3,
+        "coachConversationDocuments": 0,
+        "coachFacts": 1,
+        "coachPlans": 1,
+        "coachReminders": 1,
+        "mentalHealthAssessments": 1,
+        "consentReceipts": 2,
+        "personalRecords": 3,
+        "userAchievements": 2,
+        "environmentContexts": 2,
+        "environmentTravelLocations": 1,
+        "dawarichDays": 1,
+        "ecgRecordings": 1,
+        "symptomDefinitions": 2,
+        "lifeEvents": 2
+      }
+    }
+  },
+  "progress": [
+    {
+      "phase": "validating",
+      "sectionsDone": 0,
+      "sectionsTotal": 17,
+      "measurementsTotal": null
+    },
+    {
+      "phase": "validating",
+      "sectionsDone": 0,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "clearing",
+      "sectionsDone": 0,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "measurements",
+      "sectionsDone": 0,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 0,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 1,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 2,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 3,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 4,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 5,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 6,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 7,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 8,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 9,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 10,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 11,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 12,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 13,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 14,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 15,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 16,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 17,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    },
+    {
+      "phase": "rebuilding",
+      "sectionsDone": 17,
+      "sectionsTotal": 17,
+      "measurementsTotal": 5
+    }
+  ],
+  "audit": [
+    {
+      "action": "admin.backups.restore.start",
+      "userId": "<actor>",
+      "details": {
+        "backupId": "<id:1>",
+        "ownerId": "round-trip-owner",
+        "ownerUsername": "round-trip-owner",
+        "snapshotExportedAt": "2026-08-01T00:00:00.000Z",
+        "restoreInstanceSettings": false
+      }
+    },
+    {
+      "action": "admin.backups.restore",
+      "userId": "<actor>",
+      "details": {
+        "backupId": "<id:1>",
+        "ownerId": "round-trip-owner",
+        "ownerUsername": "round-trip-owner",
+        "restoreInstanceSettings": false,
+        "cleared": {
+          "measurements": 5,
+          "medications": 1,
+          "intakeEvents": 1,
+          "moodEntries": 1,
+          "notificationChannels": 0,
+          "pushSubscriptions": 0,
+          "telegramScheduledDeletions": 0,
+          "cycles": 2,
+          "cycleDayLogs": 1,
+          "cycleProfile": 1,
+          "labResults": 1,
+          "biomarkers": 1,
+          "nutrientDays": 1,
+          "illnessEpisodes": 2,
+          "allergies": 1,
+          "familyHistory": 1,
+          "workouts": 1,
+          "documents": 1,
+          "documentConditionLinks": 0,
+          "extractedFacts": 0,
+          "healthProfile": 1,
+          "healthProfileFactRevisions": 1,
+          "customMetrics": 1,
+          "correlationPatterns": 1,
+          "intradayProfiles": 1,
+          "healthScoreRecords": 1,
+          "onboardingRecords": 1,
+          "practitioners": 1,
+          "encounters": 1,
+          "encounterLinks": 0,
+          "vaccinations": 1,
+          "vaccinationLinks": 0,
+          "relationLinks": 0,
+          "customVaccines": 1,
+          "measurementReminders": 1,
+          "measurementReminderEvents": 2,
+          "coachConversations": 2,
+          "coachMessages": 3,
+          "coachConversationDocuments": 0,
+          "coachFacts": 1,
+          "coachPlans": 1,
+          "coachReminders": 1,
+          "mentalHealthAssessments": 1,
+          "consentReceipts": 2,
+          "personalRecords": 3,
+          "userAchievements": 2,
+          "environmentContexts": 2,
+          "environmentTravelLocations": 1,
+          "dawarichDays": 1,
+          "ecgRecordings": 1,
+          "symptomDefinitions": 2,
+          "lifeEvents": 2
+        },
+        "accountSettingsApplied": 62,
+        "skipped": {
+          "catalogueKeys": [],
+          "links": 0
+        },
+        "restored": {
+          "measurements": 5,
+          "medications": 1,
+          "intakeEvents": 1,
+          "moodEntries": 1,
+          "cycles": 2,
+          "cycleDayLogs": 1,
+          "labResults": 1,
+          "biomarkers": 1,
+          "nutrientDays": 1,
+          "illnessEpisodes": 2,
+          "illnessDayLogs": 1,
+          "allergies": 1,
+          "familyHistory": 1,
+          "workouts": 1,
+          "documents": 1,
+          "healthProfile": 1,
+          "healthProfileFactRevisions": 1,
+          "customMetrics": 1,
+          "customMetricEntries": 2,
+          "correlationPatterns": 1,
+          "practitioners": 1,
+          "encounters": 1,
+          "encounterLinks": 3,
+          "vaccinations": 1,
+          "vaccinationLinks": 1,
+          "relationLinks": 5,
+          "customVaccines": 1,
+          "measurementReminders": 1,
+          "measurementReminderEvents": 2
+        }
+      }
+    }
+  ],
+  "effects": {
+    "invalidated": [
+      "round-trip-owner"
+    ],
+    "unitRefresh": [],
+    "foldRepair": [
+      "round-trip-owner"
+    ],
+    "annotations": [
+      {
+        "action": {
+          "name": "admin.backups.restore"
+        },
+        "meta": {
+          "id": "<id:1>",
+          "restore_instance_settings": false
+        }
+      },
+      {
+        "meta": {
+          "restore_expired_tombstones_skipped": 0
+        }
+      },
+      {
+        "meta": {
+          "restoreSkippedLinks": 0,
+          "restoreSkippedKeys": ""
+        }
+      }
+    ]
+  },
+  "snapshotChanges": []
+}

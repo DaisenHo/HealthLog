@@ -25,3 +25,7 @@ src/__tests__/baselines
 # Benchmark results, written by scripts/bench/run.ts and committed as they
 # come out, so a re-run diffs cleanly against the last one.
 scripts/bench/results
+
+# Golden copies of the backup file and the restored account, written by the
+# parity test itself (BACKUP_PARITY_WRITE=1), so a rewrite diffs cleanly.
+tests/integration/__golden__

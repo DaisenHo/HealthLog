@@ -1,0 +1,1015 @@
+{
+  "outcome": {
+    "ok": true,
+    "response": {
+      "restored": true,
+      "summary": {
+        "schemaVersion": "2",
+        "userId": "round-trip-owner",
+        "exportedAt": "2026-07-20T08:00:00.000Z",
+        "measurements": 1,
+        "medications": 1,
+        "intakeEvents": 0,
+        "medicationSideEffects": 0,
+        "medicationEfficacyTargets": 2,
+        "medicationScheduleRevisions": 2,
+        "moodEntries": 1,
+        "cycles": 0,
+        "cycleDayLogs": 0,
+        "nutrientDays": 0,
+        "labResults": 0,
+        "biomarkers": 0,
+        "illnessEpisodes": 1,
+        "illnessDayLogs": 1,
+        "allergies": 0,
+        "familyHistory": 0,
+        "workouts": 0,
+        "documents": 0,
+        "documentConditionLinks": 0,
+        "extractedFacts": 0,
+        "healthProfile": 0,
+        "healthProfileFactRevisions": 0,
+        "customMetrics": 0,
+        "customMetricEntries": 0,
+        "correlationPatterns": 0,
+        "intradayProfiles": 0,
+        "healthScoreRecords": 0,
+        "onboardingRecords": 0,
+        "practitioners": 0,
+        "encounters": 0,
+        "encounterLinks": 0,
+        "vaccinations": 0,
+        "vaccinationLinks": 0,
+        "relationLinks": 0,
+        "customVaccines": 0,
+        "measurementReminders": 0,
+        "measurementReminderEvents": 0,
+        "coachConversations": 0,
+        "coachMessages": 0,
+        "coachFacts": 0,
+        "coachPlans": 0,
+        "coachReminders": 0,
+        "mentalHealthAssessments": 0,
+        "consentReceipts": 0,
+        "personalRecords": 0,
+        "userAchievements": 0,
+        "environmentContexts": 0,
+        "environmentTravelLocations": 0,
+        "dawarichDays": 0,
+        "ecgRecordings": 0
+      },
+      "skipped": {
+        "catalogueKeys": [
+          {
+            "catalogue": "accountSetting",
+            "key": "aiBaseUrl",
+            "links": 1
+          },
+          {
+            "catalogue": "accountSetting",
+            "key": "globalExcludedInjectionSites.NOWHERE",
+            "links": 1
+          },
+          {
+            "catalogue": "accountSetting",
+            "key": "locale",
+            "links": 1
+          },
+          {
+            "catalogue": "accountSetting",
+            "key": "thresholdsJson.NOT_A_METRIC",
+            "links": 1
+          },
+          {
+            "catalogue": "accountSetting",
+            "key": "timezone",
+            "links": 1
+          },
+          {
+            "catalogue": "illnessSymptom",
+            "key": "a_symptom_nobody_has",
+            "links": 1
+          },
+          {
+            "catalogue": "medicationTarget",
+            "key": "HbA1c that is not in the file",
+            "links": 1
+          },
+          {
+            "catalogue": "moodFactor",
+            "key": "a_factor_nobody_has",
+            "links": 1
+          },
+          {
+            "catalogue": "moodTag",
+            "key": "a_binary_tag_nobody_has",
+            "links": 1
+          },
+          {
+            "catalogue": "moodTag",
+            "key": "a_tag_nobody_has",
+            "links": 1
+          },
+          {
+            "catalogue": "scheduleRevisionLink",
+            "key": "medications[0].scheduleRevisions[0].supersededByIndex=7",
+            "links": 1
+          },
+          {
+            "catalogue": "scheduleRevisionLink",
+            "key": "medications[0].scheduleRevisions[1].supersededByIndex=1",
+            "links": 1
+          }
+        ],
+        "links": 12
+      },
+      "cleared": {
+        "measurements": 0,
+        "medications": 0,
+        "intakeEvents": 0,
+        "moodEntries": 0,
+        "notificationChannels": 0,
+        "pushSubscriptions": 0,
+        "telegramScheduledDeletions": 0,
+        "cycles": 0,
+        "cycleDayLogs": 0,
+        "cycleProfile": 0,
+        "labResults": 0,
+        "biomarkers": 0,
+        "nutrientDays": 0,
+        "illnessEpisodes": 0,
+        "allergies": 0,
+        "familyHistory": 0,
+        "workouts": 0,
+        "documents": 0,
+        "documentConditionLinks": 0,
+        "extractedFacts": 0,
+        "healthProfile": 0,
+        "healthProfileFactRevisions": 0,
+        "customMetrics": 0,
+        "correlationPatterns": 0,
+        "intradayProfiles": 0,
+        "healthScoreRecords": 0,
+        "onboardingRecords": 0,
+        "practitioners": 0,
+        "encounters": 0,
+        "encounterLinks": 0,
+        "vaccinations": 0,
+        "vaccinationLinks": 0,
+        "relationLinks": 0,
+        "customVaccines": 0,
+        "measurementReminders": 0,
+        "measurementReminderEvents": 0,
+        "coachConversations": 0,
+        "coachMessages": 0,
+        "coachConversationDocuments": 0,
+        "coachFacts": 0,
+        "coachPlans": 0,
+        "coachReminders": 0,
+        "mentalHealthAssessments": 0,
+        "consentReceipts": 0,
+        "personalRecords": 0,
+        "userAchievements": 0,
+        "environmentContexts": 0,
+        "environmentTravelLocations": 0,
+        "dawarichDays": 0,
+        "ecgRecordings": 0,
+        "symptomDefinitions": 0,
+        "lifeEvents": 0
+      }
+    }
+  },
+  "progress": [
+    {
+      "phase": "validating",
+      "sectionsDone": 0,
+      "sectionsTotal": 17,
+      "measurementsTotal": null
+    },
+    {
+      "phase": "validating",
+      "sectionsDone": 0,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "clearing",
+      "sectionsDone": 0,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "measurements",
+      "sectionsDone": 0,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 0,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 1,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 2,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 3,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 4,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 5,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 6,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 7,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 8,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 9,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 10,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 11,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 12,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 13,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 14,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 15,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 16,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "sections",
+      "sectionsDone": 17,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    },
+    {
+      "phase": "rebuilding",
+      "sectionsDone": 17,
+      "sectionsTotal": 17,
+      "measurementsTotal": 1
+    }
+  ],
+  "audit": [
+    {
+      "action": "admin.backups.restore.start",
+      "userId": "<actor>",
+      "details": {
+        "backupId": "<id:1>",
+        "ownerId": "round-trip-owner",
+        "ownerUsername": "round-trip-owner",
+        "snapshotExportedAt": "2026-07-20T08:00:00.000Z",
+        "restoreInstanceSettings": false
+      }
+    },
+    {
+      "action": "admin.backups.restore",
+      "userId": "<actor>",
+      "details": {
+        "backupId": "<id:1>",
+        "ownerId": "round-trip-owner",
+        "ownerUsername": "round-trip-owner",
+        "restoreInstanceSettings": false,
+        "cleared": {
+          "measurements": 0,
+          "medications": 0,
+          "intakeEvents": 0,
+          "moodEntries": 0,
+          "notificationChannels": 0,
+          "pushSubscriptions": 0,
+          "telegramScheduledDeletions": 0,
+          "cycles": 0,
+          "cycleDayLogs": 0,
+          "cycleProfile": 0,
+          "labResults": 0,
+          "biomarkers": 0,
+          "nutrientDays": 0,
+          "illnessEpisodes": 0,
+          "allergies": 0,
+          "familyHistory": 0,
+          "workouts": 0,
+          "documents": 0,
+          "documentConditionLinks": 0,
+          "extractedFacts": 0,
+          "healthProfile": 0,
+          "healthProfileFactRevisions": 0,
+          "customMetrics": 0,
+          "correlationPatterns": 0,
+          "intradayProfiles": 0,
+          "healthScoreRecords": 0,
+          "onboardingRecords": 0,
+          "practitioners": 0,
+          "encounters": 0,
+          "encounterLinks": 0,
+          "vaccinations": 0,
+          "vaccinationLinks": 0,
+          "relationLinks": 0,
+          "customVaccines": 0,
+          "measurementReminders": 0,
+          "measurementReminderEvents": 0,
+          "coachConversations": 0,
+          "coachMessages": 0,
+          "coachConversationDocuments": 0,
+          "coachFacts": 0,
+          "coachPlans": 0,
+          "coachReminders": 0,
+          "mentalHealthAssessments": 0,
+          "consentReceipts": 0,
+          "personalRecords": 0,
+          "userAchievements": 0,
+          "environmentContexts": 0,
+          "environmentTravelLocations": 0,
+          "dawarichDays": 0,
+          "ecgRecordings": 0,
+          "symptomDefinitions": 0,
+          "lifeEvents": 0
+        },
+        "accountSettingsApplied": 4,
+        "skipped": {
+          "catalogueKeys": [
+            {
+              "catalogue": "accountSetting",
+              "key": "aiBaseUrl",
+              "links": 1
+            },
+            {
+              "catalogue": "accountSetting",
+              "key": "globalExcludedInjectionSites.NOWHERE",
+              "links": 1
+            },
+            {
+              "catalogue": "accountSetting",
+              "key": "locale",
+              "links": 1
+            },
+            {
+              "catalogue": "accountSetting",
+              "key": "thresholdsJson.NOT_A_METRIC",
+              "links": 1
+            },
+            {
+              "catalogue": "accountSetting",
+              "key": "timezone",
+              "links": 1
+            },
+            {
+              "catalogue": "illnessSymptom",
+              "key": "a_symptom_nobody_has",
+              "links": 1
+            },
+            {
+              "catalogue": "medicationTarget",
+              "key": "HbA1c that is not in the file",
+              "links": 1
+            },
+            {
+              "catalogue": "moodFactor",
+              "key": "a_factor_nobody_has",
+              "links": 1
+            },
+            {
+              "catalogue": "moodTag",
+              "key": "a_binary_tag_nobody_has",
+              "links": 1
+            },
+            {
+              "catalogue": "moodTag",
+              "key": "a_tag_nobody_has",
+              "links": 1
+            },
+            {
+              "catalogue": "scheduleRevisionLink",
+              "key": "medications[0].scheduleRevisions[0].supersededByIndex=7",
+              "links": 1
+            },
+            {
+              "catalogue": "scheduleRevisionLink",
+              "key": "medications[0].scheduleRevisions[1].supersededByIndex=1",
+              "links": 1
+            }
+          ],
+          "links": 12
+        },
+        "restored": {
+          "measurements": 1,
+          "medications": 1,
+          "intakeEvents": 0,
+          "moodEntries": 1,
+          "cycles": 0,
+          "cycleDayLogs": 0,
+          "labResults": 0,
+          "biomarkers": 0,
+          "nutrientDays": 0,
+          "illnessEpisodes": 1,
+          "illnessDayLogs": 1,
+          "allergies": 0,
+          "familyHistory": 0,
+          "workouts": 0,
+          "documents": 0,
+          "healthProfile": 0,
+          "healthProfileFactRevisions": 0,
+          "customMetrics": 0,
+          "customMetricEntries": 0,
+          "correlationPatterns": 0,
+          "practitioners": 0,
+          "encounters": 0,
+          "encounterLinks": 0,
+          "vaccinations": 0,
+          "vaccinationLinks": 0,
+          "relationLinks": 0,
+          "customVaccines": 0,
+          "measurementReminders": 0,
+          "measurementReminderEvents": 0
+        }
+      }
+    }
+  ],
+  "effects": {
+    "invalidated": [
+      "round-trip-owner"
+    ],
+    "unitRefresh": [
+      "round-trip-owner"
+    ],
+    "foldRepair": [
+      "round-trip-owner"
+    ],
+    "annotations": [
+      {
+        "action": {
+          "name": "admin.backups.restore"
+        },
+        "meta": {
+          "id": "<id:1>",
+          "restore_instance_settings": false
+        }
+      },
+      {
+        "meta": {
+          "restore_expired_tombstones_skipped": 0
+        }
+      },
+      {
+        "meta": {
+          "restoreSkippedLinks": 12,
+          "restoreSkippedKeys": "accountSetting:aiBaseUrl,accountSetting:globalExcludedInjectionSites.NOWHERE,accountSetting:locale,accountSetting:thresholdsJson.NOT_A_METRIC,accountSetting:timezone,illnessSymptom:a_symptom_nobody_has,medicationTarget:HbA1c that is not in the file,moodFactor:a_factor_nobody_has,moodTag:a_binary_tag_nobody_has,moodTag:a_tag_nobody_has,scheduleRevisionLink:medications[0].scheduleRevisions[0].supersededByIndex=7,scheduleRevisionLink:medications[0].scheduleRevisions[1].supersededByIndex=1"
+        }
+      }
+    ]
+  },
+  "snapshot": {
+    "Measurement": [
+      {
+        "id": "skips-measurement",
+        "userId": "round-trip-owner",
+        "type": "WEIGHT",
+        "value": 72,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "kg",
+        "source": "MANUAL",
+        "measuredAt": "2026-07-01T07:00:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "externalId": null,
+        "externalSourceVersion": null,
+        "aggregationProvenance": null,
+        "glucoseContext": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": null,
+        "syncVersion": 1,
+        "deletedAt": null,
+        "createdAt": "<now>",
+        "updatedAt": "<now>"
+      }
+    ],
+    "IntradayCumulativeProfile": [],
+    "Medication": [
+      {
+        "id": "skips-medication",
+        "userId": "round-trip-owner",
+        "name": "Metformin",
+        "dose": "500 mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "decimal:1",
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": null,
+        "endsOn": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": false,
+        "autoMarkTakenSince": null,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "2026-06-01T00:00:00.000Z",
+        "updatedAt": "<now>"
+      }
+    ],
+    "MedicationSchedule": [],
+    "MedicationIntakeEvent": [],
+    "MedicationSideEffect": [],
+    "MedicationPauseEra": [],
+    "MedicationDoseChange": [],
+    "MedicationCategoryAssignment": [],
+    "MedicationCategoryLabel": [],
+    "MedicationCourse": [],
+    "MedicationIngredient": [],
+    "MoodEntry": [
+      {
+        "id": "skips-mood",
+        "userId": "round-trip-owner",
+        "date": "2026-07-02",
+        "mood": "GOOD",
+        "score": 4,
+        "moodA1": null,
+        "stressA2": null,
+        "energyA3": null,
+        "connectionA4": null,
+        "stabilityA5": null,
+        "tags": null,
+        "note": null,
+        "noteEncrypted": null,
+        "source": "MOODLOG",
+        "externalId": null,
+        "moodLoggedAt": "2026-07-02T20:00:00.000Z",
+        "tz": null,
+        "syncedAt": "<now>",
+        "createdAt": "<now>",
+        "updatedAt": "<now>",
+        "syncVersion": 0,
+        "deletedAt": null
+      }
+    ],
+    "MoodContext": [],
+    "MoodEntryTagLink": [],
+    "MoodTag": [
+      {
+        "id": "<id:1>",
+        "categoryId": "skips-mood-category",
+        "key": "custom:skips-mood-tag",
+        "labelKey": "custom",
+        "icon": null,
+        "sortOrder": 0,
+        "isActive": true,
+        "kind": "RATED",
+        "scaleMin": 1,
+        "scaleMax": 5,
+        "inverse": false,
+        "userId": "round-trip-owner",
+        "labelEncrypted": "<sealed:Quiet>"
+      }
+    ],
+    "LabResult": [],
+    "Biomarker": [],
+    "Allergy": [],
+    "FamilyHistoryEntry": [],
+    "IllnessEpisode": [
+      {
+        "id": "skips-episode",
+        "userId": "round-trip-owner",
+        "label": "Cold",
+        "type": "INFECTION",
+        "lifecycle": "ACUTE",
+        "onsetAt": "2026-07-01T00:00:00.000Z",
+        "resolvedAt": null,
+        "parentConditionId": null,
+        "noteEncrypted": null,
+        "bodySiteEncrypted": null,
+        "laterality": null,
+        "createdAt": "<now>",
+        "updatedAt": "<now>",
+        "deletedAt": null
+      }
+    ],
+    "IllnessDayLog": [
+      {
+        "id": "<id:2>",
+        "userId": "round-trip-owner",
+        "episodeId": "skips-episode",
+        "date": "2026-07-01",
+        "functionalImpact": 1,
+        "feverC": 38.1,
+        "noteEncrypted": null,
+        "tz": null,
+        "createdAt": "<now>",
+        "updatedAt": "<now>",
+        "deletedAt": null
+      }
+    ],
+    "IllnessSymptomLink": [],
+    "SymptomDefinition": [],
+    "SymptomEvent": [],
+    "LifeEvent": [],
+    "UserHealthProfile": [],
+    "HealthProfileFactRevision": [],
+    "CycleProfile": [],
+    "MenstrualCycle": [],
+    "CycleDayLog": [],
+    "CycleSymptom": [],
+    "CycleSymptomLink": [],
+    "CustomMetric": [],
+    "CustomMetricEntry": [],
+    "CorrelationPattern": [],
+    "HealthScoreRecord": [],
+    "Workout": [],
+    "NutrientIntakeDay": [],
+    "InboundDocument": [],
+    "Practitioner": [],
+    "Encounter": [],
+    "EncounterDocumentLink": [],
+    "EncounterLabLink": [],
+    "EncounterConditionLink": [],
+    "VaccinationRecord": [],
+    "VaccinationDocumentLink": [],
+    "CustomVaccine": [],
+    "MeasurementReminder": [],
+    "MeasurementReminderEvent": [],
+    "CoachConversation": [],
+    "CoachMessage": [],
+    "CoachConversationDocument": [],
+    "CoachFact": [],
+    "CoachPlan": [],
+    "CoachReminder": [],
+    "MedicationInventoryItem": [],
+    "MedicationInventoryEvent": [],
+    "MoodTagCategory": [
+      {
+        "id": "skips-mood-category",
+        "key": "custom:skips-mood-category",
+        "labelKey": "custom",
+        "icon": null,
+        "sortOrder": 0,
+        "isActive": true,
+        "userId": "round-trip-owner",
+        "labelEncrypted": "<sealed:Evenings>"
+      }
+    ],
+    "MoodTagHidden": [],
+    "ReminderPhaseConfig": [],
+    "MentalHealthAssessment": [],
+    "ConsentReceipt": [],
+    "DocumentConditionLink": [],
+    "ExtractedFact": [],
+    "PersonalRecord": [],
+    "UserAchievement": [],
+    "EnvironmentContext": [],
+    "EnvironmentTravelLocation": [],
+    "DawarichDay": [],
+    "MedicationScheduleRevision": [
+      {
+        "id": "<id:3>",
+        "medicationId": "skips-medication",
+        "validFrom": "2026-06-01T00:00:00.000Z",
+        "validUntil": "2026-06-15T00:00:00.000Z",
+        "payload": {
+          "schedules": []
+        },
+        "source": "ARCHIVED",
+        "supersededByRevisionId": null,
+        "createdAt": "<now>"
+      },
+      {
+        "id": "<id:4>",
+        "medicationId": "skips-medication",
+        "validFrom": "2026-06-15T00:00:00.000Z",
+        "validUntil": "2026-07-01T00:00:00.000Z",
+        "payload": {
+          "schedules": []
+        },
+        "source": "ARCHIVED",
+        "supersededByRevisionId": null,
+        "createdAt": "<now>"
+      }
+    ],
+    "MedicationEfficacyTarget": [
+      {
+        "id": "<id:5>",
+        "medicationId": "skips-medication",
+        "measurementType": "BLOOD_GLUCOSE",
+        "biomarkerId": null,
+        "primary": false,
+        "createdAt": "<now>",
+        "updatedAt": "<now>"
+      }
+    ],
+    "EcgRecording": [],
+    "OnboardingRecord": [],
+    "BiomarkerAlias": [],
+    "BiomarkerMerge": [],
+    "LabResultDocumentLink": [],
+    "EncounterMedicationLink": [],
+    "EncounterVaccinationLink": [],
+    "MedicationDocumentLink": [],
+    "MedicationConditionLink": [],
+    "AccountGrant": [
+      {
+        "id": "<id:6>",
+        "grantorId": "round-trip-owner",
+        "granteeId": "parity-delegate",
+        "access": "READ",
+        "scopeJson": null,
+        "invitedAt": "<now>",
+        "acceptedAt": "2026-07-03T09:00:00.000Z",
+        "revokedAt": null,
+        "revokedBy": null,
+        "expiresAt": null,
+        "lastUsedAt": null,
+        "createdAt": "<now>"
+      }
+    ],
+    "User": {
+      "id": "round-trip-owner",
+      "username": "round-trip-owner",
+      "email": "round-trip-owner@example.test",
+      "passwordHash": null,
+      "role": "USER",
+      "oidcIssuer": null,
+      "oidcSub": null,
+      "createdAt": "<now>",
+      "updatedAt": "<now>",
+      "managedProfileAt": null,
+      "heightCm": null,
+      "dateOfBirth": null,
+      "gender": null,
+      "timezone": "Europe/Berlin",
+      "homeTimezone": null,
+      "homeSince": null,
+      "homeLocationEncrypted": null,
+      "environmentAirQualityEnabled": true,
+      "environmentAqHistoryJson": null,
+      "codexAccessTokenEncrypted": null,
+      "codexRefreshTokenEncrypted": null,
+      "codexTokenExpiresAt": null,
+      "codexConnectedAt": null,
+      "codexConnectionStatus": "disconnected",
+      "useCentralCodex": false,
+      "insightsPrivacyMode": "aggregated",
+      "insightsCachedAt": null,
+      "insightsCachedTextEncrypted": null,
+      "insightsCachedLocale": null,
+      "insightsSnapshotHash": null,
+      "insightsWarmFailedAt": null,
+      "insightsBriefingRerollDate": null,
+      "morningDigestRefreshedOn": null,
+      "insightsExcludeMetrics": [],
+      "globalExcludedInjectionSites": [
+        "THIGH_LEFT"
+      ],
+      "telegramBotToken": null,
+      "telegramChatId": null,
+      "telegramEnabled": false,
+      "withingsClientIdEncrypted": null,
+      "withingsClientSecretEncrypted": null,
+      "whoopClientIdEncrypted": null,
+      "whoopClientSecretEncrypted": null,
+      "fitbitClientIdEncrypted": null,
+      "fitbitClientSecretEncrypted": null,
+      "googleHealthClientIdEncrypted": null,
+      "googleHealthClientSecretEncrypted": null,
+      "nightscoutUrlEncrypted": null,
+      "nightscoutTokenEncrypted": null,
+      "nightscoutAllowPrivateHost": false,
+      "dawarichUrlEncrypted": null,
+      "dawarichApiKeyEncrypted": null,
+      "dawarichPrefsEncrypted": null,
+      "dawarichAllowPrivateHost": false,
+      "polarAccessTokenEncrypted": null,
+      "polarUserIdEncrypted": null,
+      "polarClientIdEncrypted": null,
+      "polarClientSecretEncrypted": null,
+      "ouraAccessTokenEncrypted": null,
+      "ouraRefreshTokenEncrypted": null,
+      "ouraClientIdEncrypted": null,
+      "ouraClientSecretEncrypted": null,
+      "ouraScopeDenied": null,
+      "ouraBackfillProgress": null,
+      "ouraBackfillCompletedAt": null,
+      "ouraUserId": null,
+      "clientAppSharedBy": null,
+      "stravaClientIdEncrypted": null,
+      "stravaClientSecretEncrypted": null,
+      "stravaAccessTokenEncrypted": null,
+      "stravaRefreshTokenEncrypted": null,
+      "stravaAthleteId": null,
+      "stravaLastActivityAt": null,
+      "stravaBackfillCompletedAt": null,
+      "stravaBackfillResumeBefore": null,
+      "locale": null,
+      "thresholdsJson": {
+        "WEIGHT": {
+          "max": 80,
+          "min": 60
+        }
+      },
+      "dashboardWidgetsJson": null,
+      "insightsLayoutJson": null,
+      "medicationListLayoutJson": null,
+      "documentsLayoutJson": null,
+      "moodTagLayoutJson": null,
+      "moduleListLayoutJson": null,
+      "previewFeaturesJson": null,
+      "activityGoalsJson": null,
+      "glucoseUnit": null,
+      "hasDiabetes": false,
+      "labsLocalOcrEnabled": false,
+      "storeWorkoutRoutes": false,
+      "unitPreference": "metric",
+      "timeFormat": "AUTO",
+      "dateFormat": "AUTO",
+      "aiProvider": "OPENAI",
+      "aiModel": null,
+      "aiBaseUrl": null,
+      "aiAnthropicKeyEncrypted": null,
+      "aiLocalKeyEncrypted": null,
+      "aiOpenaiKeyEncrypted": null,
+      "aiCompatBaseUrl": null,
+      "aiCompatKeyEncrypted": null,
+      "aiCompatModel": null,
+      "aiProviderChain": null,
+      "aiResponseTimeoutSeconds": null,
+      "documentsAutoAiRead": false,
+      "onboardingCompletedAt": null,
+      "onboardingTourCompleted": false,
+      "onboardingTourProgressJson": null,
+      "disclaimerAcknowledgedAt": null,
+      "disclaimerAcknowledgedVersion": null,
+      "healthKitConfigJson": null,
+      "healthKitLastSyncedAt": null,
+      "healthKitLastSyncTrigger": null,
+      "healthKitLastBackgroundSyncAt": null,
+      "displayName": null,
+      "lastReportPracticeName": null,
+      "coachPrefsJson": null,
+      "sourcePriorityJson": null,
+      "lastSyncedAt": null,
+      "syncResetAt": "<now>",
+      "moodReminderEnabled": false,
+      "reportSelectionJson": null,
+      "notificationPrefs": null,
+      "disableCoach": false,
+      "aiUsageLevel": null,
+      "modulePreferencesJson": null,
+      "healthScoreConfigJson": null,
+      "documentQuotaBytes": null,
+      "coachLastSeenAt": null,
+      "avatarBytes": null,
+      "avatarContentType": null,
+      "avatarUpdatedAt": null,
+      "totpSecretEncrypted": null,
+      "totpConfirmedAt": null,
+      "totpLastStep": null,
+      "mfaEnforced": false,
+      "passkeyUpgradeNudgeDismissed": false,
+      "fullName": null,
+      "insurerName": null,
+      "insuranceNumberEncrypted": null,
+      "insurerIkNumber": null
+    },
+    "AppSettings": {
+      "id": "singleton",
+      "registrationEnabled": false,
+      "mfaRequired": true,
+      "defaultLocale": "de",
+      "telegramGlobal": true,
+      "ntfyGlobal": false,
+      "webPushGlobal": true,
+      "webPushVapidPublicKey": null,
+      "webPushVapidPrivateKeyEncrypted": null,
+      "webPushVapidSubject": null,
+      "apiGlobal": true,
+      "umamiEnabled": false,
+      "umamiScriptUrl": null,
+      "umamiWebsiteId": null,
+      "glitchtipEnabled": false,
+      "glitchtipDsn": null,
+      "glitchtipEnvironment": null,
+      "glitchtipLastOkAt": "2026-06-30T12:34:56.789Z",
+      "glitchtipLastFailureAt": "2026-06-30T12:34:56.789Z",
+      "glitchtipLastFailureReason": "rt-AppSettings-glitchtipLastFailureReason",
+      "reminderLateMinutes": 30,
+      "reminderMissedMinutes": 120,
+      "adminAiKeyEncrypted": null,
+      "adminAiModel": "gpt-legacy",
+      "adminAiBaseUrl": "https://api.example.com/v1",
+      "adminCodexAccessTokenEncrypted": null,
+      "adminCodexRefreshTokenEncrypted": null,
+      "adminCodexAccountIdEncrypted": null,
+      "adminCodexTokenExpiresAt": null,
+      "adminCodexConnectedAt": null,
+      "adminCodexConnectionStatus": "disconnected",
+      "adminAiInsightsFeedbackSummary": null,
+      "defaultUserTimezone": "Europe/Berlin",
+      "assistantEnabled": true,
+      "assistantCoachEnabled": true,
+      "assistantBriefingEnabled": true,
+      "assistantInsightStatusEnabled": true,
+      "assistantDocumentAiEnabled": true,
+      "aiUsageMaxLevel": "FRUGAL",
+      "aiUsageDefaultLevel": "FRUGAL",
+      "aiSyncRegenGapHours": 3,
+      "aiReasoningEnabled": true,
+      "aiReasoningMaxEffort": "high",
+      "moduleAvailabilityJson": {
+        "mood": "on"
+      },
+      "documentMaxFileBytes": 10000000,
+      "documentQuotaBytes": "bigint:500000000",
+      "encryptionKeyBackupConfirmedAt": "2026-06-30T12:34:56.789Z",
+      "encryptionKeyBackupConfirmedKeyId": "rt-AppSettings-encryptionKeyBackupConfirmedKeyId",
+      "encryptionKeyBackupConfirmedFingerprint": "rt-AppSettings-encryptionKeyBackupConfirmedFingerprint",
+      "encryptionKeyBackupConfirmedByUserId": "rt-AppSettings-encryptionKeyBackupConfirmedByUserId",
+      "correlationSeasonalEngineSince": "2026-06-30T12:34:56.789Z",
+      "pulseDayMeanMethod": "hour_mean_v1",
+      "pulseDayMeanAppliedAt": "2026-06-30T12:34:56.789Z",
+      "pulseDayMeanDryRunJson": {
+        "roundTrip": "rt-AppSettings-pulseDayMeanDryRunJson"
+      },
+      "workoutClimbBackfillCursor": "rt-AppSettings-workoutClimbBackfillCursor"
+    }
+  }
+}
