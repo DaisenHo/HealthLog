@@ -57,8 +57,9 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "assessments_warmed",
   "auto_resolved",
   "backed",
-  // The nightly measurements check: heap size over what the live rows need.
-  "bloat_factor",
+  // The nightly measurements check: heap size over what the live rows need,
+  // in percent (130 is a heap 1.3 times the size its live rows need).
+  "bloat_percent",
   "buckets_collapsed",
   "buckets_recomputed",
   "budget_blocked",
@@ -367,46 +368,86 @@ function assertStableCode(value: string, label: string): void {
   }
 }
 
-function validateFacts(facts: JobFacts): JobFacts {
+/**
+ * A measured quantity as a fact: a duration or an amount computed in floating
+ * point, rounded on purpose. A fact is a non-negative whole number, and a
+ * value that is not one fails the outcome's validation.
+ */
+export function wholeFact(value: number | null | undefined): number {
+  if (value == null || !Number.isFinite(value)) return 0;
+  return Math.max(0, Math.round(value));
+}
+
+/**
+ * A ratio as a fact, in whole percent: 1.3 is 130. A ratio is not a whole
+ * number, so it cannot be a fact as it stands; this is the one way to report
+ * one. Absent or unmeasurable is 0.
+ */
+export function percentFact(ratio: number | null | undefined): number {
+  if (ratio == null || !Number.isFinite(ratio)) return 0;
+  return wholeFact(ratio * 100);
+}
+
+/** Why one fact is refused, or null when it is a valid fact. */
+function invalidFact(key: string, value: unknown): string | null {
+  if (!JOB_FACT_ALLOWLIST.has(key))
+    return `job fact key is not allowed: ${key}`;
+  if (typeof value === "number") {
+    return Number.isSafeInteger(value) && value >= 0
+      ? null
+      : `job fact ${key} must be a non-negative safe integer`;
+  }
+  if (typeof value === "string") {
+    return STABLE_CODE_PATTERN.test(value)
+      ? null
+      : `job fact ${key} must be a stable lowercase code`;
+  }
+  return typeof value === "boolean"
+    ? null
+    : `job fact ${key} must be a bounded scalar`;
+}
+
+/**
+ * Called for each fact the serializer drops instead of throwing over it. A
+ * caller that passes it has already done the run's work: refusing the whole
+ * outcome over one malformed fact would fail completed work, and pg-boss
+ * would retry it.
+ */
+export type InvalidFactHandler = (key: string, reason: string) => void;
+
+function validateFacts(
+  facts: JobFacts,
+  onInvalidFact?: InvalidFactHandler,
+): JobFacts {
   const entries = Object.entries(facts);
 
   if (entries.length > MAX_JOB_FACTS) {
     throw new RangeError(`job outcome exceeds ${MAX_JOB_FACTS} facts`);
   }
 
+  const kept: Array<[string, JobFact]> = [];
   for (const [key, value] of entries) {
-    if (!JOB_FACT_ALLOWLIST.has(key)) {
-      throw new TypeError(`job fact key is not allowed: ${key}`);
-    }
-
-    if (typeof value === "number") {
-      if (!Number.isSafeInteger(value) || value < 0) {
-        throw new TypeError(
-          `job fact ${key} must be a non-negative safe integer`,
-        );
-      }
+    const reason = invalidFact(key, value);
+    if (reason === null) {
+      kept.push([key, value]);
       continue;
     }
-
-    if (typeof value === "string") {
-      assertStableCode(value, `job fact ${key}`);
-      continue;
-    }
-
-    if (typeof value !== "boolean") {
-      throw new TypeError(`job fact ${key} must be a bounded scalar`);
-    }
+    if (!onInvalidFact) throw new TypeError(reason);
+    onInvalidFact(key, reason);
   }
 
-  return Object.freeze(Object.fromEntries(entries)) as JobFacts;
+  return Object.freeze(Object.fromEntries(kept)) as JobFacts;
 }
 
 /**
  * Produce the only representation suitable for persistence or structured
  * logging. The raw `cause` deliberately remains in-process for retry handling.
  */
-export function serializeJobOutcome(outcome: JobOutcome): SerializedJobOutcome {
-  const did = validateFacts(outcome.did ?? {});
+export function serializeJobOutcome(
+  outcome: JobOutcome,
+  options: { onInvalidFact?: InvalidFactHandler } = {},
+): SerializedJobOutcome {
+  const did = validateFacts(outcome.did ?? {}, options.onInvalidFact);
   const serialized: SerializedJobOutcome = outcome.ok
     ? { ok: true, did }
     : (() => {

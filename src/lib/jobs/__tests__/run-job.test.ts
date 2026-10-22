@@ -87,15 +87,51 @@ describe("runJob", () => {
     expect(reportWorkerError).not.toHaveBeenCalled();
   });
 
-  it("refuses to persist credentials or unbounded facts on success", async () => {
+  it("refuses to persist credentials on success, without failing the finished run", async () => {
     const wrapped = runJob("google-health-sync", async () =>
       jobDone({
         refresh_token: "private-token",
+        processed: 2,
       } as unknown as Record<string, string>),
     );
 
-    await expect(wrapped(noJobs)).rejects.toThrow(/fact key is not allowed/i);
+    // The run's work is done: the result keeps what the contract allows and
+    // drops the rest, and the drop is an error-level signal naming the key.
+    await expect(wrapped(noJobs)).resolves.toEqual({
+      ok: true,
+      did: { processed: 2 },
+    });
+    expect(emitSignal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "job.outcome.fact_invalid",
+        level: "error",
+        meta: { queue: "google-health-sync", key: "refresh_token" },
+      }),
+    );
+    expect(JSON.stringify(emitSignal.mock.calls)).not.toContain(
+      "private-token",
+    );
     expect(reportWorkerError).not.toHaveBeenCalled();
+  });
+
+  it("does not fail a finished run over a fact that is not a whole number (#1271)", async () => {
+    // The nightly measurements check reported its bloat factor, a ratio such
+    // as 1.3, as a fact. The validation refused it after the VACUUM had run,
+    // so every run failed and pg-boss retried finished work.
+    const wrapped = runJob("measurement-maintenance", async () =>
+      jobDone({ processed: 3, duration_ms: 12.5, dead_rows: 40 }),
+    );
+
+    await expect(wrapped(noJobs)).resolves.toEqual({
+      ok: true,
+      did: { processed: 3, dead_rows: 40 },
+    });
+    expect(emitSignal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "job.outcome.fact_invalid",
+        meta: { queue: "measurement-maintenance", key: "duration_ms" },
+      }),
+    );
   });
 
   it("rethrows a failed outcome so pg-boss records a failed job", async () => {
