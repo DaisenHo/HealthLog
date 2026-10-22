@@ -257,7 +257,7 @@ describe("WHO-5 / SCI on the same infrastructure (v1.27.9)", () => {
     // English items are the validated wording for en — no translation note.
     expect(html).not.toContain('data-slot="check-in-validated-note"');
     // No functional follow-up outside the PHQ-9: 5 steps total.
-    expect(html).toContain("1 / 5");
+    expect(html).toContain("Question 1 of 5");
   });
 
   it("SCI wizard opens on item 1 with the item-specific duration anchors and section stem", () => {
@@ -276,7 +276,7 @@ describe("WHO-5 / SCI on the same infrastructure (v1.27.9)", () => {
     for (const v of ["4", "3", "2", "1", "0"] as const) {
       expect(html).toContain(mh.sciOptions.duration[v]);
     }
-    expect(html).toContain("1 / 8");
+    expect(html).toContain("Question 1 of 8");
   });
 
   it("shows the gentle PHQ-9 pointer on a WHO-5 total of 50 or below", () => {

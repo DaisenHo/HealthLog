@@ -10952,7 +10952,10 @@
       "title": "Seu resultado",
       "totalLabel": "Pontuação total",
       "bandLabel": "Faixa para esta triagem",
-      "takeAnother": "Fazer outro check-in"
+      "takeAnother": "Fazer outro check-in",
+      "scoreOf": "de {max}",
+      "firstCheckIn": "Este é o seu primeiro resultado com este questionário. A partir do próximo, a mudança aparece aqui.",
+      "nextStep": "Você pode repetir este questionário daqui a duas semanas ou depois para acompanhar a mudança. Se algo preocupar você, fale com um profissional de saúde a qualquer momento."
     },
     "band": {
       "PHQ9": {
@@ -11040,7 +11043,6 @@
       "who5": "Check de bem-estar de 5 perguntas. Responda sobre as últimas duas semanas; números mais altos significam melhor bem-estar.",
       "sci": "Check de sono de 8 perguntas. A maioria das perguntas trata do último mês; pontuações mais altas significam melhor sono."
     },
-    "progress": "{current} / {total}",
     "next": "Próximo",
     "lastResult": "Último teste",
     "lastScore": "Último resultado",
@@ -11064,6 +11066,43 @@
         "improved": "Isso alcança a mudança de {threshold} pontos que os estudos consideram significativa, na direção melhor.",
         "worsened": "Isso alcança a mudança de {threshold} pontos que os estudos consideram significativa, na direção menos favorável.",
         "within_threshold": "Isso é menor do que a mudança de {threshold} pontos que os estudos consideram significativa."
+      }
+    },
+    "wizard": {
+      "progressLabel": "Pergunta {current} de {total}",
+      "followUpLabel": "Pergunta adicional (opcional)",
+      "keyboardHint": "As teclas de 1 a {count} escolhem uma resposta.",
+      "allAnswered": "Todas as {total} perguntas respondidas"
+    },
+    "review": {
+      "title": "Conferir respostas",
+      "description": "Nada é salvo antes do envio, e cada resposta ainda pode ser alterada.",
+      "change": "Alterar",
+      "changeLabel": "Alterar a resposta da pergunta {number}",
+      "notAnswered": "Sem resposta",
+      "open": "Conferir respostas"
+    },
+    "bandMeaning": {
+      "PHQ9": {
+        "minimal": "Suas respostas indicam poucos ou nenhum sintoma de depressão nas últimas duas semanas.",
+        "mild": "Suas respostas indicam sintomas leves de depressão nas últimas duas semanas.",
+        "moderate": "Suas respostas indicam sintomas moderados de depressão nas últimas duas semanas.",
+        "modSevere": "Suas respostas indicam sintomas moderadamente graves de depressão nas últimas duas semanas.",
+        "severe": "Suas respostas indicam sintomas graves de depressão nas últimas duas semanas."
+      },
+      "GAD7": {
+        "minimal": "Suas respostas indicam poucos ou nenhum sintoma de ansiedade nas últimas duas semanas.",
+        "mild": "Suas respostas indicam sintomas leves de ansiedade nas últimas duas semanas.",
+        "moderate": "Suas respostas indicam sintomas moderados de ansiedade nas últimas duas semanas.",
+        "severe": "Suas respostas indicam sintomas graves de ansiedade nas últimas duas semanas."
+      },
+      "WHO5": {
+        "low": "Seu bem-estar nas últimas duas semanas ficou abaixo da faixa que o WHO-5 considera boa.",
+        "good": "Seu bem-estar nas últimas duas semanas ficou na faixa que o WHO-5 considera boa."
+      },
+      "SCI": {
+        "belowThreshold": "Seu sono no último mês ficou na faixa em que o estudo por trás deste questionário considerou provável uma insônia.",
+        "aboveThreshold": "Seu sono no último mês ficou fora da faixa que esse estudo associa à insônia."
       }
     }
   },

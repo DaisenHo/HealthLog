@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2957,
-  "total": 10516,
+  "count": 2954,
+  "total": 10508,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1245,10 +1245,7 @@
     "components/mental-health/__tests__/mental-wellbeing.test.tsx": 3,
     "components/mental-health/assessment-history-chart.tsx": 4,
     "components/mental-health/assessment-history.tsx": 2,
-    "components/mental-health/assessment-result.tsx": 2,
     "components/mental-health/assessment-trend-note.tsx": 1,
-    "components/mental-health/check-in-nav.ts": 2,
-    "components/mental-health/check-in-wizard.tsx": 4,
     "components/mental-health/crisis-card.tsx": 1,
     "components/mental-health/instrument-card.tsx": 5,
     "components/mental-health/instrument-detail.tsx": 3,

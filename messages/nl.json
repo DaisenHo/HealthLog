@@ -10952,7 +10952,10 @@
       "title": "Je resultaat",
       "totalLabel": "Totaalscore",
       "bandLabel": "Bereik voor deze screening",
-      "takeAnother": "Nog een check-in doen"
+      "takeAnother": "Nog een check-in doen",
+      "scoreOf": "van {max}",
+      "firstCheckIn": "Dit is je eerste uitslag voor deze vragenlijst. Vanaf de volgende zie je hier de verandering.",
+      "nextStep": "Je kunt deze check-in over twee weken of later herhalen om de verandering te volgen. Maak je je ergens zorgen over, praat dan op elk moment met een zorgverlener."
     },
     "band": {
       "PHQ9": {
@@ -11040,7 +11043,6 @@
       "who5": "Welzijnscheck met 5 vragen. Beantwoord ze voor de afgelopen twee weken; hogere getallen betekenen een beter welzijn.",
       "sci": "Slaapcheck met 8 vragen. De meeste vragen gaan over de afgelopen maand; hogere scores betekenen een betere slaap."
     },
-    "progress": "{current} / {total}",
     "next": "Volgende",
     "lastResult": "Laatste test",
     "lastScore": "Laatste resultaat",
@@ -11064,6 +11066,43 @@
         "improved": "Dat bereikt de verandering van {threshold} punten die studies als betekenisvol zien, in de betere richting.",
         "worsened": "Dat bereikt de verandering van {threshold} punten die studies als betekenisvol zien, in de minder goede richting.",
         "within_threshold": "Dat is minder dan de verandering van {threshold} punten die studies als betekenisvol zien."
+      }
+    },
+    "wizard": {
+      "progressLabel": "Vraag {current} van {total}",
+      "followUpLabel": "Aanvullende vraag (niet verplicht)",
+      "keyboardHint": "Met de cijfertoetsen 1 tot en met {count} kies je een antwoord.",
+      "allAnswered": "Alle {total} vragen beantwoord"
+    },
+    "review": {
+      "title": "Antwoorden controleren",
+      "description": "Er wordt niets opgeslagen voordat je verstuurt, en elk antwoord kun je nog wijzigen.",
+      "change": "Wijzigen",
+      "changeLabel": "Antwoord op vraag {number} wijzigen",
+      "notAnswered": "Niet beantwoord",
+      "open": "Antwoorden controleren"
+    },
+    "bandMeaning": {
+      "PHQ9": {
+        "minimal": "Je antwoorden wijzen op weinig of geen depressieve klachten in de afgelopen twee weken.",
+        "mild": "Je antwoorden wijzen op lichte depressieve klachten in de afgelopen twee weken.",
+        "moderate": "Je antwoorden wijzen op matige depressieve klachten in de afgelopen twee weken.",
+        "modSevere": "Je antwoorden wijzen op matig ernstige depressieve klachten in de afgelopen twee weken.",
+        "severe": "Je antwoorden wijzen op ernstige depressieve klachten in de afgelopen twee weken."
+      },
+      "GAD7": {
+        "minimal": "Je antwoorden wijzen op weinig of geen angstklachten in de afgelopen twee weken.",
+        "mild": "Je antwoorden wijzen op lichte angstklachten in de afgelopen twee weken.",
+        "moderate": "Je antwoorden wijzen op matige angstklachten in de afgelopen twee weken.",
+        "severe": "Je antwoorden wijzen op ernstige angstklachten in de afgelopen twee weken."
+      },
+      "WHO5": {
+        "low": "Je welzijn in de afgelopen twee weken lag onder het bereik dat de WHO-5 als goed beschouwt.",
+        "good": "Je welzijn in de afgelopen twee weken lag in het bereik dat de WHO-5 als goed beschouwt."
+      },
+      "SCI": {
+        "belowThreshold": "Je slaap in de afgelopen maand lag in het bereik waarin het onderzoek achter deze vragenlijst slapeloosheid waarschijnlijk vond.",
+        "aboveThreshold": "Je slaap in de afgelopen maand lag buiten het bereik dat dat onderzoek met slapeloosheid verbindt."
       }
     }
   },

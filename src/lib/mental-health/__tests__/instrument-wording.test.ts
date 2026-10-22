@@ -122,6 +122,62 @@ describe("instrument wording", () => {
   });
 });
 
+describe("validated languages carry the published wording", () => {
+  // Spot checks against the published forms named at the locale lists in
+  // instruments.ts: the places where the bundles had drifted (an informal
+  // follow-up question, a reworded anchor, a modernised spelling, the
+  // Italian GAD-7 anchor that differs from the Italian PHQ-9 one).
+  const PUBLISHED: Record<string, Record<string, string>> = {
+    de: {
+      "mentalHealth.stems.phq9.period":
+        "Wie oft fühlten Sie sich im Verlauf der letzten 2 Wochen durch die folgenden Beschwerden beeinträchtigt?",
+      "mentalHealth.items.phq9.7":
+        "Schwierigkeiten, sich auf etwas zu konzentrieren, z. B. beim Zeitungslesen oder Fernsehen",
+      "mentalHealth.items.gad7.5":
+        "Rastlosigkeit, so dass Stillsitzen schwer fällt",
+      "mentalHealth.items.gad7.7":
+        "Gefühl der Angst, so als würde etwas Schlimmes passieren",
+      "mentalHealth.functional.2": "Stark erschwert",
+      "mentalHealth.who5Options.5": "Die ganze Zeit",
+    },
+    es: {
+      "mentalHealth.options.3": "Casi cada día",
+      "mentalHealth.items.phq9.9":
+        "Pensamientos de que estaría mejor muerto/a o de querer hacerse daño de algún modo",
+      "mentalHealth.items.gad7.1":
+        "Sentirse nervioso/a, angustiado/a o muy tenso/a",
+    },
+    it: {
+      "mentalHealth.options.2": "Per più della metà dei giorni",
+      "mentalHealth.gad7Options.2": "Per oltre la metà dei giorni",
+      "mentalHealth.items.phq9.2": "Sentirsi giù, triste o disperato/a",
+    },
+    pl: {
+      "mentalHealth.options.0": "Wcale nie dokuczały",
+      "mentalHealth.items.gad7.1":
+        "Czuł(a) się Pan(i) podenerwowany(a), niespokojny(a), mocno spięty(a)",
+    },
+    fr: {
+      "mentalHealth.gad7Options.2": "Plus de la moitié du temps",
+      "mentalHealth.items.gad7.1":
+        "Un sentiment de nervosité, d’anxiété ou de tension",
+    },
+  };
+
+  it.each(Object.keys(PUBLISHED))("%s", (locale) => {
+    const flat = bundle(locale);
+    for (const [key, text] of Object.entries(PUBLISHED[locale])) {
+      expect(flat.get(key), `${locale} ${key}`).toBe(text);
+    }
+  });
+
+  it("keeps the German follow-up question in the published formal address", () => {
+    const title = bundle("de").get("mentalHealth.functionalTitle") ?? "";
+    expect(title).toMatch(/^Wenn eines oder mehrere der bisher/);
+    expect(title).not.toMatch(/\b(?:du|dich|dir|dein\w*)\b/i);
+  });
+});
+
 describe("no surface renders instrument wording through a bare t()", () => {
   // Item text, answer labels and stems must go through `instrumentText`. A
   // bare `t()` on one of these keys reads the bundle whatever the language.

@@ -203,11 +203,7 @@ export function MentalWellbeing() {
             )}
           </section>
 
-          {/* The pointer to mood history that used to sit here is gone. The
-              cross-link on `/mood` still points at this page, which is the
-              direction that earns its keep — someone logging a mood may not
-              know the screeners exist, while someone who came here for a
-              screener already knows where their mood diary is. */}
+          {/* No mood pointer here: `/mood` links to this page instead. */}
 
           {/* Per-instrument detail, opened from a card body: last result,
               trend chart, dated history, Start — the Verlauf lives here,
@@ -255,6 +251,9 @@ export function MentalWellbeing() {
       {phase === "result" && result && (
         <AssessmentResult
           result={result}
+          trend={history?.trends?.find(
+            (trend) => trend.instrument === result.assessment.instrument,
+          )}
           onTakeAnother={backToLanding}
           onBack={backToLanding}
         />

@@ -10948,24 +10948,33 @@
       "sci": "Test snu, 8 pytań"
     },
     "options": {
-      "0": "Wcale",
+      "0": "Wcale nie dokuczały",
       "1": "Kilka dni",
       "2": "Więcej niż połowę dni",
       "3": "Niemal codziennie"
     },
-    "functionalTitle": "Jeśli zaznaczyłeś(-aś) jakiekolwiek problemy, na ile utrudniły Ci one pracę, prowadzenie domu lub kontakty z innymi ludźmi?",
+    "gad7Options": {
+      "0": "Wcale nie dokuczały",
+      "1": "Kilka dni",
+      "2": "Więcej niż połowę dni",
+      "3": "Niemal codziennie"
+    },
+    "functionalTitle": "Jeżeli zaznaczył/-a Pan/Pani którekolwiek z problemów, jak bardzo utrudniły one Panu/Pani wykonywanie pracy, zajmowanie się domem lub relacje z innymi ludźmi?",
     "functional": {
-      "0": "Wcale nie utrudniły",
+      "0": "W ogóle nie utrudniły",
       "1": "Trochę utrudniły",
       "2": "Bardzo utrudniły",
-      "3": "Skrajnie utrudniły"
+      "3": "Niezmiernie utrudniły"
     },
     "functionalOptionalHint": "Opcjonalne: możesz wysłać bez odpowiedzi na to pytanie.",
     "result": {
       "title": "Twój wynik",
       "totalLabel": "Wynik łączny",
       "bandLabel": "Zakres dla tego przesiewu",
-      "takeAnother": "Wykonaj kolejne sprawdzenie"
+      "takeAnother": "Wykonaj kolejne sprawdzenie",
+      "scoreOf": "z {max}",
+      "firstCheckIn": "To Twój pierwszy wynik w tym kwestionariuszu. Od następnego zobaczysz tu zmianę.",
+      "nextStep": "Możesz powtórzyć ten kwestionariusz za dwa tygodnie lub później, aby śledzić zmianę. Jeśli coś Cię niepokoi, porozmawiaj w każdej chwili z profesjonalistą."
     },
     "band": {
       "PHQ9": {
@@ -11009,23 +11018,23 @@
     "items": {
       "phq9": {
         "1": "Niewielkie zainteresowanie lub odczuwanie przyjemności z wykonywania czynności",
-        "2": "Uczucie przygnębienia, depresji lub beznadziejności",
-        "3": "Kłopoty z zaśnięciem lub utrzymaniem snu albo zbyt długi sen",
+        "2": "Uczucie smutku, przygnębienia lub beznadziejności",
+        "3": "Kłopoty z zaśnięciem lub przerywany sen, albo zbyt długi sen",
         "4": "Uczucie zmęczenia lub brak energii",
         "5": "Brak apetytu lub przejadanie się",
-        "6": "Złe myślenie o sobie — poczucie, że jest się nieudacznikiem lub że zawiodło się siebie albo rodzinę",
-        "7": "Trudności ze skupieniem się, na przykład podczas czytania gazety lub oglądania telewizji",
-        "8": "Poruszanie się lub mówienie tak wolno, że inni mogli to zauważyć? Albo przeciwnie — niepokój lub pobudzenie powodujące, że poruszasz się znacznie więcej niż zwykle",
-        "9": "Myśli, że lepiej byłoby umrzeć albo chęć zrobienia sobie w jakiś sposób krzywdy"
+        "6": "Poczucie niezadowolenia z siebie — lub uczucie, że jest się do niczego, albo że zawiódł/zawiodła Pan/Pani siebie lub rodzinę",
+        "7": "Problemy ze skupieniem się na przykład przy czytaniu gazety lub oglądaniu telewizji",
+        "8": "Poruszanie się lub mówienie tak wolno, że inni mogliby to zauważyć? Albo wręcz przeciwnie — niemożność usiedzenia w miejscu lub podenerwowanie powodujące ruchliwość znacznie większą niż zwykle",
+        "9": "Myśli, że lepiej byłoby umrzeć, albo chęć zrobienia sobie jakiejś krzywdy"
       },
       "gad7": {
-        "1": "Odczuwanie zdenerwowania, lęku lub napięcia",
-        "2": "Niemożność przerwania lub kontrolowania zamartwiania się",
-        "3": "Zbytnie zamartwianie się różnymi sprawami",
-        "4": "Trudności z odprężeniem się",
-        "5": "Niepokój tak duży, że trudno usiedzieć w miejscu",
-        "6": "Łatwe wpadanie w rozdrażnienie lub irytację",
-        "7": "Odczuwanie lęku, jakby miało się zdarzyć coś strasznego"
+        "1": "Czuł(a) się Pan(i) podenerwowany(a), niespokojny(a), mocno spięty(a)",
+        "2": "Nie mógł(a) Pan(i) przestać się martwić albo zapanować nad tym",
+        "3": "Za bardzo się Pan(i) martwił(a) różnymi rzeczami",
+        "4": "Miał(a) Pan(i) trudności z relaksowaniem się",
+        "5": "Był(a) Pan(i) tak niespokojny(a), że nie mógł(a) usiedzieć na miejscu",
+        "6": "Łatwo stawał(a) się Pan(i) rozdrażniony(a) lub poirytowany(a)",
+        "7": "Obawiał(a) się Pan(i), tak jakby miało się stać coś strasznego"
       },
       "who5": {
         "1": "Czułam się wesoła/Czułem się wesoły i w dobrym nastroju",
@@ -11082,7 +11091,6 @@
       "who5": "Test samopoczucia, 5 pytań. Odpowiadaj, myśląc o ostatnich dwóch tygodniach; wyższe cyfry oznaczają lepsze samopoczucie.",
       "sci": "Test snu, 8 pytań. Większość pytań dotyczy ostatniego miesiąca; wyższe wyniki oznaczają lepszy sen."
     },
-    "progress": "{current} / {total}",
     "next": "Dalej",
     "lastResult": "Ostatni test",
     "lastScore": "Ostatni wynik",
@@ -11104,6 +11112,12 @@
       "5": "Cały czas"
     },
     "stems": {
+      "phq9": {
+        "period": "Jak często w ciągu ostatnich 2 tygodni dokuczały Panu/Pani następujące problemy?"
+      },
+      "gad7": {
+        "period": "Jak często w ciągu ostatnich 2 tygodni dokuczały Panu(i) następujące problemy?"
+      },
       "who5": {
         "period": "W ciągu ostatnich dwóch tygodni"
       }
@@ -11119,6 +11133,43 @@
         "improved": "To osiąga zmianę o {threshold} pkt, którą badania uznają za istotną, w lepszym kierunku.",
         "worsened": "To osiąga zmianę o {threshold} pkt, którą badania uznają za istotną, w mniej korzystnym kierunku.",
         "within_threshold": "To mniej niż zmiana o {threshold} pkt, którą badania uznają za istotną."
+      }
+    },
+    "wizard": {
+      "progressLabel": "Pytanie {current} z {total}",
+      "followUpLabel": "Pytanie dodatkowe (nieobowiązkowe)",
+      "keyboardHint": "Klawisze od 1 do {count} wybierają odpowiedź.",
+      "allAnswered": "Odpowiedziano na wszystkie pytania ({total})"
+    },
+    "review": {
+      "title": "Sprawdź odpowiedzi",
+      "description": "Nic nie zostanie zapisane przed wysłaniem, a każdą odpowiedź można jeszcze zmienić.",
+      "change": "Zmień",
+      "changeLabel": "Zmień odpowiedź na pytanie {number}",
+      "notAnswered": "Bez odpowiedzi",
+      "open": "Sprawdź odpowiedzi"
+    },
+    "bandMeaning": {
+      "PHQ9": {
+        "minimal": "Twoje odpowiedzi wskazują na brak lub niewiele objawów depresji w ostatnich dwóch tygodniach.",
+        "mild": "Twoje odpowiedzi wskazują na łagodne objawy depresji w ostatnich dwóch tygodniach.",
+        "moderate": "Twoje odpowiedzi wskazują na umiarkowane objawy depresji w ostatnich dwóch tygodniach.",
+        "modSevere": "Twoje odpowiedzi wskazują na umiarkowanie ciężkie objawy depresji w ostatnich dwóch tygodniach.",
+        "severe": "Twoje odpowiedzi wskazują na ciężkie objawy depresji w ostatnich dwóch tygodniach."
+      },
+      "GAD7": {
+        "minimal": "Twoje odpowiedzi wskazują na brak lub niewiele objawów lęku w ostatnich dwóch tygodniach.",
+        "mild": "Twoje odpowiedzi wskazują na łagodne objawy lęku w ostatnich dwóch tygodniach.",
+        "moderate": "Twoje odpowiedzi wskazują na umiarkowane objawy lęku w ostatnich dwóch tygodniach.",
+        "severe": "Twoje odpowiedzi wskazują na ciężkie objawy lęku w ostatnich dwóch tygodniach."
+      },
+      "WHO5": {
+        "low": "Twoje samopoczucie w ostatnich dwóch tygodniach było poniżej zakresu, który WHO-5 uznaje za dobry.",
+        "good": "Twoje samopoczucie w ostatnich dwóch tygodniach mieściło się w zakresie, który WHO-5 uznaje za dobry."
+      },
+      "SCI": {
+        "belowThreshold": "Twój sen w ostatnim miesiącu mieścił się w zakresie, w którym badanie stojące za tym kwestionariuszem uznało bezsenność za prawdopodobną.",
+        "aboveThreshold": "Twój sen w ostatnim miesiącu był poza zakresem, który to badanie wiąże z bezsennością."
       }
     }
   },

@@ -10953,11 +10953,17 @@
       "2": "An mehr als der Hälfte der Tage",
       "3": "Beinahe jeden Tag"
     },
-    "functionalTitle": "Wenn du eine oder mehrere Beschwerden angegeben hast: Wie sehr haben diese deine Arbeit, deinen Haushalt oder den Umgang mit anderen Menschen erschwert?",
+    "gad7Options": {
+      "0": "Überhaupt nicht",
+      "1": "An einzelnen Tagen",
+      "2": "An mehr als der Hälfte der Tage",
+      "3": "Beinahe jeden Tag"
+    },
+    "functionalTitle": "Wenn eines oder mehrere der bisher in diesem Fragebogen beschriebenen Probleme bei Ihnen vorliegen, geben Sie bitte an, wie sehr diese Probleme es Ihnen erschwert haben, Ihre Arbeit zu tun, Ihren Haushalt zu regeln oder mit anderen Menschen zurecht zu kommen:",
     "functional": {
       "0": "Überhaupt nicht erschwert",
       "1": "Etwas erschwert",
-      "2": "Sehr erschwert",
+      "2": "Stark erschwert",
       "3": "Extrem erschwert"
     },
     "functionalOptionalHint": "Optional: Du kannst auch ohne Antwort auf diese Frage absenden.",
@@ -10965,7 +10971,10 @@
       "title": "Dein Ergebnis",
       "totalLabel": "Gesamtwert",
       "bandLabel": "Bereich für dieses Screening",
-      "takeAnother": "Weiteren Check-in machen"
+      "takeAnother": "Weiteren Check-in machen",
+      "scoreOf": "von {max}",
+      "firstCheckIn": "Das ist dein erstes Ergebnis mit diesem Fragebogen. Ab dem nächsten siehst du hier die Veränderung.",
+      "nextStep": "Du kannst den Check-in in zwei Wochen oder später wiederholen, um die Veränderung zu sehen. Wenn dich etwas beunruhigt, sprich jederzeit mit einer Fachperson."
     },
     "band": {
       "PHQ9": {
@@ -11014,8 +11023,8 @@
         "4": "Müdigkeit oder Gefühl, keine Energie zu haben",
         "5": "Verminderter Appetit oder übermäßiges Bedürfnis zu essen",
         "6": "Schlechte Meinung von sich selbst; Gefühl, ein Versager zu sein oder die Familie enttäuscht zu haben",
-        "7": "Schwierigkeiten, sich auf etwas zu konzentrieren, z. B. beim Zeitunglesen oder Fernsehen",
-        "8": "Waren Ihre Bewegungen oder Ihre Sprache so verlangsamt, dass es auch anderen auffallen würde? Oder waren Sie im Gegenteil „zappelig“ oder ruhelos und hatten einen stärkeren Bewegungsdrang als sonst?",
+        "7": "Schwierigkeiten, sich auf etwas zu konzentrieren, z. B. beim Zeitungslesen oder Fernsehen",
+        "8": "Waren Ihre Bewegungen oder Ihre Sprache so verlangsamt, dass es auch anderen auffallen würde? Oder waren Sie im Gegenteil „zappelig“ oder ruhelos und hatten dadurch einen stärkeren Bewegungsdrang als sonst?",
         "9": "Gedanken, dass Sie lieber tot wären oder sich Leid zufügen möchten"
       },
       "gad7": {
@@ -11023,9 +11032,9 @@
         "2": "Nicht in der Lage sein, Sorgen zu stoppen oder zu kontrollieren",
         "3": "Übermäßige Sorgen bezüglich verschiedener Angelegenheiten",
         "4": "Schwierigkeiten zu entspannen",
-        "5": "Rastlosigkeit, sodass Stillsitzen schwerfällt",
+        "5": "Rastlosigkeit, so dass Stillsitzen schwer fällt",
         "6": "Schnelle Verärgerung oder Gereiztheit",
-        "7": "Gefühl der Angst, als würde etwas Schlimmes passieren"
+        "7": "Gefühl der Angst, so als würde etwas Schlimmes passieren"
       },
       "who5": {
         "1": "… war ich froh und guter Laune",
@@ -11082,7 +11091,6 @@
       "who5": "Wohlbefindens-Check mit 5 Fragen. Beziehe dich auf die letzten zwei Wochen; höhere Werte bedeuten besseres Wohlbefinden.",
       "sci": "Schlaf-Check mit 8 Fragen. Die meisten Fragen beziehen sich auf den letzten Monat; höhere Werte bedeuten besseren Schlaf."
     },
-    "progress": "{current} / {total}",
     "next": "Weiter",
     "lastResult": "Letzter Test",
     "lastScore": "Letztes Ergebnis",
@@ -11104,6 +11112,12 @@
       "5": "Die ganze Zeit"
     },
     "stems": {
+      "phq9": {
+        "period": "Wie oft fühlten Sie sich im Verlauf der letzten 2 Wochen durch die folgenden Beschwerden beeinträchtigt?"
+      },
+      "gad7": {
+        "period": "Wie oft fühlten Sie sich im Verlauf der letzten 2 Wochen durch die folgenden Beschwerden beeinträchtigt?"
+      },
       "who5": {
         "period": "In den letzten zwei Wochen …"
       }
@@ -11119,6 +11133,43 @@
         "improved": "Das erreicht die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen, in die bessere Richtung.",
         "worsened": "Das erreicht die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen, in die weniger gute Richtung.",
         "within_threshold": "Das ist weniger als die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen."
+      }
+    },
+    "wizard": {
+      "progressLabel": "Frage {current} von {total}",
+      "followUpLabel": "Zusatzfrage (freiwillig)",
+      "keyboardHint": "Mit den Zahlentasten 1 bis {count} wählst du eine Antwort.",
+      "allAnswered": "Alle {total} Fragen beantwortet"
+    },
+    "review": {
+      "title": "Antworten prüfen",
+      "description": "Gespeichert wird erst beim Absenden, bis dahin lässt sich jede Antwort noch ändern.",
+      "change": "Ändern",
+      "changeLabel": "Antwort auf Frage {number} ändern",
+      "notAnswered": "Nicht beantwortet",
+      "open": "Antworten prüfen"
+    },
+    "bandMeaning": {
+      "PHQ9": {
+        "minimal": "Deine Antworten weisen für die letzten zwei Wochen auf keine oder kaum depressive Beschwerden hin.",
+        "mild": "Deine Antworten weisen für die letzten zwei Wochen auf leichte depressive Beschwerden hin.",
+        "moderate": "Deine Antworten weisen für die letzten zwei Wochen auf mittelgradige depressive Beschwerden hin.",
+        "modSevere": "Deine Antworten weisen für die letzten zwei Wochen auf mittelschwere depressive Beschwerden hin.",
+        "severe": "Deine Antworten weisen für die letzten zwei Wochen auf schwere depressive Beschwerden hin."
+      },
+      "GAD7": {
+        "minimal": "Deine Antworten weisen für die letzten zwei Wochen auf keine oder kaum Angstbeschwerden hin.",
+        "mild": "Deine Antworten weisen für die letzten zwei Wochen auf leichte Angstbeschwerden hin.",
+        "moderate": "Deine Antworten weisen für die letzten zwei Wochen auf mittelgradige Angstbeschwerden hin.",
+        "severe": "Deine Antworten weisen für die letzten zwei Wochen auf schwere Angstbeschwerden hin."
+      },
+      "WHO5": {
+        "low": "Dein Wohlbefinden lag in den letzten zwei Wochen unter dem Bereich, den der WHO-5 als gut wertet.",
+        "good": "Dein Wohlbefinden lag in den letzten zwei Wochen in dem Bereich, den der WHO-5 als gut wertet."
+      },
+      "SCI": {
+        "belowThreshold": "Dein Schlaf lag im letzten Monat in dem Bereich, in dem die Studie hinter diesem Fragebogen eine Insomnie für wahrscheinlich hielt.",
+        "aboveThreshold": "Dein Schlaf lag im letzten Monat außerhalb des Bereichs, den diese Studie mit Insomnie verbindet."
       }
     }
   },

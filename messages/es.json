@@ -10951,21 +10951,30 @@
       "0": "Nunca",
       "1": "Varios días",
       "2": "Más de la mitad de los días",
-      "3": "Casi todos los días"
+      "3": "Casi cada día"
     },
-    "functionalTitle": "Si marcaste algún problema, ¿cuánta dificultad te han causado para trabajar, ocuparte de la casa o relacionarte con otras personas?",
+    "gad7Options": {
+      "0": "Nunca",
+      "1": "Varios días",
+      "2": "Más de la mitad de los días",
+      "3": "Casi cada día"
+    },
+    "functionalTitle": "Si ha marcado alguno de los problemas de este cuestionario, ¿hasta qué punto estos problemas le han creado dificultades para hacer su trabajo, ocuparse de la casa o relacionarse con los demás?",
     "functional": {
       "0": "Ninguna dificultad",
-      "1": "Algo de dificultad",
-      "2": "Mucha dificultad",
-      "3": "Dificultad extrema"
+      "1": "Algunas dificultades",
+      "2": "Muchas dificultades",
+      "3": "Muchísimas dificultades"
     },
     "functionalOptionalHint": "Opcional: puedes enviar sin responder esta pregunta.",
     "result": {
       "title": "Tu resultado",
       "totalLabel": "Puntuación total",
       "bandLabel": "Rango para este cribado",
-      "takeAnother": "Hacer otra revisión"
+      "takeAnother": "Hacer otra revisión",
+      "scoreOf": "de {max}",
+      "firstCheckIn": "Es tu primer resultado con este cuestionario. A partir del próximo verás aquí el cambio.",
+      "nextStep": "Puedes repetir este cuestionario dentro de dos semanas o más tarde para seguir el cambio. Si algo te preocupa, habla con un profesional de la salud en cualquier momento."
     },
     "band": {
       "PHQ9": {
@@ -11008,24 +11017,24 @@
     },
     "items": {
       "phq9": {
-        "1": "Tener poco interés o placer en hacer las cosas",
-        "2": "Sentirse desanimado/a, deprimido/a o sin esperanza",
-        "3": "Tener problemas para dormir o mantenerse dormido/a, o dormir demasiado",
-        "4": "Sentirse cansado/a o tener poca energía",
-        "5": "Tener poco apetito o comer en exceso",
-        "6": "Sentirse mal con usted mismo/a, o sentir que es un fracaso o que se ha fallado a sí mismo/a o a su familia",
-        "7": "Tener dificultad para concentrarse en cosas tales como leer el periódico o ver la televisión",
-        "8": "¿Moverse o hablar tan despacio que otras personas podrían haberlo notado? O lo contrario: estar tan inquieto/a o agitado/a que se ha estado moviendo mucho más de lo habitual",
-        "9": "Pensar que estaría mejor muerto/a o en hacerse daño de alguna manera"
+        "1": "Poco interés o alegría por hacer cosas",
+        "2": "Sensación de estar decaído/a, deprimido/a o desesperanzado/a",
+        "3": "Problemas para quedarse dormido/a, para seguir durmiendo o dormir demasiado",
+        "4": "Sensación de cansancio o de tener poca energía",
+        "5": "Poco apetito o comer demasiado",
+        "6": "Sentirse mal consigo mismo/a; sentir que es un/a fracasado/a o que ha decepcionado a su familia o a sí mismo/a",
+        "7": "Problemas para concentrarse en algo, como leer el periódico o ver la televisión",
+        "8": "Moverse o hablar tan despacio que los demás pueden haberlo notado. O lo contrario: estar tan inquieto/a o agitado/a que se ha estado moviendo de un lado a otro más de lo habitual",
+        "9": "Pensamientos de que estaría mejor muerto/a o de querer hacerse daño de algún modo"
       },
       "gad7": {
-        "1": "Sentirse nervioso/a, ansioso/a o muy alterado/a",
-        "2": "No poder dejar de preocuparse o no poder controlar la preocupación",
-        "3": "Preocuparse demasiado por diferentes cosas",
-        "4": "Tener dificultad para relajarse",
-        "5": "Estar tan inquieto/a que es difícil quedarse sentado/a tranquilamente",
-        "6": "Molestarse o irritarse fácilmente",
-        "7": "Sentir miedo como si algo terrible fuera a suceder"
+        "1": "Sentirse nervioso/a, angustiado/a o muy tenso/a",
+        "2": "Ser incapaz de dejar de preocuparse o de controlar la preocupación",
+        "3": "Preocuparse demasiado por diferentes cuestiones",
+        "4": "Tener problemas para relajarse",
+        "5": "Estar tan inquieto/a que le resulta difícil permanecer sentado/a",
+        "6": "Enfadarse o irritarse con facilidad",
+        "7": "Sentir miedo de que algo terrible pueda ocurrir"
       },
       "who5": {
         "1": "Me he sentido alegre y de buen humor",
@@ -11082,7 +11091,6 @@
       "who5": "Test de bienestar de 5 preguntas. Responde pensando en las últimas dos semanas; cifras mayores significan mayor bienestar.",
       "sci": "Test de sueño de 8 preguntas. La mayoría se refiere al último mes; puntuaciones mayores significan mejor sueño."
     },
-    "progress": "{current} / {total}",
     "next": "Siguiente",
     "lastResult": "Última prueba",
     "lastScore": "Último resultado",
@@ -11104,6 +11112,12 @@
       "5": "Todo el tiempo"
     },
     "stems": {
+      "phq9": {
+        "period": "Durante las últimas 2 semanas ¿con qué frecuencia le ha molestado alguno de los siguientes problemas?"
+      },
+      "gad7": {
+        "period": "En los últimos 14 días, ¿con qué frecuencia le han supuesto una molestia los siguientes problemas?"
+      },
       "who5": {
         "period": "Durante las últimas dos semanas:"
       }
@@ -11119,6 +11133,43 @@
         "improved": "Alcanza el cambio de {threshold} puntos que los estudios consideran relevante, en la dirección favorable.",
         "worsened": "Alcanza el cambio de {threshold} puntos que los estudios consideran relevante, en la dirección menos favorable.",
         "within_threshold": "Es menor que el cambio de {threshold} puntos que los estudios consideran relevante."
+      }
+    },
+    "wizard": {
+      "progressLabel": "Pregunta {current} de {total}",
+      "followUpLabel": "Pregunta adicional (opcional)",
+      "keyboardHint": "Las teclas 1 a {count} eligen una respuesta.",
+      "allAnswered": "Las {total} preguntas tienen respuesta"
+    },
+    "review": {
+      "title": "Revisar respuestas",
+      "description": "No se guarda nada hasta que lo envíes, y cada respuesta todavía se puede cambiar.",
+      "change": "Cambiar",
+      "changeLabel": "Cambiar la respuesta a la pregunta {number}",
+      "notAnswered": "Sin respuesta",
+      "open": "Revisar respuestas"
+    },
+    "bandMeaning": {
+      "PHQ9": {
+        "minimal": "Tus respuestas apuntan a pocos o ningún síntoma depresivo en las últimas dos semanas.",
+        "mild": "Tus respuestas apuntan a síntomas depresivos leves en las últimas dos semanas.",
+        "moderate": "Tus respuestas apuntan a síntomas depresivos moderados en las últimas dos semanas.",
+        "modSevere": "Tus respuestas apuntan a síntomas depresivos moderadamente graves en las últimas dos semanas.",
+        "severe": "Tus respuestas apuntan a síntomas depresivos graves en las últimas dos semanas."
+      },
+      "GAD7": {
+        "minimal": "Tus respuestas apuntan a pocos o ningún síntoma de ansiedad en las últimas dos semanas.",
+        "mild": "Tus respuestas apuntan a síntomas de ansiedad leves en las últimas dos semanas.",
+        "moderate": "Tus respuestas apuntan a síntomas de ansiedad moderados en las últimas dos semanas.",
+        "severe": "Tus respuestas apuntan a síntomas de ansiedad graves en las últimas dos semanas."
+      },
+      "WHO5": {
+        "low": "Tu bienestar en las últimas dos semanas estuvo por debajo del rango que el WHO-5 considera bueno.",
+        "good": "Tu bienestar en las últimas dos semanas estuvo dentro del rango que el WHO-5 considera bueno."
+      },
+      "SCI": {
+        "belowThreshold": "Tu sueño del último mes estuvo en el rango en el que el estudio detrás de este cuestionario consideró probable un insomnio.",
+        "aboveThreshold": "Tu sueño del último mes estuvo fuera del rango que ese estudio asocia con el insomnio."
       }
     }
   },

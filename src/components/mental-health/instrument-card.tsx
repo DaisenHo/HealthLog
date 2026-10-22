@@ -89,6 +89,7 @@ export function InstrumentCard({
     <Card
       className="relative h-full gap-3 md:gap-3"
       data-slot="instrument-card"
+      data-instrument={instrument}
     >
       {/* Source / licence — a discreet info control at the top-right of the
           header, at the heading's height. A sibling of the detail-open
@@ -187,7 +188,12 @@ export function InstrumentCard({
       {canManageMind && (
         <CardContent className="flex h-full flex-col">
           <div className="mt-auto pt-0">
-            <Button type="button" className="min-h-11 w-full" onClick={onStart}>
+            <Button
+              type="button"
+              className="min-h-11 w-full"
+              onClick={onStart}
+              data-slot="instrument-card-start"
+            >
               {t("mentalHealth.start")}
             </Button>
           </div>

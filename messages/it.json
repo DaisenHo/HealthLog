@@ -10948,15 +10948,21 @@
       "sci": "Test sul sonno, 8 domande"
     },
     "options": {
-      "0": "Per niente",
+      "0": "Mai",
       "1": "Alcuni giorni",
-      "2": "Più della metà dei giorni",
+      "2": "Per più della metà dei giorni",
       "3": "Quasi ogni giorno"
     },
-    "functionalTitle": "Se hai indicato dei problemi, quanto ti hanno reso difficile lavorare, occuparti della casa o andare d'accordo con gli altri?",
+    "gad7Options": {
+      "0": "Mai",
+      "1": "Alcuni giorni",
+      "2": "Per oltre la metà dei giorni",
+      "3": "Quasi ogni giorno"
+    },
+    "functionalTitle": "Se ha fatto una crocetta su uno qualsiasi di questi problemi, quanto questi problemi le hanno reso difficile fare il suo lavoro, occuparsi delle sue cose a casa o avere buoni rapporti con gli altri?",
     "functional": {
       "0": "Per niente difficile",
-      "1": "Un po' difficile",
+      "1": "Abbastanza difficile",
       "2": "Molto difficile",
       "3": "Estremamente difficile"
     },
@@ -10965,7 +10971,10 @@
       "title": "Il tuo risultato",
       "totalLabel": "Punteggio totale",
       "bandLabel": "Intervallo per questo screening",
-      "takeAnother": "Fai un altro check-in"
+      "takeAnother": "Fai un altro check-in",
+      "scoreOf": "su {max}",
+      "firstCheckIn": "È il tuo primo risultato con questo questionario. Dal prossimo vedrai qui il cambiamento.",
+      "nextStep": "Puoi ripetere questo questionario tra due settimane o più tardi per seguire il cambiamento. Se qualcosa ti preoccupa, parlane in qualsiasi momento con un professionista sanitario."
     },
     "band": {
       "PHQ9": {
@@ -11009,23 +11018,23 @@
     "items": {
       "phq9": {
         "1": "Scarso interesse o piacere nel fare le cose",
-        "2": "Sentirsi giù di morale, depresso/a o disperato/a",
-        "3": "Difficoltà ad addormentarsi o a mantenere il sonno, oppure dormire troppo",
+        "2": "Sentirsi giù, triste o disperato/a",
+        "3": "Problemi ad addormentarsi o a dormire tutta la notte senza svegliarsi, o a dormire troppo",
         "4": "Sentirsi stanco/a o avere poca energia",
         "5": "Scarso appetito o mangiare troppo",
-        "6": "Avere una cattiva opinione di sé, o sentirsi un/una fallito/a o aver deluso se stesso/a o i propri familiari",
-        "7": "Difficoltà a concentrarsi, ad esempio nel leggere il giornale o nel guardare la televisione",
-        "8": "Muoversi o parlare così lentamente che altre persone potrebbero averlo notato? Oppure, al contrario, essere così agitato/a o irrequieto/a da muoversi molto più del solito",
-        "9": "Pensare che sarebbe meglio morire o di farsi del male in qualche modo"
+        "6": "Avere una scarsa opinione di sé, o sentirsi un/una fallito/a o aver deluso se stesso/a o i propri familiari",
+        "7": "Difficoltà a concentrarsi su qualcosa, per esempio leggere il giornale o guardare la televisione",
+        "8": "Muoversi o parlare così lentamente da poter essere notato/a da altre persone. O, al contrario, essere così irrequieto/a da muoversi molto più del solito",
+        "9": "Pensare che sarebbe meglio morire o farsi del male in un modo o nell’altro"
       },
       "gad7": {
         "1": "Sentirsi nervoso/a, ansioso/a o teso/a",
-        "2": "Non riuscire a smettere di preoccuparsi o a controllare le preoccupazioni",
-        "3": "Preoccuparsi troppo per cose diverse",
+        "2": "Non riuscire a smettere di preoccuparsi o a tenere sotto controllo le preoccupazioni",
+        "3": "Preoccuparsi troppo per varie cose",
         "4": "Avere difficoltà a rilassarsi",
-        "5": "Essere così irrequieto/a da far fatica a stare seduto/a fermo/a",
+        "5": "Essere talmente irrequieto/a da far fatica a stare seduto/a fermo/a",
         "6": "Infastidirsi o irritarsi facilmente",
-        "7": "Avere paura come se potesse accadere qualcosa di terribile"
+        "7": "Avere paura che possa succedere qualcosa di terribile"
       },
       "who5": {
         "1": "Mi sono sentito/a allegro/a e di buon umore",
@@ -11082,7 +11091,6 @@
       "who5": "Test sul benessere in 5 domande. Rispondi pensando alle ultime due settimane; numeri più alti indicano un maggior benessere.",
       "sci": "Test sul sonno in 8 domande. La maggior parte riguarda l'ultimo mese; punteggi più alti indicano un sonno migliore."
     },
-    "progress": "{current} / {total}",
     "next": "Avanti",
     "lastResult": "Ultimo test",
     "lastScore": "Ultimo risultato",
@@ -11104,6 +11112,12 @@
       "5": "Sempre"
     },
     "stems": {
+      "phq9": {
+        "period": "Nelle ultime 2 settimane, con quale frequenza le ha dato fastidio ciascuno dei seguenti problemi?"
+      },
+      "gad7": {
+        "period": "Nelle ultime 2 settimane, con quale frequenza le ha dato fastidio ciascuno dei seguenti problemi?"
+      },
       "who5": {
         "period": "Nelle ultime due settimane"
       }
@@ -11119,6 +11133,43 @@
         "improved": "Raggiunge la variazione di {threshold} punti che gli studi considerano rilevante, nella direzione migliore.",
         "worsened": "Raggiunge la variazione di {threshold} punti che gli studi considerano rilevante, nella direzione meno buona.",
         "within_threshold": "È meno della variazione di {threshold} punti che gli studi considerano rilevante."
+      }
+    },
+    "wizard": {
+      "progressLabel": "Domanda {current} di {total}",
+      "followUpLabel": "Domanda aggiuntiva (facoltativa)",
+      "keyboardHint": "I tasti da 1 a {count} scelgono una risposta.",
+      "allAnswered": "Tutte le {total} domande hanno una risposta"
+    },
+    "review": {
+      "title": "Controlla le risposte",
+      "description": "Nulla viene salvato prima dell’invio, e ogni risposta si può ancora cambiare.",
+      "change": "Modifica",
+      "changeLabel": "Modifica la risposta alla domanda {number}",
+      "notAnswered": "Senza risposta",
+      "open": "Controlla le risposte"
+    },
+    "bandMeaning": {
+      "PHQ9": {
+        "minimal": "Le tue risposte indicano sintomi depressivi assenti o minimi nelle ultime due settimane.",
+        "mild": "Le tue risposte indicano sintomi depressivi lievi nelle ultime due settimane.",
+        "moderate": "Le tue risposte indicano sintomi depressivi moderati nelle ultime due settimane.",
+        "modSevere": "Le tue risposte indicano sintomi depressivi moderatamente gravi nelle ultime due settimane.",
+        "severe": "Le tue risposte indicano sintomi depressivi gravi nelle ultime due settimane."
+      },
+      "GAD7": {
+        "minimal": "Le tue risposte indicano sintomi d’ansia assenti o minimi nelle ultime due settimane.",
+        "mild": "Le tue risposte indicano sintomi d’ansia lievi nelle ultime due settimane.",
+        "moderate": "Le tue risposte indicano sintomi d’ansia moderati nelle ultime due settimane.",
+        "severe": "Le tue risposte indicano sintomi d’ansia gravi nelle ultime due settimane."
+      },
+      "WHO5": {
+        "low": "Il tuo benessere nelle ultime due settimane era sotto la fascia che il WHO-5 considera buona.",
+        "good": "Il tuo benessere nelle ultime due settimane era nella fascia che il WHO-5 considera buona."
+      },
+      "SCI": {
+        "belowThreshold": "Il tuo sonno nell’ultimo mese era nella fascia in cui lo studio alla base di questo questionario riteneva probabile un’insonnia.",
+        "aboveThreshold": "Il tuo sonno nell’ultimo mese era fuori dalla fascia che quello studio collega all’insonnia."
       }
     }
   },

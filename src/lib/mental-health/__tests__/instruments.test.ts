@@ -166,6 +166,7 @@ describe("mental-health instruments", () => {
 
     it("resolves option-label keys per scheme (shared vs SCI per-item groups)", () => {
       expect(optionLabelKey("PHQ9", 0, 2)).toBe("mentalHealth.options.2");
+      expect(optionLabelKey("GAD7", 0, 2)).toBe("mentalHealth.gad7Options.2");
       expect(optionLabelKey("WHO5", 4, 5)).toBe("mentalHealth.who5Options.5");
       // SCI: items 1–2 duration, 3 nights, 4 quality, 5–7 impact, 8 problem duration.
       expect(optionLabelKey("SCI", 0, 4)).toBe(
@@ -185,29 +186,37 @@ describe("mental-health instruments", () => {
       );
     });
 
-    it("maps recall stems (WHO-5 one stem; SCI three sections; PHQ/GAD none)", () => {
+    it("maps every item to its form's stem (PHQ/GAD/WHO-5 one each; SCI three sections)", () => {
       expect(stemKey("WHO5", 0)).toBe("who5.period");
       expect(stemKey("SCI", 0)).toBe("sci.night");
       expect(stemKey("SCI", 3)).toBe("sci.night");
       expect(stemKey("SCI", 4)).toBe("sci.impact");
       expect(stemKey("SCI", 7)).toBe("sci.finally");
-      expect(stemKey("PHQ9", 0)).toBeNull();
-      expect(stemKey("GAD7", 0)).toBeNull();
+      expect(stemKey("PHQ9", 0)).toBe("phq9.period");
+      expect(stemKey("PHQ9", 8)).toBe("phq9.period");
+      expect(stemKey("GAD7", 6)).toBe("gad7.period");
+      for (const def of Object.values(INSTRUMENTS)) {
+        expect(def.stemKeys).toHaveLength(def.itemCount);
+      }
     });
 
-    it("declares validated item locales honestly (SCI = English only)", () => {
-      for (const locale of ["de", "en", "es", "fr", "it", "pl", "ko"]) {
-        expect(hasValidatedItems("WHO5", locale)).toBe(true);
+    it("declares validated item locales honestly, per instrument", () => {
+      // Each listed language reproduces a published version word for word
+      // (sources at the lists in instruments.ts).
+      for (const locale of ["de", "en", "es", "it", "pl"]) {
         expect(hasValidatedItems("PHQ9", locale)).toBe(true);
       }
-      // The Dutch wording has not been read against the published forms yet.
-      expect(hasValidatedItems("PHQ9", "nl")).toBe(false);
-      expect(hasValidatedItems("GAD7", "nl")).toBe(false);
-      expect(hasValidatedItems("WHO5", "nl")).toBe(false);
-      // Nor has the Brazilian Portuguese one.
-      expect(hasValidatedItems("PHQ9", "pt-BR")).toBe(false);
-      expect(hasValidatedItems("GAD7", "pt-BR")).toBe(false);
-      expect(hasValidatedItems("WHO5", "pt-BR")).toBe(false);
+      for (const locale of ["de", "en", "es", "fr", "it", "pl"]) {
+        expect(hasValidatedItems("GAD7", locale)).toBe(true);
+        expect(hasValidatedItems("WHO5", locale)).toBe(true);
+      }
+      // No obtainable French-for-France PHQ-9; no checkable Korean forms.
+      expect(hasValidatedItems("PHQ9", "fr")).toBe(false);
+      for (const id of ["PHQ9", "GAD7", "WHO5"] as const) {
+        expect(hasValidatedItems(id, "ko")).toBe(false);
+        expect(hasValidatedItems(id, "nl")).toBe(false);
+        expect(hasValidatedItems(id, "pt-BR")).toBe(false);
+      }
       expect(hasValidatedItems("SCI", "en")).toBe(true);
       expect(hasValidatedItems("SCI", "en-GB")).toBe(true);
       expect(hasValidatedItems("SCI", "de")).toBe(false);

@@ -10953,6 +10953,12 @@
       "2": "More than half the days",
       "3": "Nearly every day"
     },
+    "gad7Options": {
+      "0": "Not at all",
+      "1": "Several days",
+      "2": "More than half the days",
+      "3": "Nearly every day"
+    },
     "functionalTitle": "If you checked off any problems, how difficult have these problems made it for you to do your work, take care of things at home, or get along with other people?",
     "functional": {
       "0": "Not difficult at all",
@@ -10965,7 +10971,10 @@
       "title": "Your result",
       "totalLabel": "Total score",
       "bandLabel": "Range for this screen",
-      "takeAnother": "Take another check-in"
+      "takeAnother": "Take another check-in",
+      "scoreOf": "of {max}",
+      "firstCheckIn": "This is your first result for this questionnaire. From the next one on, the change shows here.",
+      "nextStep": "You can repeat this check-in in two weeks or later to follow the change. If something worries you, talk to a health professional at any time."
     },
     "band": {
       "PHQ9": {
@@ -11092,7 +11101,6 @@
       "who5": "5-question well-being check. Answer for the last two weeks; higher numbers mean better well-being.",
       "sci": "8-question sleep check. Most questions ask about the past month; higher scores mean better sleep."
     },
-    "progress": "{current} / {total}",
     "next": "Next",
     "lastResult": "Last test",
     "lastScore": "Last result",
@@ -11151,6 +11159,12 @@
       }
     },
     "stems": {
+      "phq9": {
+        "period": "Over the last 2 weeks, how often have you been bothered by any of the following problems?"
+      },
+      "gad7": {
+        "period": "Over the last 2 weeks, how often have you been bothered by the following problems?"
+      },
       "who5": {
         "period": "Over the last two weeks …"
       },
@@ -11171,6 +11185,43 @@
         "improved": "That reaches the {threshold}-point change studies treat as meaningful, in the better direction.",
         "worsened": "That reaches the {threshold}-point change studies treat as meaningful, in the less good direction.",
         "within_threshold": "That is smaller than the {threshold}-point change studies treat as meaningful."
+      }
+    },
+    "wizard": {
+      "progressLabel": "Question {current} of {total}",
+      "followUpLabel": "Follow-up question (optional)",
+      "keyboardHint": "Number keys 1 to {count} choose an answer.",
+      "allAnswered": "All {total} questions answered"
+    },
+    "review": {
+      "title": "Check your answers",
+      "description": "Nothing is saved until you submit, and every answer can still be changed.",
+      "change": "Change",
+      "changeLabel": "Change the answer to question {number}",
+      "notAnswered": "Not answered",
+      "open": "Review answers"
+    },
+    "bandMeaning": {
+      "PHQ9": {
+        "minimal": "Your answers point to few or no symptoms of depression over the last two weeks.",
+        "mild": "Your answers point to mild symptoms of depression over the last two weeks.",
+        "moderate": "Your answers point to moderate symptoms of depression over the last two weeks.",
+        "modSevere": "Your answers point to moderately severe symptoms of depression over the last two weeks.",
+        "severe": "Your answers point to severe symptoms of depression over the last two weeks."
+      },
+      "GAD7": {
+        "minimal": "Your answers point to few or no symptoms of anxiety over the last two weeks.",
+        "mild": "Your answers point to mild symptoms of anxiety over the last two weeks.",
+        "moderate": "Your answers point to moderate symptoms of anxiety over the last two weeks.",
+        "severe": "Your answers point to severe symptoms of anxiety over the last two weeks."
+      },
+      "WHO5": {
+        "low": "Your well-being over the last two weeks was below the range the WHO-5 counts as good.",
+        "good": "Your well-being over the last two weeks was in the range the WHO-5 counts as good."
+      },
+      "SCI": {
+        "belowThreshold": "Your sleep over the last month was in the range where the study behind this questionnaire found insomnia likely.",
+        "aboveThreshold": "Your sleep over the last month was outside the range that study linked with insomnia."
       }
     }
   },

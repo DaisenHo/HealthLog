@@ -72,6 +72,10 @@ export const SOURCE_WORDING: Readonly<Record<string, string>> = {
   "mentalHealth.options.1": "Several days",
   "mentalHealth.options.2": "More than half the days",
   "mentalHealth.options.3": "Nearly every day",
+  "mentalHealth.gad7Options.0": "Not at all",
+  "mentalHealth.gad7Options.1": "Several days",
+  "mentalHealth.gad7Options.2": "More than half the days",
+  "mentalHealth.gad7Options.3": "Nearly every day",
   "mentalHealth.functionalTitle":
     "If you checked off any problems, how difficult have these problems made it for you to do your work, take care of things at home, or get along with other people?",
   "mentalHealth.functional.0": "Not difficult at all",
@@ -110,6 +114,10 @@ export const SOURCE_WORDING: Readonly<Record<string, string>> = {
   "mentalHealth.sciOptions.problemDuration.3": "1–2 months",
   "mentalHealth.sciOptions.problemDuration.4":
     "I don't have a problem / < 1 month",
+  "mentalHealth.stems.phq9.period":
+    "Over the last 2 weeks, how often have you been bothered by any of the following problems?",
+  "mentalHealth.stems.gad7.period":
+    "Over the last 2 weeks, how often have you been bothered by the following problems?",
   "mentalHealth.stems.who5.period": "Over the last two weeks …",
   "mentalHealth.stems.sci.night":
     "Thinking about a typical night in the last month …",
