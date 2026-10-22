@@ -514,10 +514,8 @@ test.describe("Coach page frame", () => {
       expect(await stripBox(strip(page))).toEqual(stripOpen);
       await expect(expand(page)).toBeFocused();
       await expect(expand(page)).toHaveAttribute("aria-expanded", "false");
-      await expect(expand(page)).toHaveAttribute(
-        "aria-label",
-        "Show conversations",
-      );
+      // Named by its visible label; the action is the tooltip (WCAG 2.5.3).
+      await expect(expand(page)).toHaveAttribute("title", "Show conversations");
       await expect(
         panel(page).locator('[data-slot="coach-history-select"]'),
       ).toHaveCount(0);

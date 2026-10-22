@@ -11841,7 +11841,6 @@
     },
     "chat": {
       "title": "Conversar sobre este documento",
-      "openAria": "Perguntar ao Coach sobre este documento",
       "openButton": "Perguntar ao Coach"
     },
     "readingConsent": {

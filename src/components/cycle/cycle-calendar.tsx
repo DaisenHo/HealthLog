@@ -67,6 +67,32 @@ function mondayIndex(d: Date): number {
 
 type Translate = ReturnType<typeof useTranslations>["t"];
 
+const CELL_DATE_FORMATS = new Map<Locale, Intl.DateTimeFormat>();
+
+/**
+ * A day cell's accessible name: the long date, then its markers. The long
+ * date contains the day number the cell shows (WCAG 2.5.3, label in name);
+ * the ISO key it used to read out ("2026-10-01") did not.
+ */
+function cellLabel(
+  date: string,
+  markers: readonly string[],
+  locale: Locale,
+): string {
+  let format = CELL_DATE_FORMATS.get(locale);
+  if (!format) {
+    format = new Intl.DateTimeFormat(resolveIntlLocale(locale), {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    CELL_DATE_FORMATS.set(locale, format);
+  }
+  const day = format.format(new Date(`${date}T12:00:00Z`));
+  return markers.length ? `${day}, ${markers.join(", ")}` : day;
+}
+
 /** `LABEL (VALUE)`, or the bare label when there is no value to name. */
 function named(t: Translate, labelKey: string, valueKey?: string): string {
   return valueKey ? `${t(labelKey)} (${t(valueKey)})` : t(labelKey);
@@ -299,7 +325,7 @@ export function CycleCalendar({
               const others = info ? otherEntryLabels(info, t) : [];
               markers.push(...others);
 
-              const aria = `${date}${markers.length ? `, ${markers.join(", ")}` : ""}`;
+              const aria = cellLabel(date, markers, locale);
               const flowLevel =
                 info?.isPeriodLogged && info.flow && info.flow !== "NONE"
                   ? info.flow
@@ -410,6 +436,7 @@ export function CycleCalendar({
                 role: "gridcell" as const,
                 "aria-label": aria,
                 "aria-current": isToday ? ("date" as const) : undefined,
+                "data-date": date,
                 "data-flow-level": flowLevel,
                 "data-fertile": info?.isFertileWindow ? "true" : undefined,
                 "data-predicted":

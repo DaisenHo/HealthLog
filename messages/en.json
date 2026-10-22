@@ -11960,7 +11960,6 @@
     },
     "chat": {
       "title": "Chat about this document",
-      "openAria": "Ask the Coach about this document",
       "openButton": "Ask the Coach"
     },
     "readingConsent": {

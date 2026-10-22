@@ -499,10 +499,12 @@ export function LoginOverviewSection() {
                                 copyIp(entry.id, entry.ipAddress as string)
                               }
                               title={entry.ipAddress}
-                              aria-label={t("admin.copyIp")}
                               data-slot="login-overview-ip"
                               className="hover:text-foreground focus-visible:ring-ring inline-flex max-w-[10rem] items-center gap-1 rounded font-mono focus-visible:ring-2 focus-visible:outline-none"
                             >
+                              <span className="sr-only">
+                                {t("admin.copyIp")}
+                              </span>
                               <span className="truncate">
                                 {entry.ipAddress}
                               </span>

@@ -1556,12 +1556,12 @@
         "weekdays": {
           "label": "Días de la semana",
           "short": {
-            "mo": "Mo",
+            "mo": "Lu",
             "tu": "Ma",
             "we": "Mi",
             "th": "Ju",
-            "fr": "Fr",
-            "sa": "Sa",
+            "fr": "Vi",
+            "sa": "Sá",
             "su": "Do"
           },
           "long": {
@@ -11908,7 +11908,6 @@
     },
     "chat": {
       "title": "Chatea sobre este documento",
-      "openAria": "Pregunta al Coach sobre este documento",
       "openButton": "Preguntar al Coach"
     },
     "readingConsent": {

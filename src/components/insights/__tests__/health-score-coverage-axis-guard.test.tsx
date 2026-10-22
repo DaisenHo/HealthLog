@@ -288,7 +288,9 @@ describe("the axis override reaches the markup", () => {
 
     expect(html).toContain("Covers the three areas the score needs");
     expect(html).not.toContain(">3/3<");
-    expect(html).toMatch(/aria-label="Covers the three areas the score needs/);
+    expect(html).toMatch(
+      /class="sr-only">Covers the three areas the score needs/,
+    );
   });
 
   it("keeps the fraction for every caller that does not override it", () => {

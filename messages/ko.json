@@ -11841,7 +11841,6 @@
     },
     "chat": {
       "title": "이 문서에 대해 대화",
-      "openAria": "이 문서에 대해 코치에게 묻기",
       "openButton": "코치에게 묻기"
     },
     "readingConsent": {

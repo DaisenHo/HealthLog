@@ -333,11 +333,13 @@ export function TodayHero({
           poster. */}
       <Link
         href="/insights"
-        aria-label={t("daily.today.ringLink", {
-          metric: t("daily.today.scoreLabel"),
-        })}
         className="focus-visible:ring-ring/50 block rounded-full focus-visible:ring-2 focus-visible:outline-none"
       >
+        <span className="sr-only">
+          {t("daily.today.ringLink", {
+            metric: t("daily.today.scoreLabel"),
+          })}
+        </span>
         <ScoreRing
           score={digest.score?.value ?? null}
           band={digest.score ? (digest.score.band as ScoreBand) : undefined}

@@ -1556,13 +1556,13 @@
         "weekdays": {
           "label": "Dni tygodnia",
           "short": {
-            "mo": "Mo",
-            "tu": "Wt",
-            "we": "Śr",
-            "th": "Cz",
-            "fr": "Fr",
-            "sa": "Sa",
-            "su": "Nd"
+            "mo": "Pon",
+            "tu": "Wto",
+            "we": "Śro",
+            "th": "Czw",
+            "fr": "Pią",
+            "sa": "Sob",
+            "su": "Nie"
           },
           "long": {
             "mo": "Poniedziałek",
@@ -11908,7 +11908,6 @@
     },
     "chat": {
       "title": "Porozmawiaj o tym dokumencie",
-      "openAria": "Zapytaj Coacha o ten dokument",
       "openButton": "Zapytaj Coacha"
     },
     "readingConsent": {

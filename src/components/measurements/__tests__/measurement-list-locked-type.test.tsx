@@ -69,7 +69,7 @@ describe("MeasurementList — lockedType", () => {
     // rail (type pill included); the locked one suppresses the whole
     // rail (the metric is fixed by the route) and keeps only the count.
     expect(unlocked).toContain('data-slot="filter-bar"');
-    expect(unlocked).toContain('aria-label="Type"');
+    expect(unlocked).toContain(">Type</span>");
     expect(locked).not.toContain('data-slot="filter-bar"');
     expect(locked).not.toContain('role="combobox"');
   });

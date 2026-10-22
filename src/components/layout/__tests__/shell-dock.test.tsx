@@ -43,7 +43,9 @@ describe("DockStrip", () => {
     expect(html).toContain('data-slot="day-strip-toggle"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('aria-controls="day-docked-panel"');
-    expect(html).toContain('aria-label="Show Thursday, 4 June 2026"');
+    // Named by its visible label (WCAG 2.5.3); the action is the tooltip.
+    expect(html).not.toContain("aria-label=");
+    expect(html).toContain('title="Show Thursday, 4 June 2026"');
     // The label reads top to bottom.
     expect(html).toContain("[writing-mode:vertical-rl]");
     expect(html).toContain("Thu, 4 Jun 2026");
@@ -53,7 +55,7 @@ describe("DockStrip", () => {
     const html = strip(true);
     expect(html).toContain('data-state="open"');
     expect(html).toContain('aria-expanded="true"');
-    expect(html).toContain('aria-label="Hide day"');
+    expect(html).toContain('title="Hide day"');
   });
 
   it("keeps the same shape open and closed, the full height of the window", () => {

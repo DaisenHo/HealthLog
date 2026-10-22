@@ -332,13 +332,17 @@ describe("<SidebarNav> inside somebody else's record (#939)", () => {
   it("keeps the account settings door in one's own record", () => {
     const html = renderInRecord(null);
     expect(settingsLinks(html)).toEqual(["/settings/account"]);
-    expect(html).toContain(`aria-label="${accountSettingsLabel}"`);
+    expect(html).toContain(
+      `<span class="sr-only">${accountSettingsLabel}</span>`,
+    );
   });
 
   it("offers Settings inside a managed profile and keeps the identity block a plain block", () => {
     const html = renderInRecord({ recordKind: "managed", level: "manage" });
     expect(settingsLinks(html)).toEqual(["/settings/account"]);
-    expect(html).not.toContain(`aria-label="${accountSettingsLabel}"`);
+    expect(html).not.toContain(
+      `<span class="sr-only">${accountSettingsLabel}</span>`,
+    );
     expect(html).not.toContain('href="/notifications"');
   });
 

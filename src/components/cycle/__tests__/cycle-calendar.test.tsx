@@ -40,10 +40,10 @@ function dayBase(date: string): CalendarDay {
   };
 }
 
-/** The opening tag of one day's cell, by its date in the aria-label. */
+/** The opening tag of one day's cell, by its `data-date`. */
 function cellTag(html: string, date: string): string {
   const match = html.match(
-    new RegExp(`<(?:button|div)[^>]*aria-label="${date}[^"]*"[^>]*>`),
+    new RegExp(`<(?:button|div)[^>]*data-date="${date}"[^>]*>`),
   );
   if (!match) throw new Error(`no cell for ${date}`);
   return match[0];

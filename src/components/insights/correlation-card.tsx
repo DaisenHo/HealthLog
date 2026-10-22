@@ -189,10 +189,12 @@ export function CorrelationCard({ result }: CorrelationCardProps) {
                 data-slot="correlation-card-cta"
                 className="gap-1.5"
                 title={t("insights.correlationRow.experimentTooltip")}
-                aria-label={t("insights.correlationRow.experimentTooltip")}
               >
                 <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>{t("insights.correlationRow.experimentCta")}</span>
+                <span className="sr-only">
+                  , {t("insights.correlationRow.experimentTooltip")}
+                </span>
               </Button>
               {/* v1.21.0 — the live Coach hand-off sits beside the
                   roadmap CTA: it scopes to both sources in the pair. */}

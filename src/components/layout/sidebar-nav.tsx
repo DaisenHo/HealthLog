@@ -121,11 +121,10 @@ function FooterIdentity({
     return <div className={className}>{children}</div>;
   }
   return (
-    <Link
-      href="/settings/account"
-      aria-label={label}
-      className={`hover:bg-accent ${className}`}
-    >
+    <Link href="/settings/account" className={`hover:bg-accent ${className}`}>
+      {/* The purpose leads the accessible name; the visible name and email
+          follow it, so the link is named by what it shows (WCAG 2.5.3). */}
+      <span className="sr-only">{label}</span>
       {children}
     </Link>
   );
@@ -272,11 +271,9 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
       >
         <div className="flex items-center justify-center">
           <DropdownMenu>
-            <DropdownMenuTrigger
-              aria-label={t("nav.userMenu")}
-              className="hover:bg-accent focus-visible:ring-ring/50 shrink-0 rounded-md p-1.5 transition-colors focus:outline-none focus-visible:ring-[3px]"
-            >
-              <Avatar className="h-8 w-8">
+            <DropdownMenuTrigger className="hover:bg-accent focus-visible:ring-ring/50 shrink-0 rounded-md p-1.5 transition-colors focus:outline-none focus-visible:ring-[3px]">
+              <span className="sr-only">{t("nav.userMenu")}</span>
+              <Avatar className="h-8 w-8" aria-hidden="true">
                 {avatarUrl && (
                   <AvatarImage src={avatarUrl} alt={user.username} />
                 )}
@@ -302,7 +299,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
           sharedRecord={sharedRecord}
           label={t("nav.accountSettings")}
         >
-          <Avatar className="h-8 w-8 shrink-0">
+          <Avatar className="h-8 w-8 shrink-0" aria-hidden="true">
             {avatarUrl && <AvatarImage src={avatarUrl} alt={user.username} />}
             <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
               {getInitials(user.username)}
