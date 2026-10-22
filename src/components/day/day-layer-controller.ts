@@ -101,6 +101,13 @@ export function publishOpenDay(date: DateKey | null): void {
   if (memory.open === date) return;
   memory.open = date;
   emit();
+  // The layer has caught up with the URL: the steps that waited for it go
+  // now, in one write, from the day it shows.
+  const waiting = pendingStep;
+  pendingStep = null;
+  if (waiting !== null && date !== null) {
+    stepDay(waiting.delta, waiting.today);
+  }
 }
 
 /**
@@ -157,17 +164,29 @@ export function openDay(date: DateKey, options: OpenDayOptions = {}): void {
 }
 
 /**
- * Move the open day by `delta` calendar days, without a new history entry.
- * Null, and nothing written, when no day is open or the step would pass
- * `today`.
+ * Steps asked for while the layer had not yet shown the previous one. Kept
+ * as one sum, with the `today` of the latest request.
+ */
+let pendingStep: { delta: number; today: DateKey } | null = null;
+
+/**
+ * Move the open day by `delta` calendar days, without a new history entry,
+ * and never past `today`. Null when nothing is written now: no day is open,
+ * the step would pass today, or it waits for the previous one.
  *
- * The step starts from the day in the URL at the moment of the step, not
- * from the day a caller last rendered. The rendered day reaches a caller
- * through Next's `useSearchParams`, a render of the layer and its
- * `publishOpenDay`, and Next 16.4 lets that chain trail a `replaceState` by
- * more than a key repeat: two quick `]` presses then both stepped from the
- * same day and one of them was lost. `window.location` is written by the
- * step itself, so it is never behind.
+ * Two things keep quick steps (a key held down, `]` pressed twice) from
+ * losing one.
+ *
+ * The step starts from the day in the URL, not from the day a caller last
+ * rendered, which reaches it through `useSearchParams`, a render and an
+ * effect and can be a step behind.
+ *
+ * And a step does not write while the layer still shows a different day
+ * than the URL. The write goes past Next's router, which adopts it a render
+ * later, and since Next 16.4 that render can land after a second write and
+ * put the first one's URL back: `[` then `]` pressed quickly ended a day
+ * short. So a step that finds the layer behind waits, and `publishOpenDay`
+ * makes it as soon as the layer shows the day the URL names.
  */
 export function stepDay(delta: number, today: DateKey): DateKey | null {
   if (typeof window === "undefined") return null;
@@ -175,9 +194,19 @@ export function stepDay(delta: number, today: DateKey): DateKey | null {
     new URLSearchParams(window.location.search).get(DAY_QUERY_PARAM),
     today,
   );
-  if (from === null) return null;
-  if (delta > 0 && from >= today) return null;
-  const next = shiftDateKey(from, delta);
+  if (from === null) {
+    pendingStep = null;
+    return null;
+  }
+  const total = (pendingStep?.delta ?? 0) + delta;
+  if (memory.open !== null && memory.open !== from) {
+    pendingStep = { delta: total, today };
+    return null;
+  }
+  pendingStep = null;
+  const target = shiftDateKey(from, total);
+  const next = target > today ? today : target;
+  if (next === from) return null;
   jumpDay(next);
   return next;
 }
