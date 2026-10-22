@@ -135,6 +135,9 @@ export default function CommandPalette() {
       <Sheet open={open} onOpenChange={setCommandPaletteOpen}>
         <SheetContent
           side="bottom"
+          // The palette fills the window: no backdrop to pull it towards,
+          // and its own Cancel and Escape close it.
+          draggable={false}
           showCloseButton={false}
           data-slot="command-palette"
           data-variant="sheet"

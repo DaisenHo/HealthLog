@@ -75,8 +75,6 @@ export interface DayViewProps {
   }>;
   titleId: string;
   titleRef?: Ref<HTMLHeadingElement>;
-  /** Shell chrome above the header (the bottom sheet's grabber). */
-  above?: ReactNode;
   /** Classes for the header row, which the docked shell aligns to the top bar. */
   headerClassName?: string;
 }
@@ -103,7 +101,6 @@ export function DayView({
   Title,
   titleId,
   titleRef,
-  above,
   headerClassName,
 }: DayViewProps) {
   const { t } = useTranslations();
@@ -162,16 +159,20 @@ export function DayView({
     <div
       data-slot="day-view"
       data-day={date}
-      className="flex min-h-0 flex-1 flex-col"
+      // `bg-inherit` passes the sheet's surface down to the footer, which
+      // paints it while it stands over the body (see `day-footer`).
+      className={cn("flex min-h-0 flex-1 flex-col", compact && "bg-inherit")}
     >
-      {above}
       <div
         data-slot="day-header"
         className={cn(
           "flex shrink-0 items-center gap-1",
           // The date starts on the body's reading edge (`px-4` / `px-6`).
           compact
-            ? "pt-0.5 pr-2 pb-2 pl-4"
+            ? // Under the sheet's grip: the title row's centre lands where
+              // every bottom sheet puts it, 52 px down. The header drags
+              // the sheet, so it never pans the page.
+              "touch-none pt-1.5 pr-2 pb-2 pl-4"
             : "border-border border-b pr-3 pl-6",
           headerClassName,
         )}
@@ -257,6 +258,7 @@ export function DayView({
 
       <div
         data-slot="day-body"
+        data-sheet-body
         className={cn(
           "flex min-h-0 flex-1 flex-col overflow-x-clip overflow-y-auto overscroll-contain",
           compact ? "gap-6 px-4 pt-0.5 pb-4" : "gap-6 px-6 pt-4 pb-6",
@@ -342,11 +344,16 @@ export function DayView({
       {canCapture || (timelineOn && !onTimeline) ? (
         <div
           data-slot="day-footer"
+          // On the phone sheet's preview step the footer is held on the
+          // window's bottom edge while the sheet moves (`bottom-sheet.tsx`),
+          // over the body: it carries the sheet's own background for that.
+          data-sheet-footer
           className={cn(
             "border-border flex shrink-0 items-center justify-between gap-2 border-t",
             compact
               ? "px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]"
               : "px-6 py-3.5",
+            compact && "bg-inherit",
           )}
         >
           {timelineOn && !onTimeline ? (

@@ -3,6 +3,8 @@
 import { Wind } from "lucide-react";
 
 import { HealthKitMetricPage } from "@/components/insights/healthkit-metric-page";
+import { buildOxygenSaturationBands } from "@/lib/analytics/value-bands";
+import { useOwnTargetRange } from "@/lib/queries/use-own-target-range";
 
 /**
  * v1.4.32 — `/insights/oxygen`.
@@ -13,8 +15,12 @@ import { HealthKitMetricPage } from "@/components/insights/healthkit-metric-page
  * compressing the trend. Withings ScanWatch + Apple Watch both
  * report SpO₂; the v1.4.25 source-priority picker keeps the surface
  * deduped.
+ *
+ * The shaded zone follows the person's own SpO₂ target when they set one on
+ * `/targets`, and the clinical bands otherwise.
  */
 export default function InsightsOxygenSaturationPage() {
+  const ownRange = useOwnTargetRange("OXYGEN_SATURATION");
   return (
     <HealthKitMetricPage
       measurementType="OXYGEN_SATURATION"
@@ -26,14 +32,9 @@ export default function InsightsOxygenSaturationPage() {
       color="var(--chart-4)"
       unit="%"
       yAxisUnit="%"
-      valueBands={[
-        // < 90 % — clinical hypoxia floor, paint the danger band.
-        { min: 80, max: 90, color: "var(--destructive)", opacity: 0.18 },
-        // 90 .. 95 % — watch zone.
-        { min: 90, max: 95, color: "var(--warning)", opacity: 0.18 },
-        // 95 .. 100 % — clinical normal.
-        { min: 95, max: 100, color: "var(--success)", opacity: 0.18 },
-      ]}
+      // The clinical shading (hypoxia floor < 90 %, watch zone to 95 %,
+      // normal above), or the person's own band when they set one.
+      valueBands={buildOxygenSaturationBands(ownRange)}
       emptyStateIcon={<Wind className="size-6" />}
       emptyStateCtaType={null}
       captureType="OXYGEN_SATURATION"

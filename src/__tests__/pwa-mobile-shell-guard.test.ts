@@ -117,15 +117,18 @@ describe("the shell owns the safe area", () => {
     // Sonner's own rules are unlayered; the toast lift must stay so.
     expect(layer).not.toMatch(/data-sonner-toaster/);
 
-    const sheet = code(read("src/components/ui/sheet.tsx"));
-    const bottomBranch = sheet.match(/side === "bottom" &&\s*"([^"]*)"/)?.[1];
-    expect(bottomBranch).toBeDefined();
-    expect(bottomBranch).not.toMatch(/(?<![\w-])bottom-/);
+    const sheet = code(read("src/components/ui/bottom-sheet.tsx"));
+    const bottomClass = sheet.match(/BOTTOM_SHEET_CLASS\s*=\s*"([^"]*)"/)?.[1];
+    expect(bottomClass).toBeDefined();
+    expect(bottomClass).not.toMatch(/(?<![\w-])bottom-/);
   });
 
-  it("the sheet primitive names its side for those rules", () => {
+  it("the sheet primitives name their side for those rules", () => {
     expect(read("src/components/ui/sheet.tsx")).toMatch(
       /data-sheet-side=\{side\}/,
+    );
+    expect(read("src/components/ui/bottom-sheet.tsx")).toMatch(
+      /data-sheet-side="bottom"/,
     );
   });
 });

@@ -274,7 +274,9 @@ export function BottomNav() {
           // The sheet auto-sizes to its content; padding-bottom respects
           // the iOS safe area so the inner buttons stay reachable above
           // the home-indicator on iPhone-X-class devices.
-          className="shell-desktop:hidden mx-auto max-w-md rounded-t-xl pb-[calc(env(safe-area-inset-bottom)+1rem)]"
+          // `gap-0`: the grip sits flush above the header, and the grid
+          // takes the header's old 16 px gap as its own top padding.
+          className="shell-desktop:hidden mx-auto max-w-md gap-0 rounded-t-xl pb-[calc(env(safe-area-inset-bottom)+1rem)]"
           data-testid="bottom-nav-more-sheet"
         >
           <SheetHeader>
@@ -286,7 +288,7 @@ export function BottomNav() {
               (de "Benachrichtigungen") then have room to break onto a clean
               second line instead of clipping the last character at the tile
               edge. */}
-          <div className="grid grid-cols-2 gap-2 px-3 pb-4">
+          <div className="grid grid-cols-2 gap-2 px-3 pt-4 pb-4">
             {moreHub.map((item) => {
               const isActive = isActiveLink(item.href);
               return (

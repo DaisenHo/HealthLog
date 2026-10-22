@@ -629,9 +629,10 @@ function returnFocus(fallback?: HTMLElement | null) {
 }
 
 /**
- * The modal frames. The bottom sheet opens at a bit over half the height and
- * grows to full height from its handle: drag it up or tap it. Dragging down
- * shrinks a full sheet, then closes it.
+ * The modal frames. On a phone the bottom sheet opens at a bit over half the
+ * height, so the chart stays in view above it, and grows to the full 90 dvh
+ * when it is pulled up or its grip is tapped (the sheet primitive's preview
+ * step). Pulled down it closes, from either height.
  */
 function DaySheet({
   shell,
@@ -649,50 +650,7 @@ function DaySheet({
   render: (extra: Partial<DayViewProps>) => React.ReactNode;
 }) {
   const { t } = useTranslations();
-  const [full, setFull] = useState(false);
-  const drag = useRef<{ y: number; moved: boolean } | null>(null);
   const bottom = shell === "bottom";
-
-  const grabber = bottom ? (
-    <button
-      type="button"
-      data-slot="day-sheet-handle"
-      aria-label={full ? t("day.sheetShrink") : t("day.sheetExpand")}
-      aria-expanded={full}
-      onPointerDown={(event) => {
-        drag.current = { y: event.clientY, moved: false };
-        event.currentTarget.setPointerCapture(event.pointerId);
-      }}
-      onPointerMove={(event) => {
-        const start = drag.current;
-        if (!start) return;
-        if (Math.abs(event.clientY - start.y) > 8) start.moved = true;
-      }}
-      onPointerUp={(event) => {
-        const start = drag.current;
-        drag.current = null;
-        if (!start) return;
-        const dy = event.clientY - start.y;
-        if (!start.moved) return;
-        if (dy < -40) setFull(true);
-        else if (dy > 60) {
-          if (full) setFull(false);
-          else onDismiss();
-        }
-      }}
-      onClick={() => {
-        // A drag ends in a click as well; only a tap toggles.
-        if (drag.current?.moved) return;
-        setFull((value) => !value);
-      }}
-      className="focus-visible:ring-ring/50 mx-auto flex h-6 w-16 shrink-0 touch-none items-center justify-center rounded-full focus-visible:ring-[3px] focus-visible:outline-none"
-    >
-      <span
-        className="bg-muted-foreground/40 h-1.5 w-9 rounded-full"
-        aria-hidden="true"
-      />
-    </button>
-  ) : null;
 
   return (
     <Sheet
@@ -704,10 +662,15 @@ function DaySheet({
       <SheetContent
         ref={panelRef as React.Ref<HTMLDivElement>}
         side={bottom ? "bottom" : "right"}
+        preview={bottom ? "58dvh" : undefined}
+        previewLabels={
+          bottom
+            ? { expand: t("day.sheetExpand"), shrink: t("day.sheetShrink") }
+            : undefined
+        }
         showCloseButton={false}
         data-slot="day-panel"
         data-shell={shell}
-        data-full={bottom && full ? "true" : undefined}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           focusTitle();
@@ -729,30 +692,18 @@ function DaySheet({
           if (owner && owner !== panelRef.current) event.preventDefault();
         }}
         className={cn(
-          // Quicker than the primitive's 500 ms, which read as lag on a
-          // layer opened from a tap; no slide at all under reduced motion.
-          "bg-card gap-0 p-0 data-[state=closed]:duration-200 data-[state=open]:duration-300 motion-reduce:animate-none",
+          "bg-card gap-0 p-0",
           bottom
-            ? cn(
-                "rounded-t-2xl transition-[height] duration-200 motion-reduce:transition-none",
-                // Full height leaves a strip of the page above the
-                // sheet, and never less than the status bar of an
-                // installed app plus a margin: a 2.5rem strip put the
-                // handle under a 59 px Dynamic Island.
-                full
-                  ? "h-[calc(100dvh-max(2.5rem,env(safe-area-inset-top,0px)+0.75rem))]"
-                  : "h-[58dvh]",
-              )
-            : "w-105 max-w-[90vw] sm:max-w-105",
+            ? "rounded-t-2xl"
+            : // Quicker than the primitive's 500 ms, which read as lag on a
+              // layer opened from a tap; no slide at all under reduced motion.
+              "w-105 max-w-[90vw] data-[state=closed]:duration-200 data-[state=open]:duration-300 motion-reduce:animate-none sm:max-w-105",
         )}
       >
         <SheetDescription className="sr-only">
           {t("day.description")}
         </SheetDescription>
-        {render({
-          above: grabber,
-          headerClassName: bottom ? undefined : "py-3",
-        })}
+        {render({ headerClassName: bottom ? undefined : "py-3" })}
       </SheetContent>
     </Sheet>
   );

@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  isTimeoutFailure,
+  type ProviderFailureKind,
+} from "@/lib/ai/failure-kind";
 
 /**
  * Dated failure marker for the daily-briefing generation.
@@ -22,9 +26,9 @@ export const BRIEFING_FAILURE_ACTION = "insights.briefing-failure";
 /**
  * Coarse class of a briefing-generation failure, used by the read path to
  * point the empty-state hint at the right lever:
- *   - `timeout`     — the generation ran out of time (no upstream HTTP status,
- *                     or a transport/abort error). Lever: raise the AI response
- *                     timeout for a slow local model.
+ *   - `timeout`     — the generation ran out of time (a deadline, or a marker
+ *                     from before the failure kind was recorded). Lever: raise
+ *                     the AI response timeout for a slow local model.
  *   - `auth`        — the provider rejected the request (4xx that is not 429).
  *                     Lever: re-check the provider / API key in Settings.
  *   - `rate-limit`  — the provider returned 429.
@@ -39,14 +43,19 @@ export type BriefingFailureClass =
  * Classify a failure from its recorded reason and (optional) upstream HTTP
  * status. A reason of `invalid-json` is always a format miss; a 401/403 (or any
  * other non-429 4xx) is an auth / configuration problem; 429 is a rate limit; a
- * 5xx is a generic provider failure. With no status at all — the timeout /
- * transport / abort path, which is the dominant briefing failure on a slow
- * self-hosted backend — the most useful lever is the response-timeout, so it
- * classifies as `timeout`.
+ * 5xx is a generic provider failure. With no status at all, the recorded
+ * failure kind decides (#1267): a deadline is `timeout`, a reply without an
+ * answer is `format`, any other transport failure is `provider`. A marker
+ * without a kind keeps the old `timeout` reading.
  */
 export function classifyBriefingFailure(args: {
   reason: string;
   httpStatus?: number | null;
+  /**
+   * #1267 — what the first provider call ran into. A marker written before
+   * the field existed has none and keeps the old reading.
+   */
+  failureKind?: string | null;
 }): BriefingFailureClass {
   if (args.reason === "invalid-json") return "format";
   const status = args.httpStatus;
@@ -55,8 +64,22 @@ export function classifyBriefingFailure(args: {
     if (status >= 400 && status < 500) return "auth";
     if (status >= 500) return "provider";
   }
-  // No / sentinel-zero upstream status: a transport-level timeout or abort.
-  return "timeout";
+  // No / sentinel-zero upstream status. Only a deadline is a timeout: a reply
+  // that came back without an answer is the model's output, and a refused or
+  // dropped connection is the provider, and neither is helped by a longer
+  // response timeout.
+  const kind = args.failureKind ?? null;
+  if (kind === null || isTimeoutFailure(kind as ProviderFailureKind)) {
+    return "timeout";
+  }
+  if (
+    kind === "empty_response" ||
+    kind === "reasoning_only" ||
+    kind === "parse"
+  ) {
+    return "format";
+  }
+  return "provider";
 }
 
 /** UTC YYYY-MM-DD calendar-day key for the marker payload. */
@@ -79,6 +102,8 @@ export async function recordBriefingFailure(args: {
    * timeout and point the hint at the right lever.
    */
   httpStatus?: number | null;
+  /** #1267 — the first hop's `FallbackHop.failureKind`, when known. */
+  failureKind?: ProviderFailureKind | null;
 }): Promise<void> {
   try {
     await prisma.auditLog.create({
@@ -89,6 +114,7 @@ export async function recordBriefingFailure(args: {
           dateKey: dateKey(),
           reason: args.reason,
           httpStatus: args.httpStatus ?? null,
+          failureKind: args.failureKind ?? null,
           locale: args.locale ?? null,
           triedAt: new Date().toISOString(),
         }),
@@ -128,14 +154,19 @@ export async function readBriefingFailure(args: {
 
   let reason = "unknown";
   let httpStatus: number | null = null;
+  let failureKind: string | null = null;
   if (latest.details) {
     try {
       const parsed = JSON.parse(latest.details) as {
         reason?: unknown;
         httpStatus?: unknown;
+        failureKind?: unknown;
       };
       if (typeof parsed.reason === "string") reason = parsed.reason;
       if (typeof parsed.httpStatus === "number") httpStatus = parsed.httpStatus;
+      if (typeof parsed.failureKind === "string") {
+        failureKind = parsed.failureKind;
+      }
     } catch {
       // Malformed marker payload — still report the failure, generic reason.
     }
@@ -143,6 +174,6 @@ export async function readBriefingFailure(args: {
   return {
     triedAt: latest.createdAt.toISOString(),
     reason,
-    failureClass: classifyBriefingFailure({ reason, httpStatus }),
+    failureClass: classifyBriefingFailure({ reason, httpStatus, failureKind }),
   };
 }

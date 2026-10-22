@@ -186,3 +186,61 @@ export function getBodyFatTargetRange(gender: string | null | undefined): {
   // Gender-neutral fallback: midpoint of male/female fitness+acceptable.
   return { min: 17, max: 27 };
 }
+
+/**
+ * Chart bands for oxygen saturation (%).
+ *
+ * Without a personal target the chart keeps its clinical shading: below 90 %
+ * the hypoxia floor, 90 to 95 % the watch zone, 95 to 100 % normal. With one
+ * (a COPD or high-altitude user living at 88 to 92 %, say) the green band is
+ * the person's own and the wings come from the resolved range, so the zone
+ * agrees with the `/targets` card. Saturation cannot exceed 100 %, so nothing
+ * is shaded above it; the floor stays at 80 % unless the person's own wing
+ * reaches lower.
+ */
+export function buildOxygenSaturationBands(
+  ownRange: TrafficRange | null,
+): ValueBand[] {
+  if (!ownRange) {
+    return [
+      { min: 80, max: 90, color: "var(--destructive)", opacity: 0.18 },
+      { min: 90, max: 95, color: "var(--warning)", opacity: 0.18 },
+      { min: 95, max: 100, color: "var(--success)", opacity: 0.18 },
+    ];
+  }
+  const floor = Math.min(80, ownRange.orangeMin);
+  const ceiling = 100;
+  const bands: ValueBand[] = [
+    {
+      min: floor,
+      max: ownRange.orangeMin,
+      color: "var(--destructive)",
+      opacity: 0.18,
+    },
+    {
+      min: ownRange.orangeMin,
+      max: ownRange.greenMin,
+      color: "var(--warning)",
+      opacity: 0.18,
+    },
+    {
+      min: ownRange.greenMin,
+      max: Math.min(ownRange.greenMax, ceiling),
+      color: "var(--success)",
+      opacity: 0.18,
+    },
+    {
+      min: Math.min(ownRange.greenMax, ceiling),
+      max: Math.min(ownRange.orangeMax, ceiling),
+      color: "var(--warning)",
+      opacity: 0.18,
+    },
+    {
+      min: Math.min(ownRange.orangeMax, ceiling),
+      max: ceiling,
+      color: "var(--destructive)",
+      opacity: 0.18,
+    },
+  ];
+  return bands.filter((band) => band.max > band.min);
+}

@@ -148,6 +148,44 @@ describe("classifyBriefingFailure", () => {
     ).toBe("provider");
   });
 
+  it("claims a timeout only for a deadline once the failure kind is known (#1267)", () => {
+    const at = (failureKind: string) =>
+      classifyBriefingFailure({
+        reason: "all-providers-failed",
+        httpStatus: 0,
+        failureKind,
+      });
+    expect(at("timeout")).toBe("timeout");
+    expect(at("headers_timeout")).toBe("timeout");
+    // A 200 that reasoned and never answered is the model's output.
+    expect(at("reasoning_only")).toBe("format");
+    expect(at("empty_response")).toBe("format");
+    // A refused or dropped connection is the provider.
+    expect(at("refused")).toBe("provider");
+    expect(at("socket")).toBe("provider");
+  });
+
+  it("reads the failure kind back from the marker (#1267)", async () => {
+    create.mockResolvedValue({});
+    await recordBriefingFailure({
+      userId: "u1",
+      reason: "all-providers-failed",
+      httpStatus: 0,
+      failureKind: "reasoning_only",
+    });
+    const details = create.mock.calls[0][0].data.details as string;
+    expect(JSON.parse(details).failureKind).toBe("reasoning_only");
+    findFirst.mockResolvedValue({
+      createdAt: new Date("2026-06-28T10:00:00Z"),
+      details,
+    });
+    const result = await readBriefingFailure({
+      userId: "u1",
+      since: new Date("2026-06-28T09:00:00Z"),
+    });
+    expect(result?.failureClass).toBe("format");
+  });
+
   it("maps a missing / sentinel-zero status to timeout", () => {
     expect(classifyBriefingFailure({ reason: "provider-error" })).toBe(
       "timeout",

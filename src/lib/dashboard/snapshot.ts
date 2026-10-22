@@ -1489,10 +1489,11 @@ export async function buildDashboardSnapshot(
       dateOfBirth: user.dateOfBirth,
       gender,
       heightCm: user.heightCm ?? null,
-      // v1.34 — the user's own weight target, when they set one, replaces the
-      // height-derived band on the tile + the chart. Resolved off the same
-      // `thresholdsJson` blob the health score reads.
-      weightTargetOverride,
+      // The user's own targets, where set, replace the computed default on
+      // every tile and chart band (weight, blood pressure, resting pulse,
+      // body fat). Resolved off the same `thresholdsJson` blob the health
+      // score and the tile directions read.
+      thresholdsJson: user.thresholdsJson,
     }),
     tiles: {
       summaries: slim.summaries,

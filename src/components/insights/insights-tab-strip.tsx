@@ -713,7 +713,7 @@ function InsightsTabStripImpl({
   //
   // Refs #786 — the edge watches the COMBINED busy state (`regenerating ||
   // regenerateSettling`): a timed-out regenerate flows straight into
-  // settling, so the spinner never falls at 45 s and NO error toast fires
+  // settling, so the spinner never falls at the client abort and NO error toast fires
   // while the server may still deliver. The edge fires once settling
   // resolves, with the proven outcome — `"fresh"` (success) or
   // `"settle-failed"` (its own honest error copy). The mapping is the pure

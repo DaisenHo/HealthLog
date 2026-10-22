@@ -378,10 +378,10 @@ export default function DashboardPageClient({
     analyticsThickQuery.data,
   ]);
 
-  // v1.34 — the user's own weight target, for the legacy (snapshot-disabled)
-  // band fallback only. In snapshot mode the server resolves the same override
-  // into `targetBands` and this query never fires; the fallback would otherwise
-  // keep shading the height-derived band for someone who has set a target.
+  // The user's own targets, for the legacy (snapshot-disabled) band fallback
+  // only. In snapshot mode the server resolves the same overrides into
+  // `targetBands` and this query never fires; the fallback would otherwise
+  // keep shading the default band for someone who has set a target.
   const { data: thresholdsData } = useQuery({
     queryKey: queryKeys.userThresholds(),
     queryFn: async () => {
@@ -754,9 +754,9 @@ export default function DashboardPageClient({
   // in the snapshot steady state) before this. Keyed on the `user` object
   // identity so the React Compiler can preserve the memo (a narrower
   // property list trips `preserve-manual-memoization`).
-  // v1.34 — the weight target rides the same memo. In snapshot mode
+  // v1.34 — the user's own targets ride the same memo. In snapshot mode
   // `thresholdsData` is never fetched, so the client copy falls back to the
-  // height-derived band for the frames before `serverBands` lands — exactly
+  // default bands for the frames before `serverBands` lands — exactly
   // as it already did for every other profile-derived number.
   // v1.36.x — the profile this fallback reads is the CALLER's, and under a
   // switch the caller is the delegate. `viewerBandProfile` is where that is
@@ -771,9 +771,7 @@ export default function DashboardPageClient({
           dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth) : null,
           gender: toProfileSex(user?.gender),
           heightCm: user?.heightCm ?? null,
-          weightTargetOverride: resolveWeightTargetOverride(
-            thresholdsData?.overrides ?? null,
-          ),
+          thresholdsJson: thresholdsData?.overrides ?? null,
         },
         inSharedRecord,
       ),
@@ -791,7 +789,7 @@ export default function DashboardPageClient({
   const weightTrend =
     (snapshotEnabled ? snapshotQuery.data?.tiles.weightTrend : undefined) ??
     resolveWeightTrend(
-      clientBandProfile.weightTargetOverride,
+      resolveWeightTargetOverride(clientBandProfile.thresholdsJson),
       weightTrendReferenceKg(w),
     );
   // v1.43 — every other tile's direction comes resolved from the server

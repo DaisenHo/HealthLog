@@ -33,6 +33,8 @@ vi.mock("@/hooks/use-ai-capability", () => ({
     reason: null,
     onDeviceAllowed: true,
   }),
+  // #1267 — the about-me save's abort, from the response-timeout setting.
+  useAboutMeSaveTimeoutMs: () => 90_000,
 }));
 
 vi.mock("next/navigation", () => ({

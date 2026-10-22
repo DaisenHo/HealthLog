@@ -195,7 +195,9 @@ export function ResponsiveSheet({
             <SheetHeader
               data-slot="responsive-sheet-header"
               className={cn(
-                "border-border/70 gap-1.5 border-b p-4",
+                // Under the sheet's grip; the header drags the sheet, so a
+                // touch on it never pans or pulls the page.
+                "border-border/70 touch-none gap-1.5 border-b p-4",
                 // Reserve the right gutter ONLY when the primitive paints its
                 // absolute close button. With `showCloseButton={false}` the
                 // consumer's own trailing control (headerAction) sits flush to
