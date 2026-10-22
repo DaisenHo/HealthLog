@@ -125,6 +125,25 @@ export interface HealthKitTypeArrival {
 }
 
 /**
+ * Fold a batch's landed Apple Health entries and hours into what it did per
+ * type. `brought` is true for an entry or hour that wrote a new or different
+ * value; a duplicate, an unchanged `stats:` re-post and an hour posted again
+ * with its stored value are carried but bring nothing (#1259).
+ */
+export function tallyHealthKitArrivals(
+  items: Iterable<{ type: MeasurementType; brought: boolean }>,
+): Map<MeasurementType, HealthKitTypeArrival> {
+  const arrivals = new Map<MeasurementType, HealthKitTypeArrival>();
+  for (const { type, brought } of items) {
+    const entry = arrivals.get(type) ?? { accepted: 0, newSamples: 0 };
+    entry.accepted += 1;
+    if (brought) entry.newSamples += 1;
+    arrivals.set(type, entry);
+  }
+  return arrivals;
+}
+
+/**
  * One statement for the whole batch (`unnest` over at most a few dozen
  * types). A type counts as arrived only when the batch brought at least one
  * new or changed row of it (#1259): then `last_received_at` and

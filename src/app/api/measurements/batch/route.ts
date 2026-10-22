@@ -88,7 +88,7 @@ import {
   BACKFILL_SYNC_TRIGGER,
   HEALTHKIT_REQUEST_SYNC_TRIGGERS,
   recordHealthKitTypeArrivals,
-  type HealthKitTypeArrival,
+  tallyHealthKitArrivals,
 } from "@/lib/integrations/healthkit-type-sync";
 import {
   classifyHourBucket,
@@ -657,11 +657,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
    * and in nothing that starts work.
    */
   let unchangedStatsCount = 0;
-  /**
-   * The `stats:` re-posts answered `updated` without a write because nothing
-   * changed. Not an arrival of their type (#1259).
-   */
-  const unchangedStatsRows = new Set<Prepared>();
+  const unchangedStatsRows = new Set<Prepared>(); // #1259: not an arrival
   let duplicateCount = 0;
   let failedCount = 0;
   // v1.44 — subset of `insertedCount` written by the set-based insert.
@@ -1109,8 +1105,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   let hourInsertedCount = 0;
   let hourUpdatedCount = 0;
   const hourLanded: HourBucketWrite[] = [];
-  /** The landed hours that wrote a new or different value (#1259). */
-  const hourChanged = new Set<HourBucketWrite>();
+  const hourChanged = new Set<HourBucketWrite>(); // #1259: a new value
   if (hourWrites.length > 0 && accountTz) {
     const { writes, superseded } = combineHourWrites(hourWrites);
     for (const index of superseded) {
@@ -1131,13 +1126,10 @@ async function postBatch(request: NextRequest): Promise<Response> {
       );
       for (const { write, contributors } of writes) {
         const status = statuses.get(write.index) ?? "inserted";
+        // An unchanged hour still reads `updated` on the wire (#1259).
+        const wire = status === "inserted" ? "inserted" : "updated";
         for (const index of contributors) {
-          // An hour posted again with the same value reads `updated` on the
-          // wire, as before; only the arrival ledger tells the two apart.
-          results[index] = {
-            index,
-            status: status === "inserted" ? "inserted" : "updated",
-          };
+          results[index] = { index, status: wire };
           if (status === "inserted") hourInsertedCount++;
           else hourUpdatedCount++;
         }
@@ -1223,40 +1215,20 @@ async function postBatch(request: NextRequest): Promise<Response> {
     const syncedAt = new Date();
     const deliveredWithoutTheApp =
       syncTrigger === "background" || syncTrigger === "push";
-    // v1.42 (#1173) — what this sync brought per type, for the per-type
-    // freshness list on the Apple Health card. Apple Health rows only, and
-    // under the same conditions as the checkpoint beside it. Since #1259 only
-    // a new or changed row makes a type arrive: a duplicate, an unchanged
-    // `stats:` re-post and an hour posted again with its stored value are
-    // carried (`accepted`) but bring nothing (`newSamples`), so a replay or a
-    // retry cannot make a stalled type look live.
-    const arrivals = new Map<MeasurementType, HealthKitTypeArrival>();
-    for (const p of prepared) {
-      if (p.row.source !== "APPLE_HEALTH") continue;
-      const status = results[p.index]?.status;
-      if (
-        status !== "inserted" &&
-        status !== "updated" &&
-        status !== "duplicate"
-      ) {
-        continue;
-      }
-      const type = p.row.type as MeasurementType;
-      const entry = arrivals.get(type) ?? { accepted: 0, newSamples: 0 };
-      entry.accepted += 1;
-      if (status !== "duplicate" && !unchangedStatsRows.has(p)) {
-        entry.newSamples += 1;
-      }
-      arrivals.set(type, entry);
-    }
-    // The hours the phone posted are carried by their type as well, and
-    // bring something only when the slot's value changed.
-    for (const w of hourLanded) {
-      const entry = arrivals.get(w.type) ?? { accepted: 0, newSamples: 0 };
-      entry.accepted += 1;
-      if (hourChanged.has(w)) entry.newSamples += 1;
-      arrivals.set(w.type, entry);
-    }
+    // v1.42 (#1173) — per-type arrivals for the Apple Health card, Apple
+    // Health rows and hours only, under the checkpoint's conditions. Since
+    // #1259 only a new or changed one brings something (`brought`).
+    const arrivals = tallyHealthKitArrivals([
+      ...prepared.flatMap((p) => {
+        const status = results[p.index]?.status;
+        if (p.row.source !== "APPLE_HEALTH" || !status) return [];
+        if (status === "skipped" || status === "failed") return [];
+        const unchanged = unchangedStatsRows.has(p);
+        const brought = status !== "duplicate" && !unchanged;
+        return [{ type: p.row.type as MeasurementType, brought }];
+      }),
+      ...hourLanded.map((w) => ({ type: w.type, brought: hourChanged.has(w) })),
+    ]);
     if (arrivals.size > 0) {
       await recordHealthKitTypeArrivals(prisma, {
         userId: user.id,
