@@ -2,11 +2,12 @@
 
 import { useSyncExternalStore } from "react";
 
-import type { DateKey } from "@/lib/day/contract";
+import { DAY_QUERY_PARAM, type DateKey } from "@/lib/day/contract";
 
 import {
   dayHistoryState,
   historyEntryOwnedByLayer,
+  parseDayParam,
   shiftDateKey,
   withDayHref,
 } from "./day-url";
@@ -155,8 +156,27 @@ export function openDay(date: DateKey, options: OpenDayOptions = {}): void {
   }
 }
 
-/** Move the open day by `delta` calendar days, without a new history entry. */
-export function stepDay(from: DateKey, delta: number): DateKey {
+/**
+ * Move the open day by `delta` calendar days, without a new history entry.
+ * Null, and nothing written, when no day is open or the step would pass
+ * `today`.
+ *
+ * The step starts from the day in the URL at the moment of the step, not
+ * from the day a caller last rendered. The rendered day reaches a caller
+ * through Next's `useSearchParams`, a render of the layer and its
+ * `publishOpenDay`, and Next 16.4 lets that chain trail a `replaceState` by
+ * more than a key repeat: two quick `]` presses then both stepped from the
+ * same day and one of them was lost. `window.location` is written by the
+ * step itself, so it is never behind.
+ */
+export function stepDay(delta: number, today: DateKey): DateKey | null {
+  if (typeof window === "undefined") return null;
+  const from = parseDayParam(
+    new URLSearchParams(window.location.search).get(DAY_QUERY_PARAM),
+    today,
+  );
+  if (from === null) return null;
+  if (delta > 0 && from >= today) return null;
   const next = shiftDateKey(from, delta);
   jumpDay(next);
   return next;

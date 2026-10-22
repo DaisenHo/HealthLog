@@ -348,8 +348,7 @@ function DayLayer() {
   const onStep = useCallback(
     (delta: number) => {
       if (date === null) return;
-      if (delta > 0 && date >= today) return;
-      stepDay(date, delta);
+      stepDay(delta, today);
     },
     [date, today],
   );

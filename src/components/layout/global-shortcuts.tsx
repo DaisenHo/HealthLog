@@ -192,12 +192,12 @@ export function GlobalShortcuts() {
           setShortcutsHelpOpen(true);
           return;
         case "day": {
-          const date = state.openDay;
-          if (date === null) return;
+          if (state.openDay === null) return;
           event.preventDefault();
-          // No day after today: the layer refuses it, so the step does too.
-          if (action.delta > 0 && date >= state.today) return;
-          stepDay(date, action.delta);
+          // The step reads the day from the URL, which is ahead of
+          // `openDay` while a previous step is still rendering, and refuses
+          // a day after today itself.
+          stepDay(action.delta, state.today);
           return;
         }
         case "day-toggle":
