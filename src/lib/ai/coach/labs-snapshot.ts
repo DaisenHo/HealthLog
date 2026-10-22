@@ -51,6 +51,7 @@
  * is always owner-scoped and safe to read), so the block is `null` only when the
  * account has no recent readings.
  */
+import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import {
   UNBOUNDED_REACH,
   reachFloor,
@@ -240,11 +241,26 @@ export async function buildLabsSnapshotBlock(
   // Newest reading first: the first row seen per biomarker is its MOST RECENT
   // value, every later row of it feeds its history. Field-by-field `where` —
   // never a spread.
+  //
+  // With an analyte the match runs in SQL, before the row cap: matched in
+  // memory after it, the newest rows of every other marker used up the cap,
+  // and the asked-for marker lost its older readings (or vanished) without a
+  // word. A row's resolved name is its biomarker's when it is linked, its own
+  // otherwise; the in-memory check below stays the final word.
   const rows = await prisma.labResult.findMany({
     where: {
       userId,
       deletedAt: null,
       takenAt: floor ? { gte: floor, lte: now } : { lte: now },
+      OR: wanted
+        ? [
+            {
+              biomarkerId: null,
+              analyte: { contains: wanted, mode: "insensitive" },
+            },
+            { biomarker: { name: { contains: wanted, mode: "insensitive" } } },
+          ]
+        : undefined,
     },
     orderBy: { takenAt: "desc" },
     take: MAX_ROWS,
@@ -297,7 +313,12 @@ export async function buildLabsSnapshotBlock(
     const key = row.biomarkerId ?? `analyte:${resolved.analyte.toLowerCase()}`;
     const existing = entries.get(key);
     if (existing) {
-      if (wanted && row.value !== null && resolved.unit === existing.unit) {
+      // One unit written two ways ("mg/dl", "mg/dL") is one series.
+      if (
+        wanted &&
+        row.value !== null &&
+        sameLabUnit(resolved.unit, existing.unit)
+      ) {
         existing.earlier.push({
           value: row.value,
           takenAt: row.takenAt,
