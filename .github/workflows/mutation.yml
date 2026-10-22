@@ -1,0 +1,48 @@
+name: Mutation tests
+
+# Stryker on the core libraries (stryker.config.mjs): encryption at rest,
+# medication compliance, rollups, source ranking, unit conversion and backup
+# validation. Too slow for a pull request; it runs once a night and on
+# demand, and fails when a module's score drops below its floor in
+# stryker.floors.json. The HTML report is uploaded either way.
+on:
+  schedule:
+    - cron: "23 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    name: mutation (core libraries)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:generate
+
+      - name: Run Stryker
+        run: pnpm exec stryker run --concurrency 4
+
+      - name: Check the per-module floors
+        run: node scripts/mutation-floors.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          if-no-files-found: ignore
+          retention-days: 30

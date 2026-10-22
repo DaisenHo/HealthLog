@@ -98,3 +98,6 @@ next-env.d.ts
 # same reason in a different tool.
 /.wt-*/
 /.worktrees/
+# Mutation testing (stryker.config.mjs): reports and the sandbox copy.
+/reports/mutation
+/.stryker-tmp
