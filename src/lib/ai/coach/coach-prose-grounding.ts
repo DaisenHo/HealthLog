@@ -156,6 +156,10 @@ const UNIT_WORDS: Readonly<Record<NumKind, readonly string[]>> = {
     "livres",
     "libra",
     "libras",
+    "quilo",
+    "quilos",
+    "quilograma",
+    "quilogramas",
     "funt",
     "funty",
   ],
@@ -170,6 +174,7 @@ const UNIT_WORDS: Readonly<Record<NumKind, readonly string[]>> = {
     "pour cent",
     "pourcent",
     "por ciento",
+    "por cento",
     "porciento",
     "per cento",
     "procent",
@@ -214,6 +219,7 @@ const UNIT_WORDS: Readonly<Record<NumKind, readonly string[]>> = {
     "pasos",
     "passo",
     "passi",
+    "passos",
     "krok",
     "kroki",
     "krokow",
@@ -626,6 +632,8 @@ const MONTHS = [
   "stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|wrzesnia|października|pazdziernika|listopada|grudnia",
   // nl
   "januari|februari|maart|mei|augustus",
+  // pt-BR
+  "janeiro|fevereiro|março|marco|maio|junho|julho|setembro|outubro|novembro|dezembro",
 ].join("|");
 
 /** Parse a raw number token honouring the reply language's separators. */
@@ -635,7 +643,7 @@ function parseLocaleNumber(raw: string, locale: Locale): number | null {
     // EN: "," groups thousands, "." is the decimal point.
     normalised = raw.replace(/,/g, "");
   } else {
-    // DE / fr / es / it / pl / nl: "." groups thousands, "," is the decimal
+    // DE / fr / es / it / pl / nl / pt-BR: "." groups thousands, "," is the decimal
     // point.
     normalised = raw.replace(/\./g, "").replace(/,/g, ".");
   }
@@ -880,18 +888,23 @@ const POPULATION_NORM_PATTERNS: Record<Locale, readonly RegExp[]> = {
     /\b(?:volwassenen|mensen)\s+(?:hebben\s+)?(?:meestal|doorgaans|gewoonlijk|normaal\s+gesproken|over\s+het\s+algemeen)\s+(?:nodig|hebben)\b/i,
     /\b(?:referentie|normaal|aanbevolen)\w*\s*(?:bereik|waarden?)\b/i,
     /\bligt\s+(?:normaal\s+gesproken|meestal|doorgaans|gewoonlijk)\s+(?:tussen|rond|op)\b/i,
-  ], // No `\b` next to Hangul (it is an ASCII \w boundary), and the object sits
-  // between subject and verb in Korean, so each entry allows a gap where the
-  // Latin banks put \s+.
+  ],
+  // pt-BR. Every entry needs a population subject or a reference noun: a
+  // reading of the reader's own ("Sua pressão de 158/97 geralmente fica…",
+  // "Seu médico recomenda…") is a claim about their data, and an exempted
+  // sentence is one whose numbers are never checked.
   "pt-BR": [
     /\bfaixa\s+(?:de\s+refer[eê]ncia|normal)\b/i,
     /\bvalor(?:es)?\s+de\s+refer[eê]ncia\b/i,
     /\b(?:adultos?|pessoas?)\s+saud[áa]ve(?:l|is)\b/i,
     /\bmaioria\s+(?:dos\s+)?(?:adultos?|das\s+pessoas)\b/i,
-    /\b(?:diretrizes|guias|m[eé]dicos?|especialistas?)\b[^.?!]{0,30}\b(?:recomend(?:am|a)|suger(?:em|e)|indic(?:am|a))\b/i,
-    /\b(?:adultos?|pessoas?)\b[^.?!]{0,30}\b(?:geralmente|normalmente|em\s+geral)\b[^.?!]{0,30}\b(?:precis(?:am|a)|devem|necessit(?:am|a))\b/i,
-    /\b(?:entre|de)\s+[^.?!]{0,30}\b(?:normalmente|geralmente|em\s+geral)\b/i,
+    /\b(?:as\s+|os\s+)?(?:diretrizes|m[eé]dicos|especialistas)\s+(?:geralmente\s+|em\s+geral\s+)?(?:dizem|recomendam|aconselham|sugerem|indicam|consideram)\b/i,
+    /\b(?:os\s+)?(?:adultos|as\s+pessoas)\s+(?:geralmente\s+|normalmente\s+|em\s+geral\s+)?(?:precisam|necessitam)\s+de\b/i,
+    /\b(?:a|o)\s+(?:frequ[êe]ncia\s+card[íi]aca|pulso|press[ãa]o(?:\s+arterial)?|glicemia|glicose)(?:\s+de\s+repouso)?\s+(?:normal|saud[áa]vel|t[íi]pica|t[íi]pico)\b/i,
   ],
+  // No `\b` next to Hangul (it is an ASCII \w boundary), and the object sits
+  // between subject and verb in Korean, so each entry allows a gap where the
+  // Latin banks put \s+.
   ko: [
     /정상\s*범위(?:는|가|를|로|의)/,
     /(?:참고|기준|권장)\s*(?:범위|치|값)/,

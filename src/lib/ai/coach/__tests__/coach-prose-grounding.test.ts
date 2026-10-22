@@ -600,6 +600,7 @@ describe("tokenizing prose written in the reader's language", () => {
     ["es", "El 21 de julio, su tensión era de 128 mmHg."],
     ["it", "Il 21 luglio la pressione era di 128 mmHg."],
     ["pl", "21 lipca ciśnienie wynosiło 128 mmHg."],
+    ["pt-BR", "Em 21 de julho, sua pressão era de 128 mmHg."],
   ] as const)("leaves a written %s date alone", (locale, prose) => {
     const findings = findUnverifiedCoachNumbers(
       prose,
@@ -621,5 +622,40 @@ describe("tokenizing prose written in the reader's language", () => {
     );
     expect(findings.map((f) => f.value)).toContain(155);
     expect(findings.map((f) => f.value)).not.toContain(21);
+  });
+});
+
+/**
+ * A sentence framed as population guidance has its numbers exempted from the
+ * check, so a framing pattern that also matches a sentence about the reader's
+ * own readings lets an invented figure through unchecked. The Brazilian
+ * Portuguese bank needs a population subject or a reference noun for that
+ * reason; the first two cases here were exempted by the broader patterns it
+ * started with.
+ */
+describe("Brazilian Portuguese population-norm framing", () => {
+  const payloads = [{ metric: "bp", latest: 128 }];
+
+  it.each([
+    "Sua pressão de 158/97 geralmente fica acima do seu padrão.",
+    "Seu médico recomenda manter a pressão em 158/97.",
+    "Entre as suas medições, a pressão normalmente fica em 158/97.",
+    "Para um adulto como você, 158/97 geralmente precisa de atenção.",
+  ])("still checks the numbers in: %s", (prose) => {
+    const values = findUnverifiedCoachNumbers(prose, payloads, "pt-BR").map(
+      (f) => f.value,
+    );
+    expect(values).toContain(158);
+    expect(values).toContain(97);
+  });
+
+  it.each([
+    "A faixa normal do pulso em repouso fica entre 60 e 100 bpm.",
+    "Os médicos recomendam de 7 a 9 horas de sono por noite.",
+    "A maioria dos adultos precisa de 7 a 9 horas de sono.",
+    "A pressão arterial normal de um adulto fica abaixo de 120/80 mmHg.",
+    "Os valores de referência da glicemia em jejum vão de 70 a 99 mg/dL.",
+  ])("exempts the reference figures in: %s", (prose) => {
+    expect(findUnverifiedCoachNumbers(prose, payloads, "pt-BR")).toEqual([]);
   });
 });
