@@ -208,8 +208,45 @@ const ROUND_TRIP_TEST = "tests/integration/backup-round-trip.test.ts";
 
 const REPO_ROOT = resolve(__dirname, "../..");
 
+/**
+ * Every read below is memoised: the two-ended checks ask each declared file
+ * about each model and each of its relations, and reading the schema and the
+ * files again for every question made those checks slow enough to time out on
+ * a loaded runner.
+ */
+const sourceCache = new Map<string, string>();
+
 function read(relativePath: string): string {
-  return readFileSync(resolve(REPO_ROOT, relativePath), "utf8");
+  let text = sourceCache.get(relativePath);
+  if (text === undefined) {
+    text = readFileSync(resolve(REPO_ROOT, relativePath), "utf8");
+    sourceCache.set(relativePath, text);
+  }
+  return text;
+}
+
+const flatCache = new Map<string, string>();
+
+/** A declared file, whitespace-flattened so a call broken across lines matches. */
+function flat(relativePath: string): string {
+  let text = flatCache.get(relativePath);
+  if (text === undefined) {
+    text = read(relativePath).replace(/\s+/g, " ");
+    flatCache.set(relativePath, text);
+  }
+  return text;
+}
+
+let schemaModelBodies: Array<[string, string]> | null = null;
+
+/** Every schema model's name and body, read once. */
+function modelBodies(): Array<[string, string]> {
+  schemaModelBodies ??= [
+    ...readFileSync(SCHEMA_PATH, "utf8").matchAll(
+      /^model\s+(\w+)\s*\{([\s\S]*?)^\}/gm,
+    ),
+  ].map(([, name, body]) => [name, body]);
+  return schemaModelBodies;
 }
 
 /** `Measurement` → `measurement`, the Prisma delegate name. */
@@ -238,11 +275,8 @@ function relationParents(model: string): Array<{
   field: string;
   parent: string;
 }> {
-  const source = readFileSync(SCHEMA_PATH, "utf8");
   const found: Array<{ field: string; parent: string }> = [];
-  for (const [, parent, body] of source.matchAll(
-    /^model\s+(\w+)\s*\{([\s\S]*?)^\}/gm,
-  )) {
+  for (const [parent, body] of modelBodies()) {
     for (const line of body.split("\n")) {
       const match = /^\s*(\w+)\s+(\w+)(\[\])?\??\s*(@|$)/.exec(line);
       if (match && match[2] === model) {
@@ -271,9 +305,8 @@ function callsDelegate(source: string, model: string, ops: RegExp): boolean {
 
 /** Every model a relation field of this name points at, across the schema. */
 function targetsOfRelationField(field: string): Set<string> {
-  const source = readFileSync(SCHEMA_PATH, "utf8");
   const targets = new Set<string>();
-  for (const [, body] of source.matchAll(/^model\s+\w+\s*\{([\s\S]*?)^\}/gm)) {
+  for (const [, body] of modelBodies()) {
     for (const line of body.split("\n")) {
       const match = /^\s*(\w+)\s+(\w+)(\[\])?\??\s*(@|$)/.exec(line);
       if (match && match[1] === field) targets.add(match[2]);
@@ -301,8 +334,7 @@ function touches(
   relationOps: RegExp,
 ): boolean {
   return files.some((file) => {
-    // Whitespace-flattened so a call broken across lines still matches.
-    const source = read(file).replace(/\s+/g, " ");
+    const source = flat(file);
     if (callsDelegate(source, model, delegateOps)) return true;
     return relationParents(model).some(({ field, parent }) => {
       if (
