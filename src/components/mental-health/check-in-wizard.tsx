@@ -73,9 +73,6 @@ export function CheckInWizard({
 }) {
   const { t, locale } = useTranslations();
   const def = INSTRUMENTS[instrument];
-  const key = def.i18nKey;
-  // Items, answers and stems: the validated translation, or the English
-  // source for a language the instrument has not been validated in.
   const wording = (k: string) => instrumentText(instrument, k, locale, t);
   const itemCount = def.itemCount;
   // v1.27.8 — the PHQ-9 asks its validated functional-impairment
@@ -154,8 +151,8 @@ export function CheckInWizard({
           No disclaimer here (§2); the landing carries it. */}
       <header className="flex flex-col gap-1">
         <PageHeader
-          title={t(`mentalHealth.instrument.${key}`)}
-          description={t(`mentalHealth.instrumentDescription.${key}`)}
+          title={t(`mentalHealth.instrument.${def.i18nKey}`)}
+          description={t(`mentalHealth.instrumentDescription.${def.i18nKey}`)}
         />
         {/* Honest translation note: the instrument is validated in its source
             language; the surrounding chrome stays localized. */}

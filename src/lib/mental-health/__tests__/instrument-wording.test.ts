@@ -2,6 +2,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { readSourceFolder } from "@/__tests__/helpers/source-files";
+
 import { INSTRUMENTS, INSTRUMENT_ORDER } from "../instruments";
 import {
   SOURCE_WORDING,
@@ -123,7 +125,6 @@ describe("instrument wording", () => {
 describe("no surface renders instrument wording through a bare t()", () => {
   // Item text, answer labels and stems must go through `instrumentText`. A
   // bare `t()` on one of these keys reads the bundle whatever the language.
-  const SRC = join(ROOT, "src");
   const BARE = [
     /\bt\(\s*`mentalHealth\.items\./,
     /\bt\(\s*`mentalHealth\.stems\./,
@@ -133,29 +134,20 @@ describe("no surface renders instrument wording through a bare t()", () => {
     /\bt\(\s*itemKey\(/,
   ];
 
-  function walk(dir: string, out: string[] = []): string[] {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name === "generated" || entry.name === "__tests__") continue;
-      const path = join(dir, entry.name);
-      if (entry.isDirectory()) walk(path, out);
-      else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name))
-        out.push(path);
-    }
-    return out;
-  }
-
-  it("finds the two item surfaces and no bare lookup anywhere", () => {
-    const files = walk(SRC);
-    expect(files.length).toBeGreaterThan(500);
-    const users = files.filter((f) =>
-      readFileSync(f, "utf8").includes("instrumentText("),
-    );
+  it("finds the item surfaces and no bare lookup anywhere", () => {
+    const files = readSourceFolder("src", {
+      floor: 500,
+      include: (rel) =>
+        !rel.startsWith("generated/") &&
+        !rel.includes("__tests__/") &&
+        !/\.test\.tsx?$/.test(rel),
+    });
+    const users = files.filter(([, text]) => text.includes("instrumentText("));
     // The wizard and the history breakdown, plus the module itself.
     expect(users.length).toBeGreaterThanOrEqual(3);
-    const offenders = files.filter((f) => {
-      const src = readFileSync(f, "utf8");
-      return BARE.some((re) => re.test(src));
-    });
+    const offenders = files
+      .filter(([, text]) => BARE.some((re) => re.test(text)))
+      .map(([rel]) => rel);
     expect(offenders).toEqual([]);
   });
 });

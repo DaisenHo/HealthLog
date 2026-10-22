@@ -219,7 +219,7 @@ describe("i18n locale file integrity", () => {
 
       // The one sanctioned gap: questionnaire wording of an instrument whose
       // validated set excludes this language. Those keys must be ABSENT —
-      // the surface shows the English source (`instrument-wording.ts`), so a
+      // the surface shows the English source held by instrument-wording, so a
       // translation here would be a self-made questionnaire waiting for a
       // renderer to pick it up. The list is exact in both directions: a
       // missing key outside it is drift, a carried key inside it fails too.
