@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 123,
-  "total": 145651,
+  "total": 145555,
   "entries": {
     "app/api/dashboard/summary/route.ts": 1032,
     "app/api/documents/inbound/route.ts": 811,
@@ -91,7 +91,7 @@
     "lib/insights/mood-status.ts": 814,
     "lib/insights/status-cache.ts": 812,
     "lib/integrations/status.ts": 1445,
-    "lib/jobs/apple-health-import-worker.ts": 863,
+    "lib/jobs/apple-health-import-worker.ts": 801,
     "lib/jobs/backup-restore.ts": 888,
     "lib/jobs/coach-nudge.ts": 1089,
     "lib/jobs/insight-pregenerate.ts": 1266,
@@ -114,7 +114,7 @@
     "lib/medications/scheduling/slot-upsert.ts": 926,
     "lib/notifications/senders/apns.ts": 1100,
     "lib/oura/client.ts": 1360,
-    "lib/oura/sync.ts": 917,
+    "lib/oura/sync.ts": 902,
     "lib/polar/client.ts": 1010,
     "lib/rollups/measurement-rollups.ts": 1496,
     "lib/search/search-records.ts": 996,
@@ -123,7 +123,7 @@
     "lib/telegram-webhook-handlers.ts": 1341,
     "lib/validations/inbound-documents.ts": 1130,
     "lib/whoop/client.ts": 917,
-    "lib/withings/sync-sleep.ts": 903,
+    "lib/withings/sync-sleep.ts": 884,
     "lib/withings/sync.ts": 978,
     "proxy.ts": 870
   }

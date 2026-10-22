@@ -12,6 +12,16 @@
  *      inherently: a day left empty drops its rollup row.
  *   2. the cached per-metric status assessments — re-warmed via
  *      `invalidateStatusInsightsForTypes` (fire-and-forget).
+ *   3. the measurement read caches (analytics, targets, derived, workouts),
+ *      marked stale back to the earliest touched reading once the rollups
+ *      are refolded. Without it a writer that relied on the tail alone (the
+ *      CSV and JSON imports, the score engines, the WHOOP webhook, the Withings
+ *      activity, sleep and ECG legs, the Oura history backfill) left
+ *      every cached read, the closed history blocks above all, on the
+ *      pre-write values until their TTL. A caller that invalidated already
+ *      (an interactive write evicts) loses nothing: marking stale after an
+ *      eviction only catches an entry rebuilt from the old rollups between
+ *      the two.
  *
  * Both legs are best-effort: a populator hiccup never fails the user's
  * mutation. Callers collect the affected `(type, measuredAt)` pairs
@@ -27,6 +37,8 @@ import {
   type StatusIngestSource,
 } from "@/lib/insights/status-invalidation";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
+import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
+import { earliestMeasuredAt } from "@/lib/cache/closed-block";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 export async function afterMeasurementMutation(
@@ -54,6 +66,7 @@ export async function afterMeasurementMutation(
   } catch (err) {
     console.warn(`[${label}] rollup recompute failed`, err);
   }
+  invalidateUserMeasurements(userId, { touchedFrom: earliestMeasuredAt(rows) });
 
   // Status-insight re-warm is fire-and-forget — it must run even when
   // the rollup leg above failed, so the two legs never gate each other.

@@ -30,6 +30,7 @@
 import type { MeasurementSource } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
+import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { getEvent } from "@/lib/logging/context";
 
 /** One just-fetched sleep session: its externalId prefix + the fresh ids. */
@@ -79,5 +80,9 @@ export async function sweepStaleSleepSegments(
       );
     }
   }
+  // A tombstoned segment changes the nights the cached reads hold. The sweep
+  // does not know how far back the swept rows reach, so every cached block
+  // goes; it removes rows only when a session was re-scored, which is rare.
+  if (removed > 0) invalidateUserMeasurements(userId);
   return removed;
 }

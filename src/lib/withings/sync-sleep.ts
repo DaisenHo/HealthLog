@@ -43,11 +43,7 @@ import { prisma } from "@/lib/db";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { safeFetch } from "@/lib/safe-fetch";
 import { getUnitForType } from "@/lib/validations/measurement";
-import {
-  collapseToTypeDayKeys,
-  recomputeBucketsForKeys,
-} from "@/lib/rollups/measurement-rollups";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
+import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 
 import {
@@ -693,27 +689,12 @@ export async function syncUserSleep(
   // v1.4.39.1 — refresh the persistent rollup table for every distinct
   // (type, day) the sync touched. Sleep segments collapse heavily —
   // ~10 stage rows per night land in one DAY recompute.
-  try {
-    const keys = collapseToTypeDayKeys(touched);
-    await recomputeBucketsForKeys(userId, keys);
-
-    // v1.8.0 — drop the per-metric assessment caches the synced types
-    // dirty (sleep + resting-HR feed the pulse / general cards).
-    // Fire-and-forget.
-    invalidateStatusInsightsForTypes(
-      userId,
-      keys.map((k) => k.type),
-      { source: "sync" },
-    ).catch((err) => {
-      getEvent()?.addWarning(
-        `withings sleep: status-insight invalidate failed for ${userId}: ${err}`,
-      );
-    });
-  } catch (err) {
-    getEvent()?.addWarning(
-      `withings sleep: rollup recompute failed for ${userId}: ${err}`,
-    );
-  }
+  // The shared tail: the rollups, the measurement read caches back to the
+  // oldest touched reading, and the cached assessments of the types.
+  await afterMeasurementMutation(userId, touched, {
+    source: "sync",
+    label: "withings sleep",
+  });
 
   // If a stage segment for last night just landed, kick the debounced
   // morning refresh so the digest/score finalise with the current sleep. The

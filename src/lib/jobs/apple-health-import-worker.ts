@@ -26,7 +26,7 @@
  */
 import { unlinkSync } from "node:fs";
 import { getHeapStatistics } from "node:v8";
-import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma, toJson } from "@/lib/db";
 import type { Job } from "pg-boss";
 
@@ -40,18 +40,13 @@ import {
   type WorkoutRouteReference,
 } from "@/lib/apple-health/route-import";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/status-invalidation";
-import { trackBackgroundTask } from "@/lib/logging/background-tasks";
+import { afterBulkImport } from "@/lib/jobs/import-tail";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import {
   streamParseExportXml,
   type ImportJobProgress,
   type ImportJobResult,
 } from "@/lib/measurements/import-apple-health-export";
-import {
-  recomputeUserRollups,
-  ROLLUP_FOLD_WINDOW_MS,
-} from "@/lib/rollups/measurement-rollups";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
@@ -589,70 +584,13 @@ export async function handleAppleHealthImport(
       },
     });
 
-    // v1.5.0 — fold the persistent rollup table for the imported
-    // user. The per-row write hooks are intentionally skipped on the
-    // streaming-ingest path (a 100k-row import would otherwise pay
-    // 100k DAY-recompute round-trips); we run the rollup once at
-    // the end, scoped to the user's full measurement span, so
-    // post-import reads of the analytics + comprehensive surfaces
-    // hit the warm rollup table on first paint.
-    //
-    // The miss rides out as a fact rather than as a failed job: the
-    // import is committed and its mirror row already reads `done`, so
-    // failing here would report a completed import as failed and
-    // contradict the row the status poll surfaces to the operator.
-    let rollupFailed = false;
-    try {
-      // Folded over what this import wrote, not over the account's whole
-      // history, and never further back than the fold window every other
-      // path keeps to: buckets older than `ROLLUP_FOLD_WINDOW_MS` are by
-      // design never written, so reads there fall back to live SQL. The old
-      // span ran from the account's first measurement, whatever the import
-      // carried, and folded any history older than the window as well.
-      const span = result.measuredSpan;
-      if (span) {
-        const windowStart = new Date(Date.now() - ROLLUP_FOLD_WINDOW_MS);
-        const spanFrom = new Date(span.from);
-        const from = spanFrom > windowStart ? spanFrom : windowStart;
-        // `to` is exclusive in the aggregator, so one millisecond past the
-        // newest row.
-        const to = new Date(new Date(span.to).getTime() + 1);
-        if (to > from) {
-          await recomputeUserRollups(userId, { from, to });
-        }
-      }
-    } catch (rollupErr) {
-      // Rollup failure is non-fatal — the next read falls through to
-      // live aggregation. Log but don't poison the import.
-      rollupFailed = true;
-      console.warn(
-        `[apple-health-import] Rollup recompute failed for user ${userId}`,
-        rollupErr,
-      );
-    }
-
-    // The imported types' cached status assessments describe data that just
-    // changed; re-warm them, the second leg every other measurement write
-    // runs (`afterMeasurementMutation`). The rollups above are refolded over
-    // the import's span rather than per day, so the leg is called directly.
-    const importedTypes = Object.entries(result.perType)
-      .filter(([, stat]) => stat.inserted + stat.updated > 0)
-      .map(([type]) => type as MeasurementType);
-    if (importedTypes.length > 0) {
-      // Registered so the test suite can await the detached handle.
-      trackBackgroundTask(
-        invalidateStatusInsightsForTypes(userId, importedTypes, {
-          // An export file the person chose to import, narrated like any
-          // other import rather than held to the sync gap.
-          source: "manual",
-        }).catch((err) => {
-          console.warn(
-            `[apple-health-import] status-insight invalidate failed for user ${userId}`,
-            err,
-          );
-        }),
-      );
-    }
+    // Rollups, measurement caches and status assessments over what the
+    // import wrote (`afterBulkImport`).
+    const { rollupFailed } = await afterBulkImport(
+      userId,
+      result,
+      "apple-health-import",
+    );
 
     // Best-effort cleanup. A failed unlink is not fatal — `/tmp` is
     // periodically swept on the host.

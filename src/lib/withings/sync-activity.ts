@@ -44,11 +44,7 @@ import { getEvent } from "@/lib/logging/context";
 import { safeFetch } from "@/lib/safe-fetch";
 import { getUnitForType } from "@/lib/validations/measurement";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
-import {
-  collapseToTypeDayKeys,
-  recomputeBucketsForKeys,
-} from "@/lib/rollups/measurement-rollups";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
+import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 
 import {
   hasActivityScope,
@@ -578,26 +574,12 @@ export async function syncUserActivity(
   // v1.4.39.1 — refresh the persistent rollup table for every distinct
   // (type, day) the sync touched. Collapsed so a multi-day Withings
   // catch-up costs at most ~N (type, day) recomputes.
-  try {
-    const keys = collapseToTypeDayKeys(touched);
-    await recomputeBucketsForKeys(userId, keys);
-
-    // v1.8.0 — drop the per-metric assessment caches the synced types
-    // dirty (steps feed the general overview). Fire-and-forget.
-    invalidateStatusInsightsForTypes(
-      userId,
-      keys.map((k) => k.type),
-      { source: "sync" },
-    ).catch((err) => {
-      getEvent()?.addWarning(
-        `withings activity: status-insight invalidate failed for ${userId}: ${err}`,
-      );
-    });
-  } catch (err) {
-    getEvent()?.addWarning(
-      `withings activity: rollup recompute failed for ${userId}: ${err}`,
-    );
-  }
+  // The shared tail: the rollups, the measurement read caches back to the
+  // oldest touched reading, and the cached assessments of the types.
+  await afterMeasurementMutation(userId, touched, {
+    source: "sync",
+    label: "withings activity",
+  });
 
   // Only a clean write stamps success. A swallowed batch-write left the
   // ledger honest via the transient failure recorded above.

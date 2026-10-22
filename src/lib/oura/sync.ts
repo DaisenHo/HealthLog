@@ -46,16 +46,11 @@ import {
   type FailureKind,
 } from "@/lib/integrations/status";
 import {
-  collapseToTypeDayKeys,
-  recomputeBucketsForKeys,
-} from "@/lib/rollups/measurement-rollups";
-import {
   emitInsertedMeasurementArrivals,
   type InsertedMeasurementArrivalRow,
 } from "@/lib/arrivals/measurement-emit";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import type { SyncWriteResult } from "@/lib/outcome/written-outcome";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import {
@@ -895,23 +890,13 @@ export async function upsertOuraMeasurements(
       () => {},
     );
   }
-  try {
-    const keys = collapseToTypeDayKeys(touched);
-    await recomputeBucketsForKeys(userId, keys);
-    invalidateStatusInsightsForTypes(
-      userId,
-      keys.map((k) => k.type),
-      { source: "sync" },
-    ).catch((err) => {
-      getEvent()?.addWarning(
-        `oura: status-insight invalidate failed for ${userId}: ${err}`,
-      );
-    });
-  } catch (err) {
-    getEvent()?.addWarning(
-      `oura: rollup recompute failed for ${userId}: ${err}`,
-    );
-  }
+  // The shared tail: the rollups, the measurement read caches back to the
+  // oldest reading written (a history backfill writes through here and has
+  // no other invalidation), and the cached assessments of the types.
+  await afterMeasurementMutation(userId, touched, {
+    source: "sync",
+    label: "oura",
+  });
 
   return imported;
 }

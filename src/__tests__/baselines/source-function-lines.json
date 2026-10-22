@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 411,
-  "total": 148324,
+  "total": 148227,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -350,7 +350,7 @@
     "lib/insights/weight-status.ts :: prepareWeightStatusForUser": 598,
     "lib/integrations/connection-health-load.ts :: loadConnectionFacts": 227,
     "lib/integrations/status.ts :: recordSyncFailure": 292,
-    "lib/jobs/apple-health-import-worker.ts :: handleAppleHealthImport": 357,
+    "lib/jobs/apple-health-import-worker.ts :: handleAppleHealthImport": 300,
     "lib/jobs/coach-nudge.ts :: findTriggerForUser": 279,
     "lib/jobs/coach-nudge.ts :: runCoachNudgeTick": 292,
     "lib/jobs/coach-reminder-sweep.ts :: runCoachReminderSweep": 222,
@@ -409,9 +409,9 @@
     "lib/targets/vitals-builder.ts :: buildVitalTargets": 324,
     "lib/telegram-webhook-handlers.ts :: handleCallback": 599,
     "lib/telegram-webhook-handlers.ts :: handleTextMessage": 337,
-    "lib/withings/sync-activity.ts :: syncUserActivity": 391,
-    "lib/withings/sync-ecg.ts :: syncUserEcg": 213,
-    "lib/withings/sync-sleep.ts :: syncUserSleep": 429,
+    "lib/withings/sync-activity.ts :: syncUserActivity": 377,
+    "lib/withings/sync-ecg.ts :: syncUserEcg": 202,
+    "lib/withings/sync-sleep.ts :: syncUserSleep": 414,
     "lib/withings/sync.ts :: syncUserMeasurements": 373,
     "proxy.ts :: proxy": 499
   }
