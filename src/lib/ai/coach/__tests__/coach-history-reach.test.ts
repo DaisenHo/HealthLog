@@ -121,10 +121,12 @@ describe("the numbers the settings text states", () => {
       detailParams: { days: 90 },
     });
     expect(lookbackText("lastYear").detailParams).toEqual({ months: 12 });
-    expect(lookbackText("allTime").detailParams).toEqual({
-      dailyMonths: 12,
-      years: 10,
-      labMonths: 12,
+    expect(lookbackText("allTime")).toEqual({
+      // "12 months in detail, every lab result": the option says what it
+      // reads, not "All" (#1263).
+      optionParams: { months: 12 },
+      detailKey: "detailAll",
+      detailParams: { dailyMonths: 12, years: 10 },
     });
   });
 });

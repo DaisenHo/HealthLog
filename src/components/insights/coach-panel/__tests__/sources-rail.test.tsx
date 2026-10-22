@@ -151,7 +151,7 @@ describe("<SourcesRail>", () => {
     // `allTime` is the default: the sentence carries the numbers the
     // readers use (`history-reach.ts`).
     expect(html).toContain(
-      "Everything you recorded: 12 months in daily detail, older readings as monthly values up to 10 years back, lab results from the last 12 months.",
+      "Everything you recorded: 12 months in daily detail, older readings as monthly values up to 10 years back, and every lab result, older ones summarised per year.",
     );
     expect(html).not.toContain("stay visible");
   });

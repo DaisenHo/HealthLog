@@ -76,6 +76,15 @@ vi.mock("@/lib/ai/coach/illness-snapshot", () => ({
   buildIllnessScores: (userId: string) => buildIllnessScores(userId),
 }));
 
+// #1263 — a named labs read is its own read (latest + history per matching
+// marker); the dispatch test stubs it like the snapshot. The read itself runs
+// against Postgres in `tests/integration/coach-labs-history.test.ts`.
+const buildLabsSnapshotBlock = vi.fn();
+vi.mock("@/lib/ai/coach/labs-snapshot", () => ({
+  buildLabsSnapshotBlock: (...args: unknown[]) =>
+    buildLabsSnapshotBlock(...args),
+}));
+
 import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
 
 function snapshot(
@@ -223,19 +232,27 @@ describe("executeCoachTool", () => {
     });
   });
 
-  it("filters labs by analyte and reports analyte_not_found", async () => {
+  it("reads a named analyte with its history and reports analyte_not_found", async () => {
     buildCoachSnapshot.mockResolvedValue(
       snapshot({
-        labs: { recent: [{ name: "LDL", value: "120" }] },
+        labs: { recent: [{ analyte: "LDL", value: 120 }] },
       }),
+    );
+    buildLabsSnapshotBlock.mockImplementation(
+      async (_userId: string, _now: Date, _reach: unknown, options: unknown) =>
+        (options as { analyte?: string }).analyte === "ldl"
+          ? { recent: [{ analyte: "LDL", value: 120, history: { count: 2 } }] }
+          : null,
     );
     const hit = await executeCoachTool({
       userId: "u1",
       name: "get_labs",
-      rawArguments: JSON.stringify({ analyte: "ldl" }),
+      rawArguments: JSON.stringify({ analyte: "LDL" }),
     });
     expect(hit.present).toBe(true);
-    expect(hit.data).toMatchObject({ recent: [{ name: "LDL" }] });
+    expect(hit.data).toMatchObject({
+      recent: [{ analyte: "LDL", history: { count: 2 } }],
+    });
 
     const miss = await executeCoachTool({
       userId: "u1",

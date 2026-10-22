@@ -523,7 +523,7 @@ export const MCP_RESOURCE_TEMPLATES: McpResourceTemplateDefinition[] = [
     uriTemplate: "healthlog://lab/{analyte}",
     title: "Lab analyte readings",
     description:
-      'The user\'s recent readings for one named lab analyte (e.g. healthlog://lab/LDL) over the last 12 months — value, unit, reference range, and in-range/below/above status per reading. Same read get_labs serves. Returns { present: false } when no readings exist for that analyte. Returns { present: false, reason: "module_disabled" } when its module is switched off.',
+      'The user\'s recent readings for one named lab analyte (e.g. healthlog://lab/LDL) over the whole record — the latest value, unit, reference range, and in-range/below/above status, with a summarised history of the earlier readings. Same read get_labs serves. Returns { present: false } when no readings exist for that analyte. Returns { present: false, reason: "module_disabled" } when its module is switched off.',
     mimeType: "application/json",
     complete: { analyte: completeAnalyte },
     async list(ctx) {

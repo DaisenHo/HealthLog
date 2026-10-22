@@ -3231,11 +3231,11 @@
           "last30days": "{days} days",
           "last90days": "{days} days",
           "lastYear": "{months} months",
-          "allTime": "All"
+          "allTime": "{months} months in detail, all lab results"
         },
         "detailDays": "The Coach reads nothing older than {days} days, in any answer.",
         "detailMonths": "The Coach reads nothing older than {months} months, in any answer.",
-        "detailAll": "Everything you recorded: {dailyMonths} months in daily detail, older readings as monthly values up to {years} years back, lab results from the last {labMonths} months.",
+        "detailAll": "Everything you recorded: {dailyMonths} months in daily detail, older readings as monthly values up to {years} years back, and every lab result, older ones summarised per year.",
         "note": "Your profile, current medications, an ongoing illness and upcoming visits stay visible; summaries that need more history are shortened or left out. Answers the Coach gave earlier in older conversations may still quote older values."
       },
       "showConversations": "Show conversations",

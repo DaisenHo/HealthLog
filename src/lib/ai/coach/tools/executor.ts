@@ -50,6 +50,7 @@ import {
   buildCoachSnapshot,
   type CoachSnapshotResult,
 } from "@/lib/ai/coach/snapshot";
+import { buildLabsSnapshotBlock } from "@/lib/ai/coach/labs-snapshot";
 import { buildCoachSourceSnapshot } from "@/lib/ai/coach/source-snapshot";
 import { admitCoachSources, coachExclusions } from "@/lib/ai/coach/scope-gate";
 import type { CoachPrefs } from "@/lib/validations/coach-prefs";
@@ -785,11 +786,11 @@ async function getLabs(
   // Labs ride the snapshot regardless of `sources` (attached unconditionally),
   // so a minimal scope still surfaces them.
   //
-  // v1.21.0 — the labs block itself is a "latest reading per biomarker
-  // over the last 12 months" snapshot and is intentionally window-AGNOSTIC
-  // (the read cutoff is fixed). We still thread the conversation's window onto
-  // the scope so the snapshot's `scope` block reports the right horizon for the
-  // turn; it does not move the labs read.
+  // v1.21.0 — the labs block is intentionally window-AGNOSTIC: the latest
+  // reading per biomarker with its summarised history, over the whole record
+  // or the user's lookback limit (#1263). We still thread the conversation's
+  // window onto the scope so the snapshot's `scope` block reports the right
+  // horizon for the turn; it does not move the labs read.
   //
   // v1.21.0 — prefer the turn's shared full-source scope so this read
   // lands the inventory's cache entry; fall back to a tight empty-source scope
@@ -802,30 +803,28 @@ async function getLabs(
   const labs = pickSection(snapshot.sections, "labs") as
     { recent?: Array<{ name?: string; analyte?: string }> } | undefined;
   if (labs === undefined) {
-    // The labs read is window-AGNOSTIC: a fixed trailing-12-month cutoff. So the
-    // window it "searched" is a year regardless of the conversation's scope —
-    // a panel from 2023 is outside it and must not read as "no labs on file".
-    // Under a shorter lookback limit the labs read stops at the limit.
+    // The labs read is window-AGNOSTIC: it searched the whole record, or up to
+    // the lookback limit when there is one. A panel older than the limit must
+    // not read as "no labs on file", so the limit is the searched window.
     return emptyRead(
       userId,
       "labs",
       subjectForTool("get_labs"),
-      clampWindow("lastYear", reach),
+      reach.window,
       reach,
     );
   }
 
   const analyte = parsed.data.analyte?.trim().toLowerCase();
-  if (analyte && Array.isArray(labs.recent)) {
-    const filtered = labs.recent.filter((entry) => {
-      const haystack =
-        `${entry.name ?? ""} ${entry.analyte ?? ""}`.toLowerCase();
-      return haystack.includes(analyte);
+  if (analyte) {
+    // #1263 — a named read carries each matching marker's history over the
+    // whole record (or the limit), summarised. Read on its own rather than
+    // out of the snapshot, whose labs block holds the latest values only.
+    const named = await buildLabsSnapshotBlock(userId, new Date(), reach, {
+      analyte,
     });
-    if (filtered.length === 0) {
-      return { present: false, reason: "analyte_not_found" };
-    }
-    return { present: true, data: { recent: filtered } };
+    if (!named) return { present: false, reason: "analyte_not_found" };
+    return { present: true, data: named };
   }
   return { present: true, data: labs };
 }

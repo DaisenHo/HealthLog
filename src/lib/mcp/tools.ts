@@ -1677,7 +1677,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: "get_labs",
     title: "Get lab results",
     description:
-      "Fetch the user's lab results. By default returns the latest reading per biomarker over the last 12 months, optionally filtered to one named analyte. Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
+      "Fetch the user's lab results. By default returns the latest reading per biomarker over the whole record. Filtered to one named analyte, each matching marker also carries a summarised history (the newest earlier values in full, older ones as one mean / min / max / count per year). Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
     inputShape: {
       analyte: z.string().min(1).max(80).optional(),
       history: z

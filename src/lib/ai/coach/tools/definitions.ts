@@ -14,7 +14,7 @@
  *   2. get_glucose_panel         — per-context daily means + the 30-day clinical panel
  *   3. get_sleep                 — per-night sleep + sleep-rhythm (debt + chronotype)
  *   4. get_medication_compliance — dose-weighted compliance + GLP-1
- *   5. get_labs                  — latest reading per biomarker (12 months)
+ *   5. get_labs                  — latest reading per biomarker + history
  *   6. get_illness_recovery      — restMode + active/resolved illnesses + recovery composites
  *   7. get_workouts              — recent sessions + per-sport rollup (v1.21.0, C2-4)
  *   8. get_cycle                 — menstrual phase / prediction / correlation (v1.21.0, C2-1)
@@ -321,7 +321,7 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
   {
     name: "get_labs",
     description:
-      "Fetch the user's most recent lab results — the latest reading per biomarker over the last 12 months (or the user's lookback limit, when shorter), or one named analyte. Returns { present: false } with a reason — no_data means no labs are on file, outside_window means panels exist but are older than the twelve months this tool reads, outside_reach means they are older than the user's lookback limit.",
+      "Fetch the user's lab results over the whole record (or the user's lookback limit, when there is one): without arguments the latest reading per biomarker. Pass an analyte for how it changed over time: each matching marker then carries a history, the newest earlier values in full and older ones as one mean / min / max / count per year. Returns { present: false } with a reason — no_data means no labs are on file, outside_reach means they are older than the user's lookback limit.",
     parameters: {
       type: "object",
       additionalProperties: false,
