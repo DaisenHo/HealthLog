@@ -18,6 +18,8 @@
  */
 import pg from "pg";
 
+import { sealInsightsCachedText } from "@/lib/insights/cached-text-cipher";
+
 import { E2E_AI_OPTIONAL } from "./global-setup";
 
 function connect(): pg.Pool {
@@ -81,8 +83,8 @@ export async function seedStoredBriefing(marker: string): Promise<void> {
     briefingGeneratedAt: new Date().toISOString(),
   };
   // Sealed the way the app writes it; there is no readable column to seed.
-  const { sealInsightsCachedText } =
-    await import("@/lib/insights/cached-text-cipher");
+  // The import is static on purpose: a dynamic `import()` of app code bypasses
+  // the test runner's `@/` path mapping for that module's own imports.
   const sealed = Buffer.from(sealInsightsCachedText(JSON.stringify(insights)));
   await withAccount(async (pool, userId) => {
     await pool.query(
