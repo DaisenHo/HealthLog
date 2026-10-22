@@ -59,6 +59,9 @@ notes, and machine-readable specs that ship alongside the source:
 - [`contributing/ui-standards.md`](./contributing/ui-standards.md) — the
   binding UI standards: card anatomy, spacing, text colour, tokens and
   which primitive to use where. Read before touching any surface.
+- [`contributing/benchmarks.md`](./contributing/benchmarks.md) — the
+  large-account benchmark (latency and statements per request) and the
+  statement budgets on the hot routes.
 - [`ui-guidelines.md`](./ui-guidelines.md) — UI / a11y house style; where
   it disagrees with the UI standards, the standards win.
 
