@@ -31,7 +31,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
@@ -109,6 +116,26 @@ const BULK_VISIT_OPTIONS = 12;
 
 const DOCUMENT_QUERY_ID_PATTERN = /^[a-zA-Z0-9_-]{1,40}(?![\s\S])/;
 const DOCUMENT_SELECTION_HISTORY_KEY = "__healthlogPushedDocumentSelection";
+
+/**
+ * The query string in the address bar, read at render time.
+ *
+ * The open sheet follows `?doc=`, and `useSearchParams` is not a faithful
+ * copy of it: Next 16.4 applies the copy of a `pushState` later than the write,
+ * and a Back pressed in between moves the address bar from `?doc=` to the
+ * page without it while `useSearchParams` can read "no document" on both sides.
+ * The sheet then saw no change and stayed open. `window.location` is never
+ * behind; `popstate` re-reads it on every traversal, and every other render
+ * (including the ones Next's own navigations cause) reads it afresh.
+ */
+function subscribeToTraversal(onChange: () => void): () => void {
+  window.addEventListener("popstate", onChange);
+  return () => window.removeEventListener("popstate", onChange);
+}
+
+function readLocationSearch(): string {
+  return window.location.search;
+}
 
 export function documentSelectionHistoryState(
   documentId: string,
@@ -818,7 +845,13 @@ export function DocumentsView() {
   const [detailOpen, setDetailOpen] = useState(false);
   const handedOffDocumentRef = useRef<string | null>(null);
 
-  const rawDocParam = searchParams.get("doc");
+  // Before hydration the server's view of the query stands in for the URL.
+  const locationSearch = useSyncExternalStore(
+    subscribeToTraversal,
+    readLocationSearch,
+    () => searchParams.toString(),
+  );
+  const rawDocParam = new URLSearchParams(locationSearch).get("doc");
   const docParam =
     rawDocParam !== null && DOCUMENT_QUERY_ID_PATTERN.test(rawDocParam)
       ? rawDocParam
@@ -837,14 +870,14 @@ export function DocumentsView() {
 
   const openDetail = useCallback(
     (id: string) => {
-      const href = documentSelectionHref(pathname, searchParams.toString(), id);
+      const href = documentSelectionHref(pathname, window.location.search, id);
       if (href === null) return;
       handedOffDocumentRef.current = null;
       setDetailId(id);
       setDetailOpen(true);
       window.history.pushState(documentSelectionHistoryState(id), "", href);
     },
-    [pathname, searchParams],
+    [pathname],
   );
 
   const handleDetailOpenChange = useCallback((open: boolean) => {
@@ -881,7 +914,7 @@ export function DocumentsView() {
     handedOffDocumentRef.current = closeDocumentSelectionAfterCoachHandoff(
       window.history,
       pathname,
-      searchParams.toString(),
+      window.location.search,
       docParam,
       handedOffDocumentRef.current,
       coachLaunch?.closeIntent,
@@ -925,7 +958,6 @@ export function DocumentsView() {
     docParam,
     moduleEnabled,
     pathname,
-    searchParams,
   ]);
 
   // Hover/focus intent prefetches the detail METADATA (never the blob —
