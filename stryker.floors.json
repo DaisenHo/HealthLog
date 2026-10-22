@@ -1,0 +1,35 @@
+{
+  "$comment": "Per-module mutation-score floors, checked by scripts/mutation-floors.mjs against reports/mutation/mutation.json. Each floor sits just below the score measured when it was set; raise it when a change raises the score, never lower it to let a run pass. See docs/contributing/testing.md#mutation-testing.",
+  "modules": {
+    "crypto": {
+      "paths": ["src/lib/crypto.ts"],
+      "floor": 45
+    },
+    "compliance": {
+      "paths": ["src/lib/analytics/compliance/"],
+      "floor": 65
+    },
+    "rollups": {
+      "paths": ["src/lib/rollups/"],
+      "floor": 40
+    },
+    "source-ranking": {
+      "paths": [
+        "src/lib/analytics/source-priority.ts",
+        "src/lib/analytics/source-rank-sql.ts"
+      ],
+      "floor": 55
+    },
+    "units": {
+      "paths": [
+        "src/lib/measurements/display-transform.ts",
+        "src/lib/glucose.ts"
+      ],
+      "floor": 85
+    },
+    "backup-validation": {
+      "paths": ["src/lib/validations/backup.ts"],
+      "floor": 24
+    }
+  }
+}

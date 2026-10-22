@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getPrismaClient } from "./setup";
+import { TEMPLATE_DATABASE, workerDatabaseName } from "./worker-database";
 
 const TEST_ENCRYPTION_KEY =
   "0000000000000000000000000000000000000000000000000000000000000000";
@@ -22,6 +23,9 @@ describe("integration worker environment", () => {
     >`
         SELECT current_database() AS database_name
       `;
-    expect(rows).toEqual([{ database_name: "healthlog_test" }]);
+    // Each worker runs against its own clone, never the migrated template
+    // the clones are copied from.
+    expect(rows).toEqual([{ database_name: workerDatabaseName() }]);
+    expect(rows[0].database_name).not.toBe(TEMPLATE_DATABASE);
   });
 });

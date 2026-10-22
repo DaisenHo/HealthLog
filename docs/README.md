@@ -62,6 +62,9 @@ notes, and machine-readable specs that ship alongside the source:
 - [`contributing/benchmarks.md`](./contributing/benchmarks.md) — the
   large-account benchmark (latency and statements per request) and the
   statement budgets on the hot routes.
+- [`contributing/testing.md`](./contributing/testing.md) — which suite a
+  test belongs in, the route test kit, the integration database, sharding,
+  property and mutation tests, and the flaky-test quarantine.
 - [`ui-guidelines.md`](./ui-guidelines.md) — UI / a11y house style; where
   it disagrees with the UI standards, the standards win.
 

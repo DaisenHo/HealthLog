@@ -1,0 +1,4 @@
+{
+  "$comment": "Tests taken out of the unit and integration runs while a flake is fixed. Policy and format: docs/contributing/testing.md#flaky-tests. Every entry expires at most 14 days after it was added; tests/quarantine/quarantine-guard.test.ts fails once one has.",
+  "entries": []
+}

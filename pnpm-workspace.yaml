@@ -131,3 +131,6 @@ auditConfig:
     # never runs. No patched release is published yet (latest is 1.4.0);
     # remove this entry and raise the floor once 1.4.1 is out.
     - GHSA-86w9-cpqp-85rv
+
+patchedDependencies:
+  "@stryker-mutator/vitest-runner@10.0.0": patches/@stryker-mutator__vitest-runner@10.0.0.patch

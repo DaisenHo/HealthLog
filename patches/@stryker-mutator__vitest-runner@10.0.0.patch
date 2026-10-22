@@ -1,0 +1,48 @@
+diff --git a/dist/src/stryker-setup.js b/dist/src/stryker-setup.js
+index aecfacbe47b285c272c47e54b3d66a716adfdc41..a6864060e466a4dde49f6d32d9fa8bc8e416baaa 100644
+--- a/dist/src/stryker-setup.js
++++ b/dist/src/stryker-setup.js
+@@ -57,13 +57,17 @@ else {
+ }
+ // Stryker disable all: this file is copied to the sandbox dir
+ function collectTestName({ name, suite, }) {
++    // Vitest 5 joins a test's full name with " > " and matches
++    // testNamePattern against that; a space-joined name matched nothing under
++    // a describe block, so every such test was skipped in mutant runs. The
++    // file task ends the chain and is not part of the name.
+     const nameParts = [name];
+     let currentSuite = suite;
+-    while (currentSuite) {
++    while (currentSuite && currentSuite.file !== currentSuite) {
+         nameParts.unshift(currentSuite.name);
+         currentSuite = currentSuite.suite;
+     }
+-    return nameParts.join(' ').trim();
++    return nameParts.filter(Boolean).join(' > ').trim();
+ }
+ function toRawTestId(test) {
+     return `${test.file?.filepath ?? 'unknown.js'}#${collectTestName(test)}`;
+diff --git a/dist/src/test-helpers.js b/dist/src/test-helpers.js
+index 56cc786f30c524ae18ce87eef1a67fdf26b703c5..1ad0552d5764d6b8c1ff2215e2e6fb49d7f6bc83 100644
+--- a/dist/src/test-helpers.js
++++ b/dist/src/test-helpers.js
+@@ -2,13 +2,17 @@
+ // This file is used from the testing environment (via stryker-setup.js) and thus could be loaded into the browser (when using vitest with browser mode).
+ // Thus we should avoid unnecessary dependencies in this file.
+ export function collectTestName({ name, suite, }) {
++    // Vitest 5 joins a test's full name with " > " and matches
++    // testNamePattern against that; a space-joined name matched nothing under
++    // a describe block, so every such test was skipped in mutant runs. The
++    // file task ends the chain and is not part of the name.
+     const nameParts = [name];
+     let currentSuite = suite;
+-    while (currentSuite) {
++    while (currentSuite && currentSuite.file !== currentSuite) {
+         nameParts.unshift(currentSuite.name);
+         currentSuite = currentSuite.suite;
+     }
+-    return nameParts.join(' ').trim();
++    return nameParts.filter(Boolean).join(' > ').trim();
+ }
+ export function toRawTestId(test) {
+     return `${test.file?.filepath ?? 'unknown.js'}#${collectTestName(test)}`;

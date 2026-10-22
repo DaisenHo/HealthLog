@@ -1,0 +1,169 @@
+name: Tests (nightly, shuffled)
+
+# Looks for what a pull request run cannot see by design.
+#
+# - Order dependence. Both suites run with files and tests in a random order
+#   (`--sequence.shuffle`), seeded from the clock and printed at the top of
+#   the log and in the job summary. A failure that does not reproduce on a
+#   pull request reproduces here with `--sequence.seed=<seed>`.
+# - New property-test inputs. Pull requests run every fast-check property
+#   with a fixed seed; this run picks a fresh one (`FC_SEED`) and five times
+#   the cases, and fast-check prints the seed and the shrunk counterexample
+#   on a failure (see tests/property/fast-check.ts).
+# - Stale shard timings. The integration reports of this run are merged into
+#   a regenerated `tests/durations/integration.json`, uploaded as an
+#   artifact for a maintainer to commit when the shards drift apart.
+#
+# Not a gate: nothing here blocks a merge. A red run is an issue to open.
+on:
+  schedule:
+    - cron: "41 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    name: unit (shuffled)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:generate
+
+      - name: Cache Playwright headless shell
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-shell-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-shell-${{ runner.os }}-
+
+      - run: pnpm exec playwright install --only-shell chromium
+
+      - name: Pick the seeds
+        run: |
+          echo "TEST_SEED=$(date +%s)" >> "$GITHUB_ENV"
+          echo "FC_SEED=$(( $(date +%s%N) % 2147483647 ))" >> "$GITHUB_ENV"
+
+      - name: Unit tests, shuffled
+        env:
+          FC_NUM_RUNS: "500"
+        run: |
+          echo "Order seed ${TEST_SEED}, property seed ${FC_SEED}" | tee -a "$GITHUB_STEP_SUMMARY"
+          pnpm exec vitest run --sequence.shuffle --sequence.seed="${TEST_SEED}" \
+            --reporter=default --reporter=json --outputFile.json=unit-report.json
+
+      - name: Upload the timing report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nightly-unit-report
+          path: unit-report.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    name: integration shard ${{ matrix.shard }}/4 (shuffled)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:generate
+
+      # One seed per run, shared by the shards through the run id, so every
+      # shard shuffles the same way and a failure names one seed to replay.
+      - name: Pick the seeds
+        run: |
+          echo "TEST_SEED=${{ github.run_id }}" >> "$GITHUB_ENV"
+          echo "FC_SEED=$(( ${{ github.run_id }} % 2147483647 ))" >> "$GITHUB_ENV"
+
+      - name: Integration tests, shuffled
+        env:
+          HEALTHLOG_INTEGRATION_WORKERS: "3"
+          FC_NUM_RUNS: "100"
+          # Quoted for the reason given in integration.yml.
+          API_TOKEN_HMAC_KEY: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+          ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+          SESSION_SECRET: "integration-tests"
+        run: |
+          echo "Order seed ${TEST_SEED}, property seed ${FC_SEED}" | tee -a "$GITHUB_STEP_SUMMARY"
+          pnpm exec vitest run --config vitest.integration.config.mts \
+            --shard=${{ matrix.shard }}/4 \
+            --sequence.shuffle --sequence.seed="${TEST_SEED}" \
+            --reporter=default --reporter=json \
+            --outputFile.json=integration-report-${{ matrix.shard }}.json
+
+      - name: Upload the timing report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: nightly-integration-report-${{ matrix.shard }}
+          path: integration-report-${{ matrix.shard }}.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Merge the timings of this run into fresh timing files. Uploaded, not
+  # committed: the workflow has read-only access, and a maintainer decides
+  # whether the drift is worth a commit.
+  durations:
+    runs-on: ubuntu-24.04
+    needs: [unit, integration]
+    if: always()
+    timeout-minutes: 10
+    name: regenerate shard timings
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: nightly-*-report*
+          path: reports
+
+      - name: Regenerate
+        run: |
+          shopt -s nullglob
+          integration=(reports/nightly-integration-report-*/*.json)
+          unit=(reports/nightly-unit-report/*.json)
+          if [ ${#integration[@]} -gt 0 ]; then
+            node scripts/test-durations.mjs integration "${integration[@]}"
+          fi
+          if [ ${#unit[@]} -gt 0 ]; then
+            node scripts/test-durations.mjs unit "${unit[@]}"
+          fi
+          git diff --stat -- tests/durations | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-durations
+          path: tests/durations/*.json
+          retention-days: 14
