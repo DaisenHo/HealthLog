@@ -48,6 +48,7 @@ import {
   formattingContract,
 } from "./shared-contracts";
 import { userDayKey } from "@/lib/tz/format";
+import { INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK } from "./insights-reply-footers";
 
 /**
  * Stable identifier for the active system prompt revision.
@@ -982,23 +983,9 @@ const SYSTEM_PROMPT_DE = composeInsightPrompt("de");
  * enum values stay in lowercase EN per the matrix's contract_enums
  * pin. DE keeps the hand-curated body (two-year calibration
  * reference). On any matrix-load failure the dispatcher falls back to
- * the W9e EN-body-plus-footer path so the surface stays functional.
- */
-const INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK: Record<
-  Exclude<Locale, "de" | "en">,
-  string
-> = {
-  fr: "\n\nREPLY LANGUAGE: render all user-facing strings in French. Use natural French health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
-  es: "\n\nREPLY LANGUAGE: render all user-facing strings in Spanish (peninsular preferred). Use natural Spanish health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
-  it: "\n\nREPLY LANGUAGE: render all user-facing strings in Italian. Use natural Italian health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
-  pl: "\n\nREPLY LANGUAGE: render all user-facing strings in Polish. Use natural Polish health vocabulary with formal Pan/Pani register for medical-adjacent topics. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
-  nl: "\n\nREPLY LANGUAGE: render all user-facing strings in Dutch, in the informal je/jij register throughout (never formal u). Use natural Dutch health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
-  ko: "\n\nREPLY LANGUAGE: render all user-facing strings in Korean, in the 해요체 register throughout (never 합쇼체 or plain 한다체). Use natural Korean health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
-  "pt-BR":
-    "\n\nREPLY LANGUAGE: render all user-facing strings in Brazilian Portuguese (pt-BR, never European Portuguese), addressing the user as você throughout. Use natural Brazilian health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
-};
-
-/**
+ * the W9e EN-body-plus-footer path so the surface stays functional. The
+ * footers live in `insights-reply-footers.ts`.
+ *
  * Returns the active scope-hardened system prompt for a given locale.
  * Consumed by the comprehensive generation path.
  */
