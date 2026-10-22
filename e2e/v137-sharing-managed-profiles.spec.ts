@@ -1,5 +1,7 @@
 import type { Page } from "@playwright/test";
 
+import { MANAGED_OAUTH_PROVIDERS } from "@/lib/integrations/oauth-kit/managed-provider";
+
 import { expect, test } from "./setup/test";
 import {
   E2E_LEVEL_RECORDS,
@@ -581,7 +583,7 @@ test.describe.serial("scoped sharing browser journeys", () => {
     await leaveRecord(page);
   });
 
-  test("[J2-manage-edits-without-settings] keeps managed Settings on the active record and integrations status-only", async ({
+  test("[J2-manage-edits-without-settings] keeps managed Settings on the active record and connects integrations for it", async ({
     page,
   }) => {
     const record = E2E_LEVEL_RECORDS.find(
@@ -628,22 +630,40 @@ test.describe.serial("scoped sharing browser journeys", () => {
     );
     await expect(integrations).toBeVisible();
     await expect(integrations).toHaveAttribute("data-record-id", accountId);
-    // Read-only: the shared integration cards render, but nothing on them
-    // acts on a provider. The only buttons are each card's own "details for a
-    // bug report" toggle and its copy button.
+    // A guardian holds MANAGE on the profile, so each OAuth provider's card
+    // carries one control, connect, and says whose record it connects for.
+    // Fitbit takes no new connections and Nightscout is not an OAuth flow, so
+    // those two stay status-only. No card takes typed input: provider
+    // credentials and sync settings stay with the guardian's own Settings.
     await expect(
       integrations.locator('[data-slot="integration-card"]'),
     ).toHaveCount(8);
-    await expect(
-      integrations.locator(
-        '[data-slot="integration-primary-action"], [data-slot="integration-menu-trigger"], input, select, textarea',
-      ),
-    ).toHaveCount(0);
+    for (const provider of MANAGED_OAUTH_PROVIDERS) {
+      const card = integrations.getByTestId(`managed-integration-${provider}`);
+      await expect(
+        card.getByTestId(`managed-integration-${provider}-connect`),
+      ).toHaveText(`Connect for ${record.username}`);
+      await expect(
+        card.locator('[data-slot="managed-integration-for"]'),
+      ).toHaveText(`Connects for ${record.username}`);
+    }
     await expect(
       integrations.locator(
         'button:not([data-slot="integration-details-toggle"]):not([data-slot="integration-diagnostics-copy"])',
       ),
-    ).toHaveCount(0);
+    ).toHaveCount(MANAGED_OAUTH_PROVIDERS.length);
+    for (const provider of ["fitbit", "nightscout"]) {
+      await expect(
+        integrations
+          .getByTestId(`managed-integration-${provider}`)
+          .locator(
+            'button:not([data-slot="integration-details-toggle"]):not([data-slot="integration-diagnostics-copy"])',
+          ),
+      ).toHaveCount(0);
+    }
+    await expect(integrations.locator("input, select, textarea")).toHaveCount(
+      0,
+    );
 
     await page.goBack();
     await expect(profile).toHaveAttribute("data-record-id", accountId);
@@ -654,6 +674,38 @@ test.describe.serial("scoped sharing browser journeys", () => {
     await leaveRecord(page);
     await page.goto("/measurements");
     await expect(banner).toHaveCount(0);
+  });
+
+  test("[J2-manage-edits-without-settings] keeps integrations shut for a view or add grant", async ({
+    page,
+  }) => {
+    // The connect controls above are MANAGE-only. A view or view-and-add grant
+    // gets no integration surface at all, and the connect route refuses it.
+    for (const access of ["READ", "WRITE"] as const) {
+      const fenceHeaders = trackFenceAssertion(page);
+      const record = E2E_LEVEL_RECORDS.find(
+        (candidate) => candidate.access === access,
+      );
+      if (!record) throw new Error(`${access} fixture is missing`);
+      await openRecord(page, record.username);
+
+      await page.goto("/settings/integrations");
+      await expect(
+        page.locator('[data-slot="shared-record-unavailable"]'),
+      ).toBeVisible();
+      await expect(page.locator('[data-slot="integration-card"]')).toHaveCount(
+        0,
+      );
+      const connectStatus = await page.evaluate(async (headers) => {
+        const response = await fetch(
+          "/api/record-settings/integrations/withings/connect",
+          { method: "POST", headers },
+        );
+        return response.status;
+      }, fenceHeaders());
+      expect(connectStatus).toBe(403);
+      await leaveRecord(page);
+    }
   });
 
   test("[J1-adult-levels-lifecycle] refuses direct ungranted routes before coach reads start", async ({
