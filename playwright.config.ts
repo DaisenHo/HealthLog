@@ -308,18 +308,24 @@ export default defineConfig({
         colorScheme: "dark",
       },
     },
-    {
-      // The bottom sheet's drag, on the engine it is for: iOS Safari is
-      // WebKit, and Chromium's touch scrolling and pointer capture behave
-      // differently enough that a pass there proves little about an iPhone.
-      // One spec only, so the extra browser costs the shards seconds.
-      name: "webkit-iphone",
-      testMatch: ["bottom-sheet.spec.ts"],
-      use: {
-        ...devices["iPhone 13"],
-        colorScheme: "dark",
-      },
-    },
+    // The bottom sheet's drag, on the engine it is for: iOS Safari is
+    // WebKit, and Chromium's touch scrolling and pointer capture behave
+    // differently enough that a pass there proves little about an iPhone.
+    // CI runs it in its own job inside the Playwright image, where WebKit's
+    // system libraries are already present; the Chromium shards set
+    // E2E_SKIP_WEBKIT so they neither install WebKit nor pick the spec up.
+    ...(process.env.E2E_SKIP_WEBKIT
+      ? []
+      : [
+          {
+            name: "webkit-iphone",
+            testMatch: ["bottom-sheet.spec.ts"],
+            use: {
+              ...devices["iPhone 13"],
+              colorScheme: "dark" as const,
+            },
+          },
+        ]),
   ],
 
   // Spin up the production build for E2E. `pnpm build` is run

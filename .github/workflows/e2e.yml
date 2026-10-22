@@ -56,6 +56,9 @@ jobs:
       AUTH_RP_ORIGIN: http://localhost:3000
       SESSION_COOKIE_SECURE: "false"
       NODE_ENV: production
+      # WebKit runs in the `webkit` job below; installing its ~180 system
+      # packages here once stalled a shard past its 30-minute cap.
+      E2E_SKIP_WEBKIT: "1"
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -81,9 +84,7 @@ jobs:
           restore-keys: |
             playwright-${{ runner.os }}-
 
-      # WebKit for the one phone spec that needs Safari's engine
-      # (`bottom-sheet.spec.ts`, the `webkit-iphone` project).
-      - run: pnpm exec playwright install --with-deps chromium webkit
+      - run: pnpm exec playwright install --with-deps chromium
 
       # `pnpm build` (not bare `next build`): the prebuild hook generates
       # the versioned service-worker stamp AND the static i18n catalog
@@ -126,19 +127,114 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+  # The Playwright image must carry the browsers of the exact Playwright the
+  # lockfile resolves, or the run refuses them. Read the version from the
+  # lockfile so a dependency bump moves the image with it.
+  playwright-version:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: pnpm-lock.yaml
+          sparse-checkout-cone-mode: false
+      - id: read
+        run: |
+          version=$(grep -m1 -E "^  playwright-core@[0-9]" pnpm-lock.yaml | sed -E "s/^  playwright-core@([0-9.]+):.*/\1/")
+          if [ -z "$version" ]; then echo "playwright-core not found in pnpm-lock.yaml"; exit 1; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  # The WebKit spec (`bottom-sheet.spec.ts`, project `webkit-iphone`) in
+  # Microsoft's Playwright image, which ships WebKit with its system
+  # libraries, so nothing is installed from apt at run time.
+  webkit:
+    runs-on: ubuntu-24.04
+    needs: playwright-version
+    timeout-minutes: 30
+    name: e2e webkit
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-noble
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: healthlog
+          POSTGRES_PASSWORD: healthlog
+          POSTGRES_DB: healthlog
+        options: >-
+          --health-cmd "pg_isready -U healthlog"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Inside a job container the service is reached by its name.
+      DATABASE_URL: postgresql://healthlog:healthlog@postgres:5432/healthlog?schema=public
+      ENCRYPTION_KEYS: '{"v1":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'
+      ENCRYPTION_ACTIVE_KEY_ID: v1
+      API_TOKEN_HMAC_KEY: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      AUTH_RP_NAME: HealthLog
+      AUTH_RP_ID: localhost
+      AUTH_RP_ORIGIN: http://localhost:3000
+      SESSION_COOKIE_SECURE: "false"
+      NODE_ENV: production
+      HOME: /root
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm db:generate
+
+      - run: pnpm db:migrate:deploy
+
+      - run: NODE_OPTIONS=--max-old-space-size=8192 pnpm build
+
+      - run: pnpm exec playwright test --project=webkit-iphone
+        env:
+          E2E_BASE_URL: http://localhost:3000
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report-webkit
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload Playwright JSON report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-json-shard-webkit
+          path: playwright-json/results.json
+          retention-days: 7
+          if-no-files-found: error
+
   # Branch protection requires a check named exactly "e2e". This job carries
-  # that name and answers for both shards: it fails when any shard failed or
-  # was cancelled, so a half-green matrix cannot satisfy the gate.
+  # that name and answers for every shard and the WebKit job: it fails when
+  # any of them failed or was cancelled, so a half-green run cannot satisfy
+  # the gate.
   e2e:
     runs-on: ubuntu-24.04
-    needs: shard
+    needs: [shard, webkit]
     if: always()
     timeout-minutes: 5
     steps:
       - name: Every shard finished green
         run: |
-          if [ "${{ needs.shard.result }}" != "success" ]; then
-            echo "shard result: ${{ needs.shard.result }}"
+          if [ "${{ needs.shard.result }}" != "success" ] || [ "${{ needs.webkit.result }}" != "success" ]; then
+            echo "shard result: ${{ needs.shard.result }}, webkit result: ${{ needs.webkit.result }}"
             exit 1
           fi
 
