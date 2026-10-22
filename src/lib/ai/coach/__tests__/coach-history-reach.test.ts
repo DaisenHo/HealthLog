@@ -21,9 +21,17 @@ vi.mock("@/lib/tz/resolver", () => ({
   resolveUserTimezone: () => Promise.resolve("UTC"),
 }));
 
+import { locales } from "@/lib/i18n/config";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import {
+  LAB_HISTORY_MAX_YEARS,
+  LAB_HISTORY_RECENT_POINTS,
+} from "@/lib/ai/coach/labs-snapshot";
 import {
   COACH_ALL_TIME_TABLE_DAYS,
   COACH_DAILY_DETAIL_DAYS,
+  COACH_LAB_HISTORY_YEARS,
+  COACH_LAB_RECENT_POINTS,
   COACH_HISTORY_WINDOWS,
   HISTORY_REACH_DAYS,
   UNBOUNDED_REACH,
@@ -122,12 +130,42 @@ describe("the numbers the settings text states", () => {
     });
     expect(lookbackText("lastYear").detailParams).toEqual({ months: 12 });
     expect(lookbackText("allTime")).toEqual({
-      // "12 months in detail, every lab result": the option says what it
+      // "12 months in detail, longer for labs": the option says what it
       // reads, not "All" (#1263).
       optionParams: { months: 12 },
       detailKey: "detailAll",
-      detailParams: { dailyMonths: 12, years: 10 },
+      detailParams: { dailyMonths: 12, years: 10, labRecent: 5, labYears: 10 },
     });
+  });
+
+  it("states the lab history the named-marker read actually carries", () => {
+    expect(COACH_LAB_RECENT_POINTS).toBe(LAB_HISTORY_RECENT_POINTS);
+    expect(COACH_LAB_HISTORY_YEARS).toBe(LAB_HISTORY_MAX_YEARS);
+  });
+
+  it("words the no-limit detail as a complete sentence that claims no more than is read", () => {
+    const { detailParams } = lookbackText("allTime");
+    for (const locale of locales) {
+      const { t } = getServerTranslator(locale);
+      const option = t("insights.coach.lookback.option.allTime", {
+        months: 12,
+      });
+      const detail = t("insights.coach.lookback.detailAll", detailParams);
+      // Every number reaches the sentence, none stays a raw placeholder.
+      expect(detail, locale).not.toMatch(/\{\w+\}/);
+      for (const n of ["12", "10", "5"]) expect(detail, locale).toContain(n);
+      // Ends as a sentence, not on a dangling clause.
+      expect(detail.trim(), locale).toMatch(/[.。]$|요\.?$/);
+      // "every lab result" was a claim the bounded history does not keep.
+      expect(`${option} ${detail}`, locale).not.toMatch(
+        /every lab|all lab|alle Laborwerte|toutes les analyses|todos los análisis|tutti gli esami|wszystkie wyniki|모든 검사|alle labuitslagen|todos os exames/i,
+      );
+    }
+    const de = getServerTranslator("de").t(
+      "insights.coach.lookback.detailAll",
+      detailParams,
+    );
+    expect(de).toContain("pro Jahr zusammengefasst");
   });
 });
 

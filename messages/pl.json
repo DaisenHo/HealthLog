@@ -3231,11 +3231,11 @@
           "last30days": "{days} dni",
           "last90days": "{days} dni",
           "lastYear": "{months} miesięcy",
-          "allTime": "{months} miesięcy szczegółowo, wszystkie wyniki badań"
+          "allTime": "{months} miesięcy szczegółowo, wyniki badań dłużej"
         },
         "detailDays": "Coach nie czyta niczego starszego niż {days} dni, w żadnej odpowiedzi.",
         "detailMonths": "Coach nie czyta niczego starszego niż {months} miesięcy, w żadnej odpowiedzi.",
-        "detailAll": "Wszystko, co zostało zapisane: {dailyMonths} miesięcy z dokładnością do dnia, starsze pomiary jako wartości miesięczne do {years} lat wstecz oraz wszystkie wyniki badań, starsze podsumowane rocznie.",
+        "detailAll": "Bez limitu Coach czyta {dailyMonths} miesięcy pomiarów z dokładnością do dnia, a starsze pomiary jako wartości miesięczne do {years} lat wstecz. Z wyników badań czyta ostatnią wartość ostatnio mierzonych markerów, a dla markera, o który pytasz, także {labRecent} poprzednich wyników; starsze są podsumowane rocznie do {labYears} lat wstecz, a wcześniejsze lata tylko zliczane.",
         "note": "Twój profil, obecne leki, trwająca choroba i nadchodzące wizyty pozostają widoczne; podsumowania wymagające dłuższej historii są skracane lub pomijane. Odpowiedzi, których Coach udzielił wcześniej w starszych rozmowach, mogą nadal przytaczać starsze wartości."
       },
       "showConversations": "Pokaż rozmowy",

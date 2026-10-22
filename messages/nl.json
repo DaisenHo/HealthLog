@@ -3231,11 +3231,11 @@
           "last30days": "{days} dagen",
           "last90days": "{days} dagen",
           "lastYear": "{months} maanden",
-          "allTime": "{months} maanden in detail, alle labuitslagen"
+          "allTime": "{months} maanden in detail, labuitslagen langer"
         },
         "detailDays": "De Coach leest in geen enkel antwoord iets dat ouder is dan {days} dagen.",
         "detailMonths": "De Coach leest in geen enkel antwoord iets dat ouder is dan {months} maanden.",
-        "detailAll": "Alles wat je hebt vastgelegd: {dailyMonths} maanden per dag, oudere metingen als maandwaarden tot {years} jaar terug en alle labuitslagen, oudere per jaar samengevat.",
+        "detailAll": "Zonder grens leest de Coach {dailyMonths} maanden aan metingen per dag en oudere metingen als maandwaarden tot {years} jaar terug. Van labuitslagen leest hij de laatste waarde van de meest recent gemeten markers en, voor een marker waar je naar vraagt, ook de {labRecent} vorige uitslagen; oudere worden per jaar samengevat tot {labYears} jaar terug, nog oudere jaren alleen geteld.",
         "note": "Je profiel, je huidige medicatie, een lopende ziekte en komende afspraken blijven zichtbaar; samenvattingen die meer geschiedenis nodig hebben, worden ingekort of weggelaten. Antwoorden die de Coach eerder in oudere gesprekken gaf, kunnen nog oudere waarden noemen."
       },
       "showConversations": "Gesprekken tonen",

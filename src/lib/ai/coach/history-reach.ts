@@ -163,8 +163,17 @@ export const COACH_DAILY_DETAIL_DAYS = 365;
 /** How far back an all-time table reaches, as monthly values. */
 export const COACH_ALL_TIME_TABLE_DAYS = 3_650;
 
-// Lab results are not held to a window of their own: without a limit the
-// Coach reads all of them, summarised per marker (`labs-snapshot.ts`, #1263).
+// Lab results are not held to a window of their own (#1263). Without a limit
+// the snapshot carries the latest value of the most recently measured
+// markers; a read for one named marker adds its previous results in full and
+// older ones summarised per year (`labs-snapshot.ts`). The two numbers the
+// sentence states are pinned to that module's constants by the test.
+
+/** Earlier results a named-marker read lists in full (`LAB_HISTORY_RECENT_POINTS`). */
+export const COACH_LAB_RECENT_POINTS = 5;
+
+/** Years of per-year lab summaries before years are only counted (`LAB_HISTORY_MAX_YEARS`). */
+export const COACH_LAB_HISTORY_YEARS = 10;
 
 /** The i18n key and parameters describing one lookback option. */
 export function lookbackText(window: CoachDefaultWindow): {
@@ -176,13 +185,15 @@ export function lookbackText(window: CoachDefaultWindow): {
   if (days === null) {
     const dailyMonths = Math.round(COACH_DAILY_DETAIL_DAYS / 30.4);
     // The option names what "no limit" actually reads (#1263): the dense
-    // readings in daily detail for a year, the lab results in full.
+    // readings in daily detail for a year, the lab results further back.
     return {
       optionParams: { months: dailyMonths },
       detailKey: "detailAll",
       detailParams: {
         dailyMonths,
         years: Math.round(COACH_ALL_TIME_TABLE_DAYS / 365),
+        labRecent: COACH_LAB_RECENT_POINTS,
+        labYears: COACH_LAB_HISTORY_YEARS,
       },
     };
   }
