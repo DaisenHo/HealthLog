@@ -28,6 +28,7 @@ import {
   queryKeys,
 } from "@/lib/query-keys";
 import { assertRecordSettingsResponseForRecord } from "@/lib/record-settings/response";
+import { accountLabel } from "@/lib/sharing/account-access-view";
 
 type ManagedIntegrationKey = keyof typeof INTEGRATION_DISPLAY_NAMES;
 
@@ -90,7 +91,9 @@ export function ManagedIntegrationStatus() {
     enabled: activeRecord?.recordKind === "managed" && recordId !== null,
   });
 
-  const recordName = activeRecord?.displayName ?? "";
+  // Named the way the switcher and the banner name it: a profile created
+  // without a display name still has a name to connect for.
+  const recordName = activeRecord ? accountLabel(activeRecord) : "";
 
   const invalidateStatus = () =>
     queryClient.invalidateQueries({
@@ -248,10 +251,7 @@ export function ManagedIntegrationStatus() {
           <ExternalLink className="size-3" aria-hidden="true" />
         </a>
       </p>
-      <ul
-        className="space-y-4"
-        aria-label={activeRecord?.displayName ?? undefined}
-      >
+      <ul className="space-y-4" aria-label={recordName || undefined}>
         {entries.map((entry) => (
           <li key={entry.integration}>
             <IntegrationCard

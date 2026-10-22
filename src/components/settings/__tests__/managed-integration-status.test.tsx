@@ -7,17 +7,19 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 
+const NAMED_RECORD = {
+  accountId: "record-1",
+  recordKind: "managed",
+  username: "managed-1",
+  displayName: "Managed record" as string | null,
+  fullName: null as string | null,
+};
+let activeRecord = NAMED_RECORD;
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
     user: {
       id: "guardian",
-      accountAccess: {
-        active: {
-          accountId: "record-1",
-          recordKind: "managed",
-          displayName: "Managed record",
-        },
-      },
+      accountAccess: { active: activeRecord },
     },
     isAuthenticated: true,
     isLoading: false,
@@ -78,6 +80,7 @@ describe("<ManagedIntegrationStatus>", () => {
   beforeEach(() => {
     payload = undefined;
     loading = false;
+    activeRecord = NAMED_RECORD;
   });
 
   it("renders one shared card per provider from health, with controls on the OAuth ones", () => {
@@ -138,6 +141,16 @@ describe("<ManagedIntegrationStatus>", () => {
     expect(html).toContain(
       'href="https://docs.healthlog.dev/self-hosting/account-sharing#records-with-no-login"',
     );
+  });
+
+  it("names a profile without a display name by its username", () => {
+    activeRecord = { ...NAMED_RECORD, displayName: null };
+    payload = withHealth({});
+    const html = render();
+    expect(html.match(/Connects for managed-1</g)).toHaveLength(6);
+    expect(html.match(/>Connect for managed-1</g)).toHaveLength(6);
+    expect(html).not.toMatch(/Connects? for </);
+    expect(html).toContain('aria-label="managed-1"');
   });
 
   it("paints the cards while loading without claiming a state", () => {
