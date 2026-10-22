@@ -3,6 +3,8 @@ import { dirname, resolve } from "node:path";
 import { availableParallelism } from "node:os";
 import { fileURLToPath } from "node:url";
 
+import { createDurationSequencer } from "./tests/durations/sequencer";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -49,8 +51,17 @@ export default defineConfig({
     pool: "forks",
     fileParallelism: true,
     maxWorkers: integrationWorkers(),
-    // Order dependence is looked for on purpose by shuffling file order
-    // (`--sequence.shuffle`), not by keeping the suite serial.
+    // `--shard` deals files out by measured duration (CI runs four shards), and
+    // files start longest first so a parallel run does not end on one slow
+    // file. Order dependence is surfaced on purpose by the nightly shuffled
+    // run (`.github/workflows/test-nightly.yml`), which passes
+    // `--sequence.shuffle` and prints the seed it used.
+    sequence: {
+      sequencer: createDurationSequencer(
+        "tests/durations/integration.json",
+        0.6,
+      ),
+    },
     // v1.4.37 — switched from `isolate: false` to `isolate: true`.
     // The previous setting reused the module graph across files inside
     // one fork; mock declarations (`vi.mock("@/lib/notifications/...")`,
