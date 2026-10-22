@@ -282,21 +282,30 @@ describe("acting-account resolver — the decision is never cached", () => {
     const owner = await makeUser("owner");
     const delegate = await makeUser("delegate");
     await seedWeight(owner.id, 81);
+    // Far enough ahead that accepting, signing in and switching cannot
+    // outrun it on a loaded runner, and well inside the session's minute.
+    const expiresAt = new Date(Date.now() + 30_000);
     const invited = await inviteGrant({
       grantorId: owner.id,
       granteeId: delegate.id,
       access: "READ",
       scope: null,
-      expiresAt: new Date(Date.now() + 400),
+      expiresAt,
     });
     await acceptGrant({ grantId: invited.id, granteeId: delegate.id });
     const session = await signIn(delegate.id);
     await switchTo(session.id, owner.id);
 
     expect((await call()).status).toBe(200);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    // The row did not change. Only the clock the resolver reads moved.
-    expect((await call()).status).toBe(403);
+    // The row does not change. Only the clock the resolver reads moves, to
+    // the instant the grant names: the first one it no longer holds.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(expiresAt);
+      expect((await call()).status).toBe(403);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("refuses the moment the grant is only pending", async () => {

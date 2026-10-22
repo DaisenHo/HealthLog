@@ -44,6 +44,41 @@ vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
 }));
 
+/**
+ * The start-up probe is bounded in time on purpose: ten seconds in all and
+ * two per query, so a host with a huge table still starts. Those bounds are
+ * not what this file asks about. On a loaded runner a probe query can take
+ * longer than two seconds, and the check then answers "inconclusive"
+ * (`incomplete`) where the data says "mismatch", which is the right answer
+ * for a slow host and the wrong one for a test of the verdicts. So the check
+ * runs here with time to finish, unless a case passes its own budget or
+ * sampler: the cases that test the bounds themselves do.
+ */
+vi.mock("@/lib/crypto/canary", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/crypto/canary")>();
+  return {
+    ...actual,
+    checkEncryptionKeyCanaries: (
+      client: Parameters<typeof actual.checkEncryptionKeyCanaries>[0],
+      options: Parameters<typeof actual.checkEncryptionKeyCanaries>[1] = {},
+    ) => {
+      let sampler;
+      try {
+        sampler = actual.sqlColumnSampler(client, {
+          statementTimeoutMs: 60_000,
+        });
+      } catch {
+        // A client the sampler cannot use: the check reports that itself.
+      }
+      return actual.checkEncryptionKeyCanaries(client, {
+        probeBudgetMs: 120_000,
+        ...(sampler ? { sampler } : {}),
+        ...options,
+      });
+    },
+  };
+});
+
 import {
   _resetCryptoCacheForTests,
   encrypt,
