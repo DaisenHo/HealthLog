@@ -51,7 +51,7 @@ const DAY_COUNT_NAME = /day.?of.?cycle|cycleday|cyclerun|runlength/i;
  * calendar's types, its phase names, or the verdict's own fields, so nothing
  * that could actually commit the defect escapes by renaming one identifier.
  */
-const CYCLE_MARKERS = new Set([
+export const CYCLE_MARKERS: ReadonlySet<string> = new Set([
   "CalendarDay",
   "CalendarResponse",
   "CyclePhase",
@@ -244,6 +244,16 @@ function isSumLike(
       );
     }
   }
+  return false;
+}
+
+/**
+ * Whether a file's text could speak the cycle's vocabulary at all: every
+ * marker the parse below looks for is also a substring of the text, so a
+ * file holding none of them needs no parse.
+ */
+export function mayBeCycleContext(text: string): boolean {
+  for (const marker of CYCLE_MARKERS) if (text.includes(marker)) return true;
   return false;
 }
 

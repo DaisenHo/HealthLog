@@ -305,11 +305,19 @@ function suffixBaseMatches(base: string, ref: Reference): boolean {
 
 export function isReferenced(leaf: string, ref: Reference): boolean {
   if (ref.literalKeys.has(leaf)) return true;
-  for (const ck of ref.literalKeys) {
-    if (leaf.startsWith(`${ck}.`)) return true;
-  }
-  for (const base of ref.dottedBases) {
-    if (leaf === base || leaf.startsWith(`${base}.`)) return true;
+  // A literal key or a dotted base covers `leaf` when it IS one of the
+  // leaf's dotted ancestors (or, for a base, the leaf itself), so the leaf's
+  // own ancestors are looked up rather than every key in the sets scanned.
+  if (ref.dottedBases.has(leaf)) return true;
+  for (
+    let dot = leaf.indexOf(".");
+    dot !== -1;
+    dot = leaf.indexOf(".", dot + 1)
+  ) {
+    const ancestor = leaf.slice(0, dot);
+    if (ref.literalKeys.has(ancestor) || ref.dottedBases.has(ancestor)) {
+      return true;
+    }
   }
   for (const pre of ref.concatPrefixes) {
     if (leaf.startsWith(pre)) return true;

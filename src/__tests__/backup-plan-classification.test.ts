@@ -271,10 +271,17 @@ function delegateName(model: string): string {
  * route outright: the guard stayed green on all twelve checks, because the
  * cycle file was answering a question about a different table.
  */
+const parentsCache = new Map<
+  string,
+  Array<{ field: string; parent: string }>
+>();
+
 function relationParents(model: string): Array<{
   field: string;
   parent: string;
 }> {
+  const cached = parentsCache.get(model);
+  if (cached) return cached;
   const found: Array<{ field: string; parent: string }> = [];
   for (const [parent, body] of modelBodies()) {
     for (const line of body.split("\n")) {
@@ -284,6 +291,7 @@ function relationParents(model: string): Array<{
       }
     }
   }
+  parentsCache.set(model, found);
   return found;
 }
 
@@ -295,6 +303,8 @@ const WRITE_RELATION_OPS = /\{\s*create\b/;
 /** Does `source` call a matching operation on `model`'s own Prisma delegate? */
 function callsDelegate(source: string, model: string, ops: RegExp): boolean {
   const delegate = delegateName(model);
+  // The expression below names the delegate; a file without it cannot match.
+  if (!source.includes(delegate)) return false;
   for (const match of source.matchAll(
     new RegExp(`\\.${delegate}\\s*\\.\\s*(\\w+)`, "g"),
   )) {
@@ -304,7 +314,11 @@ function callsDelegate(source: string, model: string, ops: RegExp): boolean {
 }
 
 /** Every model a relation field of this name points at, across the schema. */
+const targetsCache = new Map<string, Set<string>>();
+
 function targetsOfRelationField(field: string): Set<string> {
+  const cached = targetsCache.get(field);
+  if (cached) return cached;
   const targets = new Set<string>();
   for (const [, body] of modelBodies()) {
     for (const line of body.split("\n")) {
@@ -312,6 +326,7 @@ function targetsOfRelationField(field: string): Set<string> {
       if (match && match[1] === field) targets.add(match[2]);
     }
   }
+  targetsCache.set(field, targets);
   return targets;
 }
 
@@ -337,6 +352,7 @@ function touches(
     const source = flat(file);
     if (callsDelegate(source, model, delegateOps)) return true;
     return relationParents(model).some(({ field, parent }) => {
+      if (!source.includes(field)) return false;
       if (
         !new RegExp(`\\b${field}\\s*:\\s*(?:${relationOps.source})`).test(
           source,
