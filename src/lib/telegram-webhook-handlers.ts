@@ -37,6 +37,7 @@ import {
 // dose (the /add list, the "taken" keyword, the reminder buttons) leaves a
 // medication kept as a record out, as the web and the today list do.
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import { GREETING_WORDS, HELP_WORDS } from "@/lib/telegram-bare-words";
 
 /**
  * Telegram webhook update handlers, split out of
@@ -47,54 +48,6 @@ import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
  * mood / measurement helpers live here. The userId is always resolved
  * from the linked chat via `findTelegramUser` — never from the payload.
  */
-
-/* ──────────────────────────────────────────────────────────────────────────
- * Bare-word aliases.
- *
- * The bot's real commands are slash commands (`/help`, `/start`, `/add`) plus
- * the `taken <name>` text command, and `telegram.helpBody` documents exactly
- * those in all six bundles — none of that depends on the reader's language.
- * What did depend on it were the two undocumented courtesies below, which knew
- * English and German: "aide", "ayuda", "aiuto" and "pomoc" reached the intake
- * keyword instead, failed it, and the handler returned without replying at all.
- * Silence is the worst answer to someone asking for help.
- *
- * These are ordinary words, not app labels, so there is nothing in the bundles
- * to derive them from. They are matched on the FOLDED text so "cześć" and
- * "czesc" are one entry and a stray capital or accent cannot miss.
- * ────────────────────────────────────────────────────────────────────────── */
-
-/** "Help", in every language the app ships. */
-const HELP_WORDS: readonly string[] = [
-  "help",
-  "hilfe",
-  "aide",
-  "ayuda",
-  "aiuto",
-  "pomoc",
-  "ajuda",
-];
-
-/** Greetings the bot answers with a wave, in every language the app ships. */
-const GREETING_WORDS: readonly string[] = [
-  "hi",
-  "hello",
-  "hey",
-  "hallo",
-  "moin",
-  "bonjour",
-  "salut",
-  "hola",
-  "buenas",
-  "ciao",
-  "salve",
-  "czesc",
-  "witaj",
-  "dzien dobry",
-  "oi",
-  "ola",
-  "bom dia",
-];
 
 /**
  * True when the whole message is one of `words`. Folded on both sides, so the

@@ -566,6 +566,9 @@ describe("Telegram webhook — text-message dispatch", () => {
     ["ayuda", 213],
     ["aiuto", 214],
     ["Pomoc", 215],
+    ["hulp", 217],
+    ["도움말", 218],
+    ["Ajuda", 219],
   ])("answers the bare help word %s", async (word, updateId) => {
     const res = await POST(
       tgRequest({
@@ -602,6 +605,9 @@ describe("Telegram webhook — text-message dispatch", () => {
     ["Hola", 221],
     ["ciao", 222],
     ["cześć", 223],
+    ["Hoi", 224],
+    ["안녕하세요", 225],
+    ["Olá", 226],
   ])("answers the greeting %s", async (word, updateId) => {
     const res = await POST(
       tgRequest({
