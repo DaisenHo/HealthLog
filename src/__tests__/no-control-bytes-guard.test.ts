@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { walkSourceFiles } from "@/__tests__/helpers/source-files";
+import { readSourceText } from "./helpers/source-files";
 
 /**
  * No raw control byte in a source file, apart from tab, newline and carriage
@@ -28,7 +28,7 @@ describe("source files carry no raw control bytes", () => {
     expect(files.length).toBeGreaterThan(3000);
     const offenders: string[] = [];
     for (const file of files) {
-      const lines = readFileSync(join(src, file), "utf8").split("\n");
+      const lines = readSourceText(join(src, file)).split("\n");
       lines.forEach((line, i) => {
         if (CONTROL.test(line)) offenders.push(`${file}:${i + 1}`);
       });

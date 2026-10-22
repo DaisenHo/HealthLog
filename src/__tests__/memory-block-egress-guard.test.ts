@@ -18,18 +18,17 @@
  *
  * Every check is also run against a source broken on purpose.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const MEMORY = "lib/ai/coach/memory";
 
 function read(rel: string): string {
-  return readFileSync(join(SRC, rel), "utf8");
+  return readSourceText(join(SRC, rel));
 }
 
 function sourceFiles(): string[] {

@@ -19,12 +19,13 @@
  * hand-listed: the expected set is read out of the route tree on every run, so
  * the guard cannot fall behind the code it watches.
  */
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 import { buildOpenApiDocument } from "@/lib/openapi/registry";
+import { readSourceText } from "./helpers/source-files";
 
 const API_ROOT = join(process.cwd(), "src", "app", "api");
 
@@ -74,7 +75,7 @@ function idempotentOperationsFromSource(): Set<string> {
   const pattern =
     /export\s+const\s+(POST|PUT|PATCH|DELETE)\s*=\s*([\s\S]*?)(?=\n(?:export\s+const|export\s+async\s+function|$))/g;
   for (const file of routeFiles(API_ROOT)) {
-    const source = readFileSync(file, "utf8");
+    const source = readSourceText(file);
     if (!source.includes("withIdempotency")) continue;
     for (const match of source.matchAll(pattern)) {
       if (!/\bwithIdempotency\s*[(<]/.test(match[2])) continue;

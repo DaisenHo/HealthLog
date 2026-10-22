@@ -19,10 +19,11 @@
  * `RecurrenceContext` annotation is invisible here. Every medication path
  * today goes through one of the annotated builders below.
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { readSourceText } from "./helpers/source-files";
 
 const SRC = resolve(__dirname, "..");
 const ROOT = resolve(SRC, "..");
@@ -73,7 +74,7 @@ interface Builder {
 function builders(): Builder[] {
   const out: Builder[] = [];
   for (const file of sourceFiles(SRC)) {
-    const text = readFileSync(file, "utf8");
+    const text = readSourceText(file);
     for (const m of text.matchAll(DECLARATION)) {
       const open = m.index! + m[0].length - 1;
       out.push({

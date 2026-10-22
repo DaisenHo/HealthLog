@@ -65,7 +65,7 @@
  * different set of symbols and answers it from the AST, because a route
  * explaining in a comment why it is NOT delegable is a thing worth writing.
  */
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { join, sep } from "node:path";
 
 import ts from "typescript";
@@ -75,6 +75,7 @@ import { ENTIRE_RECORD, SHARE_DOMAINS } from "@/lib/sharing/scope";
 import type { ShareScope } from "@/lib/sharing/scope";
 
 import { ADMITTED_MUTATING_HANDLERS } from "../../tests/fixtures/v137/sharing-matrix";
+import { readSourceText } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -198,7 +199,7 @@ const textCache = new Map<string, string>();
 function read(rel: string): string {
   const cached = textCache.get(rel);
   if (cached !== undefined) return cached;
-  const text = readFileSync(join(SRC, rel), "utf8");
+  const text = readSourceText(join(SRC, rel));
   textCache.set(rel, text);
   return text;
 }

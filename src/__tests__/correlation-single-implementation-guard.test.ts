@@ -17,11 +17,14 @@
  * inline under another name slips it. Comments are stripped first; the
  * planted cases prove it fires.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { stripComments, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -56,14 +59,8 @@ describe("one Pearson correlation", () => {
   });
 
   it("both homes still hold their function", () => {
-    const engine = readFileSync(
-      join(SRC, "lib/insights/correlations.ts"),
-      "utf8",
-    );
-    const wrapper = readFileSync(
-      join(SRC, "lib/analytics/correlations.ts"),
-      "utf8",
-    );
+    const engine = readSourceText(join(SRC, "lib/insights/correlations.ts"));
+    const wrapper = readSourceText(join(SRC, "lib/analytics/correlations.ts"));
     expect(engine).toMatch(/export function pearson\s*\(/);
     expect(wrapper).toMatch(
       /export function significantPearsonCorrelation\s*\(/,
@@ -73,14 +70,12 @@ describe("one Pearson correlation", () => {
   it("no other file defines a Pearson coefficient or calls the deleted one", () => {
     // The homes match the definition matcher, so a matcher gone blind fails here.
     const definers = sourceFiles().filter((file) =>
-      PEARSON_DEFINITION.test(
-        stripComments(readFileSync(join(SRC, file), "utf8")),
-      ),
+      PEARSON_DEFINITION.test(stripComments(readSourceText(join(SRC, file)))),
     );
     expect(definers.length).toBeGreaterThanOrEqual(2);
 
     const offenders = sourceFiles().filter((file) => {
-      const code = stripComments(readFileSync(join(SRC, file), "utf8"));
+      const code = stripComments(readSourceText(join(SRC, file)));
       if (DELETED.test(code)) return true;
       return !HOMES.has(file) && PEARSON_DEFINITION.test(code);
     });

@@ -51,17 +51,114 @@
  * match. Every caller roots at `src/`, `e2e/` or a subtree of one.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, sep } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
+
+// ── The shared source index ────────────────────────────────────────────────
+//
+// The guards walk and read the same tree, and the guards project shares one
+// module graph per worker (`isolate: false`), so every walk and every read
+// below is memoised for the life of the worker: the tree is listed once per
+// top-level folder and each file is read once, however many guards ask. A
+// guard that walked `src/` and read every file again for each pattern it
+// tried ran for fifteen seconds; the same questions over the index take a
+// fraction of one.
+//
+// Only folders of the repository that do not change while tests run are
+// indexed (`INDEXED_ROOTS`). A walk or a read anywhere else (a temporary
+// fixture tree a test writes and rewrites) goes to the disk every time.
+
+const INDEXED_ROOTS = ["src", "e2e", "prisma"].map((dir) =>
+  resolve(process.cwd(), dir),
+);
+
+function indexedRootOf(path: string): string | null {
+  const absolute = resolve(path);
+  return (
+    INDEXED_ROOTS.find(
+      (root) => absolute === root || absolute.startsWith(`${root}${sep}`),
+    ) ?? null
+  );
+}
+
+const listingCache = new Map<string, string[]>();
+
+/** Every entry under `root`, posix-separated, sorted; memoised when indexed. */
+function listTree(root: string): string[] {
+  const absolute = resolve(root);
+  const anchor = indexedRootOf(absolute);
+  if (anchor === null) {
+    return readdirSync(absolute, { recursive: true })
+      .map((entry) => String(entry).split(sep).join("/"))
+      .sort();
+  }
+  let all = listingCache.get(anchor);
+  if (all === undefined) {
+    all = readdirSync(anchor, { recursive: true })
+      .map((entry) => String(entry).split(sep).join("/"))
+      .sort();
+    listingCache.set(anchor, all);
+  }
+  if (absolute === anchor) return all;
+  const prefix = `${relative(anchor, absolute).split(sep).join("/")}/`;
+  return all
+    .filter((rel) => rel.startsWith(prefix))
+    .map((rel) => rel.slice(prefix.length));
+}
+
+const textCache = new Map<string, string>();
+
+/**
+ * A repository file's text, read once per worker when it lies in an indexed
+ * folder. Use it in place of `readFileSync(path, "utf8")` for source the
+ * guard reads and never writes.
+ */
+export function readSourceText(path: string): string {
+  const absolute = resolve(path);
+  if (indexedRootOf(absolute) === null) return readFileSync(absolute, "utf8");
+  let text = textCache.get(absolute);
+  if (text === undefined) {
+    text = readFileSync(absolute, "utf8");
+    textCache.set(absolute, text);
+  }
+  return text;
+}
+
+/**
+ * The files under `root` (as `walkSourceFiles` lists them) whose text holds
+ * at least one of `markers`, with that text. The substring test runs before
+ * any regular expression or parse the caller applies, which is where most of
+ * a sweep's time used to go. The floor applies to the files walked, as in
+ * `walkSourceFiles`; a caller that expects matches states its own floor over
+ * the result.
+ */
+export function sourcesContaining(
+  root: string,
+  markers: string | readonly string[],
+  options: {
+    floor: number;
+    extensions?: readonly string[];
+    include?: (rel: string) => boolean;
+  },
+): Array<[rel: string, text: string]> {
+  const wanted = typeof markers === "string" ? [markers] : markers;
+  const out: Array<[string, string]> = [];
+  for (const rel of walkSourceFiles(root, options).filter(
+    options.include ?? (() => true),
+  )) {
+    const text = readSourceText(join(root, rel));
+    if (wanted.some((marker) => text.includes(marker))) out.push([rel, text]);
+  }
+  return out;
+}
 
 export function walkSourceFiles(
   root: string,
   options: { floor: number; extensions?: readonly string[] },
 ): string[] {
   const extensions = options.extensions ?? [".ts", ".tsx"];
-  const files = readdirSync(root, { recursive: true })
-    .map((entry) => String(entry).split(sep).join("/"))
-    .filter((rel) => extensions.some((ext) => rel.endsWith(ext)))
-    .sort();
+  const files = listTree(root).filter((rel) =>
+    extensions.some((ext) => rel.endsWith(ext)),
+  );
 
   if (files.length < options.floor) {
     throw new Error(
@@ -216,7 +313,7 @@ export function scanSourceMatches(
 
   const matches: SourceMatch[] = [];
   for (const file of files) {
-    const raw = readFileSync(join(root, file), "utf8");
+    const raw = readSourceText(join(root, file));
     const source = options.stripComments ? stripComments(raw) : raw;
     for (const m of source.matchAll(pattern)) {
       const line = source.slice(0, m.index).split("\n").length;
@@ -273,7 +370,7 @@ export function readSource(
         `readSourceFolder and a floor.`,
     );
   }
-  const text = readFileSync(path, "utf8");
+  const text = readSourceText(path);
   const lost = list.filter((anchor) => anchorCount(text, anchor) === 0);
   if (lost.length > 0) {
     throw new Error(
@@ -306,5 +403,5 @@ export function readSourceFolder(
     extensions: options.extensions,
   }).filter(options.include ?? (() => true));
   requireFloor(`readSourceFolder(${relDir})`, files, options.floor);
-  return files.map((rel) => [rel, readFileSync(join(root, rel), "utf8")]);
+  return files.map((rel) => [rel, readSourceText(join(root, rel))]);
 }

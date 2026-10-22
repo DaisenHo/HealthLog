@@ -20,9 +20,10 @@
  * loaded chunk may still carry zod.
  */
 import { describe, expect, it } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { dirname, join, normalize } from "node:path";
 import ts from "typescript";
+import { readSourceText } from "./helpers/source-files";
 
 const ROOT = join(__dirname, "..", "..");
 
@@ -90,7 +91,7 @@ function clientZodImports(entry: string): { file: string; path: string[] }[] {
     const [file, inClient] = stack.pop()!;
     const prior = seen.get(file);
     if (prior === true || (prior === false && !inClient)) continue;
-    const source = readFileSync(file, "utf8");
+    const source = readSourceText(file);
     const client = inClient || isClient(source);
     seen.set(file, client);
     walked += 1;
@@ -141,7 +142,7 @@ describe("client routes without the schema library", () => {
     // The schema module is zod by definition; walked as a client entry it
     // must be reported, or the walk above proves nothing.
     const probe = join(ROOT, "src/lib/validations/inbound-documents.ts");
-    const source = readFileSync(probe, "utf8");
+    const source = readSourceText(probe);
     expect(staticImports(source, probe).some((s) => s.startsWith("zod"))).toBe(
       true,
     );

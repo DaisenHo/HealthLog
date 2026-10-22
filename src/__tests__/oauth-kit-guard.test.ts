@@ -26,10 +26,10 @@
  * that stops matching fails instead of passing.
  */
 import { describe, expect, it } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -54,7 +54,7 @@ function productionFiles(): string[] {
 }
 
 function read(rel: string): string {
-  return readFileSync(join(process.cwd(), rel), "utf8");
+  return readSourceText(join(process.cwd(), rel));
 }
 
 describe("OAuth token lifecycle guard", () => {

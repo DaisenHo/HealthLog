@@ -35,10 +35,9 @@
  * allowlist. Both the walk and every matcher therefore assert a floor.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -151,7 +150,7 @@ function sourceFiles(): string[] {
 }
 
 function read(rel: string): string {
-  return readFileSync(join(SRC, rel), "utf8");
+  return readSourceText(join(SRC, rel));
 }
 
 /** Every environment variable shipped server code reads, however it reads it. */
@@ -175,7 +174,7 @@ function runtimeReads(): Set<string> {
  * repeating it.
  */
 function composeWhitelist(): Set<string> {
-  const compose = readFileSync(join(ROOT, "docker-compose.yml"), "utf8");
+  const compose = readSourceText(join(ROOT, "docker-compose.yml"));
   const keys = new Set<string>();
   for (const line of compose.split("\n")) {
     const m = line.match(/^\s{2,}([A-Z][A-Z0-9_]*):\s/);
