@@ -47,8 +47,16 @@
   size-adjust: 107.12%;
 }
 
-/* On body, where the next/font variable class used to set it. */
-body {
+/*
+ * On body, where the next/font variable class used to set it, and on the
+ * chart text-measurement host, which sits under <html> beside <body>
+ * (`src/components/charts/text-measurement-host.ts`). The host copies body's
+ * classes to measure in the app font; the variable class used to be one of
+ * them, so without this rule the host fell back to the default font and
+ * every axis label was sized in a font the chart did not draw in.
+ */
+body,
+[data-slot="chart-text-measurement-host"] {
   --font-sans: "Inter", "Inter Fallback";
 }
 

@@ -17,10 +17,10 @@
  * `<body>`, inside a `contain: strict` box, costs about 0.01 ms.
  *
  * So the span lives under `<html>`, next to `<body>`, inside a zero-size
- * contained host. The host copies `<body>`'s class list, which is where the
- * app font is set (`--font-sans` + `font-sans`), so every string measures in
- * the same font at the same size as before and the charts lay out exactly as
- * they did.
+ * contained host. The host copies `<body>`'s class list (`font-sans`), and
+ * `globals.css` defines the `--font-sans` stack on the host as on `<body>`,
+ * so every string measures in the same font at the same size as before and
+ * the charts lay out exactly as they did.
  */
 
 export const RECHARTS_MEASUREMENT_SPAN_ID = "recharts_measurement_span";
