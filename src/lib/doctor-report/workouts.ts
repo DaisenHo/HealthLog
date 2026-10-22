@@ -11,7 +11,10 @@
  * session two sources reported counts once.
  */
 import { prisma } from "@/lib/db";
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  canonicalWorkoutsInRange,
+  readWorkoutsAroundRange,
+} from "@/lib/workouts/canonical-read";
 import type { DoctorReportWorkouts } from "@/lib/doctor-report-types";
 
 /**
@@ -29,20 +32,25 @@ export async function loadReportWorkouts(params: {
   sourcePriorityJson: unknown;
 }): Promise<DoctorReportWorkouts | null> {
   const { userId, start, end, days, sourcePriorityJson } = params;
-  const rows = await prisma.workout.findMany({
-    where: { userId, startedAt: { gte: start, lte: end } },
-    orderBy: { startedAt: "asc" },
-    select: {
-      sportType: true,
-      startedAt: true,
-      durationSec: true,
-      source: true,
-      totalDistanceM: true,
-      totalEnergyKcal: true,
-      avgHeartRate: true,
-    },
-  });
-  const canonical = pickCanonicalWorkoutRows(rows, sourcePriorityJson);
+  const rows = await readWorkoutsAroundRange(
+    { from: start, to: end, inclusiveEnd: true },
+    (bounds) =>
+      prisma.workout.findMany({
+        where: { userId, startedAt: bounds },
+        orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          sportType: true,
+          startedAt: true,
+          durationSec: true,
+          source: true,
+          totalDistanceM: true,
+          totalEnergyKcal: true,
+          avgHeartRate: true,
+        },
+      }),
+  );
+  const canonical = canonicalWorkoutsInRange(rows, sourcePriorityJson);
   return summariseReportWorkouts(canonical, days);
 }
 

@@ -6,9 +6,9 @@
  * canonical envelope per workout. The endpoint:
  *
  *   - Returns the canonical row when the requested id wins its
- *     `(startedAt slot, sportType)` cluster against the user's
- *     source-priority ladder. The picker reuses
- *     `pickCanonicalWorkoutRows()` from v1.4.30 so the dedup contract
+ *     duplicate cluster against the user's source-priority ladder. The
+ *     cluster is resolved through the same windowed read the list uses
+ *     (`src/lib/workouts/canonical-read.ts`), so the dedup contract
  *     stays in sync with the list endpoint.
  *   - When the requested id is a non-canonical twin (e.g. the user
  *     opened a deep-link to a Withings row but the cluster's winner is
@@ -40,7 +40,14 @@ import {
   lockPersonalRecordsForUser,
   workoutPrSlotsForSport,
 } from "@/lib/personal-records/pr-detection-worker";
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  canonicalClusterOf,
+  canonicalWorkoutsInRange,
+  readWorkoutsAroundRange,
+  type CanonicalReadRow,
+  type WorkoutBoundedRead,
+  type WorkoutStartBounds,
+} from "@/lib/workouts/canonical-read";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
 import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
@@ -59,6 +66,38 @@ import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { userDayKey } from "@/lib/tz/format";
 
 type RouteParams = { params: Promise<{ id: string }> };
+
+/** How many earlier rows one step of the previous-session search reads. */
+const PREVIOUS_SESSION_BATCH = 20;
+/** Steps before the search gives up; each reaches past the last one. */
+const PREVIOUS_SESSION_MAX_STEPS = 5;
+
+/**
+ * The newest canonical workout of the sport that starts before `before` (the
+ * first start of the current session's cluster). A batch of earlier rows names
+ * the span to resolve; the span is read through the windowed reader so its
+ * twins are resolved the way the list resolves them. A span whose rows are all
+ * hidden by a twin further back moves the search back one batch.
+ */
+async function previousCanonicalWorkoutId<T extends CanonicalReadRow>(
+  read: WorkoutBoundedRead<T>,
+  latestStartsBefore: (to: Date, take: number) => Promise<Date[]>,
+  before: Date,
+  priorityJson: unknown,
+): Promise<string | null> {
+  let to = before;
+  for (let step = 0; step < PREVIOUS_SESSION_MAX_STEPS; step += 1) {
+    const earlier = await latestStartsBefore(to, PREVIOUS_SESSION_BATCH);
+    if (earlier.length === 0) return null;
+    const from = earlier[earlier.length - 1]!;
+    const windowed = await readWorkoutsAroundRange({ from, to: before }, read);
+    const canonical = canonicalWorkoutsInRange(windowed, priorityJson);
+    const newest = canonical[canonical.length - 1];
+    if (newest) return newest.id;
+    to = from;
+  }
+  return null;
+}
 
 export const GET = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
@@ -113,38 +152,38 @@ export const GET = apiHandler(
       return apiError("Workout not found", 404);
     }
 
-    // Resolve the canonical winner for the row's cluster. The picker
-    // reads every workout in the same 5-minute slot and sport-type
-    // bucket; in practice that's ≤ 4 rows (Apple + Withings + the two
-    // legacy sources). The query is bounded so the round-trip is cheap.
-    const slotMs = 5 * 60 * 1000;
-    const slotStart = new Date(
-      Math.floor(row.startedAt.getTime() / slotMs) * slotMs,
+    // Resolve the canonical winner for the row's cluster. The read goes
+    // through the same windowed reader as the list, so the cluster drawn here
+    // is the one the list draws: a twin that straddles a clock slot boundary,
+    // or one whose cluster begins with an earlier workout, resolves to the row
+    // the list shows.
+    const readSameSport = (bounds: WorkoutStartBounds) =>
+      prisma.workout.findMany({
+        where: {
+          userId: user.id,
+          sportType: row.sportType,
+          startedAt: bounds,
+        },
+        orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          source: true,
+          startedAt: true,
+          sportType: true,
+          // Part of the canonical session identity consulted by the picker —
+          // without it a HealthKit re-send of this very workout stays in the
+          // cluster and the deep link can resolve to the duplicate instead of
+          // the row the list shows.
+          durationSec: true,
+          avgHeartRate: true,
+          maxHeartRate: true,
+          metadata: true,
+        },
+      });
+    const around = await readWorkoutsAroundRange(
+      { from: row.startedAt, to: row.startedAt, inclusiveEnd: true },
+      readSameSport,
     );
-    const slotEnd = new Date(slotStart.getTime() + slotMs);
-
-    const clusterRows = await prisma.workout.findMany({
-      where: {
-        userId: user.id,
-        sportType: row.sportType,
-        startedAt: { gte: slotStart, lt: slotEnd },
-      },
-      orderBy: [{ startedAt: "asc" }, { id: "asc" }],
-      select: {
-        id: true,
-        source: true,
-        startedAt: true,
-        sportType: true,
-        // Part of the canonical session identity consulted by
-        // `pickCanonicalWorkoutRows` below — without it a HealthKit re-send of
-        // this very workout stays in the cluster and the deep link can resolve
-        // to the duplicate instead of the row the list shows.
-        durationSec: true,
-        avgHeartRate: true,
-        maxHeartRate: true,
-        metadata: true,
-      },
-    });
 
     const userRow = await prisma.user.findUnique({
       where: { id: user.id },
@@ -158,17 +197,15 @@ export const GET = apiHandler(
     const timezone = await resolveUserTimezone(user.id);
     const dayKey = userDayKey(row.startedAt, timezone);
 
-    const canonicalCluster = pickCanonicalWorkoutRows(
-      clusterRows,
+    const cluster = canonicalClusterOf(
+      around,
+      row.id,
       userRow?.sourcePriorityJson ?? null,
     );
-    // The canonical pick may carry multiple rows (same winning source);
-    // pick the closest in time to the requested row so deep-link
-    // redirects land on the most similar twin.
-    const canonical =
-      canonicalCluster.find((c) => c.id === row.id) ??
-      canonicalCluster[0] ??
-      null;
+    // The cluster's canonical rows, the requested row first when it is one of
+    // them and otherwise the nearest in time, so a deep link to a hidden twin
+    // lands on the most similar row.
+    const canonical = cluster?.canonical[0] ?? null;
     const effectiveAvgHeartRate = canonical?.avgHeartRate ?? row.avgHeartRate;
     const effectiveMaxHeartRate = canonical?.maxHeartRate ?? row.maxHeartRate;
 
@@ -233,43 +270,29 @@ export const GET = apiHandler(
     // The session before this one in the same sport. "How does this compare
     // to last time?" is the most likely next question after reading a
     // workout, and today it costs a trip back to the list plus a scan.
-    // Scoped to rows that start before this cluster's slot, so a twin of THIS
-    // session can never be offered as the previous one, and run through the
-    // same canonical picker so the link lands on the row the list shows.
-    const previousRows = await prisma.workout.findMany({
-      where: {
-        userId: user.id,
-        sportType: row.sportType,
-        startedAt: { lt: slotStart },
-      },
-      orderBy: [{ startedAt: "desc" }, { id: "desc" }],
-      // Enough to survive a run of same-session twins and re-sends without
-      // reading the whole history; the picker collapses them to a handful.
-      take: 20,
-      select: {
-        id: true,
-        source: true,
-        startedAt: true,
-        sportType: true,
-        durationSec: true,
-        avgHeartRate: true,
-        maxHeartRate: true,
-        metadata: true,
-      },
-    });
-    // The picker takes rows in ascending order and does not promise to hand
-    // them back sorted, so pick the newest survivor explicitly.
-    const previousWorkoutId =
-      pickCanonicalWorkoutRows(
-        [...previousRows].reverse(),
-        userRow?.sourcePriorityJson ?? null,
-      ).reduce<{ id: string; startedAt: Date } | null>(
-        (newest, candidate) =>
-          newest === null || candidate.startedAt > newest.startedAt
-            ? candidate
-            : newest,
-        null,
-      )?.id ?? null;
+    // Scoped to rows that start before this session's cluster, so a twin of
+    // THIS session can never be offered as the previous one, and resolved
+    // through the same windowed read so the link lands on the row the list
+    // shows.
+    const clusterStart = cluster?.members[0]?.startedAt ?? row.startedAt;
+    const previousWorkoutId = await previousCanonicalWorkoutId(
+      readSameSport,
+      async (to, take) =>
+        (
+          await prisma.workout.findMany({
+            where: {
+              userId: user.id,
+              sportType: row.sportType,
+              startedAt: { lt: to },
+            },
+            orderBy: [{ startedAt: "desc" }, { id: "desc" }],
+            take,
+            select: { startedAt: true },
+          })
+        ).map((earlier) => earlier.startedAt),
+      clusterStart,
+      userRow?.sourcePriorityJson ?? null,
+    );
 
     // A route whose track cannot be read (a sealed value that no longer
     // opens, or an old row stored as a JSON null) is reported as no route at

@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
   "count": 524,
-  "total": 5496,
+  "total": 5495,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -253,7 +253,7 @@
     "app/api/withings/credentials/__tests__/route.test.ts": 4,
     "app/api/withings/webhook/__tests__/route.test.ts": 26,
     "app/api/withings/webhook/[token]/__tests__/route.test.ts": 8,
-    "app/api/workouts/__tests__/batch-create.test.ts": 14,
+    "app/api/workouts/__tests__/batch-create.test.ts": 13,
     "app/api/workouts/__tests__/canonical-dedup.test.ts": 20,
     "app/api/workouts/batch/__tests__/unstable-external-id.test.ts": 4,
     "app/c/[token]/__tests__/report-download.test.ts": 11,

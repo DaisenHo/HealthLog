@@ -25,7 +25,10 @@ import {
   getQuantityTransform,
   type UnitPreference,
 } from "@/lib/measurements/display-transform";
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  canonicalWorkoutsInRange,
+  type WindowedWorkouts,
+} from "@/lib/workouts/canonical-read";
 import type { MeasurementSource } from "@/generated/prisma/client";
 import { annotate } from "@/lib/logging/context";
 import { tzDayKey, tzWeekday } from "../snapshot-series";
@@ -43,7 +46,8 @@ import type {
 const WORKOUT_RECENT_CAP = 15;
 
 interface WorkoutsBlockContext {
-  workoutRows: Array<{
+  workoutRows: WindowedWorkouts<{
+    id: string;
     sportType: string;
     startedAt: Date;
     durationSec: number;
@@ -85,7 +89,7 @@ export function buildWorkoutsBlock(ctx: Readonly<WorkoutsBlockContext>): void {
   // `startedAt` ASC (its documented contract) — the builder wants
   // most-recent-first for the capped `recent` list, so re-establish
   // DESC order after the pick, same as `GET /api/workouts` does.
-  const workoutRows = pickCanonicalWorkoutRows(
+  const workoutRows = canonicalWorkoutsInRange(
     rawWorkoutRows,
     sourcePriorityJson ?? null,
   ).sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());

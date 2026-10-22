@@ -44,7 +44,10 @@ import {
   WORKOUT_INSIGHT_PROMPT_VERSION,
 } from "@/lib/ai/prompts/workout-insight";
 import { prisma } from "@/lib/db";
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  canonicalWorkoutsInRange,
+  readWorkoutsAroundRange,
+} from "@/lib/workouts/canonical-read";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { finalizeStatusSummary } from "@/lib/insights/status-shared";
@@ -357,37 +360,37 @@ export async function runWorkoutInsightGenerate(
       whoopZoneDurations: parseWhoopZoneDurations(row.metadata),
     });
 
-    // The current workout is excluded in SQL before canonicalization. The
-    // canonical picker then collapses cross-source twins before any median or
-    // prompt is built.
-    const historyRows = await prisma.workout.findMany({
-      where: {
-        userId,
-        sportType: row.sportType,
-        id: { not: row.id },
-        startedAt: {
-          gte: new Date(
-            row.startedAt.getTime() - OWN_HISTORY_LOOKBACK_DAYS * MS_PER_DAY,
-          ),
-          lt: row.startedAt,
-        },
+    // The canonical sessions of the sport before this one, without this
+    // session's duplicate cluster: a twin a second source recorded a minute
+    // earlier is not the previous session.
+    const historyRows = await readWorkoutsAroundRange(
+      {
+        from: new Date(
+          row.startedAt.getTime() - OWN_HISTORY_LOOKBACK_DAYS * MS_PER_DAY,
+        ),
+        to: row.startedAt,
       },
-      orderBy: { startedAt: "desc" },
-      take: OWN_HISTORY_MAX_ROWS,
-      select: {
-        id: true,
-        source: true,
-        startedAt: true,
-        sportType: true,
-        durationSec: true,
-        avgHeartRate: true,
-        totalDistanceM: true,
-        totalEnergyKcal: true,
-      },
-    });
-    const history = pickCanonicalWorkoutRows(
+      (bounds) =>
+        prisma.workout.findMany({
+          where: { userId, sportType: row.sportType, startedAt: bounds },
+          orderBy: [{ startedAt: "desc" }, { id: "asc" }],
+          take: OWN_HISTORY_MAX_ROWS,
+          select: {
+            id: true,
+            source: true,
+            startedAt: true,
+            sportType: true,
+            durationSec: true,
+            avgHeartRate: true,
+            totalDistanceM: true,
+            totalEnergyKcal: true,
+          },
+        }),
+    );
+    const history = canonicalWorkoutsInRange(
       historyRows,
       profile?.sourcePriorityJson ?? null,
+      { excludeClusterOf: row.id },
     );
 
     const evidence = buildWorkoutInsightEvidence({

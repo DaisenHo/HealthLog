@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2959,
-  "total": 10521,
+  "total": 10520,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1710,7 +1710,7 @@
     "lib/ai/coach/snapshot-cache.ts": 2,
     "lib/ai/coach/snapshot-prelude.ts": 17,
     "lib/ai/coach/snapshot-series.ts": 5,
-    "lib/ai/coach/snapshot.ts": 42,
+    "lib/ai/coach/snapshot.ts": 41,
     "lib/ai/coach/source-measurement-types.ts": 1,
     "lib/ai/coach/suggest-action.ts": 1,
     "lib/ai/coach/suggest-gate.ts": 1,

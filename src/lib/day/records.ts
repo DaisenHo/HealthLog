@@ -42,7 +42,11 @@ import { effectiveMoodTz } from "@/lib/mood/date-key";
 import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { visitPath } from "@/lib/encounters/visit-links";
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  canonicalWorkoutsInRange,
+  readWorkoutsAroundRange,
+  WORKOUT_PICK_SELECT,
+} from "@/lib/workouts/canonical-read";
 
 /** Everything a section reader needs about the day. */
 export interface DayFrame {
@@ -906,28 +910,23 @@ async function assessmentsPart(frame: DayFrame): Promise<SectionPart> {
 
 async function workoutsPart(frame: DayFrame): Promise<SectionPart> {
   const [stored, account] = await Promise.all([
-    prisma.workout.findMany({
-      where: {
-        userId: frame.userId,
-        startedAt: { gte: frame.dayStart, lt: frame.dayEnd },
-      },
-      select: {
-        id: true,
-        source: true,
-        sportType: true,
-        startedAt: true,
-        durationSec: true,
-      },
-      orderBy: [{ startedAt: "asc" }, { id: "asc" }],
-    }),
+    // The windowed reader orders the rows itself.
+    readWorkoutsAroundRange(
+      { from: frame.dayStart, to: frame.dayEnd },
+      (bounds) =>
+        prisma.workout.findMany({
+          where: { userId: frame.userId, startedAt: bounds },
+          select: WORKOUT_PICK_SELECT,
+        }),
+    ),
     prisma.user.findUnique({
       where: { id: frame.userId },
       select: { sourcePriorityJson: true },
     }),
   ]);
   // One session synced by two services is one workout on the day, as in the
-  // workout list it links to.
-  const rows = pickCanonicalWorkoutRows(
+  // workout list it links to, a twin across midnight included.
+  const rows = canonicalWorkoutsInRange(
     stored,
     account?.sourcePriorityJson ?? null,
   );

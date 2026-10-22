@@ -133,8 +133,20 @@ function deduplicateWinningRows<T extends WorkoutPickerRow>(rows: T[]): T[] {
  * within the window straddle a slot boundary, the clusters are exactly the
  * old slots: every pair inside one slot is less than five minutes apart, and
  * a cluster cannot reach past its slot without such a pair.
+ *
+ * Because a cluster is anchored on its first start, which cluster a workout
+ * lands in depends on the workouts before it. A reader that decides which row
+ * is canonical therefore reads through `readWorkoutsAroundRange` in
+ * `src/lib/workouts/canonical-read.ts`, which widens the read until the
+ * clusters of the requested range no longer depend on where the read began.
  */
-const DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
+export const WORKOUT_DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
+const DUPLICATE_WINDOW_MS = WORKOUT_DUPLICATE_WINDOW_MS;
+
+/** Rows of different groups never share a duplicate cluster. */
+export function workoutClusterGroup(row: WorkoutPickerRow): string {
+  return `${row.userId ?? ""}:${row.sportType}`;
+}
 
 /**
  * The duplicate cluster of every row, aligned with `rows`. Rows of different
@@ -151,7 +163,7 @@ export function workoutDuplicateClusterKeys(
 ): string[] {
   const groups = new Map<string, number[]>();
   rows.forEach((row, index) => {
-    const group = `${row.userId ?? ""}:${row.sportType}`;
+    const group = workoutClusterGroup(row);
     const list = groups.get(group);
     if (list) list.push(index);
     else groups.set(group, [index]);

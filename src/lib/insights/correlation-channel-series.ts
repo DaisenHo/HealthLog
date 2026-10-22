@@ -76,7 +76,11 @@ import {
   userDayKey,
 } from "@/lib/tz/format";
 import { MIN_PAIRED_N } from "@/lib/insights/correlations";
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  canonicalWorkoutsInRange,
+  readWorkoutsAroundRange,
+  WORKOUT_PICK_SELECT,
+} from "@/lib/workouts/canonical-read";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import type {
@@ -1257,18 +1261,14 @@ export async function fetchTrainingSeries(
   since: Date,
 ): Promise<NamedSeries[]> {
   const [workouts, account, trimp] = await Promise.all([
-    prisma.workout.findMany({
-      where: { userId, startedAt: { gte: since } },
-      orderBy: [{ startedAt: "asc" }, { id: "asc" }],
-      take: WORKOUT_READ_CAP,
-      select: {
-        id: true,
-        source: true,
-        sportType: true,
-        startedAt: true,
-        durationSec: true,
-      },
-    }),
+    readWorkoutsAroundRange({ from: since, to: null }, (bounds) =>
+      prisma.workout.findMany({
+        where: { userId, startedAt: bounds },
+        orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+        take: WORKOUT_READ_CAP,
+        select: WORKOUT_PICK_SELECT,
+      }),
+    ),
     prisma.user.findUnique({
       where: { id: userId },
       select: { sourcePriorityJson: true },
@@ -1281,7 +1281,7 @@ export async function fetchTrainingSeries(
       select: { day: true, dayTrimp: true },
     }),
   ]);
-  const sessions = pickCanonicalWorkoutRows(
+  const sessions = canonicalWorkoutsInRange(
     workouts,
     account?.sourcePriorityJson ?? null,
   );

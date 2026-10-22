@@ -73,11 +73,11 @@ import {
 } from "@/lib/insights/score-row";
 import { shiftDateKey } from "@/lib/tz/format";
 import {
-  pickCanonicalWorkoutRows,
-  workoutDuplicateClusterKeys,
-  workoutSourceLadder,
-  type WorkoutPickerRow,
-} from "@/lib/measurements/pick-canonical-workout-rows";
+  canonicalWorkoutTrimps,
+  readWorkoutsAroundRange,
+  rowsInRange,
+  startsInRange,
+} from "@/lib/workouts/canonical-read";
 import {
   pickCanonicalSourceRows,
   type SourcePickerRow,
@@ -433,19 +433,23 @@ export async function computeStrainScore(
   // cross-source picker needs: one run recorded by the watch and synced again
   // through a second service is one training impulse, not two.
   const [workouts, account] = await Promise.all([
-    prisma.workout.findMany({
-      where: { userId, startedAt: { gte: dayStart, lt: dayEnd } },
-      orderBy: [{ startedAt: "asc" }, { id: "asc" }],
-      select: {
-        id: true,
-        source: true,
-        sportType: true,
-        startedAt: true,
-        durationSec: true,
-        samples: { select: { samples: true } },
-      },
-      take: 100,
-    }),
+    // Read through the windowed reader: a session whose twin lies across
+    // midnight is counted once, on the day the list shows it.
+    readWorkoutsAroundRange({ from: dayStart, to: dayEnd }, (bounds) =>
+      prisma.workout.findMany({
+        where: { userId, startedAt: bounds },
+        orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          source: true,
+          sportType: true,
+          startedAt: true,
+          durationSec: true,
+          samples: { select: { samples: true } },
+        },
+        take: 100,
+      }),
+    ),
     prisma.user.findUnique({
       where: { id: userId },
       select: { sourcePriorityJson: true },
@@ -465,7 +469,7 @@ export async function computeStrainScore(
   let dayTrimp = 0;
   let workoutsWithSeries = 0;
   if (canTrimp) {
-    const trimpOf = (w: (typeof workouts)[number]): number => {
+    const trimpOf = (w: (typeof workouts.rows)[number]): number => {
       const raw = w.samples?.samples;
       if (!Array.isArray(raw)) return 0;
       return banisterTrimp(
@@ -476,9 +480,10 @@ export async function computeStrainScore(
       );
     };
     const sessions = canonicalWorkoutTrimps(
-      workouts,
+      workouts.rows,
       account?.sourcePriorityJson ?? null,
       trimpOf,
+      (at) => startsInRange(workouts.range, at),
     );
     for (const trimp of sessions) {
       dayTrimp += trimp;
@@ -535,7 +540,7 @@ export async function computeStrainScore(
   return {
     score: null,
     reason:
-      workouts.length > 0 && !canTrimp
+      rowsInRange(workouts).length > 0 && !canTrimp
         ? "insufficient_profile"
         : "insufficient_inputs",
     dayTrimp: 0,
@@ -570,81 +575,6 @@ export function canonicalDayActiveEnergy<
   let best = 0;
   for (const total of bySource.values()) best = Math.max(best, total);
   return best;
-}
-
-/**
- * One training impulse per workout SESSION, not per stored row.
- *
- * The same session can be stored more than once: the watch writes it to Apple
- * Health and a second service (Strava, WHOOP, a ring) syncs it again, or
- * HealthKit re-sends it under a new identifier. The workout list collapses
- * those through `pickCanonicalWorkoutRows`; summing every row here counted the
- * session twice in the day's TRIMP while the list showed it once.
- *
- * The picker chooses the row by source order, which says nothing about heart
- * rate: the winning row can be one without a series while its dropped twin
- * carries one. So the impulse of a slot is the sum over its picked rows, and
- * only when that is zero the largest impulse among the slot's dropped rows.
- *
- * The picker keeps every row of a slot none of whose sources is on the
- * ladder, so the picked rows of one slot can come from several sources. Only
- * one source's rows count: the best-ranked on the ladder, a source off the
- * ladder ranking below every listed one, and among sources off the ladder
- * the one with the largest impulse. Rows of that one source still add up
- * (two distinct sessions of the same sport in one duplicate cluster).
- * Returns the positive impulses, one per session. Pure; exported for tests.
- */
-export function canonicalWorkoutTrimps<
-  T extends WorkoutPickerRow & { id: string },
->(
-  rows: readonly T[],
-  priorityJson: unknown,
-  trimpOf: (row: T) => number,
-): number[] {
-  // By id: the picker may hand back a copy of a row (it fills a missing heart
-  // rate from a WHOOP twin).
-  const picked = new Set(
-    pickCanonicalWorkoutRows(rows, priorityJson).map((row) => row.id),
-  );
-  const ladder = workoutSourceLadder(priorityJson);
-  const rankOf = (source: string) => {
-    const index = ladder.indexOf(source as (typeof ladder)[number]);
-    return index === -1 ? ladder.length : index;
-  };
-  const slots = new Map<
-    string,
-    { picked: Map<string, number>; dropped: number }
-  >();
-  const keys = workoutDuplicateClusterKeys(rows);
-  for (const [index, row] of rows.entries()) {
-    const slot = slots.get(keys[index]!) ?? { picked: new Map(), dropped: 0 };
-    const trimp = trimpOf(row);
-    if (trimp > 0) {
-      if (picked.has(row.id)) {
-        slot.picked.set(row.source, (slot.picked.get(row.source) ?? 0) + trimp);
-      } else {
-        slot.dropped = Math.max(slot.dropped, trimp);
-      }
-    }
-    slots.set(keys[index]!, slot);
-  }
-  const out: number[] = [];
-  for (const slot of slots.values()) {
-    let best: { rank: number; trimp: number } | null = null;
-    for (const [source, trimp] of slot.picked) {
-      const rank = rankOf(source);
-      if (
-        best === null ||
-        rank < best.rank ||
-        (rank === best.rank && trimp > best.trimp)
-      ) {
-        best = { rank, trimp };
-      }
-    }
-    const trimp = best !== null ? best.trimp : slot.dropped;
-    if (trimp > 0) out.push(trimp);
-  }
-  return out;
 }
 
 /**
