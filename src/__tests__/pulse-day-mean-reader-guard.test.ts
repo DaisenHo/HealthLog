@@ -70,7 +70,9 @@ const SQL_MEAN =
 const TS_MEAN =
   /\.reduce\(\s*\(\s*\w+\s*,\s*\w+\s*\)\s*=>\s*\w+\s*\+\s*[\w.]+\s*,\s*0\s*\)\s*\/\s*[\w.]+\.length|\bavgInWindow\s*\(|\bsummarize\s*\(|\bbucketWeekly\s*\(|\bbuildDailyValueRows\s*\(|\bapplyPayloadBudget\s*\(/g;
 
-const NAMES_PULSE = /\bPULSE\b/;
+// The stored type, or the series route's `kind === "pulse"` (its readers name
+// the wire kind, not the type).
+const NAMES_PULSE = /\bPULSE\b|===\s*"pulse"/;
 
 /**
  * A day folded from its hours' means with every hour weighing one: SQL
@@ -113,7 +115,7 @@ const SQL_READERS: Record<string, Entry> = {
 
 /** Files that name pulse and hold an in-memory mean or a mean-making fold. */
 const TS_READERS: Record<string, Entry> = {
-  "app/api/measurements/series/route.ts": HELPER,
+  "lib/measurements/series/read-raw.ts": HELPER,
   "lib/doctor-report/collect.ts": HELPER,
   "lib/doctor-report-pdf/clinical-summary.ts": HELPER,
   "lib/insights/comprehensive-generate.ts": HELPER,

@@ -250,6 +250,8 @@ const WIDE_SWEEP_ROOTS = [
   "lib/jobs/",
   "lib/targets/",
   "lib/daily/",
+  // The series route's readers, moved out of `app/` with their unit tokens.
+  "lib/measurements/series/",
 ];
 
 const UNIT_LITERAL_PATTERNS: readonly RegExp[] = [
@@ -351,7 +353,7 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     lines: 1,
     reason: "the legacy export endpoint's canonical storage-unit contract",
   },
-  "app/api/measurements/series/route.ts": {
+  "lib/measurements/series/kinds.ts": {
     lines: 4,
     reason:
       "canonical wire units; glucose is overridden to the reader's unit per request",
