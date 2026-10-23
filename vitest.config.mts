@@ -129,6 +129,13 @@ export default defineConfig({
             ),
           },
         },
+        // Pre-bundle every dependency the browser files reach before the
+        // first one loads. Discovered late, a dependency makes Vite re-bundle
+        // and reload the page mid-run, which fails the file that was
+        // importing it; CI starts every run on an empty cache.
+        optimizeDeps: {
+          entries: ["src/**/*.browser.test.tsx", "tests/browser/**/*.{ts,tsx}"],
+        },
         test: {
           name: "browser",
           include: ["src/**/*.browser.test.tsx"],
