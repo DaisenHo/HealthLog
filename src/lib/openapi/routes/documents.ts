@@ -379,11 +379,31 @@ const documentUploadReceipt = z
   });
 
 // Shared by the POST 200 (duplicate) and 201 (created) responses — the
-// envelope id must be registered exactly once.
-const documentUploadEnvelope = dataEnvelope(
-  z.union([inboundDocument, documentUploadReceipt]),
-  "DocumentUploadEnvelope",
-);
+// envelope id must be registered exactly once. The duplicate answer flags
+// itself at the envelope level, beside the request id.
+const documentUploadEnvelope = z
+  .object({
+    data: z.union([inboundDocument, documentUploadReceipt]),
+    error: z.null(),
+    meta: z
+      .object({
+        requestId: z.string().optional(),
+        duplicate: z
+          .literal(true)
+          .optional()
+          .describe(
+            "Present on a 200: the bytes or the source key were already stored, and `data` is the existing row (or the receipt).",
+          ),
+        deleted: z
+          .literal(true)
+          .optional()
+          .describe(
+            "Present with `duplicate` when the source key belongs to a document the owner deleted. Nothing was stored.",
+          ),
+      })
+      .optional(),
+  })
+  .meta({ id: "DocumentUploadEnvelope" });
 
 /**
  * A `DOCUMENT_EXTRACT` run's result. Smaller than the synchronous extract
@@ -670,6 +690,11 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "415": {
           description:
             'Unsupported or unidentifiable type (`meta.reason = "unsupportedType"`). Executables, HTML/SVG, and generic archives are always refused.',
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "404": {
+          description:
+            "An `episodeIds` or `encounterIds` id is not a live episode or visit of the caller (`documents.inbound.episodeNotFound` / `documents.inbound.encounterNotFound`). Nothing was stored.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,

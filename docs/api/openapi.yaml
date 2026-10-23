@@ -19188,6 +19188,13 @@ paths:
                 $ref: "#/components/schemas/DocumentUploadEnvelope"
         "401": *a1
         "403": *a9
+        "404":
+          description: An `episodeIds` or `encounterIds` id is not a live episode or visit of the caller
+            (`documents.inbound.episodeNotFound` / `documents.inbound.encounterNotFound`). Nothing was stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "409":
           description: The same bytes are already stored under 20 other import source ids (`documents.inbound.sourceAliasLimit`).
             Nothing was stored or remembered.
@@ -78996,6 +79003,15 @@ components:
           properties:
             requestId:
               type: string
+            duplicate:
+              description: "Present on a 200: the bytes or the source key were already stored, and `data` is the existing row (or the
+                receipt)."
+              type: boolean
+              const: true
+            deleted:
+              description: Present with `duplicate` when the source key belongs to a document the owner deleted. Nothing was stored.
+              type: boolean
+              const: true
           additionalProperties: false
       required:
         - data
