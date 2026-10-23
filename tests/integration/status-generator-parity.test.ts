@@ -503,7 +503,27 @@ async function record(arms: Record<string, Arm>): Promise<string> {
       notes: await storedNotes(),
     };
   }
-  return `${JSON.stringify(out, null, 2)}\n`;
+  return `${JSON.stringify(sortedKeys(out), null, 2)}\n`;
+}
+
+/**
+ * A copy with every object's keys in sorted order, so a golden's text does
+ * not depend on the order code happened to assign fields in and compresses
+ * and diffs well. Arrays keep their order: that is content.
+ */
+function sortedKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortedKeys);
+  if (value && typeof value === "object" && !(value instanceof Date)) {
+    return Object.fromEntries(
+      Object.keys(value as Record<string, unknown>)
+        .sort()
+        .map((key) => [
+          key,
+          sortedKeys((value as Record<string, unknown>)[key]),
+        ]),
+    );
+  }
+  return value;
 }
 
 function compareGolden(name: string, actual: string): void {
