@@ -13,13 +13,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { linkTargets, unlinkTargets } from "@/lib/links";
@@ -61,15 +56,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return response;
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, documentBulkSchema, {
     maxBytes: 64 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = documentBulkSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
   const { ids, action, kind, episodeId, encounterId } = parsed.data;
   const uniqueIds = [...new Set(ids)];
 

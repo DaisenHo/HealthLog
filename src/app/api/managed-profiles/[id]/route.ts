@@ -6,12 +6,8 @@ import {
   requireCookieAuth,
   requireFreshMfa,
 } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import {
   deleteManagedProfile,
   ManagedProfileLifecycleError,
@@ -132,13 +128,10 @@ export const PATCH = apiHandler(
     }
     const { id } = await params;
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, updateManagedProfileSchema, {
       maxBytes: 64 * 1024,
     });
-    if (jsonError) return jsonError;
-
-    const parsed = updateManagedProfileSchema.safeParse(body);
-    if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+    if (!parsed.ok) return parsed.error;
 
     // The parsed patch goes to the service, which assembles the Prisma payload
     // field by field. One assembly rather than one here and one there: two

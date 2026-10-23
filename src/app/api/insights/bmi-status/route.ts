@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/api-response";
-import {
-  generateBmiStatusForUser,
-  resolveBmiStatusLocale,
-} from "@/lib/insights/bmi-status";
+import { generateBmiStatusForUser } from "@/lib/insights/bmi-status";
+import { normalizeLocale as resolveBmiStatusLocale } from "@/lib/insights/status-shared";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";

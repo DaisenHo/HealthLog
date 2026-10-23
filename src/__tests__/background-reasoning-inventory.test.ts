@@ -55,6 +55,7 @@ const ADMITTED: Record<string, { jobs: string[]; why: string }> = {
 const NEVER = [
   "lib/insights/status-batch.ts",
   "lib/insights/status-card-generation.ts",
+  "lib/insights/status-pipeline.ts",
   "lib/insights/metric-status.ts",
   "lib/insights/biomarker-status.ts",
   "lib/insights/derived/derived-assessment-ai.ts",

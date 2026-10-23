@@ -1,13 +1,8 @@
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
@@ -49,16 +44,10 @@ export const PUT = apiHandler(
       },
     });
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, updateUserSchema, {
       maxBytes: 64 * 1024,
     });
-
-    if (jsonError) return jsonError;
-    const parsed = updateUserSchema.safeParse(body);
-    if (!parsed.success) {
-      // v1.4.43 — multi-issue 422.
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
 
     const target = await prisma.user.findUnique({
       where: { id },

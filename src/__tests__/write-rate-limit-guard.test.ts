@@ -26,11 +26,15 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { guardSourceOf } from "./helpers/auth-guards";
 import { walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
-/** The resolvers in `api-handler.ts` that charge the shared write bucket. */
+/**
+ * The resolvers that charge the shared write bucket: the guards in
+ * `lib/auth/guards/`, imported by routes through `lib/api-handler.ts`.
+ */
 const METERING_RESOLVERS = [
   "requireAuth",
   "requireRecordAuth",
@@ -194,7 +198,16 @@ describe("every mutating route meets a rate limit", () => {
   });
 
   it("charges the bucket in each metering resolver", () => {
-    const handler = read("lib/api-handler.ts");
+    /** The resolver's source, from its signature to the next export. */
+    const resolverBody = (name: string): string => {
+      const signature = new RegExp(
+        `export\\s+async\\s+function\\s+${name}\\s*\\(`,
+      );
+      const handler = guardSourceOf(name, [signature]);
+      const start = handler.search(signature);
+      const next = handler.indexOf("\nexport ", start + 1);
+      return handler.slice(start, next === -1 ? undefined : next);
+    };
     for (const name of [
       "requireAuth",
       "requireActorAuth",
@@ -205,13 +218,7 @@ describe("every mutating route meets a rate limit", () => {
       "requireFreshMfa",
       "requireBearerAuth",
     ]) {
-      const start = handler.search(
-        new RegExp(`export\\s+async\\s+function\\s+${name}\\s*\\(`),
-      );
-      expect(start, name).toBeGreaterThanOrEqual(0);
-      const next = handler.indexOf("\nexport ", start + 1);
-      const body = handler.slice(start, next === -1 ? undefined : next);
-      expect(body, name).toMatch(/\bmeterAccountWrite\s*\(/);
+      expect(resolverBody(name), name).toMatch(/\bmeterAccountWrite\s*\(/);
     }
     // The three that only delegate reach the meter through `requireAuth`.
     for (const name of [
@@ -219,11 +226,7 @@ describe("every mutating route meets a rate limit", () => {
       "requireFreshMfaOrElevationIfEnrolled",
       "requireRecentProof",
     ]) {
-      const start = handler.search(
-        new RegExp(`export\\s+async\\s+function\\s+${name}\\s*\\(`),
-      );
-      const next = handler.indexOf("\nexport ", start + 1);
-      expect(handler.slice(start, next), name).toMatch(/\brequireAuth\s*\(/);
+      expect(resolverBody(name), name).toMatch(/\brequireAuth\s*\(/);
     }
   });
 });

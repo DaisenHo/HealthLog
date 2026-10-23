@@ -71,8 +71,9 @@ const RECORD_RESOLVER = "requireRecordAuth";
 /**
  * Rows the feed cannot show, and the reason each one cannot.
  *
- * `src/lib/api-handler.ts` is a direct import of every route, so the walk
- * below reaches the three actions the auth kit files itself. None of them can
+ * `src/lib/api-handler.ts` is a direct import of every route, and it
+ * re-exports the guards in `src/lib/auth/guards/`, so the walk below reaches
+ * the three actions the auth kit files itself. None of them can
  * appear in a record owner's activity view, and the reason is the same for all
  * three: they are filed under `auth.user.id` — the CALLER — at a point where
  * no record has been resolved. The feed selects rows where `userId` is the
@@ -148,6 +149,13 @@ interface ModuleFacts {
   auditActions: string[];
   /** First-party modules this one imports, resolved to files. */
   imports: string[];
+  /**
+   * First-party modules this one re-exports with `export … from`, resolved to
+   * files. A re-export makes the named module's bindings this module's own,
+   * so its actions count as this module's (`lib/api-handler.ts` re-exports
+   * the guards in `lib/auth/guards/`).
+   */
+  reexports: string[];
 }
 
 /**
@@ -173,7 +181,19 @@ export function moduleFacts(source: string, fileName: string): ModuleFacts {
   const aliases = new Map<string, string>();
   const namespaces = new Set<string>();
   const importPaths: string[] = [];
+  const reexportPaths: string[] = [];
   parsed.forEachChild((node) => {
+    if (
+      ts.isExportDeclaration(node) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      const resolved = resolveFirstParty(node.moduleSpecifier.text, fileName);
+      if (resolved !== null && !resolved.includes("__tests__")) {
+        reexportPaths.push(resolved);
+      }
+      return;
+    }
     if (!ts.isImportDeclaration(node)) return;
     if (ts.isStringLiteral(node.moduleSpecifier)) {
       const resolved = resolveFirstParty(node.moduleSpecifier.text, fileName);
@@ -232,7 +252,13 @@ export function moduleFacts(source: string, fileName: string): ModuleFacts {
   };
   parsed.forEachChild(visit);
 
-  return { delegatesRecord, recordLevels, auditActions, imports: importPaths };
+  return {
+    delegatesRecord,
+    recordLevels,
+    auditActions,
+    imports: importPaths,
+    reexports: reexportPaths,
+  };
 }
 
 /**
@@ -267,7 +293,8 @@ export function resolveFirstParty(
  * to this route can file; one level is where a route's own collaborators live
  * — the import-admission module and the medication lifecycle module are both
  * direct imports of the routes that use them, and both were invisible to a
- * walk that read only `route.ts`.
+ * walk that read only `route.ts`. A module an import re-exports is part of
+ * that import, not a level below it, so its actions count at the same level.
  */
 function actionsReachableFrom(
   file: string,
@@ -276,7 +303,41 @@ function actionsReachableFrom(
   const own = read(file);
   const out = [...own.auditActions];
   for (const imported of own.imports) {
-    out.push(...read(imported).auditActions);
+    const facts = read(imported);
+    out.push(...facts.auditActions);
+    for (const reexported of facts.reexports) {
+      out.push(...packageActions(reexported, read));
+    }
+  }
+  return out;
+}
+
+/**
+ * The actions of a re-exported module together with the sibling modules it
+ * imports from its own folder. The re-exported module is a package's public
+ * face; the siblings are its private parts, which run inside the same call
+ * (`lib/auth/guards/record.ts` files its refusals through `./acting.ts`).
+ * Bounded to the one folder, so this does not become the transitive closure
+ * the walk above deliberately avoids.
+ */
+function packageActions(
+  file: string,
+  read: (path: string) => ModuleFacts,
+): string[] {
+  const folder = dirname(file);
+  const seen = new Set<string>([file]);
+  const queue = [file];
+  const out: string[] = [];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    const facts = read(current);
+    out.push(...facts.auditActions);
+    for (const next of [...facts.imports, ...facts.reexports]) {
+      if (dirname(next) === folder && !seen.has(next)) {
+        seen.add(next);
+        queue.push(next);
+      }
+    }
   }
   return out;
 }

@@ -33,6 +33,13 @@ const WRITE_RE =
 const TAIL = "runs afterMeasurementMutation";
 
 /**
+ * Writes here; the module named runs `afterMeasurementMutation` on the same
+ * rows (a service split into stages, whose write and tail are siblings).
+ */
+const TAIL_VIA_PREFIX = "runs afterMeasurementMutation via ";
+const TAIL_VIA = (file: string) => `${TAIL_VIA_PREFIX}${file}`;
+
+/**
  * Runs the provider write step (`integrations/sync-kit/after-write.ts`),
  * which is `afterMeasurementMutation` plus the arrivals and, where asked, the
  * dashboard snapshot.
@@ -51,8 +58,10 @@ const WRITE_SITES: Record<string, string> = {
   "app/api/measurements/bulk-delete/route.ts": TAIL,
   "app/api/measurements/by-external-ids/route.ts": TAIL,
   "app/api/measurements/restore/route.ts": TAIL,
-  "app/api/measurements/batch/route.ts": TAIL,
-  "app/api/measurements/route.ts": TAIL,
+  "lib/measurements/batch-ingest/write-measurements.ts": TAIL_VIA(
+    "lib/measurements/batch-ingest/tail.ts",
+  ),
+  "lib/measurements/create/create-readings.ts": TAIL,
   "app/api/mental-health/assessments/route.ts": TAIL,
   "lib/insights/score-row.ts": TAIL,
   "lib/mcp/writes.ts": TAIL,
@@ -159,9 +168,20 @@ describe("measurement write tail", () => {
   });
 
   it("the files that claim the shared tail call it", () => {
-    const missing = Object.entries(WRITE_SITES)
-      .filter(([, reason]) => reason === TAIL)
-      .map(([file]) => file)
+    const claims = Object.entries(WRITE_SITES).filter(
+      ([, reason]) => reason === TAIL || reason.startsWith(TAIL_VIA_PREFIX),
+    );
+    // Both shapes are in use; a set that lost either would check nothing.
+    expect(claims.filter(([, r]) => r === TAIL).length).toBeGreaterThan(5);
+    expect(
+      claims.filter(([, r]) => r.startsWith(TAIL_VIA_PREFIX)).length,
+    ).toBeGreaterThan(0);
+    const missing = claims
+      .map(([file, reason]) =>
+        reason.startsWith(TAIL_VIA_PREFIX)
+          ? reason.slice(TAIL_VIA_PREFIX.length)
+          : file,
+      )
       .filter(
         (file) =>
           !/afterMeasurementMutation\s*\(/.test(

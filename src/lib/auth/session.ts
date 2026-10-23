@@ -446,7 +446,7 @@ export async function getSession(): Promise<{
       // already in hand and re-reading it per request would be waste.
       //
       // Read this in exactly one place: the acting-account resolver in
-      // `src/lib/api-handler.ts`. It is a selector and not a decision — the
+      // `src/lib/auth/guards/`. It is a selector and not a decision — the
       // resolver still has to find a live grant for the pair before anything
       // is substituted, and a value stranded here by a grant that has since
       // ended confers nothing.

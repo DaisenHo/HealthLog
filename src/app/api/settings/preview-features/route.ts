@@ -12,7 +12,8 @@
  * flags switched at once both stay switched.
  */
 import { apiHandler, requireActorAuth } from "@/lib/api-handler";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { prisma, toJson } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -52,18 +53,11 @@ export const GET = apiHandler(async () => {
 export const PATCH = apiHandler(async (request: Request) => {
   const { user } = await requireActorAuth();
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, previewFeaturesPatchSchema, {
     maxBytes: 1024,
+    action: "settings.preview-features.validation-failed",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = previewFeaturesPatchSchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "settings.preview-features.validation-failed" },
-    });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const next = await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT 1 FROM "users" WHERE "id" = ${user.id} FOR UPDATE`;

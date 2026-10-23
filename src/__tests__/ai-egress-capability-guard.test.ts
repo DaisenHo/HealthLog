@@ -314,8 +314,8 @@ describe("workout route geometry never reaches an AI path", () => {
   const ROUTE_READERS: Record<string, string> = {
     "app/api/workouts/[id]/route.ts":
       "The workout detail read: serves the track to the person's own map.",
-    "app/api/workouts/batch/route.ts":
-      "Writes a kept track (opt-in) and derives its climb before storage.",
+    "lib/workouts/batch-ingest/write.ts":
+      "The workout batch ingest's write: stores a kept track (opt-in), sealed.",
     "lib/apple-health/route-import.ts":
       "Writes a kept track from the Apple Health export (opt-in).",
     "lib/crypto/encrypted-columns.ts":

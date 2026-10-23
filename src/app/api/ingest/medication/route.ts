@@ -6,10 +6,9 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
-  returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { hashToken } from "@/lib/auth/hmac";
 import {
   checkAuthSurfaceRateLimit,
@@ -152,45 +151,43 @@ export const POST = apiHandler(async (request: NextRequest) => {
     data: { lastUsedAt: new Date() },
   });
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  // v1.4.43 — external native ingest is a bulk-source; surface
+  // every Zod issue so a Telegram-bridge or HomeAssistant
+  // integration sees the full validation shape at once. Audit
+  // breadcrumb keyed `ingest.medication.validation-failed`.
+  const parsed = await parseJsonBody(request, externalIntakeSchema, {
     maxBytes: 64 * 1024,
-  });
-
-  if (jsonError) return jsonError;
-  const parsed = externalIntakeSchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — external native ingest is a bulk-source; surface
-    // every Zod issue so a Telegram-bridge or HomeAssistant
-    // integration sees the full validation shape at once. Audit
-    // breadcrumb keyed `ingest.medication.validation-failed`.
-    const issues = sanitiseZodIssues(parsed.error.issues);
-    const shape = unstableExternalIdShape(body, "idempotencyKey");
-    annotate({
-      action: { name: "ingest.medication.validation-failed" },
-      meta: {
-        issue_count: issues.length,
-        ...(shape ? unstableExternalIdMeta("medication.ingest", [shape]) : {}),
-      },
-    });
-    // v1.4.49 — strip `message` from the audit-ledger row; external
-    // ingest carries free-text `medicationName` + opaque
-    // `idempotencyKey`.
-    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-      stripValuesFromMessage: true,
-    });
-    prisma.auditLog
-      .create({
-        data: {
-          userId: apiToken.userId,
-          action: "ingest.medication.validation-failed",
-          details: JSON.stringify({ issues: auditIssues }),
+    onInvalid: (error, body) => {
+      const shape = unstableExternalIdShape(body, "idempotencyKey");
+      annotate({
+        action: { name: "ingest.medication.validation-failed" },
+        meta: {
+          issue_count: error.issues.length,
+          ...(shape
+            ? unstableExternalIdMeta("medication.ingest", [shape])
+            : {}),
         },
-      })
-      .catch(() => {
-        /* swallow — 422 response is the contract */
       });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+      // v1.4.49 — strip `message` from the audit-ledger row; external
+      // ingest carries free-text `medicationName` + opaque
+      // `idempotencyKey`.
+      const auditIssues = sanitiseZodIssues(error.issues, {
+        stripValuesFromMessage: true,
+      });
+      prisma.auditLog
+        .create({
+          data: {
+            userId: apiToken.userId,
+            action: "ingest.medication.validation-failed",
+            details: JSON.stringify({ issues: auditIssues }),
+          },
+        })
+        .catch(() => {
+          /* swallow — 422 response is the contract */
+        });
+    },
+  });
+  if (!parsed.ok) return parsed.error;
 
   const { medicationName, takenAt, idempotencyKey } = parsed.data;
 

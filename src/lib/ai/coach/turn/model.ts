@@ -31,7 +31,7 @@ import {
   runCoachToolLoop,
   type CoachToolTrace,
 } from "@/lib/ai/coach/tools";
-import { admittedPriorResults } from "@/lib/ai/coach/tools/executor";
+import { admittedPriorResults } from "@/lib/ai/coach/tools/run/prior-results";
 import type { InventoryEntry } from "@/lib/ai/coach/tools/inventory";
 import {
   COMPARE_SERIES_TOOL_DEF,
