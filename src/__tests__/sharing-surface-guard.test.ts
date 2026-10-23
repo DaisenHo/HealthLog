@@ -422,6 +422,50 @@ function callsSymbol(rel: string, symbol: string): boolean {
 }
 
 /**
+ * Route modules whose handler bodies live in service modules under `lib/`.
+ *
+ * The route keeps the resolver call, so the verb and membership legs read the
+ * route alone. The legs about what a handler writes (the audit trail, the
+ * tombstone, the overwrite and destruction details, the provenance a moved
+ * dose keeps) ask the route AND the modules it hands the body to, because
+ * that is where the rows are written now. A leg reading only the route would
+ * go on passing for a reason that has nothing to do with the rule. Each
+ * listed module has to be imported by its route (leg below), so an entry
+ * cannot outlive the delegation it describes.
+ */
+const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
+  "app/api/medications/[id]/intake/[eventId]/route.ts": [
+    "lib/medications/update-intake-event.ts",
+    "lib/medications/delete-intake-event.ts",
+  ],
+};
+
+/** The route and the service modules carrying its handler bodies. */
+function handlerModules(rel: string): string[] {
+  return [rel, ...(HANDLER_BODY_MODULES[rel] ?? [])];
+}
+
+function handlerCallsSymbol(rel: string, symbol: string): boolean {
+  return handlerModules(rel).some((m) => callsSymbol(m, symbol));
+}
+
+function handlerIdentifiers(rel: string): Set<string> {
+  return new Set(handlerModules(rel).flatMap((m) => [...identifiers(m)]));
+}
+
+function handlerAuditDetailKeys(rel: string): string[][] {
+  return handlerModules(rel).flatMap((m) => auditDetailKeysIn(m));
+}
+
+function handlerDirectAuditWrites(rel: string): string[] {
+  return handlerModules(rel).flatMap((m) => directAuditWritesIn(read(m), m));
+}
+
+function handlerText(rel: string): string {
+  return handlerModules(rel).map(read).join("\n");
+}
+
+/**
  * v1.37.0 — the exported HTTP verbs whose bodies reach the record resolver at
  * a given level.
  *
@@ -2890,9 +2934,10 @@ describe("(e) the delegable write set is frozen", () => {
     expect(modules.length).toBeGreaterThan(0);
 
     for (const rel of modules) {
-      expect(callsSymbol(rel, "auditLog"), `${rel} never calls auditLog`).toBe(
-        true,
-      );
+      expect(
+        handlerCallsSymbol(rel, "auditLog"),
+        `${rel} never calls auditLog`,
+      ).toBe(true);
     }
   });
 
@@ -2912,7 +2957,7 @@ describe("(e) the delegable write set is frozen", () => {
 
     for (const rel of modules) {
       expect(
-        directAuditWritesIn(read(rel), rel),
+        handlerDirectAuditWrites(rel),
         `${rel} writes an audit row without the helper`,
       ).toEqual([]);
     }
@@ -3029,6 +3074,28 @@ describe("(g) the MANAGE route set is frozen", () => {
     expect(discovered).toEqual(expected);
   });
 
+  it("reads each moved handler body where its route imports it from", () => {
+    // The map above widens what the audit and tombstone legs read. An entry
+    // naming a module the route no longer imports would widen it to code the
+    // handler does not run, so every entry is held to the route's imports,
+    // and every listed module has to carry an audit call of its own.
+    const entries = Object.entries(HANDLER_BODY_MODULES);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [route, modules] of entries) {
+      expect(DELEGABLE_ROUTES, route).toHaveProperty([route]);
+      for (const body of modules) {
+        const specifier = `@/${body.replace(/\.ts$/, "")}`;
+        expect(read(route), `${route} does not import ${specifier}`).toContain(
+          `"${specifier}"`,
+        );
+        expect(
+          callsSymbol(body, "auditLog"),
+          `${body} writes no audit row`,
+        ).toBe(true);
+      }
+    }
+  });
+
   it("is a subset of the delegable set", () => {
     // A module cannot manage a record it may not read. The read list is where
     // each file's argument lives, so a manage entry with no read entry would
@@ -3057,16 +3124,17 @@ describe("(g) the MANAGE route set is frozen", () => {
     expect(mutating.length).toBeGreaterThan(30);
 
     for (const rel of mutating) {
-      expect(callsSymbol(rel, "auditLog"), `${rel} never calls auditLog`).toBe(
-        true,
-      );
+      expect(
+        handlerCallsSymbol(rel, "auditLog"),
+        `${rel} never calls auditLog`,
+      ).toBe(true);
     }
   });
 
   it("no manage module reaches the audit table without the helper", () => {
     for (const rel of Object.keys(DELEGABLE_MANAGE_ROUTES)) {
       expect(
-        directAuditWritesIn(read(rel), rel),
+        handlerDirectAuditWrites(rel),
         `${rel} writes an audit row without the helper`,
       ).toEqual([]);
     }
@@ -3085,7 +3153,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
     for (const rel of destructive) {
       const entry = DELEGABLE_MANAGE_ROUTES[rel];
-      const tombstones = identifiers(rel).has("deletedAt");
+      const tombstones = handlerIdentifiers(rel).has("deletedAt");
       expect(
         tombstones ||
           entry.conditions.includes("C3") ||
@@ -3106,7 +3174,7 @@ describe("(g) the MANAGE route set is frozen", () => {
     for (const [rel, { keys, why }] of members) {
       expect(why.trim().length, `${rel} has no reason`).toBeGreaterThan(0);
       expect(DELEGABLE_MANAGE_ROUTES, rel).toHaveProperty([rel]);
-      const carried = auditDetailKeysIn(rel);
+      const carried = handlerAuditDetailKeys(rel);
       expect(carried.length, `${rel} files no audit details`).toBeGreaterThan(
         0,
       );
@@ -3129,10 +3197,10 @@ describe("(g) the MANAGE route set is frozen", () => {
     for (const rel of members) {
       if (rel in MANAGE_RECONSTRUCTION_BY_HAND) continue;
       expect(
-        callsSymbol(rel, "destroyedDetails"),
+        handlerCallsSymbol(rel, "destroyedDetails"),
         `${rel} carries C3 and never calls destroyedDetails`,
       ).toBe(true);
-      const named = auditDetailKeysIn(rel).some((keys) =>
+      const named = handlerAuditDetailKeys(rel).some((keys) =>
         keys.some((key) => /(^id$|Id$)/.test(key)),
       );
       expect(named, `${rel} files no id on any audit details literal`).toBe(
@@ -3147,7 +3215,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
     for (const rel of members) {
       expect(
-        callsSymbol(rel, "overwriteDetails"),
+        handlerCallsSymbol(rel, "overwriteDetails"),
         `${rel} carries C4 and never calls overwriteDetails`,
       ).toBe(true);
     }
@@ -3328,7 +3396,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
     const medication = "app/api/medications/[id]/route.ts";
     expect(manageModulesWith("C7")).toEqual([medication]);
-    const cadence = auditDetailKeysIn(medication).some(
+    const cadence = handlerAuditDetailKeys(medication).some(
       (keys) =>
         keys.includes("replacedCadence") &&
         keys.includes("tombstonedSlotCount"),
@@ -3339,14 +3407,15 @@ describe("(g) the MANAGE route set is frozen", () => {
     expect(manageModulesWith("C8")).toEqual([dose]);
     // The hardcoded provenance this condition removed. A re-created row that
     // stamps `WEB` says a human typed a dose that arrived from a device.
-    expect(read(dose)).not.toContain('createSource: "WEB"');
+    expect(handlerText(dose)).not.toContain('createSource: "WEB"');
+    expect(handlerText(dose)).toContain("createSource: event.source");
 
     expect(manageModulesWith("C9")).toEqual([
       "app/api/medications/[id]/intake/import/route.ts",
       "app/api/medications/intake/dose-history-import/route.ts",
     ]);
     for (const rel of manageModulesWith("C9")) {
-      const joined = auditDetailKeysIn(rel).some((keys) =>
+      const joined = handlerAuditDetailKeys(rel).some((keys) =>
         keys.includes("jobId"),
       );
       expect(joined, `${rel} enqueues work no audit row names`).toBe(true);
