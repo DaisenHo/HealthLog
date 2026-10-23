@@ -41,7 +41,7 @@ const ADMITTED: Record<string, { jobs: string[]; why: string }> = {
     jobs: ["daily_briefing"],
     why: "The daily briefing's generation and its phrasing re-roll; the JSON and grounding repairs do not reason.",
   },
-  "app/api/insights/generate/route.ts": {
+  "lib/insights/briefing-request/completion.ts": {
     jobs: ["daily_briefing"],
     why: "A briefing asked for by hand reasons like the scheduled one; its JSON and grounding repairs do not.",
   },
