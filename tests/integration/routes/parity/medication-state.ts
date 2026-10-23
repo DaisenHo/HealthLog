@@ -186,6 +186,21 @@ export async function medicationState(prisma: Client, userIds: string[]) {
   };
 }
 
+/**
+ * A server cache reports the hash of the key it looked up, and the key holds
+ * the account id, so the hash differs on every run. Its presence is kept.
+ */
+function withoutCacheKeyHashes(facts: unknown): unknown {
+  if (!facts || typeof facts !== "object") return facts;
+  const { meta } = facts as { meta?: unknown };
+  if (!meta || typeof meta !== "object") return facts;
+  const cleaned: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(meta)) {
+    cleaned[k] = /^cache\..+\.key_hash$/.test(k) ? "<key_hash>" : v;
+  }
+  return { ...facts, meta: cleaned };
+}
+
 export interface ParityCall {
   /** Snapshot name, `<route>.<case>`. */
   name: string;
@@ -215,7 +230,7 @@ export async function parityStep(call: ParityCall) {
       {
         status: res.status,
         body: res.body,
-        events: events.map(eventFacts),
+        events: events.map(eventFacts).map(withoutCacheKeyHashes),
         effects: effectRecorder.take(),
         stored: await medicationState(getPrismaClient(), call.userIds),
       },
