@@ -1,0 +1,17 @@
+import type { UnstableExternalIdShape } from "@/lib/validations/external-id";
+
+/** The running counts of one JSON import, shared by its row writers. */
+export interface JsonImportTally {
+  stats: { measurements: number; moodEntries: number; skipped: number };
+  unstableShapes: UnstableExternalIdShape[];
+  /** A write failed for a reason other than a duplicate; the import stops. */
+  writeFailed: boolean;
+}
+
+export function newJsonImportTally(): JsonImportTally {
+  return {
+    stats: { measurements: 0, moodEntries: 0, skipped: 0 },
+    unstableShapes: [],
+    writeFailed: false,
+  };
+}

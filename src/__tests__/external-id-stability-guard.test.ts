@@ -409,7 +409,11 @@ describe("the batch surfaces refuse per entry, never whole-batch", () => {
       "lib/workouts/batch-ingest/ingest.ts",
     ],
     "app/api/cycle/day-logs/bulk/route.ts": [],
-    "app/api/import/route.ts": [],
+    "app/api/import/route.ts": [
+      "lib/import/json/measurements.ts",
+      "lib/import/json/mood.ts",
+      "lib/import/json/run.ts",
+    ],
   };
   const BATCH_ROUTES = Object.keys(BATCH_SURFACES);
 

@@ -73,7 +73,10 @@ const WRITERS: Record<string, Disposition> = {
     kind: "upstream",
     validatedIn: "lib/validations/measurement.ts",
   },
-  "app/api/import/route.ts": { kind: "validator" },
+  "lib/import/json/measurements.ts": {
+    kind: "upstream",
+    validatedIn: "app/api/import/route.ts",
+  },
   // The batch ingest's set-based insert writes rows that already passed
   // `validateMeasurementRange` per entry in its first pass; everything else
   // goes through the reconciler, which gates itself.

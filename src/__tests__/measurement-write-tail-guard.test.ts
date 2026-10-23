@@ -53,7 +53,7 @@ const PROVIDER_TAIL = "runs afterProviderWrite";
  */
 const WRITE_SITES: Record<string, string> = {
   "app/api/import/csv/route.ts": TAIL,
-  "app/api/import/route.ts": TAIL,
+  "lib/import/json/measurements.ts": TAIL_VIA("lib/import/json/run.ts"),
   "app/api/measurements/[id]/route.ts": TAIL,
   "app/api/measurements/bulk-delete/route.ts": TAIL,
   "app/api/measurements/by-external-ids/route.ts": TAIL,
