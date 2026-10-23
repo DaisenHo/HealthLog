@@ -745,11 +745,7 @@ describe("POST /api/insights/generate parity", () => {
 
   it("P03 a body over the cap", async () => {
     await resetBriefing(OWNER_ID);
-    await post(
-      "P03-body-too-large",
-      { pad: "x".repeat(17 * 1024) },
-      { undeclared: "the body cap answers 413, which the contract omits" },
-    );
+    await post("P03-body-too-large", { pad: "x".repeat(17 * 1024) });
   });
 
   it("P04 a cached briefing written today", async () => {
@@ -984,13 +980,7 @@ describe("POST /api/insights/generate parity", () => {
           "Your 10-year cardiovascular risk is elevated — consider stepping your dose up.",
       }),
     });
-    await post(
-      "P29-outbound-screened",
-      { force: true },
-      {
-        undeclared: "the outbound screen answers 502, which the contract omits",
-      },
-    );
+    await post("P29-outbound-screened", { force: true });
   });
 
   it("P30 the about-me text changing during the generation", async () => {

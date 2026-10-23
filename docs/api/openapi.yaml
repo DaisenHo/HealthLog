@@ -12654,6 +12654,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: The request body is over 16 KB. Nothing was generated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422":
           description: No AI provider can serve the `briefing` capability (`meta.errorCode` = `ai.provider.none`, `meta.reason` =
             `no_provider`), or the provider answered something that was not valid JSON (`meta.errorCode` =
@@ -12668,6 +12674,13 @@ paths:
             hourly limit of generations for this account. `insights.generate.budgetExceeded`: the DAY's token ceiling
             refused the reservation before any provider was contacted — retry tomorrow, not in an hour. No code, with
             provider wording: the upstream provider rate-limited every hop of the chain."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "502":
+          description: The generated briefing did not pass the outbound safety screen and was discarded (`meta.errorCode` =
+            `insights.generate.outboundScreened`). Regenerating may succeed.
           content:
             application/json:
               schema:
