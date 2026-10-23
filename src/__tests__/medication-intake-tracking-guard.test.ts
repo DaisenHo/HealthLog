@@ -30,7 +30,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -63,6 +63,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
   "app/api/export/route.ts": "export of the recorded history",
   "lib/export/medications-backup.ts": "backup of the recorded history",
   "app/api/sync/state/route.ts": "sync watermarks, no rate",
+  "app/api/sync/changes/route.ts":
+    "delta feed mirroring the recorded rows to a paired client, no rate",
   "lib/jobs/measurement-tombstone-cleanup.ts": "tombstone purge",
   "lib/ai/coach/tools/availability.ts":
     "whether any intake history exists, and its date range",
@@ -141,12 +143,6 @@ function sourceFiles(): string[] {
 }
 
 /** Drop line and block comments so a mention in prose never counts. */
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
-
 function code(rel: string): string {
   return stripComments(readFileSync(join(SRC, rel), "utf8"));
 }
