@@ -33,6 +33,13 @@ const WRITE_RE =
 const TAIL = "runs afterMeasurementMutation";
 
 /**
+ * Writes here; the module named runs `afterMeasurementMutation` on the same
+ * rows (a service split into stages, whose write and tail are siblings).
+ */
+const TAIL_VIA_PREFIX = "runs afterMeasurementMutation via ";
+const TAIL_VIA = (file: string) => `${TAIL_VIA_PREFIX}${file}`;
+
+/**
  * Every file with a measurement write, and how it keeps the two readers
  * current. A file listed here must still contain a write (a stale entry
  * fails too).
@@ -44,7 +51,9 @@ const WRITE_SITES: Record<string, string> = {
   "app/api/measurements/bulk-delete/route.ts": TAIL,
   "app/api/measurements/by-external-ids/route.ts": TAIL,
   "app/api/measurements/restore/route.ts": TAIL,
-  "app/api/measurements/batch/route.ts": TAIL,
+  "lib/measurements/batch-ingest/write-measurements.ts": TAIL_VIA(
+    "lib/measurements/batch-ingest/tail.ts",
+  ),
   "app/api/measurements/route.ts": TAIL,
   "app/api/mental-health/assessments/route.ts": TAIL,
   "lib/insights/score-row.ts": TAIL,
@@ -157,8 +166,14 @@ describe("measurement write tail", () => {
 
   it("the files that claim the shared tail call it", () => {
     const missing = Object.entries(WRITE_SITES)
-      .filter(([, reason]) => reason === TAIL)
-      .map(([file]) => file)
+      .filter(
+        ([, reason]) => reason === TAIL || reason.startsWith(TAIL_VIA_PREFIX),
+      )
+      .map(([file, reason]) =>
+        reason.startsWith(TAIL_VIA_PREFIX)
+          ? reason.slice(TAIL_VIA_PREFIX.length)
+          : file,
+      )
       .filter(
         (file) =>
           !/afterMeasurementMutation\s*\(/.test(
