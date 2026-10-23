@@ -163,15 +163,10 @@ async function commitOcrRows(request: NextRequest) {
       const auditIssues = sanitiseZodIssues(error.issues, {
         stripValuesFromMessage: true,
       });
-      prisma.auditLog
-        .create({
-          data: {
-            userId: user.id,
-            action: "labs.ocr.commit.validation-failed",
-            details: JSON.stringify({ issues: auditIssues }),
-          },
-        })
-        .catch(() => {});
+      auditLog("labs.ocr.commit.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {});
     },
   });
   if (!parsed.ok) return parsed.error;
