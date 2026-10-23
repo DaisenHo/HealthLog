@@ -6,11 +6,10 @@
  * adds it beside what is there and never replaces an existing page.
  *
  * Flags:
- * - `topics`: the Topics area (`/topics`, `/api/topics`), overview pages
- *   that bring related signals together above the single-metric Insights
- *   pages, which stay exactly as they are. Switched in Settings > System >
- *   Preview features, published on `/api/auth/me` as `previewFeatures`, read
- *   by the navigation and refused by the topic routes while off.
+ * - `topics`: topic overview pages above the single-metric Insights pages.
+ *   Stored, served by `/api/settings/preview-features` and carried by the
+ *   backup. The Settings > System switch is not listed until the topic pages
+ *   ship, because nothing reads the flag yet.
  *
  * Unknown keys in a stored blob are dropped on read, so a flag retired later
  * disappears cleanly and a malformed blob reads as everything off.
