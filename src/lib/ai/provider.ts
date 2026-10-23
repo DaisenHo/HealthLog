@@ -3,7 +3,8 @@ import { readOperatorRow } from "@/lib/settings/operator-row";
 import { bindResponseTimeout } from "./effective-timeout";
 import { bindReasoningEffort } from "./reasoning-effort";
 import { prisma } from "@/lib/db";
-import { decrypt } from "@/lib/crypto";
+import { openStoredKey } from "./stored-key";
+import { isAnthropicBaseUrl } from "./anthropic-host";
 import { CodexClient, resolveCodexVisionSlug } from "./codex-client";
 import { OpenAIClient } from "./openai-client";
 import { AnthropicClient } from "./anthropic-client";
@@ -34,7 +35,6 @@ import {
 } from "@/lib/sharing/provider-work-authority";
 import { memoizePerRequest } from "@/lib/request-cache";
 import { emitSignal } from "@/lib/logging/signal";
-import { getEvent } from "@/lib/logging/context";
 import {
   acquireProviderTokenRefreshLock,
   PROVIDER_REFRESH_TRANSACTION_OPTIONS,
@@ -372,22 +372,6 @@ function isOperatorOwned(row: { role: string } | null | undefined): boolean {
 }
 
 /**
- * A stored provider key, or null when it cannot be opened: a key id retired
- * from `ENCRYPTION_KEYS`, a corrupt row. An unreadable key is an unconfigured
- * provider, the same as no key at all. Its entry drops out of the chain, so a
- * generation answers the no-provider refusal (422 `ai.provider.none`)
- * instead of the decrypt's 500, and the operator sees the warning.
- */
-function openStoredKey(encrypted: string): string | null {
-  try {
-    return decrypt(encrypted);
-  } catch {
-    getEvent()?.addWarning("ai: a stored provider key could not be opened");
-    return null;
-  }
-}
-
-/**
  * v1.33.1 (#470) — build the OpenAI-compatible gateway client from the user's
  * three dedicated columns. The signature names every column this provider is
  * allowed to read: the OpenAI key and `aiBaseUrl` are absent on purpose, so a
@@ -479,8 +463,9 @@ function buildUserProvider(row: UserAIRow): AIProvider | null {
       // Belt-and-braces: ignore any persisted `aiBaseUrl`. The column is
       // shared with LOCAL, so a stale LAN URL there would otherwise
       // redirect the user's OpenAI key to a private host.
-      if (!row.aiOpenaiKeyEncrypted) return null;
-      const apiKey = openStoredKey(row.aiOpenaiKeyEncrypted);
+      const apiKey = row.aiOpenaiKeyEncrypted
+        ? openStoredKey(row.aiOpenaiKeyEncrypted)
+        : null;
       if (apiKey === null) return null;
       return new OpenAIClient({
         apiKey,
@@ -494,25 +479,6 @@ function buildUserProvider(row: UserAIRow): AIProvider | null {
     default:
       return null;
   }
-}
-
-/**
- * True when a base URL addresses Anthropic's API: the host itself or any
- * subdomain of `anthropic.com`, case-insensitively. Parsed rather than
- * substring-matched, so `https://anthropic.com.attacker.example/v1` and
- * `https://evil.example/?x=api.anthropic.com` both answer false.
- *
- * An unparseable value answers false and keeps the OpenAI path, which is the
- * behaviour that value had before this function existed.
- */
-export function isAnthropicBaseUrl(baseUrl: string): boolean {
-  let host: string;
-  try {
-    host = new URL(baseUrl).hostname.toLowerCase();
-  } catch {
-    return false;
-  }
-  return host === "anthropic.com" || host.endsWith(".anthropic.com");
 }
 
 /**
@@ -1381,8 +1347,7 @@ async function resolveProviderForType(
     }
     case "openai": {
       const enc = ctx.userRow?.aiOpenaiKeyEncrypted;
-      if (!enc) return null;
-      const apiKey = openStoredKey(enc);
+      const apiKey = enc ? openStoredKey(enc) : null;
       if (apiKey === null) return null;
       return new OpenAIClient({
         apiKey,
@@ -1392,8 +1357,7 @@ async function resolveProviderForType(
     }
     case "anthropic": {
       const enc = ctx.userRow?.aiAnthropicKeyEncrypted;
-      if (!enc) return null;
-      const apiKey = openStoredKey(enc);
+      const apiKey = enc ? openStoredKey(enc) : null;
       if (apiKey === null) return null;
       return new AnthropicClient({
         apiKey,
