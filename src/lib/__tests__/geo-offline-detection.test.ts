@@ -201,6 +201,11 @@ describe("offline-geo runtime detection", () => {
     expect(boot).toMatch(
       /import\("@\/lib\/notifications\/offline-geo-notice"\)[\s\S]*registerOfflineGeoNotice\(\)/,
     );
+    // …and the helper that does it runs inside `register()`.
+    const registerBody = boot.slice(
+      boot.indexOf("export async function register()"),
+    );
+    expect(registerBody).toContain("await registerOfflineGeoNoticeAtBoot()");
   });
 
   it("offlineGeoReady() is false when the .empty marker is present", async () => {
