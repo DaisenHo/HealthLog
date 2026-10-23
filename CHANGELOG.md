@@ -66,6 +66,9 @@
 - Ending a session from the session list records correctly whether it was
   your own.
 - Values that round to zero no longer show as "-0".
+- Clearing a filter on the documents, measurements or mood pages, closing
+  a document or zooming the timeline no longer brings the old address back
+  a moment later.
 - The nightly measurement maintenance no longer reports every run as
   failed: it recorded the table's bloat as a decimal where only whole
   numbers were accepted, although the maintenance itself had run. (#1271)
