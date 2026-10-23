@@ -37,7 +37,7 @@
  */
 import { RRule } from "rrule";
 
-import { DOSE_WINDOW_DEFAULTS } from "@/lib/analytics/compliance";
+import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import {
   buildSlotBands,
   type SlotBand,
