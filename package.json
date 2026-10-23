@@ -46,6 +46,7 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "e2e": "playwright test",
+    "e2e:critical": "playwright test --grep @critical",
     "e2e:ui": "playwright test --ui",
     "openapi:generate": "npx tsx scripts/generate-openapi.ts",
     "openapi:check": "npx tsx scripts/check-openapi.ts",

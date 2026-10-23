@@ -319,7 +319,7 @@ test.describe("Backup and restore, through the settings surfaces", () => {
     tamperedCopyId = null;
   });
 
-  test("a record is written, sealed into an HLX1 archive, and snapshotted", async ({
+  test("a record is written, sealed into an HLX1 archive, and snapshotted @critical", async ({
     page,
   }) => {
     await page.goto("/measurements", { waitUntil: "domcontentloaded" });
@@ -505,7 +505,7 @@ test.describe("Backup and restore, through the settings surfaces", () => {
     expect(await storedMeasurements()).toEqual(before);
   });
 
-  test("the snapshot puts back what was deleted and drops what came after", async ({
+  test("the snapshot puts back what was deleted and drops what came after @critical", async ({
     page,
   }) => {
     const record = requireSeeded();
