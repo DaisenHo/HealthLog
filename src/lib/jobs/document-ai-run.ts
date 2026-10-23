@@ -97,11 +97,7 @@ import {
   executeSupplementLabelExtraction,
   requireSupplementLabelProvider,
 } from "@/lib/medications/ingredients/label-extract";
-
-export const DOCUMENT_AI_RUN_QUEUE = "document-ai-run";
-
-/** Two reads at a time: provider calls, kept off the request pool. */
-export const DOCUMENT_AI_RUN_CONCURRENCY = 2;
+import { DOCUMENT_AI_RUN_QUEUE } from "./document-ai-run-queue";
 
 /**
  * The job's expiry: one hour. Three model calls at the longest response

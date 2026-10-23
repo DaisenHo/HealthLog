@@ -49,8 +49,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import type { DocumentSummaryState } from "@/generated/prisma/client";
 import { logCaught } from "@/lib/logging/signal";
-
-export const DOCUMENT_SUMMARY_QUEUE = "document-summary";
+import { DOCUMENT_SUMMARY_QUEUE } from "./document-summary-queue";
 
 /**
  * Record what became of this document's summary. Never touches a READY row —
@@ -72,9 +71,6 @@ async function markSummaryState(
     data: { summaryState: state },
   });
 }
-
-/** Serial concurrency — provider calls, kept off the request pool. */
-export const DOCUMENT_SUMMARY_CONCURRENCY = 1;
 
 export interface DocumentSummaryPayload {
   userId: string;

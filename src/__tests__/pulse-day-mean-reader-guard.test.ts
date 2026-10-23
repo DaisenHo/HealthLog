@@ -128,7 +128,7 @@ const TS_READERS: Record<string, Entry> = {
       /applyPayloadBudget\(\s*pulsePoints\s*,\s*\{[^}]*type\s*:\s*"PULSE"/,
   },
   "lib/insights/signals-of-day.ts": {
-    via: "lib/insights/features.ts",
+    via: "lib/insights/feature-window.ts",
     passes: /byType\(\s*"PULSE"\s*\)[\s\S]{0,80}type\s*:\s*"PULSE"/,
   },
   "lib/ai/coach/snapshot-blocks/core-metrics-block.ts": {

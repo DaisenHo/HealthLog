@@ -38,7 +38,7 @@ import { refuseStaleRecordSessionClaim } from "@/lib/sharing/record-session-fenc
 import { hashToken } from "@/lib/auth/hmac";
 import { annotate } from "@/lib/logging/context";
 import { isP2002 } from "@/lib/prisma-errors";
-import { findActiveGrant } from "@/lib/sharing/grants";
+import { findActiveGrant } from "@/lib/sharing/grant-access";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { createHash } from "node:crypto";
 import { looksSecretShaped } from "@/lib/secret-shape";

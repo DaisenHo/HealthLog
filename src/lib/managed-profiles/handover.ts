@@ -51,10 +51,10 @@ import {
   type HandoverAccess,
 } from "@/lib/managed-profiles/handover-access";
 import {
-  isGrantActive,
   settleHandoverGuardianGrant,
   withdrawPendingGrantsOfRecord,
 } from "@/lib/sharing/grants";
+import { isGrantActive } from "@/lib/sharing/grant-access";
 import { isP2002 } from "@/lib/prisma-errors";
 import type { Prisma } from "@/generated/prisma/client";
 

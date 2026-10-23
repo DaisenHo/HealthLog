@@ -37,11 +37,13 @@ import type { NarrativePeriod } from "@/lib/insights/narrative/period-narrative"
 import { defaultLocale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import {
-  PERIOD_NARRATIVE_QUEUE,
-  PERIOD_NARRATIVE_CRON,
   enqueueNarrativeWarm,
   type PeriodNarrativePayload,
 } from "@/lib/jobs/period-narrative-shared";
+import {
+  PERIOD_NARRATIVE_QUEUE,
+  PERIOD_NARRATIVE_CRON,
+} from "@/lib/jobs/period-narrative-queue";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 export { PERIOD_NARRATIVE_QUEUE, PERIOD_NARRATIVE_CRON, enqueueNarrativeWarm };

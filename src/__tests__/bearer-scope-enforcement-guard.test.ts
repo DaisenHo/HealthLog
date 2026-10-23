@@ -15,6 +15,7 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 
+import { guardSourceOf } from "./helpers/auth-guards";
 import {
   readSource,
   readSourceText,
@@ -226,8 +227,9 @@ describe("T1 — the Bearer resolution set is frozen", () => {
   const RESOLUTION_ALLOWLIST = [
     // The resolver. Owns the one authorisation arm.
     "lib/auth/bearer.ts",
-    // The REST edge — maps `requireAuth`'s optional scope onto the union.
-    "lib/api-handler.ts",
+    // The REST edge — maps `requireAuth`'s optional scope onto the union. The
+    // guard module behind `requireAuth`, re-exported by `lib/api-handler.ts`.
+    "lib/auth/guards/caller.ts",
     // The MCP edge — the one deliberate `any-valid-token` posture.
     "lib/mcp/auth.ts",
     // The `/mcp` transport, via `resolveMcpAuthContext`.
@@ -543,7 +545,7 @@ describe("T5 — a delegable route naming a Bearer scope is frozen", () => {
     // it and every other leg in this file stays green while a single-purpose
     // token gains delegated write — so the refusal is asserted where it lives,
     // not only through the behaviour that depends on it.
-    const src = readSource("src/lib/api-handler.ts", "narrow_scope_selector");
+    const src = guardSourceOf("requireRecordAuth", ["narrow_scope_selector"]);
     expect(src).toMatch(/narrow_scope_selector/);
     expect(src).toMatch(/isScopedCredential\(auth\)/);
   });

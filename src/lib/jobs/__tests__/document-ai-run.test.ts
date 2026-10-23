@@ -112,11 +112,11 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 import {
   DOCUMENT_AI_RUN_EXPIRE_SECONDS,
-  DOCUMENT_AI_RUN_QUEUE,
   enqueueDocumentAiRun,
   handleDocumentAiRunJobs,
   runDocumentAiRun,
 } from "@/lib/jobs/document-ai-run";
+import { DOCUMENT_AI_RUN_QUEUE } from "@/lib/jobs/document-ai-run-queue";
 
 const NOW = 1_800_000_000_000;
 const now = () => NOW;

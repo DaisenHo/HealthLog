@@ -50,10 +50,6 @@ import { isModuleEnabled } from "@/lib/modules/gate";
 
 import { getWorkerPrisma } from "./reminder/shared";
 
-export const MOOD_PROGNOSIS_REFRESH_QUEUE = "mood-prognosis-refresh";
-
-export const MOOD_PROGNOSIS_REFRESH_CRON = "35 4 * * *";
-
 export interface MoodPrognosisRefreshPayload {
   triggeredAt: string;
 }

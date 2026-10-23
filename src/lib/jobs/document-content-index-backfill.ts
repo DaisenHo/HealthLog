@@ -55,11 +55,7 @@ import { transcribeDocument } from "@/lib/documents/describe";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { annotate } from "@/lib/logging/context";
-
-export const CONTENT_INDEX_BACKFILL_QUEUE = "document-content-index-backfill";
-
-/** Serial concurrency — provider calls, kept off the request pool. */
-export const CONTENT_INDEX_BACKFILL_CONCURRENCY = 1;
+import { CONTENT_INDEX_BACKFILL_QUEUE } from "./document-content-index-backfill-queue";
 
 /** Discovery page size (id-only; blobs are loaded one at a time). */
 const PAGE_SIZE = 50;

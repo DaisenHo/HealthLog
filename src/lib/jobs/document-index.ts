@@ -17,11 +17,7 @@ import { indexDocumentContent } from "@/lib/documents/index-document";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import { caughtAs, logCaught } from "@/lib/logging/signal";
-
-export const DOCUMENT_INDEX_QUEUE = "document-index";
-
-/** Serial concurrency — provider calls + PDF parse, kept off the request pool. */
-export const DOCUMENT_INDEX_CONCURRENCY = 1;
+import { DOCUMENT_INDEX_QUEUE } from "./document-index-queue";
 
 export interface DocumentIndexPayload {
   userId: string;

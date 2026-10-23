@@ -21,15 +21,6 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { persistStrainScore } from "@/lib/insights/strain-score";
 import { runScoreBatch } from "@/lib/insights/score-row";
 
-export const STRAIN_SCORE_QUEUE = "strain-score-compute";
-
-/**
- * Daily at 04:55 Europe/Berlin — inside the existing maintenance window,
- * after the recovery-score (04:45) + stress-score (04:50) passes so the
- * nightly score writes stay ordered and don't pile on one boss poll.
- */
-export const STRAIN_SCORE_CRON = "55 4 * * *";
-
 /** Per-run user cap — same starvation guard the other score passes use. */
 export const STRAIN_SCORE_BATCH_CAP = 500;
 

@@ -2,13 +2,12 @@ import type { Readable } from "node:stream";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { _resetCryptoCacheForTests, encrypt } from "@/lib/crypto";
 import { encryptBackup } from "../offhost-backup";
+import { handleRestoreDrill, runRestoreDrill } from "../restore-drill";
 import {
-  handleRestoreDrill,
-  runRestoreDrill,
   RESTORE_DRILL_CRON,
   RESTORE_DRILL_QUEUE,
   RESTORE_DRILL_SEND_OPTIONS,
-} from "../restore-drill";
+} from "@/lib/jobs/restore-drill-queue";
 import { QUEUE_RUNTIME } from "../queue-runtime";
 
 vi.mock("../report-worker-error", () => ({

@@ -71,11 +71,6 @@ import {
   surfaceCoachReminders,
 } from "@/lib/ai/coach/reminder-surface";
 
-export const COACH_REMINDER_SWEEP_QUEUE = "coach-reminder-sweep";
-// Daily at 05:20 Europe/Berlin — just after the 05:15 nudge tick so both
-// proactive passes run on settled overnight rows.
-export const COACH_REMINDER_SWEEP_CRON = "20 5 * * *";
-
 /** Bound the plan-review fan-out per tick so one sweep can't run unbounded. */
 const PLAN_REVIEW_BATCH = 200;
 /** Bound the surfacing fan-out per tick for the same reason. */

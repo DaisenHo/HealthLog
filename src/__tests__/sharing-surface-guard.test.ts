@@ -75,6 +75,7 @@ import { ENTIRE_RECORD, SHARE_DOMAINS } from "@/lib/sharing/scope";
 import type { ShareScope } from "@/lib/sharing/scope";
 
 import { ADMITTED_MUTATING_HANDLERS } from "../../tests/fixtures/v137/sharing-matrix";
+import { API_HANDLER, guardModuleOf } from "./helpers/auth-guards";
 import { readSourceText } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
@@ -115,7 +116,7 @@ const VALID_SCOPES: ReadonlySet<string> = new Set<string>([
  * "is this caller an admin", "has this caller just re-proven a second factor",
  * "is this caller here over a cookie". All three resolve through `getSession()`
  * and see the actor, never the owner — that is what
- * `acting-account-boundary-guard.test.ts` pins inside `api-handler.ts`.
+ * `acting-account-boundary-guard.test.ts` pins inside `lib/auth/guards/`.
  *
  * This file pins the other end. A handler that resolves a RECORD and then runs
  * one of these has put a role check and a substituted data scope in the same
@@ -421,6 +422,51 @@ function callsSymbol(rel: string, symbol: string): boolean {
 }
 
 /**
+ * Route modules whose handler bodies live in service modules under `lib/`.
+ *
+ * The route keeps the resolver call, so the verb and membership legs read the
+ * route alone. The legs about what a handler writes (the audit trail, the
+ * tombstone, the overwrite and destruction details, the provenance a moved
+ * dose keeps) ask the route AND the modules it hands the body to, because
+ * that is where the rows are written now. A leg reading only the route would
+ * go on passing for a reason that has nothing to do with the rule. Each
+ * listed module has to be imported by its route (leg below), so an entry
+ * cannot outlive the delegation it describes.
+ */
+const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
+  "app/api/medications/route.ts": ["lib/medications/create-medication.ts"],
+  "app/api/medications/[id]/intake/[eventId]/route.ts": [
+    "lib/medications/update-intake-event.ts",
+    "lib/medications/delete-intake-event.ts",
+  ],
+};
+
+/** The route and the service modules carrying its handler bodies. */
+function handlerModules(rel: string): string[] {
+  return [rel, ...(HANDLER_BODY_MODULES[rel] ?? [])];
+}
+
+function handlerCallsSymbol(rel: string, symbol: string): boolean {
+  return handlerModules(rel).some((m) => callsSymbol(m, symbol));
+}
+
+function handlerIdentifiers(rel: string): Set<string> {
+  return new Set(handlerModules(rel).flatMap((m) => [...identifiers(m)]));
+}
+
+function handlerAuditDetailKeys(rel: string): string[][] {
+  return handlerModules(rel).flatMap((m) => auditDetailKeysIn(m));
+}
+
+function handlerDirectAuditWrites(rel: string): string[] {
+  return handlerModules(rel).flatMap((m) => directAuditWritesIn(read(m), m));
+}
+
+function handlerText(rel: string): string {
+  return handlerModules(rel).map(read).join("\n");
+}
+
+/**
  * v1.37.0 — the exported HTTP verbs whose bodies reach the record resolver at
  * a given level.
  *
@@ -719,6 +765,25 @@ function functionSource(rel: string, name: string): string {
     found = text.slice(node.getStart(parsed), node.getEnd());
   });
   return found;
+}
+
+/** Names a module re-exports with `export { … } from "…"`. */
+function reexportedNames(rel: string): string[] {
+  const parsed = ts.createSourceFile(
+    rel,
+    read(rel),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const names: string[] = [];
+  parsed.forEachChild((node) => {
+    if (!ts.isExportDeclaration(node) || !node.moduleSpecifier) return;
+    const clause = node.exportClause;
+    if (!clause || !ts.isNamedExports(clause)) return;
+    for (const spec of clause.elements) names.push(spec.name.text);
+  });
+  return names;
 }
 
 /** Names of the top-level functions a module exports. */
@@ -2557,11 +2622,17 @@ describe("the resolvers exist and live in one place", () => {
     // between "no route administers a managed profile" and "the guard is
     // looking for a function that does not exist": its frozen list is empty,
     // so its leg's negative result proves nothing on its own.
-    const exported = exportedFunctionNames("lib/api-handler.ts");
+    const declaring = guardModuleOf(RECORD_RESOLVER);
+    const exported = exportedFunctionNames(declaring);
     expect(exported.length).toBeGreaterThan(0);
     expect(exported).toContain(RECORD_RESOLVER);
     expect(exported).toContain(ACTOR_RESOLVER);
     expect(exported).toContain(GUARDIAN_RESOLVER);
+    // And the public entry routes import them from re-exports all three.
+    const reexported = reexportedNames(API_HANDLER);
+    expect(reexported).toContain(RECORD_RESOLVER);
+    expect(reexported).toContain(ACTOR_RESOLVER);
+    expect(reexported).toContain(GUARDIAN_RESOLVER);
   });
 
   it("nothing outside the frozen route lists reaches any resolver", () => {
@@ -2582,7 +2653,9 @@ describe("the resolvers exist and live in one place", () => {
     expect(naming).toEqual(
       [
         // Declares all three. Not a caller.
-        "lib/api-handler.ts",
+        guardModuleOf(RECORD_RESOLVER),
+        // Re-exports all three as the public entry. Not a caller.
+        API_HANDLER,
         ...Object.keys(DELEGABLE_ROUTES),
         ...Object.keys(GUARDIAN_ROUTES),
         ...Object.keys(ACTOR_ROUTES),
@@ -2617,10 +2690,11 @@ describe("(a) the delegable route set is frozen", () => {
     // names nothing" were the same sentence; the list is populated now, so the
     // assertion below would catch a neutered matcher on its own. Kept anyway,
     // because a future removal could empty the list again and the day that
-    // happens is not the day to rediscover this. `lib/api-handler.ts` is the
-    // guaranteed positive — it declares the symbol.
-    expect(modulesNaming(["lib/api-handler.ts"], RECORD_RESOLVER)).toEqual([
-      "lib/api-handler.ts",
+    // happens is not the day to rediscover this. The guard module that
+    // declares the symbol is the guaranteed positive.
+    const recordModule = guardModuleOf(RECORD_RESOLVER);
+    expect(modulesNaming([recordModule], RECORD_RESOLVER)).toEqual([
+      recordModule,
     ]);
 
     expect(modulesNaming(scanned, RECORD_RESOLVER)).toEqual(
@@ -2640,9 +2714,8 @@ describe("(b) the actor-surface route set is frozen", () => {
     expect(scanned.length).toBeGreaterThan(ROUTE_MODULE_FLOOR);
 
     // Positive control, same reason as leg (a).
-    expect(modulesNaming(["lib/api-handler.ts"], ACTOR_RESOLVER)).toEqual([
-      "lib/api-handler.ts",
-    ]);
+    const actorModule = guardModuleOf(ACTOR_RESOLVER);
+    expect(modulesNaming([actorModule], ACTOR_RESOLVER)).toEqual([actorModule]);
 
     expect(modulesNaming(scanned, ACTOR_RESOLVER)).toEqual(
       Object.keys(ACTOR_ROUTES).sort(),
@@ -2733,14 +2806,22 @@ describe("(c) a record resolver never shares a module with a role or step-up che
   });
 
   it("the declaration site is out of scope by construction", () => {
-    // `lib/api-handler.ts` declares the record resolver AND all three cookie-
-    // only helpers, so a scan of every source file would need it exempted, and
-    // an exemption is a hole. Scoping the leg to handler modules removes the
-    // need for one. This asserts the scoping still holds.
-    const src = exportedFunctionNames("lib/api-handler.ts");
-    expect(src).toContain(RECORD_RESOLVER);
-    for (const helper of COOKIE_ONLY_HELPERS) expect(src).toContain(helper);
-    expect(routeModules()).not.toContain("lib/api-handler.ts");
+    // The auth layer declares the record resolver AND all three cookie-only
+    // helpers (in `lib/auth/guards/`, re-exported by `lib/api-handler.ts`), so
+    // a scan of every source file would need those modules exempted, and an
+    // exemption is a hole. Scoping the leg to handler modules removes the need
+    // for one. This asserts the scoping still holds.
+    const declaring = [RECORD_RESOLVER, ...COOKIE_ONLY_HELPERS].map((name) =>
+      guardModuleOf(name),
+    );
+    expect(exportedFunctionNames(declaring[0])).toContain(RECORD_RESOLVER);
+    COOKIE_ONLY_HELPERS.forEach((helper, i) =>
+      expect(exportedFunctionNames(declaring[i + 1])).toContain(helper),
+    );
+    const routes = routeModules();
+    for (const rel of [API_HANDLER, ...declaring]) {
+      expect(routes).not.toContain(rel);
+    }
   });
 });
 
@@ -2840,9 +2921,10 @@ describe("(e) the delegable write set is frozen", () => {
     expect(modules.length).toBeGreaterThan(0);
 
     for (const rel of modules) {
-      expect(callsSymbol(rel, "auditLog"), `${rel} never calls auditLog`).toBe(
-        true,
-      );
+      expect(
+        handlerCallsSymbol(rel, "auditLog"),
+        `${rel} never calls auditLog`,
+      ).toBe(true);
     }
   });
 
@@ -2862,7 +2944,7 @@ describe("(e) the delegable write set is frozen", () => {
 
     for (const rel of modules) {
       expect(
-        directAuditWritesIn(read(rel), rel),
+        handlerDirectAuditWrites(rel),
         `${rel} writes an audit row without the helper`,
       ).toEqual([]);
     }
@@ -2979,6 +3061,28 @@ describe("(g) the MANAGE route set is frozen", () => {
     expect(discovered).toEqual(expected);
   });
 
+  it("reads each moved handler body where its route imports it from", () => {
+    // The map above widens what the audit and tombstone legs read. An entry
+    // naming a module the route no longer imports would widen it to code the
+    // handler does not run, so every entry is held to the route's imports,
+    // and every listed module has to carry an audit call of its own.
+    const entries = Object.entries(HANDLER_BODY_MODULES);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [route, modules] of entries) {
+      expect(DELEGABLE_ROUTES, route).toHaveProperty([route]);
+      for (const body of modules) {
+        const specifier = `@/${body.replace(/\.ts$/, "")}`;
+        expect(read(route), `${route} does not import ${specifier}`).toContain(
+          `"${specifier}"`,
+        );
+        expect(
+          callsSymbol(body, "auditLog"),
+          `${body} writes no audit row`,
+        ).toBe(true);
+      }
+    }
+  });
+
   it("is a subset of the delegable set", () => {
     // A module cannot manage a record it may not read. The read list is where
     // each file's argument lives, so a manage entry with no read entry would
@@ -3007,16 +3111,17 @@ describe("(g) the MANAGE route set is frozen", () => {
     expect(mutating.length).toBeGreaterThan(30);
 
     for (const rel of mutating) {
-      expect(callsSymbol(rel, "auditLog"), `${rel} never calls auditLog`).toBe(
-        true,
-      );
+      expect(
+        handlerCallsSymbol(rel, "auditLog"),
+        `${rel} never calls auditLog`,
+      ).toBe(true);
     }
   });
 
   it("no manage module reaches the audit table without the helper", () => {
     for (const rel of Object.keys(DELEGABLE_MANAGE_ROUTES)) {
       expect(
-        directAuditWritesIn(read(rel), rel),
+        handlerDirectAuditWrites(rel),
         `${rel} writes an audit row without the helper`,
       ).toEqual([]);
     }
@@ -3035,7 +3140,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
     for (const rel of destructive) {
       const entry = DELEGABLE_MANAGE_ROUTES[rel];
-      const tombstones = identifiers(rel).has("deletedAt");
+      const tombstones = handlerIdentifiers(rel).has("deletedAt");
       expect(
         tombstones ||
           entry.conditions.includes("C3") ||
@@ -3056,7 +3161,7 @@ describe("(g) the MANAGE route set is frozen", () => {
     for (const [rel, { keys, why }] of members) {
       expect(why.trim().length, `${rel} has no reason`).toBeGreaterThan(0);
       expect(DELEGABLE_MANAGE_ROUTES, rel).toHaveProperty([rel]);
-      const carried = auditDetailKeysIn(rel);
+      const carried = handlerAuditDetailKeys(rel);
       expect(carried.length, `${rel} files no audit details`).toBeGreaterThan(
         0,
       );
@@ -3079,10 +3184,10 @@ describe("(g) the MANAGE route set is frozen", () => {
     for (const rel of members) {
       if (rel in MANAGE_RECONSTRUCTION_BY_HAND) continue;
       expect(
-        callsSymbol(rel, "destroyedDetails"),
+        handlerCallsSymbol(rel, "destroyedDetails"),
         `${rel} carries C3 and never calls destroyedDetails`,
       ).toBe(true);
-      const named = auditDetailKeysIn(rel).some((keys) =>
+      const named = handlerAuditDetailKeys(rel).some((keys) =>
         keys.some((key) => /(^id$|Id$)/.test(key)),
       );
       expect(named, `${rel} files no id on any audit details literal`).toBe(
@@ -3097,7 +3202,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
     for (const rel of members) {
       expect(
-        callsSymbol(rel, "overwriteDetails"),
+        handlerCallsSymbol(rel, "overwriteDetails"),
         `${rel} carries C4 and never calls overwriteDetails`,
       ).toBe(true);
     }
@@ -3152,7 +3257,7 @@ describe("(g) the MANAGE route set is frozen", () => {
     // …and the fact it reads has to be stamped. The resolver is where the
     // owner row is in hand, so it is the only place that can decide it.
     const resolver = functionSource(
-      "lib/api-handler.ts",
+      guardModuleOf("resolveSwitchedRecord"),
       "resolveSwitchedRecord",
     );
     expect(resolver.length).toBeGreaterThan(0);
@@ -3278,7 +3383,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
     const medication = "app/api/medications/[id]/route.ts";
     expect(manageModulesWith("C7")).toEqual([medication]);
-    const cadence = auditDetailKeysIn(medication).some(
+    const cadence = handlerAuditDetailKeys(medication).some(
       (keys) =>
         keys.includes("replacedCadence") &&
         keys.includes("tombstonedSlotCount"),
@@ -3289,14 +3394,15 @@ describe("(g) the MANAGE route set is frozen", () => {
     expect(manageModulesWith("C8")).toEqual([dose]);
     // The hardcoded provenance this condition removed. A re-created row that
     // stamps `WEB` says a human typed a dose that arrived from a device.
-    expect(read(dose)).not.toContain('createSource: "WEB"');
+    expect(handlerText(dose)).not.toContain('createSource: "WEB"');
+    expect(handlerText(dose)).toContain("createSource: event.source");
 
     expect(manageModulesWith("C9")).toEqual([
       "app/api/medications/[id]/intake/import/route.ts",
       "app/api/medications/intake/dose-history-import/route.ts",
     ]);
     for (const rel of manageModulesWith("C9")) {
-      const joined = auditDetailKeysIn(rel).some((keys) =>
+      const joined = handlerAuditDetailKeys(rel).some((keys) =>
         keys.includes("jobId"),
       );
       expect(joined, `${rel} enqueues work no audit row names`).toBe(true);
@@ -3343,10 +3449,11 @@ describe("(h) the guardian route set is frozen", () => {
     // Positive control for this leg's own matcher, the same one leg (a) uses
     // and for the same reason twice over: the literal is empty, so "no route
     // names the resolver" and "the matcher names nothing" are one sentence
-    // until something the matcher CAN find is named. `lib/api-handler.ts`
-    // declares the symbol and is the guaranteed positive.
-    expect(modulesNaming(["lib/api-handler.ts"], GUARDIAN_RESOLVER)).toEqual([
-      "lib/api-handler.ts",
+    // until something the matcher CAN find is named. The guard module that
+    // declares the symbol is the guaranteed positive.
+    const guardianModule = guardModuleOf(GUARDIAN_RESOLVER);
+    expect(modulesNaming([guardianModule], GUARDIAN_RESOLVER)).toEqual([
+      guardianModule,
     ]);
 
     expect(modulesNaming(scanned, GUARDIAN_RESOLVER)).toEqual(
@@ -3361,7 +3468,10 @@ describe("(h) the guardian route set is frozen", () => {
     // marker. A resolver that stopped reading it would leave every leg here
     // passing and the identity fence gone — an invited adult's MANAGE grant
     // would reach the settings of a record its owner still runs.
-    const guardian = functionSource("lib/api-handler.ts", GUARDIAN_RESOLVER);
+    const guardian = functionSource(
+      guardModuleOf(GUARDIAN_RESOLVER),
+      GUARDIAN_RESOLVER,
+    );
     // Non-zero proof, twice: the slice found a function, and it is the one it
     // claims to be. A renamed resolver must fail here rather than assert
     // against an empty string.
@@ -3372,7 +3482,10 @@ describe("(h) the guardian route set is frozen", () => {
     // …and the record resolver must NOT read it. The two resolvers differ in
     // exactly this fact, so a marker check that drifted into the delegable
     // path would make the fence meaningless while every list still agreed.
-    const record = functionSource("lib/api-handler.ts", RECORD_RESOLVER);
+    const record = functionSource(
+      guardModuleOf(RECORD_RESOLVER),
+      RECORD_RESOLVER,
+    );
     expect(record.length).toBeGreaterThan(0);
     expect(record).not.toContain("managedProfileAt");
   });

@@ -26,15 +26,7 @@ import {
   withPageWalkLedger,
 } from "@/lib/integrations/page-walk";
 import { syncUserWhoop } from "@/lib/whoop/sync";
-
-export const WHOOP_BACKFILL_QUEUE = "whoop-backfill";
-
-/**
- * Serial concurrency — a backfill walks years of history for one account and
- * is rate-bounded by WHOOP's 100 req/min cap; concurrency-1 keeps it from
- * crowding the request pool, matching `ROLLUP_FULL_BACKFILL_CONCURRENCY`.
- */
-export const WHOOP_BACKFILL_CONCURRENCY = 1;
+import { WHOOP_BACKFILL_QUEUE } from "./whoop-backfill-queue";
 
 export interface WhoopBackfillPayload {
   userId: string;

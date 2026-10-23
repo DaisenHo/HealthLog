@@ -78,8 +78,7 @@ import {
   type RestoreFailureCause,
 } from "@/lib/export/restore-failure-cause";
 import { logCaught } from "@/lib/logging/signal";
-
-export const BACKUP_RESTORE_QUEUE = "backup-restore";
+import { BACKUP_RESTORE_QUEUE } from "./backup-restore-queue";
 
 /** Stable code of the 409 a second restore of the same account gets. */
 export const BACKUP_RESTORE_ACTIVE_CODE = "backup.restore.active";

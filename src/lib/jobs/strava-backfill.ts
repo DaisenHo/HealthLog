@@ -27,15 +27,7 @@ import {
   withPageWalkLedger,
 } from "@/lib/integrations/page-walk";
 import { syncStravaHistory } from "@/lib/strava/sync";
-
-export const STRAVA_BACKFILL_QUEUE = "strava-backfill";
-
-/**
- * Serial concurrency — a backfill walks the account's activity history and is
- * rate-bounded by Strava's 200-req / 15-min cap; concurrency-1 keeps it from
- * crowding the request pool, matching `WHOOP_BACKFILL_CONCURRENCY`.
- */
-export const STRAVA_BACKFILL_CONCURRENCY = 1;
+import { STRAVA_BACKFILL_QUEUE } from "./strava-backfill-queue";
 
 export interface StravaBackfillPayload {
   userId: string;

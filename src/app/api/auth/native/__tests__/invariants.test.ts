@@ -11,6 +11,8 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { guardSourceOf } from "@/__tests__/helpers/auth-guards";
+
 const SRC = join(process.cwd(), "src");
 const read = (rel: string) => readFileSync(join(SRC, rel), "utf8");
 
@@ -94,18 +96,15 @@ describe("T11/T13 — cookie-only boundaries and no bundle-in-browser", () => {
   });
 
   it("requireAdmin and requireFreshMfa remain cookie-only (getSession)", () => {
-    const handler = read("lib/api-handler.ts");
     // Both resolve via getSession() (cookie-only) — restated as a tripwire so a
-    // future edit that threads a Bearer into either trips this test.
-    const requireAdmin = handler.slice(
-      handler.indexOf("export async function requireAdmin"),
-      handler.indexOf("export async function requireAdmin") + 400,
-    );
-    expect(requireAdmin).toMatch(/getSession\(\)/);
-    const requireFresh = handler.slice(
-      handler.indexOf("export async function requireFreshMfa"),
-      handler.indexOf("export async function requireFreshMfa") + 400,
-    );
-    expect(requireFresh).toMatch(/getSession\(\)/);
+    // future edit that threads a Bearer into either trips this test. Read from
+    // the guard module that declares each, which throws if it is gone.
+    const opening = (name: string) => {
+      const src = guardSourceOf(name, [`export async function ${name}(`]);
+      const start = src.indexOf(`export async function ${name}(`);
+      return src.slice(start, start + 600);
+    };
+    expect(opening("requireAdmin")).toMatch(/getSession\(\)/);
+    expect(opening("requireFreshMfa")).toMatch(/getSession\(\)/);
   });
 });

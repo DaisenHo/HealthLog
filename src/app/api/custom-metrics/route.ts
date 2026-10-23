@@ -5,10 +5,9 @@ import {
   apiError,
   apiSuccess,
   getClientIp,
-  returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserCorrelationPatterns } from "@/lib/cache/invalidate";
 import {
@@ -63,33 +62,28 @@ export const POST = apiHandler(
 async function postCustomMetric(request: NextRequest) {
   const { user } = await requireAuth();
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createCustomMetricSchema, {
     maxBytes: 16 * 1024,
-  });
-  if (jsonError) return jsonError;
-
-  const parsed = createCustomMetricSchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "custom-metric.metric.create.validation-failed" },
-      meta: { issue_count: parsed.error.issues.length },
-    });
-    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-      stripValuesFromMessage: true,
-    });
-    prisma.auditLog
-      .create({
-        data: {
-          userId: user.id,
-          action: "custom-metric.metric.create.validation-failed",
-          details: JSON.stringify({ issues: auditIssues }),
-        },
-      })
-      .catch(() => {
-        /* swallow — the 422 response is the contract */
+    action: "custom-metric.metric.create.validation-failed",
+    countIssues: true,
+    onInvalid: (error) => {
+      const auditIssues = sanitiseZodIssues(error.issues, {
+        stripValuesFromMessage: true,
       });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+      prisma.auditLog
+        .create({
+          data: {
+            userId: user.id,
+            action: "custom-metric.metric.create.validation-failed",
+            details: JSON.stringify({ issues: auditIssues }),
+          },
+        })
+        .catch(() => {
+          /* swallow — the 422 response is the contract */
+        });
+    },
+  });
+  if (!parsed.ok) return parsed.error;
 
   const {
     name,

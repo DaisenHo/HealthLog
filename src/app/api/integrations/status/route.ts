@@ -50,7 +50,7 @@ import {
 } from "@/lib/withings/plan-features";
 import { getPolarClientCredentials } from "@/lib/polar/credentials";
 import { getStravaClientCredentials } from "@/lib/strava/credentials";
-import { hasActivityScope } from "@/lib/withings/client";
+import { hasActivityScope } from "@/lib/withings/oauth";
 import { loadConnectionHealth } from "@/lib/integrations/connection-health-load";
 import {
   googleHealthBackfillEndedList,

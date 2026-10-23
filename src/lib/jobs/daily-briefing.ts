@@ -30,10 +30,6 @@ import {
 } from "@/lib/daily/daily-briefing-push";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
-export const DAILY_BRIEFING_QUEUE = "daily-briefing";
-/** Every 15 minutes; the per-user local-hour gate selects the fallback slot. */
-export const DAILY_BRIEFING_CRON = "*/15 * * * *";
-
 export interface DailyBriefingTickSummary {
   candidatesScanned: number;
   inSlot: number;
