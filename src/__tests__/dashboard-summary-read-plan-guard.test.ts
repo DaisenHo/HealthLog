@@ -25,7 +25,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const READS = join(process.cwd(), "src/lib/dashboard/summary-reads.ts");
-const ROUTE = join(process.cwd(), "src/app/api/dashboard/summary/route.ts");
+/** The summary's builder, moved out of its route; it makes the reads. */
+const ROUTE = join(process.cwd(), "src/lib/dashboard/summary/build.ts");
 
 /**
  * Source with every comment removed, so a guard matches the SQL the

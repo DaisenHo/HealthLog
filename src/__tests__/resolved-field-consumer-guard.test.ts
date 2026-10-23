@@ -359,7 +359,7 @@ const V143_FIELDS: ResolvedFieldEntry[] = [
       sameResolver: {
         pattern: VERDICT_RESOLVER,
         files: [
-          "src/app/api/dashboard/summary/route.ts",
+          "src/lib/dashboard/summary/cards.ts",
           "src/lib/dashboard/snapshot.ts",
         ],
       },

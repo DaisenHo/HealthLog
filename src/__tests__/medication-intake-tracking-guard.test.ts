@@ -57,7 +57,7 @@ const INTAKE_READ =
  */
 const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
   "app/api/admin/status/route.ts": "instance row counts",
-  "app/api/dashboard/summary/route.ts":
+  "lib/dashboard/summary/build.ts":
     "engagement streak of days with any logged action, no rate",
   "app/api/export/medications/route.ts": "export of the recorded history",
   "app/api/export/route.ts": "export of the recorded history",
