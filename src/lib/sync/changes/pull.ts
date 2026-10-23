@@ -112,7 +112,7 @@ export async function pullSyncChanges(input: {
   const { userId, token, limit, serverNow } = input;
 
   // Module gate: cycle. The `cycleDays` / `cycles` domains carry period
-  // days and per-day symptom rows, the same data every `/api/cycle/*` route
+  // days and per-day symptom rows, the same data every `/api/cycle` route
   // refuses with a 403 when the module is off. Without this the delta feed
   // re-served them ungated to the very same token.
   //

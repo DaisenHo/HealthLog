@@ -64,7 +64,7 @@ export const GET = apiHandler(
     const { id } = await params;
 
     // v1.5.5 — close the §10 invariant 24 gap. The destructive
-    // sweep in af224964 lifted every sibling `[id]/**` handler onto the
+    // sweep in af224964 lifted every sibling `[id]` handler onto the
     // shared ownership helper; the glp1 GET still hand-rolled the
     // `findUnique + userId compare` pattern. Routing it through the
     // same predicate keeps the 404 leak shape identical across every
