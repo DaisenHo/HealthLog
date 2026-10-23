@@ -210,6 +210,14 @@ export interface ParityCall {
   userIds: string[];
   /** The clock the test pinned; server stamps at or after it read `<now>`. */
   now: Date;
+  /**
+   * Waits, after the response, for a write the route deliberately does not
+   * await (a refusal's audit row), so the rows read back do not depend on
+   * whether it landed first.
+   */
+  settle?: () => Promise<void>;
+  /** Further state the route writes outside the medication tables. */
+  extra?: () => Promise<unknown>;
 }
 
 /**
@@ -224,6 +232,7 @@ export async function parityStep(call: ParityCall) {
   const res = await callRoute(call.handler, call.options);
   const events = wideEventRecorder.take();
   expect(events.length).toBeGreaterThan(0);
+  if (call.settle) await call.settle();
   await expectParity(
     call.name,
     stable(
@@ -233,6 +242,7 @@ export async function parityStep(call: ParityCall) {
         events: events.map(eventFacts).map(withoutCacheKeyHashes),
         effects: effectRecorder.take(),
         stored: await medicationState(getPrismaClient(), call.userIds),
+        ...(call.extra ? { extra: await call.extra() } : {}),
       },
       { since: call.now },
     ),
