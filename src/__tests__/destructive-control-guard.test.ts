@@ -598,8 +598,9 @@ const REGISTRY: DestructiveEntry[] = [
 
   // ── Documents ───────────────────────────────────────────────────────────
   {
-    file: "components/documents/document-detail-sheet.tsx",
+    file: "components/documents/detail/use-document-detail.ts",
     destroys: "one document in the vault",
+    triggers: ["components/documents/detail/detail-sections.tsx"],
     recovery: "restorable",
     confirm: [],
     unconfirmed: [

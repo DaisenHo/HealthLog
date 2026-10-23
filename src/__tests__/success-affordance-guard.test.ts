@@ -176,7 +176,12 @@ const PINNED_AFFORDANCES: Record<
   },
   "src/components/dashboard/range-display.tsx": { "text-success": 2 },
   "src/components/documents/document-card.tsx": { "text-success": 1 },
-  "src/components/documents/document-detail-sheet.tsx": { "toast.success": 2 },
+  "src/components/documents/detail/use-document-detail-ai.ts": {
+    "toast.success": 1,
+  },
+  "src/components/documents/detail/use-document-detail.ts": {
+    "toast.success": 1,
+  },
   "src/components/documents/vault/use-vault-library.ts": {
     "toast.success": 1,
   },
