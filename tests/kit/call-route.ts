@@ -64,6 +64,12 @@ export interface CallRouteOptions {
    * picks.
    */
   body?: unknown;
+  /**
+   * A raw text body sent as it is (a CSV upload), with
+   * `content-type: text/plain` unless `headers` names another. Not combined
+   * with `body`.
+   */
+  text?: string;
   auth: RouteAuth;
   headers?: Record<string, string>;
   contract?: { skip: string };
@@ -97,7 +103,13 @@ export async function callRoute<T = unknown>(
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
 
+  if (options.text !== undefined && options.body !== undefined) {
+    throw new Error("callRoute: pass either `body` or `text`, not both");
+  }
   const headers = new Headers(options.headers);
+  if (options.text !== undefined && !headers.has("content-type")) {
+    headers.set("content-type", "text/plain");
+  }
   const multipart = options.body instanceof FormData;
   if (
     options.body !== undefined &&
@@ -132,11 +144,13 @@ export async function callRoute<T = unknown>(
       method: options.method,
       headers,
       body:
-        options.body === undefined
-          ? undefined
-          : options.body instanceof FormData
-            ? options.body
-            : JSON.stringify(options.body),
+        options.text !== undefined
+          ? options.text
+          : options.body === undefined
+            ? undefined
+            : options.body instanceof FormData
+              ? options.body
+              : JSON.stringify(options.body),
     });
     response = await handler(request, {
       params: Promise.resolve(options.params ?? {}),
