@@ -510,9 +510,7 @@
     "documents": "Documentos",
     "vaccinations": "Vacinas",
     "mentalWellbeing": "Bem-estar mental",
-    "timeline": "Linha do tempo",
-    "topics": "Temas",
-    "previewBadge": "Beta"
+    "timeline": "Linha do tempo"
   },
   "auth": {
     "login": "Entrar",
@@ -6145,10 +6143,6 @@
       "access": {
         "title": "Acesso compartilhado",
         "subtitle": "Quem pode abrir seu registro de saúde e de quem você pode abrir."
-      },
-      "preview": {
-        "title": "Recursos em prévia",
-        "subtitle": "Experimente o que ainda não está pronto. Tudo aqui fica desligado até você ativar."
       }
     },
     "profile": "Perfil",
@@ -7634,17 +7628,6 @@
     "passkeyRemovedToast": "Chave de acesso removida.",
     "integrationDisconnected": "{provider} desconectado.",
     "integrationDisconnectFailed": "Não foi possível desconectar {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Temas",
-        "description": "Adiciona uma área Temas que reúne valores relacionados, ao lado das suas páginas de Análises.",
-        "detail": "Oito temas, do coração ao ciclo, mostram seus valores lado a lado, como eles variam juntos e links para as páginas por métrica que você já usa. Suas páginas de Análises, a navegação e os links continuam exatamente como estão. Tudo é calculado a partir dos seus próprios valores, sem IA. Desativar remove a entrada e não apaga nada.",
-        "savedOn": "Prévia de Temas ativada.",
-        "savedOff": "Prévia de Temas desativada.",
-        "open": "Abrir Temas"
-      },
-      "loadError": "Não foi possível carregar suas configurações de prévia."
-    },
     "timezoneSaved": "Fuso horário salvo.",
     "moduleState": {
       "on": "Ligado",
@@ -13781,172 +13764,6 @@
       "asNeeded": "Conforme necessário",
       "startsOn": "Início",
       "endsOn": "Fim"
-    }
-  },
-  "topics": {
-    "overview": {
-      "title": "Temas",
-      "description": "Valores relacionados reunidos a partir dos seus dados; abra um tema para vê-los lado a lado.",
-      "emptyTitle": "Ainda não há o que reunir",
-      "emptyDescription": "Os temas aparecem assim que houver valores para eles: de um dispositivo, de uma importação ou registrados por você.",
-      "notRecorded": "Ainda sem registros para: {topics}.",
-      "hiddenByModule": "Ocultos porque o módulo está desligado: {topics}.",
-      "modulesLink": "Alterar módulos nas configurações"
-    },
-    "detail": {
-      "back": "Todos os temas"
-    },
-    "loadError": "Não foi possível carregar os temas.",
-    "previewNote": "Isto é uma prévia. Pode mudar entre versões, e suas páginas por métrica continuam como estão.",
-    "recorded": "Valores registrados: {count} de {total}",
-    "tone": {
-      "steady": "Estável",
-      "watch": "Vale uma olhada",
-      "learning": "Aprendendo"
-    },
-    "summary": {
-      "outsideAbove": "{signal} está acima da sua faixa habitual.",
-      "outsideBelow": "{signal} está abaixo da sua faixa habitual.",
-      "labs": "{count} de {total} exames estão dentro da faixa de referência.",
-      "cycleDay": "Dia {day} do ciclo.",
-      "steadyAll": "Tudo o que foi registrado está dentro da sua faixa habitual.",
-      "steadySome": "{count} de {total} valores estão dentro da sua faixa habitual; os demais ainda estão sendo aprendidos.",
-      "learning": "Sua faixa habitual ainda está sendo aprendida. Uma semana de registros basta.",
-      "empty": "Nada registrado ainda."
-    },
-    "headline": {
-      "labsValue": "{count}/{total}",
-      "labsUnit": "na faixa",
-      "cycleDay": "Dia {day}"
-    },
-    "signals": {
-      "mood": "Humor"
-    },
-    "units": {
-      "moodScale": "de 5"
-    },
-    "names": {
-      "heart": {
-        "title": "Coração",
-        "description": "Frequência cardíaca em repouso, variabilidade e condicionamento, com o sono e o treino que os influenciam."
-      },
-      "body": {
-        "title": "Corpo",
-        "description": "Peso e composição corporal ao longo do tempo."
-      },
-      "bloodPressure": {
-        "title": "Pressão arterial",
-        "description": "Sistólica, diastólica e pulso, com o sono e a atividade ao redor."
-      },
-      "sleep": {
-        "title": "Sono",
-        "description": "Tempo dormindo e os valores medidos à noite."
-      },
-      "activity": {
-        "title": "Atividade e treino",
-        "description": "Passos, minutos de exercício, energia ativa e carga de treino."
-      },
-      "metabolism": {
-        "title": "Metabolismo e exames",
-        "description": "Glicose e seus exames, com a tendência de cada marcador."
-      },
-      "mind": {
-        "title": "Mente",
-        "description": "Humor e questionários ao lado do sono e da atividade."
-      },
-      "cycle": {
-        "title": "Ciclo",
-        "description": "Seu ciclo com a temperatura e a frequência cardíaca em repouso que o acompanham."
-      }
-    },
-    "sources": {
-      "heart": "Esses valores vêm de um relógio, anel ou cinta peitoral, do Apple Saúde ou do Health Connect, ou dos seus registros.",
-      "body": "Esses valores vêm de uma balança inteligente, de uma importação ou dos seus registros.",
-      "bloodPressure": "Esses valores vêm de um medidor de pressão, de uma importação ou dos seus registros.",
-      "sleep": "Esses valores vêm de um relógio ou anel, do Apple Saúde ou do Health Connect, ou dos seus registros.",
-      "activity": "Esses valores vêm de um celular, relógio ou anel, ou do Apple Saúde ou do Health Connect.",
-      "metabolism": "A glicose vem de um glicosímetro, de uma importação do sensor ou dos seus registros; os exames, de um laudo ou dos seus registros.",
-      "mind": "Esses valores vêm dos seus registros de humor e dos questionários da página Bem-estar mental.",
-      "cycle": "Esses valores vêm do seu registro do ciclo e de um sensor de temperatura no pulso."
-    },
-    "today": {
-      "title": "Hoje",
-      "usual": "Habitual {low}–{high}",
-      "learning": "Faixa habitual ainda em aprendizado",
-      "asOf": "Em {date}",
-      "details": "Detalhes"
-    },
-    "state": {
-      "within": "Dentro",
-      "above": "Acima do habitual",
-      "below": "Abaixo do habitual",
-      "learning": "Aprendendo"
-    },
-    "chart": {
-      "title": "Lado a lado",
-      "legend": "Sombreado: sua faixa habitual.",
-      "label": "{signals} no período escolhido, uma linha cada."
-    },
-    "range": {
-      "label": "Período",
-      "7d": "7d",
-      "30d": "30d",
-      "90d": "90d",
-      "1y": "1a"
-    },
-    "relationships": {
-      "title": "Como eles variam juntos",
-      "insufficient": "{x} e {y}: {count} de {required} dias pareados até agora.",
-      "noClearLink": "Nenhuma relação clara entre {x} e {y} em {count} dias pareados.",
-      "splitHigher": "Quando {x} ficou abaixo de {threshold}, {y} foi {amount} mais alto do que nos outros dias.",
-      "splitLower": "Quando {x} ficou abaixo de {threshold}, {y} foi {amount} mais baixo do que nos outros dias.",
-      "splitDays": "Dias abaixo: {below}. Outros dias: {other}.",
-      "correlationSameDayHigher": "Quando {x} sobe, {y} também tende a ficar mais alto (r = {r}).",
-      "correlationSameDayLower": "Quando {x} sobe, {y} tende a ficar mais baixo (r = {r}).",
-      "correlationNextDayHigher": "Quando {x} sobe, {y} tende a ficar mais alto no dia seguinte (r = {r}).",
-      "correlationNextDayLower": "Quando {x} sobe, {y} tende a ficar mais baixo no dia seguinte (r = {r}).",
-      "pairedDays": "Dias pareados: {count}",
-      "footnote": "Aparece quando dois valores coincidem em pelo menos 14 dias. Um padrão, não uma causa.",
-      "scatterCaption": "Cada ponto é um dia: {x} na horizontal, {y} na vertical."
-    },
-    "trends": {
-      "title": "Tendências",
-      "window": "90 dias, médias semanais",
-      "insufficient": "Precisa de 14 dias, {count} até agora"
-    },
-    "labs": {
-      "title": "Exames",
-      "above": "Acima da faixa",
-      "below": "Abaixo da faixa",
-      "trendsTitle": "Tendências",
-      "trendNeeds": "Uma tendência precisa de três valores ao longo de pelo menos um ano. Ainda não: {markers}."
-    },
-    "screeners": {
-      "title": "Questionários",
-      "none": "Nenhum questionário respondido ainda.",
-      "checkIns": "Respondidos: {count}",
-      "improved": "Melhor que na primeira vez",
-      "worsened": "Pior que na primeira vez",
-      "within_threshold": "Dentro da variação habitual",
-      "single": "Respondido uma vez até agora",
-      "open": "Abrir Bem-estar mental"
-    },
-    "cycle": {
-      "title": "Ciclo",
-      "today": "Dia {day} do ciclo.",
-      "todayWithPhase": "Dia {day} do ciclo, fase {phase}.",
-      "average": "Duração média do ciclo: {days} dias.",
-      "needs": "Uma média precisa de dois inícios de menstruação registrados; até agora são {count}.",
-      "lengths": "Ciclos recentes, em dias: {lengths}",
-      "open": "Abrir a página do ciclo"
-    },
-    "links": {
-      "title": "Páginas por métrica",
-      "workouts": "Treinos"
-    },
-    "missing": {
-      "title": "Ainda não registrado: {signals}.",
-      "connect": "Conectar uma fonte"
     }
   }
 }

@@ -2,10 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Locator, Page, Route } from "@playwright/test";
 import { expect, test } from "./setup/test";
 
-import {
-  MOBILE_ROUTES_STORAGE_STATE_PATH,
-  STORAGE_STATE_PATH,
-} from "./setup/global-setup";
+import { STORAGE_STATE_PATH } from "./setup/global-setup";
 import { aiBlockAvailable, serveAiBlock } from "./setup/ai-capabilities";
 import { openMenu } from "./open-menu";
 import { POPULATED_SUMMARIES } from "./utils/mock-dashboard-snapshot";
@@ -981,49 +978,6 @@ const ADMIN_AND_BASELINE_ROUTES: readonly RouteCase[] = [
     painted: (page) => page.locator('[data-slot="admin-user-rows"]:visible'),
   },
 ];
-
-/**
- * The topic pages (preview), on the phone-sweep account: its preview is on
- * and never switched, and its record holds a little of every kind, so the
- * overview draws tiles and the pages draw both their data and their
- * below-threshold states. Gated on the grid and the page body, which live in
- * other components than the `<h1>` the scan checks.
- */
-const TOPIC_ROUTES: readonly RouteCase[] = [
-  {
-    name: "/topics overview",
-    path: "/topics",
-    painted: (page) => page.locator('[data-slot="topics-grid"]:visible'),
-  },
-  {
-    name: "/topics/heart",
-    path: "/topics/heart",
-    painted: (page) => page.locator('[data-slot="topic-detail-body"]:visible'),
-  },
-  {
-    name: "/topics/metabolism",
-    path: "/topics/metabolism",
-    painted: (page) => page.locator('[data-slot="topic-detail-body"]:visible'),
-  },
-];
-
-test.describe("axe-core topic pages (preview)", () => {
-  test.use({ storageState: MOBILE_ROUTES_STORAGE_STATE_PATH });
-
-  for (const theme of THEMES) {
-    test(`theme=${theme} routes: /topics, /topics/heart, /topics/metabolism`, async ({
-      page,
-    }) => {
-      test.setTimeout(120_000);
-      await useExplicitTheme(page, theme);
-      const blocking: AxeViolation[] = [];
-      for (const routeCase of TOPIC_ROUTES) {
-        blocking.push(...(await visitAndScan(page, theme, routeCase)));
-      }
-      expectNoViolations(theme, "topic route matrix", blocking);
-    });
-  }
-});
 
 test.describe("axe-core public surfaces", () => {
   for (const theme of THEMES) {
