@@ -69,6 +69,15 @@ const SCOPED_DIRS = [
   "lib/measurements/batch-ingest/",
   "lib/measurements/create/",
   "lib/measurements/list/measurement-list.ts",
+  "lib/medications/read-medication.ts",
+  "lib/medications/update-medication/",
+  "lib/medications/delete-medication.ts",
+  "lib/medications/record-intake/",
+  "lib/medications/list-intake-events.ts",
+  "lib/medications/intake-today.ts",
+  "lib/medications/intake-compliance.ts",
+  "lib/medications/update-intake-status/",
+  "lib/medications/intake-bulk/",
 ];
 
 /** Types a device writes at sampling rate rather than a few times a day. */

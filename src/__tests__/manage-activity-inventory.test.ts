@@ -309,8 +309,43 @@ function actionsReachableFrom(
       out.push(...packageActions(reexported, read));
     }
   }
+  for (const body of HANDLER_BODY_MODULES[relative(SRC, file)] ?? []) {
+    out.push(...actionsReachableFrom(join(SRC, body), read));
+  }
   return out;
 }
+
+/**
+ * Delegated routes whose handler bodies live in service modules under
+ * `src/lib/`, keyed by the route relative to `src/`. A handler body is the
+ * route's own code moved, so it counts at the route's level: its actions and
+ * those of its direct imports (the medication lifecycle a dose write
+ * reconciles through) are reached as they were before the move. Each module
+ * has to be a direct import of its route (leg below), so an entry cannot
+ * outlive the delegation it describes.
+ */
+const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
+  "app/api/medications/route.ts": ["lib/medications/create-medication.ts"],
+  "app/api/medications/[id]/route.ts": [
+    "lib/medications/read-medication.ts",
+    "lib/medications/update-medication/update-medication.ts",
+    "lib/medications/delete-medication.ts",
+  ],
+  "app/api/medications/[id]/intake/route.ts": [
+    "lib/medications/record-intake/record-intake.ts",
+    "lib/medications/list-intake-events.ts",
+  ],
+  "app/api/medications/[id]/intake/[eventId]/route.ts": [
+    "lib/medications/update-intake-event.ts",
+    "lib/medications/delete-intake-event.ts",
+  ],
+  "app/api/medications/intake/route.ts": [
+    "lib/medications/intake-today.ts",
+    "lib/medications/intake-compliance.ts",
+    "lib/medications/update-intake-status/admission.ts",
+    "lib/medications/update-intake-status/update-intake-status.ts",
+  ],
+};
 
 /**
  * The actions of a re-exported module together with the sibling modules it
@@ -551,6 +586,21 @@ describe("every delegated action has a sentence of its own", () => {
     expect(read(anchor).recordLevels).not.toContain("manage");
     expect(delegatedModules).toContain(anchor);
     expect(manageOnly).not.toContain(anchor);
+  });
+
+  it("reads each moved handler body where its route imports it from", () => {
+    const entries = Object.entries(HANDLER_BODY_MODULES);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [route, bodies] of entries) {
+      const file = join(SRC, route);
+      expect(delegatedModules, route).toContain(file);
+      for (const body of bodies) {
+        expect(
+          read(file).imports,
+          `${route} does not import ${body}`,
+        ).toContain(join(SRC, body));
+      }
+    }
   });
 
   it("reaches the actions a route files through what it imports", () => {

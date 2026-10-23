@@ -435,6 +435,17 @@ function callsSymbol(rel: string, symbol: string): boolean {
  */
 const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
   "app/api/medications/route.ts": ["lib/medications/create-medication.ts"],
+  "app/api/medications/[id]/route.ts": [
+    "lib/medications/update-medication/update-medication.ts",
+    "lib/medications/delete-medication.ts",
+  ],
+  "app/api/medications/[id]/intake/route.ts": [
+    "lib/medications/record-intake/record-intake.ts",
+  ],
+  "app/api/medications/intake/route.ts": [
+    "lib/medications/update-intake-status/admission.ts",
+    "lib/medications/update-intake-status/update-intake-status.ts",
+  ],
   "app/api/medications/[id]/intake/[eventId]/route.ts": [
     "lib/medications/update-intake-event.ts",
     "lib/medications/delete-intake-event.ts",

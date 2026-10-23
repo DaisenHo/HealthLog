@@ -83,7 +83,7 @@ describe("sendsMedicationReminders", () => {
     }
     for (const dto of [
       "lib/medications/list-read.ts",
-      "app/api/medications/[id]/route.ts",
+      "lib/medications/read-medication.ts",
     ]) {
       expect(src(dto), dto).toMatch(
         /remindersActive:\s*sendsMedicationReminders\(/,

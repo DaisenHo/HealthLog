@@ -68,13 +68,13 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
   "lib/jobs/measurement-tombstone-cleanup.ts": "tombstone purge",
   "lib/ai/coach/tools/availability.ts":
     "whether any intake history exists, and its date range",
-  "app/api/medications/[id]/intake/route.ts":
-    "one medication's recorded history, listed or written",
+  "lib/medications/list-intake-events.ts":
+    "one medication's recorded history, listed",
   "app/api/medications/[id]/intake/bulk-delete/route.ts":
     "deletes rows the person chose",
-  "app/api/medications/[id]/route.ts":
-    "one medication's slots; tombstones on the tracking switch",
-  "app/api/medications/intake/bulk/route.ts": "writes recorded doses",
+  "lib/medications/update-medication/write.ts":
+    "one medication's open slots, tombstoned on a schedule replace or the tracking switch",
+  "lib/medications/intake-bulk/ingest.ts": "writes recorded doses",
   "lib/medications/scheduling/slot-upsert.ts":
     "binds a recorded dose to its slot",
   "lib/medications/scheduling/worker-helpers.ts":
@@ -115,6 +115,14 @@ const MAY_READ_EVERY_ROW: Record<string, string> = {
     "units consumed by a recorded dose",
   "lib/medications/intake-slot-dedup.ts":
     "folds duplicate rows of doses already recorded",
+  // The medication edit: the schedule count and the primary schedule's id
+  // for the reminder-window bridge, and the replaced rows archived as an era
+  // whose payload is empty for a stretch with tracking off. Nothing due comes
+  // out of either; the edit answers through scheduleWireFields.
+  "lib/medications/update-medication/preflight.ts":
+    "schedule count and the primary schedule's id, derives nothing due",
+  "lib/medications/update-medication/write.ts":
+    "archives the replaced schedule; the era payload follows the tracking switch",
   // Readers that hand the rows to a builder whose input TYPE requires
   // `trackIntake` and which gates on it: the per-medication compliance
   // payload (`buildCompliancePayload`, INTAKE_NOT_TRACKED) and the doctor
