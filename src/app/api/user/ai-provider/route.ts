@@ -1,13 +1,8 @@
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { isPublicUrl } from "@/lib/validations/notifications";
 import { isLocalAiHostAllowed } from "@/lib/ai/local-host-allowlist";
@@ -170,30 +165,26 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "user.ai-provider.update" } });
 
-  const { data: rawBody, error } = await safeJson<unknown>(request, {
-    maxBytes: 64 * 1024,
-  });
-  if (error) return error;
-
   // Every accepted field states its type in the schema, so a wrongly-typed
   // value is a named issue rather than a key quietly dropped on the floor.
   // The multi-issue envelope is safe to return even though this body carries
   // plaintext credentials: Zod's type and range messages name the received
   // TYPE, never the received value. See the note in the validations module
   // before adding a `.refine()` here.
-  const parsed = aiProviderPatchSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "user.ai-provider.update" },
-      meta: {
-        outcome: "validation_failed",
-        issue_count: parsed.error.issues.length,
-      },
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "ai_provider.invalid",
-    });
-  }
+  const parsed = await parseJsonBody(request, aiProviderPatchSchema, {
+    maxBytes: 64 * 1024,
+    errorCode: "ai_provider.invalid",
+    onInvalid: (error) => {
+      annotate({
+        action: { name: "user.ai-provider.update" },
+        meta: {
+          outcome: "validation_failed",
+          issue_count: error.issues.length,
+        },
+      });
+    },
+  });
+  if (!parsed.ok) return parsed.error;
   const body = parsed.data;
 
   // v1.39.3 — whose configuration this is. Settings saved on an admin account

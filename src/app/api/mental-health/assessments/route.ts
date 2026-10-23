@@ -24,9 +24,9 @@ import {
   apiError,
   apiSuccess,
   returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import { auditLog } from "@/lib/auth/audit";
@@ -239,28 +239,23 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   }
 
   // Bounded body read BEFORE validation (the item answers are small; cap so an
-  // unbounded body can never reach `request.json()`). Destructure the
-  // `{ data, error }` envelope — passing the wrapper to `safeParse` would never
-  // match the schema, which is what left this route dead-on-arrival.
-  const { data: body, error: jsonError } = await safeJson(request, {
+  // unbounded body can never reach `request.json()`).
+  const parsed = await parseJsonBody(request, createAssessmentSchema, {
     maxBytes: 8 * 1024,
+    onInvalid: (error, body) => {
+      const shape = unstableExternalIdShape(body);
+      annotate({
+        action: { name: "mental-health.create.validation-failed" },
+        meta: {
+          issue_count: error.issues.length,
+          ...(shape
+            ? unstableExternalIdMeta("mental_health.assessment.create", [shape])
+            : {}),
+        },
+      });
+    },
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createAssessmentSchema.safeParse(body);
-  if (!parsed.success) {
-    const shape = unstableExternalIdShape(body);
-    annotate({
-      action: { name: "mental-health.create.validation-failed" },
-      meta: {
-        issue_count: sanitiseZodIssues(parsed.error.issues).length,
-        ...(shape
-          ? unstableExternalIdMeta("mental_health.assessment.create", [shape])
-          : {}),
-      },
-    });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const {
     instrument,
