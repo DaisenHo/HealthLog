@@ -110,6 +110,38 @@ const BMI_BANDS = [
 const hasRestingHr = (ctx: DashboardTileContext) =>
   countOf(ctx.summaries?.RESTING_HEART_RATE) > 0;
 
+/**
+ * A measurement chart card with the props every dashboard chart shares: its
+ * reveal report, the comparison baseline, day doors and, unless the card
+ * says otherwise, the batched series slice and the profile time zone.
+ */
+function metricChart(
+  ctx: ChartTileContext,
+  id: string,
+  props: Omit<
+    ComponentProps<typeof HealthChartDynamic>,
+    "onDataReady" | "compareBaseline" | "dayLinks"
+  >,
+  { batched = true, timezone = true } = {},
+): ReactNode {
+  return (
+    <HealthChartDynamic
+      key={id}
+      onDataReady={() => ctx.markChartReady(id)}
+      {...(batched
+        ? {
+            preloadedSeries: ctx.preloadedSeries,
+            preloadedCoverageDays: BATCH_COVERAGE_DAYS,
+          }
+        : {})}
+      compareBaseline={ctx.compareBaseline}
+      {...(timezone ? { userTimezone: ctx.user?.timezone } : {})}
+      dayLinks
+      {...props}
+    />
+  );
+}
+
 /** Every chart-row card, in the order the cards are collected. */
 export const CHART_TILES: readonly ChartTile[] = [
   {
@@ -118,24 +150,16 @@ export const CHART_TILES: readonly ChartTile[] = [
     revealGated: true,
     visible: (ctx) => countOf(ctx.summaries?.WEIGHT) > 0,
     count: (ctx) => ctx.summaries?.WEIGHT?.count ?? 0,
-    render: (ctx) => (
-      <HealthChartDynamic
-        key="weight-chart"
-        onDataReady={() => ctx.markChartReady("weight-chart")}
-        preloadedSeries={ctx.preloadedSeries}
-        preloadedCoverageDays={BATCH_COVERAGE_DAYS}
-        chartKey="weight"
-        types={["WEIGHT"]}
-        title={ctx.t("dashboard.weight")}
-        colors={["var(--chart-1)"]}
-        unit={ctx.unitDisplay.unitFor("WEIGHT")}
-        valueBands={ctx.weightDisplayBands}
-        compareBaseline={ctx.compareBaseline}
-        userTimezone={ctx.user?.timezone}
-        valueScale={ctx.unitDisplay.transformFor("WEIGHT").factor}
-        dayLinks
-      />
-    ),
+    render: (ctx) =>
+      metricChart(ctx, "weight-chart", {
+        chartKey: "weight",
+        types: ["WEIGHT"],
+        title: ctx.t("dashboard.weight"),
+        colors: ["var(--chart-1)"],
+        unit: ctx.unitDisplay.unitFor("WEIGHT"),
+        valueBands: ctx.weightDisplayBands,
+        valueScale: ctx.unitDisplay.transformFor("WEIGHT").factor,
+      }),
   },
   {
     // BMI rides the weight widget, right behind its chart, and only for a
@@ -146,23 +170,21 @@ export const CHART_TILES: readonly ChartTile[] = [
     revealGated: true,
     visible: (ctx) =>
       countOf(ctx.summaries?.WEIGHT) > 0 && Boolean(ctx.user?.heightCm),
-    render: (ctx) => (
-      <HealthChartDynamic
-        key="bmi-chart"
-        onDataReady={() => ctx.markChartReady("bmi-chart")}
-        preloadedSeries={ctx.preloadedSeries}
-        preloadedCoverageDays={BATCH_COVERAGE_DAYS}
-        chartKey="bmi"
-        types={["WEIGHT"]}
-        title={ctx.t("targets.bmi")}
-        colors={["var(--dracula-yellow)"]}
-        unit="kg/m²"
-        valueMode="bmi"
-        valueBands={BMI_BANDS}
-        compareBaseline={ctx.compareBaseline}
-        dayLinks
-      />
-    ),
+    render: (ctx) =>
+      metricChart(
+        ctx,
+        "bmi-chart",
+        {
+          chartKey: "bmi",
+          types: ["WEIGHT"],
+          title: ctx.t("targets.bmi"),
+          colors: ["var(--dracula-yellow)"],
+          unit: "kg/m²",
+          valueMode: "bmi",
+          valueBands: BMI_BANDS,
+        },
+        { timezone: false },
+      ),
   },
   {
     id: "bp-chart",
@@ -176,23 +198,15 @@ export const CHART_TILES: readonly ChartTile[] = [
         ctx.summaries?.BLOOD_PRESSURE_SYS?.count ?? 0,
         ctx.summaries?.BLOOD_PRESSURE_DIA?.count ?? 0,
       ),
-    render: (ctx) => (
-      <HealthChartDynamic
-        key="bp-chart"
-        onDataReady={() => ctx.markChartReady("bp-chart")}
-        preloadedSeries={ctx.preloadedSeries}
-        preloadedCoverageDays={BATCH_COVERAGE_DAYS}
-        chartKey="bp"
-        types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
-        title={ctx.t("dashboard.bloodPressure")}
-        colors={["var(--chart-3)", "var(--chart-4)"]}
-        unit="mmHg"
-        targetZones={ctx.bpTargetZones}
-        compareBaseline={ctx.compareBaseline}
-        userTimezone={ctx.user?.timezone}
-        dayLinks
-      />
-    ),
+    render: (ctx) =>
+      metricChart(ctx, "bp-chart", {
+        chartKey: "bp",
+        types: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
+        title: ctx.t("dashboard.bloodPressure"),
+        colors: ["var(--chart-3)", "var(--chart-4)"],
+        unit: "mmHg",
+        targetZones: ctx.bpTargetZones,
+      }),
   },
   {
     // The resting series against the resting band when there is one;
@@ -205,27 +219,17 @@ export const CHART_TILES: readonly ChartTile[] = [
       countOf(ctx.summaries?.PULSE) > 0 ||
       countOf(ctx.summaries?.RESTING_HEART_RATE) > 0,
     count: (ctx) => ctx.summaries?.PULSE?.count ?? 0,
-    render: (ctx) => (
-      <HealthChartDynamic
-        key="pulse-chart"
-        onDataReady={() => ctx.markChartReady("pulse-chart")}
-        preloadedSeries={ctx.preloadedSeries}
-        preloadedCoverageDays={BATCH_COVERAGE_DAYS}
-        chartKey="pulse"
-        types={hasRestingHr(ctx) ? ["RESTING_HEART_RATE"] : ["PULSE"]}
-        title={
-          hasRestingHr(ctx)
-            ? ctx.t(MEASUREMENT_TYPE_LABEL_KEYS.RESTING_HEART_RATE)
-            : ctx.t("dashboard.pulse")
-        }
-        colors={["var(--success)"]}
-        unit="bpm"
-        valueBands={hasRestingHr(ctx) ? ctx.pulseBands : undefined}
-        compareBaseline={ctx.compareBaseline}
-        userTimezone={ctx.user?.timezone}
-        dayLinks
-      />
-    ),
+    render: (ctx) =>
+      metricChart(ctx, "pulse-chart", {
+        chartKey: "pulse",
+        types: hasRestingHr(ctx) ? ["RESTING_HEART_RATE"] : ["PULSE"],
+        title: hasRestingHr(ctx)
+          ? ctx.t(MEASUREMENT_TYPE_LABEL_KEYS.RESTING_HEART_RATE)
+          : ctx.t("dashboard.pulse"),
+        colors: ["var(--success)"],
+        unit: "bpm",
+        valueBands: hasRestingHr(ctx) ? ctx.pulseBands : undefined,
+      }),
   },
   {
     id: "bodyFat-chart",
@@ -233,23 +237,15 @@ export const CHART_TILES: readonly ChartTile[] = [
     revealGated: true,
     visible: (ctx) => countOf(ctx.summaries?.BODY_FAT) > 0,
     count: (ctx) => ctx.summaries?.BODY_FAT?.count ?? 0,
-    render: (ctx) => (
-      <HealthChartDynamic
-        key="bodyFat-chart"
-        onDataReady={() => ctx.markChartReady("bodyFat-chart")}
-        preloadedSeries={ctx.preloadedSeries}
-        preloadedCoverageDays={BATCH_COVERAGE_DAYS}
-        chartKey="bodyFat"
-        types={["BODY_FAT"]}
-        title={ctx.t("dashboard.bodyFat")}
-        colors={["var(--warning)"]}
-        unit="%"
-        valueBands={ctx.bodyFatBands}
-        compareBaseline={ctx.compareBaseline}
-        userTimezone={ctx.user?.timezone}
-        dayLinks
-      />
-    ),
+    render: (ctx) =>
+      metricChart(ctx, "bodyFat-chart", {
+        chartKey: "bodyFat",
+        types: ["BODY_FAT"],
+        title: ctx.t("dashboard.bodyFat"),
+        colors: ["var(--warning)"],
+        unit: "%",
+        valueBands: ctx.bodyFatBands,
+      }),
   },
   {
     id: "mood-chart",
@@ -274,20 +270,19 @@ export const CHART_TILES: readonly ChartTile[] = [
     revealGated: true,
     visible: (ctx) => countOf(ctx.summaries?.SLEEP_DURATION) > 0,
     count: (ctx) => ctx.summaries?.SLEEP_DURATION?.count ?? 0,
-    render: (ctx) => (
-      <HealthChartDynamic
-        key="sleep-chart"
-        onDataReady={() => ctx.markChartReady("sleep-chart")}
-        chartKey="sleep"
-        types={["SLEEP_DURATION"]}
-        title={ctx.t("dashboard.sleep") ?? "Sleep"}
-        colors={["var(--chart-4)"]}
-        unit="h"
-        compareBaseline={ctx.compareBaseline}
-        userTimezone={ctx.user?.timezone}
-        dayLinks
-      />
-    ),
+    render: (ctx) =>
+      metricChart(
+        ctx,
+        "sleep-chart",
+        {
+          chartKey: "sleep",
+          types: ["SLEEP_DURATION"],
+          title: ctx.t("dashboard.sleep") ?? "Sleep",
+          colors: ["var(--chart-4)"],
+          unit: "h",
+        },
+        { batched: false },
+      ),
   },
   {
     id: "steps-chart",
@@ -295,21 +290,13 @@ export const CHART_TILES: readonly ChartTile[] = [
     revealGated: true,
     visible: (ctx) => countOf(ctx.summaries?.ACTIVITY_STEPS) > 0,
     count: (ctx) => ctx.summaries?.ACTIVITY_STEPS?.count ?? 0,
-    render: (ctx) => (
-      <HealthChartDynamic
-        key="steps-chart"
-        onDataReady={() => ctx.markChartReady("steps-chart")}
-        preloadedSeries={ctx.preloadedSeries}
-        preloadedCoverageDays={BATCH_COVERAGE_DAYS}
-        chartKey="steps"
-        types={["ACTIVITY_STEPS"]}
-        title={ctx.t("dashboard.steps") ?? "Steps"}
-        colors={["var(--success)"]}
-        compareBaseline={ctx.compareBaseline}
-        userTimezone={ctx.user?.timezone}
-        dayLinks
-      />
-    ),
+    render: (ctx) =>
+      metricChart(ctx, "steps-chart", {
+        chartKey: "steps",
+        types: ["ACTIVITY_STEPS"],
+        title: ctx.t("dashboard.steps") ?? "Steps",
+        colors: ["var(--success)"],
+      }),
   },
   {
     // Adherence over `/api/medications/intake?scope=compliance&days=N`.

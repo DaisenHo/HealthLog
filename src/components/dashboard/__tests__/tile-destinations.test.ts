@@ -14,8 +14,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
-import { readSource } from "@/__tests__/helpers/source-files";
 import { STRIP_TILES } from "@/components/dashboard/tiles/strip-tiles";
+import type { DashboardTileContext } from "@/components/dashboard/tiles/tile-context";
 
 import {
   TILE_CAPABLE_WIDGET_IDS,
@@ -78,21 +78,37 @@ const NON_MEASUREMENT_DESTINATION: Partial<
 const NO_DESTINATION: Partial<Record<TileCapableWidgetId, string>> = {};
 
 /**
- * Card ids the strip tiles paint, read from the registry's card definitions:
- * a template id (one card per glucose bucket) comes back as its prefix and a
- * `*`.
+ * Card ids the strip tiles paint, built from the registry with a context in
+ * which every series has a reading, so every tile paints its cards.
  */
 function renderedTileIds(): string[] {
-  const source = readSource(
-    "src/components/dashboard/tiles/strip-tiles.tsx",
-    "STRIP_TILES",
-  );
-  const ids: string[] = [];
-  const pattern = /\bid:\s*(?:"([^"]+)"|`([^`$]+)\$\{[^`]*`)/g;
-  for (const match of source.matchAll(pattern)) {
-    ids.push(match[1] ?? `${match[2]}*`);
-  }
-  return ids;
+  const reading = { count: 3, latest: 1, avg7: 1, avg30: 1 };
+  const summaries = new Proxy({} as Record<string, typeof reading>, {
+    get: () => reading,
+  });
+  const ctx = {
+    t: (key: string) => key,
+    fmt: { number: (v: number) => String(v) },
+    td: (_type: string, v: number | null | undefined) => v ?? null,
+    tdd: (_type: string, v: number | null | undefined) => v ?? null,
+    unitDisplay: { unitFor: () => "" },
+    user: null,
+    summaries,
+    moodSummary: reading,
+    hrv: { summary: reading, type: "HRV_RMSSD", labelKey: "x" },
+    data: { bpInTargetPct: 50, bpInTargetPct7d: 50, bpInTargetPct30d: 50 },
+    glucoseTiles: [{ bucket: "FASTING", labelKey: "x", summary: reading }],
+    displayGlucoseUnit: "mg/dL",
+    weightTrend: { direction: "neutral" },
+    compareBaseline: "none",
+    directionOf: () => "neutral",
+    tileCompareDelta: () => null,
+    tileStaleDays: () => null,
+  } as unknown as DashboardTileContext;
+  return STRIP_TILES.flatMap((tile) => {
+    expect(tile.visible(ctx), tile.widget).toBe(true);
+    return tile.cards(ctx).map((card) => card.id);
+  });
 }
 
 describe("dashboard tile destinations", () => {
@@ -110,8 +126,7 @@ describe("dashboard tile destinations", () => {
     const rendered = renderedTileIds();
     const widgets = new Set<string>();
     for (const id of rendered) {
-      const sample = id.endsWith("*") ? `${id.slice(0, -1)}X` : id;
-      const widget = tileWidgetId(sample);
+      const widget = tileWidgetId(id);
       expect(widget, `rendered tile "${id}" has no widget`).not.toBeNull();
       widgets.add(widget as string);
     }

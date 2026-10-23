@@ -204,10 +204,11 @@ describe("display-transform rounding guard — the bypass freeze", () => {
     // The justification for holding the raw multiplier at all: the chart
     // takes it as a prop. A file that stops passing it has no reason to be
     // reading `.factor` any more and belongs back behind the helpers.
-    // The prop as it is actually passed — a bare substring would still
+    // The prop as it is actually passed (as a JSX attribute or as a key of
+    // the props a chart builder spreads) — a bare substring would still
     // match a renamed identifier that no longer reaches any chart.
     const offenders = RAW_SCALE_SURFACES.filter(
-      (rel) => !/\bvalueScale=/.test(read(rel)),
+      (rel) => !/\bvalueScale[=:]/.test(read(rel)),
     );
     expect(offenders).toEqual([]);
   });

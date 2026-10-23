@@ -32,6 +32,7 @@ import { summaryToTrend7Delta } from "@/lib/analytics/trend-delta";
 import { isWindowSufficient } from "@/lib/analytics/window-confidence";
 import { convertGlucose, glucoseFractionDigits } from "@/lib/glucose";
 import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
+import type { TrendDirectionSentiment } from "@/lib/insights/trend-sentiment";
 
 import type { DashboardTileContext } from "./tile-context";
 
@@ -80,12 +81,18 @@ function pulseSource(ctx: DashboardTileContext) {
   };
 }
 
+type Summary = NonNullable<DashboardTileContext["summaries"]>[string];
+type TrafficRange = Parameters<typeof getRangeColorClass>[1]["range"];
+
 /**
- * A tile for a plain metric: the headline, its 7- and 30-day means, the trend
- * and the comparison delta, nothing else. `display` names the type whose
- * metric / imperial transform applies; without it the values pass through.
+ * One metric tile: the headline, its 7- and 30-day means, the trend and the
+ * comparison delta. `type` names the series (direction and freshness follow
+ * it unless overridden); `summary` replaces the summary read off `type`.
+ * With `display` the values go through the metric / imperial transform, and
+ * with `range` the means are coloured against it (on the canonical values)
+ * and carry its hint (in `hintRange`, the display unit, when given).
  */
-function plainCard(
+function metricCard(
   ctx: DashboardTileContext,
   id: string,
   props: {
@@ -93,16 +100,30 @@ function plainCard(
     label: string;
     unit: string;
     icon: React.ComponentType<{ className?: string }>;
+    summary?: Summary | null;
     display?: boolean;
     fractionDigits?: number;
+    range?: TrafficRange;
+    hintRange?: TrafficRange;
+    direction?: TrendDirectionSentiment;
     staleType?: string | null;
+    valueAdornment?: ReactNode;
   },
 ): ReactNode {
-  const s = ctx.summaries?.[props.type];
+  const s = "summary" in props ? props.summary : ctx.summaries?.[props.type];
   const value = (v: number | null | undefined) =>
     props.display ? ctx.td(props.type, v) : (v ?? null);
   const delta = (v: number | null | undefined) =>
     props.display ? ctx.tdd(props.type, v) : v;
+  const hint =
+    props.range === undefined
+      ? undefined
+      : getRangeHint(
+          props.unit,
+          { range: props.hintRange ?? props.range },
+          ctx.t,
+          ctx.fmt.number,
+        );
   return (
     <TrendCard
       key={id}
@@ -112,16 +133,53 @@ function plainCard(
       unit={props.unit}
       avg7={value(s?.avg7)}
       avg30={value(s?.avg30)}
+      avg7ColorClass={
+        props.range === undefined
+          ? undefined
+          : getRangeColorClass(s?.avg7, { range: props.range })
+      }
+      avg30ColorClass={
+        props.range === undefined
+          ? undefined
+          : getRangeColorClass(s?.avg30, { range: props.range })
+      }
+      avg7Hint={hint}
+      avg30Hint={hint}
       slope30={s?.slope30 ?? null}
       trend7Delta={delta(summaryToTrend7Delta(s)) as number | null}
       icon={props.icon}
-      directionSentiment={ctx.directionOf(props.type)}
+      directionSentiment={props.direction ?? ctx.directionOf(props.type)}
       compareBaseline={ctx.compareBaseline}
       compareDelta={delta(ctx.tileCompareDelta(s)) as number | null}
       staleDays={ctx.tileStaleDays(
         props.staleType === undefined ? props.type : props.staleType,
       )}
+      valueAdornment={props.valueAdornment}
     />
+  );
+}
+
+/** A tile that paints one card under its own id. */
+function one(
+  widget: string,
+  visible: StripTile["visible"],
+  node: (ctx: DashboardTileContext) => ReactNode,
+): StripTile {
+  return { widget, visible, cards: (ctx) => [{ id: widget, node: node(ctx) }] };
+}
+
+/** A plain metric tile, shown when its series has a reading. */
+function metricTile(
+  widget: string,
+  type: string,
+  props: (
+    ctx: DashboardTileContext,
+  ) => Omit<Parameters<typeof metricCard>[2], "type">,
+): StripTile {
+  return one(
+    widget,
+    (ctx) => countOf(ctx.summaries?.[type]) > 0,
+    (ctx) => metricCard(ctx, widget, { type, ...props(ctx) }),
   );
 }
 
@@ -131,50 +189,17 @@ function plainCard(
  * an order this list decides which comes first.
  */
 export const STRIP_TILES: readonly StripTile[] = [
-  {
-    widget: "weight",
-    visible: (ctx) => countOf(ctx.summaries?.WEIGHT) > 0,
-    cards: (ctx) => {
-      const w = ctx.summaries?.WEIGHT;
-      const unit = ctx.unitDisplay.unitFor("WEIGHT");
-      const hint = getRangeHint(
-        unit,
-        { range: ctx.weightHintRange },
-        ctx.t,
-        ctx.fmt.number,
-      );
-      return [
-        {
-          id: "weight",
-          node: (
-            <TrendCard
-              key="weight"
-              label={ctx.t("dashboard.weightShort")}
-              latest={ctx.td("WEIGHT", w?.latest)}
-              unit={unit}
-              avg7={ctx.td("WEIGHT", w?.avg7)}
-              avg30={ctx.td("WEIGHT", w?.avg30)}
-              avg7ColorClass={getRangeColorClass(w?.avg7, {
-                range: ctx.weightRange,
-              })}
-              avg30ColorClass={getRangeColorClass(w?.avg30, {
-                range: ctx.weightRange,
-              })}
-              avg7Hint={hint}
-              avg30Hint={hint}
-              slope30={w?.slope30 ?? null}
-              trend7Delta={ctx.tdd("WEIGHT", summaryToTrend7Delta(w))}
-              icon={Activity}
-              directionSentiment={ctx.weightTrend.direction}
-              compareBaseline={ctx.compareBaseline}
-              compareDelta={ctx.tdd("WEIGHT", ctx.tileCompareDelta(w))}
-              staleDays={ctx.tileStaleDays("WEIGHT")}
-            />
-          ),
-        },
-      ];
-    },
-  },
+  metricTile("weight", "WEIGHT", (ctx) => ({
+    label: ctx.t("dashboard.weightShort"),
+    unit: ctx.unitDisplay.unitFor("WEIGHT"),
+    icon: Activity,
+    display: true,
+    range: ctx.weightRange,
+    hintRange: ctx.weightHintRange,
+    // Which way is progress depends on the person's own target, resolved
+    // on the server.
+    direction: ctx.weightTrend.direction,
+  })),
   {
     // One signal, two tiles: systolic and diastolic side by side at the size
     // of every other tile. The diastolic card's offset keeps it right behind
@@ -183,360 +208,175 @@ export const STRIP_TILES: readonly StripTile[] = [
     visible: (ctx) =>
       countOf(ctx.summaries?.BLOOD_PRESSURE_SYS) > 0 ||
       countOf(ctx.summaries?.BLOOD_PRESSURE_DIA) > 0,
-    cards: (ctx) =>
-      [
-        {
-          id: "bp-sys",
+    cards: (ctx) => [
+      {
+        id: "bp-sys",
+        node: metricCard(ctx, "bp-sys", {
           type: "BLOOD_PRESSURE_SYS",
           label: ctx.t("dashboard.bloodPressureSysShort"),
+          unit: "mmHg",
+          icon: Heart,
+          fractionDigits: 0,
           range: ctx.bpSysRange,
-          orderOffset: 0,
-        },
-        {
-          id: "bp-dia",
+        }),
+      },
+      {
+        id: "bp-dia",
+        orderOffset: 0.001,
+        node: metricCard(ctx, "bp-dia", {
           type: "BLOOD_PRESSURE_DIA",
           label: ctx.t("dashboard.bloodPressureDiaShort"),
+          unit: "mmHg",
+          icon: Heart,
+          fractionDigits: 0,
           range: ctx.bpDiaRange,
-          orderOffset: 0.001,
-        },
-      ].map(({ id, type, label, range, orderOffset }) => {
-        const s = ctx.summaries?.[type];
-        return {
-          id,
-          orderOffset,
-          node: (
-            <TrendCard
-              key={id}
-              fractionDigits={0}
-              label={label}
-              latest={s?.latest ?? null}
-              unit="mmHg"
-              avg7={s?.avg7 ?? null}
-              avg30={s?.avg30 ?? null}
-              avg7ColorClass={getRangeColorClass(s?.avg7, { range })}
-              avg30ColorClass={getRangeColorClass(s?.avg30, { range })}
-              avg7Hint={getRangeHint("mmHg", { range }, ctx.t, ctx.fmt.number)}
-              avg30Hint={getRangeHint("mmHg", { range }, ctx.t, ctx.fmt.number)}
-              slope30={s?.slope30 ?? null}
-              trend7Delta={summaryToTrend7Delta(s)}
-              icon={Heart}
-              directionSentiment={ctx.directionOf(type)}
-              compareBaseline={ctx.compareBaseline}
-              compareDelta={ctx.tileCompareDelta(s)}
-              staleDays={ctx.tileStaleDays(type)}
-            />
-          ),
-        };
-      }),
+        }),
+      },
+    ],
   },
-  {
-    widget: "pulse",
-    visible: (ctx) =>
+  one(
+    "pulse",
+    (ctx) =>
       countOf(ctx.summaries?.PULSE) > 0 ||
       countOf(ctx.summaries?.RESTING_HEART_RATE) > 0,
-    cards: (ctx) => {
-      const { hasRestingHr, summary: s, type } = pulseSource(ctx);
-      const range = hasRestingHr ? ctx.pulseDisplayRange : null;
-      return [
-        {
-          id: "pulse",
-          node: (
-            <TrendCard
-              key="pulse"
-              fractionDigits={0}
-              label={
-                hasRestingHr
-                  ? ctx.t(MEASUREMENT_TYPE_LABEL_KEYS.RESTING_HEART_RATE)
-                  : ctx.t("dashboard.pulseShort")
-              }
-              latest={s?.latest ?? null}
-              unit="bpm"
-              avg7={s?.avg7 ?? null}
-              avg30={s?.avg30 ?? null}
-              avg7ColorClass={getRangeColorClass(s?.avg7, { range })}
-              avg30ColorClass={getRangeColorClass(s?.avg30, { range })}
-              avg7Hint={getRangeHint("bpm", { range }, ctx.t, ctx.fmt.number)}
-              avg30Hint={getRangeHint("bpm", { range }, ctx.t, ctx.fmt.number)}
-              slope30={s?.slope30 ?? null}
-              trend7Delta={summaryToTrend7Delta(s)}
-              icon={TrendingUp}
-              directionSentiment={ctx.directionOf(type)}
-              compareBaseline={ctx.compareBaseline}
-              compareDelta={ctx.tileCompareDelta(s)}
-              staleDays={ctx.tileStaleDays(type)}
-            />
-          ),
-        },
-      ];
+    (ctx) => {
+      const { hasRestingHr, summary, type } = pulseSource(ctx);
+      return metricCard(ctx, "pulse", {
+        type,
+        summary,
+        label: hasRestingHr
+          ? ctx.t(MEASUREMENT_TYPE_LABEL_KEYS.RESTING_HEART_RATE)
+          : ctx.t("dashboard.pulseShort"),
+        unit: "bpm",
+        icon: TrendingUp,
+        fractionDigits: 0,
+        range: hasRestingHr ? ctx.pulseDisplayRange : null,
+      });
     },
-  },
-  {
-    widget: "bodyFat",
-    visible: (ctx) => countOf(ctx.summaries?.BODY_FAT) > 0,
-    cards: (ctx) => [
-      {
-        id: "bodyFat",
-        node: plainCard(ctx, "bodyFat", {
-          type: "BODY_FAT",
-          label: ctx.t("dashboard.bodyFatShort"),
-          unit: "%",
-          icon: Percent,
-        }),
-      },
-    ],
-  },
-  {
-    widget: "mood",
-    visible: (ctx) => countOf(ctx.moodSummary) > 0,
-    cards: (ctx) => {
-      const s = ctx.moodSummary;
-      return [
-        {
-          id: "mood",
-          node: (
-            <TrendCard
-              key="mood"
-              label={ctx.t("dashboard.moodShort")}
-              latest={s?.latest ?? null}
-              unit="/ 5"
-              avg7={s?.avg7 ?? null}
-              avg30={s?.avg30 ?? null}
-              slope30={s?.slope30 ?? null}
-              trend7Delta={summaryToTrend7Delta(s)}
-              icon={Smile}
-              directionSentiment={ctx.directionOf("MOOD")}
-              compareBaseline={ctx.compareBaseline}
-              compareDelta={ctx.tileCompareDelta(s)}
-            />
-          ),
-        },
-      ];
-    },
-  },
-  {
-    widget: "sleep",
-    visible: (ctx) => countOf(ctx.summaries?.SLEEP_DURATION) > 0,
-    cards: (ctx) => {
-      // The summary carries per-night time asleep in MINUTES; the tile reads
-      // hours, so every value field converts while the staleness and count
-      // metadata stay as they are.
+  ),
+  metricTile("bodyFat", "BODY_FAT", (ctx) => ({
+    label: ctx.t("dashboard.bodyFatShort"),
+    unit: "%",
+    icon: Percent,
+  })),
+  one(
+    "mood",
+    (ctx) => countOf(ctx.moodSummary) > 0,
+    (ctx) =>
+      metricCard(ctx, "mood", {
+        type: "MOOD",
+        summary: ctx.moodSummary,
+        label: ctx.t("dashboard.moodShort"),
+        unit: "/ 5",
+        icon: Smile,
+        staleType: null,
+      }),
+  ),
+  one(
+    "sleep",
+    (ctx) => countOf(ctx.summaries?.SLEEP_DURATION) > 0,
+    (ctx) => {
+      // The summary carries per-night time asleep in MINUTES; the tile
+      // reads hours, so every value field converts while the staleness and
+      // count metadata stay as they are.
       const raw = ctx.summaries?.SLEEP_DURATION;
-      const s = raw ? toHoursSummary(raw) : undefined;
       const discrepancy = ctx.data?.sleepSourceDiscrepancy;
-      return [
-        {
-          id: "sleep",
-          node: (
-            <TrendCard
-              key="sleep"
-              label={ctx.t("dashboard.sleepShort") ?? "Sleep"}
-              latest={s?.latest ?? null}
-              unit="h"
-              avg7={s?.avg7 ?? null}
-              avg30={s?.avg30 ?? null}
-              slope30={s?.slope30 ?? null}
-              trend7Delta={summaryToTrend7Delta(s)}
-              icon={Moon}
-              directionSentiment={ctx.directionOf("SLEEP_DURATION")}
-              compareBaseline={ctx.compareBaseline}
-              compareDelta={ctx.tileCompareDelta(s)}
-              staleDays={ctx.tileStaleDays("SLEEP_DURATION")}
-              // A discreet "sources disagree" marker beside the headline
-              // when two writers reported clearly different totals for the
-              // latest night. Null on the ordinary path: no layout change.
-              valueAdornment={
-                discrepancy ? (
-                  <SleepSourceDiscrepancyMarker discrepancy={discrepancy} />
-                ) : null
-              }
-            />
-          ),
-        },
-      ];
+      return metricCard(ctx, "sleep", {
+        type: "SLEEP_DURATION",
+        summary: raw ? toHoursSummary(raw) : undefined,
+        label: ctx.t("dashboard.sleepShort") ?? "Sleep",
+        unit: "h",
+        icon: Moon,
+        // A discreet "sources disagree" marker beside the headline when two
+        // writers reported clearly different totals for the latest night.
+        // Null on the ordinary path: no layout change.
+        valueAdornment: discrepancy ? (
+          <SleepSourceDiscrepancyMarker discrepancy={discrepancy} />
+        ) : null,
+      });
     },
-  },
-  {
-    // Steps are activity data tied to the workouts module; only an explicit
-    // `false` hides them (fail-open).
-    widget: "steps",
-    visible: (ctx) =>
+  ),
+  // Steps are activity data tied to the workouts module; only an explicit
+  // `false` hides them (fail-open).
+  one(
+    "steps",
+    (ctx) =>
       countOf(ctx.summaries?.ACTIVITY_STEPS) > 0 &&
       ctx.user?.modules?.workouts !== false,
-    cards: (ctx) => [
-      {
-        id: "steps",
-        node: plainCard(ctx, "steps", {
-          type: "ACTIVITY_STEPS",
-          label: ctx.t("dashboard.stepsShort") ?? "Steps",
-          unit: "",
-          icon: Footprints,
-          fractionDigits: 0,
-        }),
-      },
-    ],
-  },
-  {
-    widget: "vo2Max",
-    visible: (ctx) => countOf(ctx.summaries?.VO2_MAX) > 0,
-    cards: (ctx) => [
-      {
-        id: "vo2Max",
-        node: plainCard(ctx, "vo2Max", {
-          type: "VO2_MAX",
-          label: ctx.t("dashboard.vo2MaxShort") ?? "VO₂ max",
-          unit: ctx.t("dashboard.vo2MaxUnit") ?? "mL/(kg·min)",
-          icon: Gauge,
-        }),
-      },
-    ],
-  },
-  {
-    // HRV is stored under two types (SDNN from Apple Health / Health Connect,
-    // nightly RMSSD from rings and straps); `pickHrvSummary` names the one
-    // shown, and the label, the direction and the freshness caption follow
-    // it. Each series has its OWN label key, never a base label with the
-    // measure appended: the label renders truncated on one line, and an
-    // appended marker is the first thing a longer locale drops.
-    widget: "hrv",
-    visible: (ctx) => countOf(ctx.hrv.summary) > 0,
-    cards: (ctx) => {
-      const { summary: s, type, labelKey } = ctx.hrv;
-      return [
-        {
-          id: "hrv",
-          node: (
-            <TrendCard
-              key="hrv"
-              fractionDigits={0}
-              label={ctx.t(labelKey)}
-              latest={s?.latest ?? null}
-              unit="ms"
-              avg7={s?.avg7 ?? null}
-              avg30={s?.avg30 ?? null}
-              slope30={s?.slope30 ?? null}
-              trend7Delta={summaryToTrend7Delta(s)}
-              icon={HeartPulse}
-              directionSentiment={ctx.directionOf(type)}
-              compareBaseline={ctx.compareBaseline}
-              compareDelta={ctx.tileCompareDelta(s)}
-              staleDays={ctx.tileStaleDays(type)}
-            />
-          ),
-        },
-      ];
-    },
-  },
-  {
-    widget: "oxygenSaturation",
-    visible: (ctx) => countOf(ctx.summaries?.OXYGEN_SATURATION) > 0,
-    cards: (ctx) => [
-      {
-        id: "oxygenSaturation",
-        node: plainCard(ctx, "oxygenSaturation", {
-          type: "OXYGEN_SATURATION",
-          label: ctx.t("measurements.typeOxygenSaturation"),
-          unit: "%",
-          icon: Droplets,
-        }),
-      },
-    ],
-  },
-  {
-    widget: "respiratoryRate",
-    visible: (ctx) => countOf(ctx.summaries?.RESPIRATORY_RATE) > 0,
-    cards: (ctx) => [
-      {
-        id: "respiratoryRate",
-        node: plainCard(ctx, "respiratoryRate", {
-          type: "RESPIRATORY_RATE",
-          label: ctx.t("measurements.typeRespiratoryRate"),
-          unit: ctx.t("insights.units.respiratoryRate"),
-          icon: Wind,
-        }),
-      },
-    ],
-  },
-  {
-    widget: "wristTemperature",
-    visible: (ctx) => countOf(ctx.summaries?.WRIST_TEMPERATURE) > 0,
-    cards: (ctx) => [
-      {
-        id: "wristTemperature",
-        node: plainCard(ctx, "wristTemperature", {
-          type: "WRIST_TEMPERATURE",
-          label: ctx.t("measurements.typeWristTemperature"),
-          unit: ctx.unitDisplay.unitFor("WRIST_TEMPERATURE"),
-          icon: Thermometer,
-          display: true,
-        }),
-      },
-    ],
-  },
-  {
-    widget: "muscleMass",
-    visible: (ctx) => countOf(ctx.summaries?.MUSCLE_MASS) > 0,
-    cards: (ctx) => [
-      {
-        id: "muscleMass",
-        node: plainCard(ctx, "muscleMass", {
-          type: "MUSCLE_MASS",
-          label: ctx.t("measurements.typeMuscleMass"),
-          unit: ctx.unitDisplay.unitFor("MUSCLE_MASS"),
-          icon: Dumbbell,
-          display: true,
-        }),
-      },
-    ],
-  },
-  {
-    widget: "totalBodyWater",
-    visible: (ctx) => countOf(ctx.summaries?.TOTAL_BODY_WATER) > 0,
-    cards: (ctx) => [
-      {
-        id: "totalBodyWater",
-        node: plainCard(ctx, "totalBodyWater", {
-          type: "TOTAL_BODY_WATER",
-          label: ctx.t("measurements.typeTotalBodyWater"),
-          unit: ctx.unitDisplay.unitFor("TOTAL_BODY_WATER"),
-          icon: Droplet,
-          display: true,
-        }),
-      },
-    ],
-  },
-  {
-    widget: "boneMass",
-    visible: (ctx) => countOf(ctx.summaries?.BONE_MASS) > 0,
-    cards: (ctx) => [
-      {
-        id: "boneMass",
-        node: plainCard(ctx, "boneMass", {
-          type: "BONE_MASS",
-          label: ctx.t("measurements.typeBoneMass"),
-          unit: ctx.unitDisplay.unitFor("BONE_MASS"),
-          icon: Bone,
-          display: true,
-        }),
-      },
-    ],
-  },
-  {
-    // Fluid intake: a synthetic summary key derived server-side from the
-    // nutrient days. Neutral sentiment, since more water is not simply better.
-    widget: "waterIntake",
-    visible: (ctx) => countOf(ctx.summaries?.NUTRIENT_WATER) > 0,
-    cards: (ctx) => [
-      {
-        id: "waterIntake",
-        node: plainCard(ctx, "waterIntake", {
-          type: "NUTRIENT_WATER",
-          label: ctx.t("nutrients.names.water"),
-          unit: "mL",
-          icon: GlassWater,
-        }),
-      },
-    ],
-  },
+    (ctx) =>
+      metricCard(ctx, "steps", {
+        type: "ACTIVITY_STEPS",
+        label: ctx.t("dashboard.stepsShort") ?? "Steps",
+        unit: "",
+        icon: Footprints,
+        fractionDigits: 0,
+      }),
+  ),
+  metricTile("vo2Max", "VO2_MAX", (ctx) => ({
+    label: ctx.t("dashboard.vo2MaxShort") ?? "VO₂ max",
+    unit: ctx.t("dashboard.vo2MaxUnit") ?? "mL/(kg·min)",
+    icon: Gauge,
+  })),
+  // HRV is stored under two types (SDNN from Apple Health / Health Connect,
+  // nightly RMSSD from rings and straps); `pickHrvSummary` names the one
+  // shown, and the label, the direction and the freshness caption follow it.
+  // Each series has its OWN label key, never a base label with the measure
+  // appended: the label renders truncated on one line, and an appended
+  // marker is the first thing a longer locale drops.
+  one(
+    "hrv",
+    (ctx) => countOf(ctx.hrv.summary) > 0,
+    (ctx) =>
+      metricCard(ctx, "hrv", {
+        type: ctx.hrv.type,
+        summary: ctx.hrv.summary,
+        label: ctx.t(ctx.hrv.labelKey),
+        unit: "ms",
+        icon: HeartPulse,
+        fractionDigits: 0,
+      }),
+  ),
+  metricTile("oxygenSaturation", "OXYGEN_SATURATION", (ctx) => ({
+    label: ctx.t("measurements.typeOxygenSaturation"),
+    unit: "%",
+    icon: Droplets,
+  })),
+  metricTile("respiratoryRate", "RESPIRATORY_RATE", (ctx) => ({
+    label: ctx.t("measurements.typeRespiratoryRate"),
+    unit: ctx.t("insights.units.respiratoryRate"),
+    icon: Wind,
+  })),
+  metricTile("wristTemperature", "WRIST_TEMPERATURE", (ctx) => ({
+    label: ctx.t("measurements.typeWristTemperature"),
+    unit: ctx.unitDisplay.unitFor("WRIST_TEMPERATURE"),
+    icon: Thermometer,
+    display: true,
+  })),
+  metricTile("muscleMass", "MUSCLE_MASS", (ctx) => ({
+    label: ctx.t("measurements.typeMuscleMass"),
+    unit: ctx.unitDisplay.unitFor("MUSCLE_MASS"),
+    icon: Dumbbell,
+    display: true,
+  })),
+  metricTile("totalBodyWater", "TOTAL_BODY_WATER", (ctx) => ({
+    label: ctx.t("measurements.typeTotalBodyWater"),
+    unit: ctx.unitDisplay.unitFor("TOTAL_BODY_WATER"),
+    icon: Droplet,
+    display: true,
+  })),
+  metricTile("boneMass", "BONE_MASS", (ctx) => ({
+    label: ctx.t("measurements.typeBoneMass"),
+    unit: ctx.unitDisplay.unitFor("BONE_MASS"),
+    icon: Bone,
+    display: true,
+  })),
+  // Fluid intake: a synthetic summary key derived server-side from the
+  // nutrient days. Neutral sentiment, since more water is not simply better.
+  metricTile("waterIntake", "NUTRIENT_WATER", (ctx) => ({
+    label: ctx.t("nutrients.names.water"),
+    unit: "mL",
+    icon: GlassWater,
+  })),
   {
     // Blood pressure in target. Hidden while every window reads zero, so a
     // literal "0 %" never rides the dashboard; the headline is the trailing
