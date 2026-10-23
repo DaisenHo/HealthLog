@@ -39,6 +39,8 @@ describe("audit rows go through auditLog()", () => {
     .map(([rel]) => rel);
 
   it("finds the writers it polices", () => {
+    expect(files.length).toBeGreaterThan(3000);
+    expect(writers.length).toBeGreaterThanOrEqual(2);
     expect(writers).toContain("lib/auth/audit.ts");
   });
 
