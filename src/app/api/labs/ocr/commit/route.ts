@@ -402,7 +402,7 @@ async function commitOcrRows(request: NextRequest) {
   // A lab panel just landed — resolve any "annual blood panel" reminders now
   // rather than waiting on the cron. Fire-and-forget.
   if (inserted.length > 0) {
-    fireAndForget(enqueueReminderSatisfy(user.id), {
+    fireAndForget(() => enqueueReminderSatisfy(user.id), {
       action: "reminder.satisfy.enqueue",
     });
 
