@@ -1,19 +1,11 @@
 {
   "$comment": "Runtime import cycles under src/: the back-edge count and the strongly connected components. Maintained by src/__tests__/import-cycle-guard.test.ts.",
-  "cycles": 4,
+  "cycles": 2,
   "components": [
     [
       "components/command-palette/command-palette.tsx",
       "components/command-palette/palette-store.ts",
       "components/layout/global-shortcuts.tsx"
-    ],
-    [
-      "lib/insights/features.ts",
-      "lib/insights/signals-of-day.ts"
-    ],
-    [
-      "lib/insights/mood-aggregates.ts",
-      "lib/insights/mood-patterns.ts"
     ],
     [
       "lib/jobs/boss-instance.ts",

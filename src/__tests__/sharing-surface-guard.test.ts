@@ -1094,17 +1094,6 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "record",
     why: "One search over the record: hits from every section with an in-app path each. Read-only, scoped to the resolved user, every source narrowed to the record's module switches and to the sections the grant covers, the query never logged.",
   },
-  // The topic pages (preview) lay several sections side by side, like the
-  // timeline, so they stay whole-record reads. The preview switch they check
-  // is the ACTOR's own row and decides nothing about the record.
-  "app/api/topics/route.ts": {
-    domain: "record",
-    why: "The topic overview: a headline value, a rule-based sentence and a sparkline per topic, computed from the record's daily values, lab markers, screener totals and cycle starts. Read-only, no model, scoped to the resolved user, every signal and block narrowed to the record's module switches and to the sections the grant covers.",
-  },
-  "app/api/topics/[topic]/route.ts": {
-    domain: "record",
-    why: "One topic page: signals with usual ranges, side-by-side series, relationships, trends and the topic's blocks. Read-only, no model, scoped to the resolved user, narrowed per signal and block like the overview.",
-  },
   "app/api/workouts/route.ts": {
     domain: "measurements",
     why: "The record's workout list. Verified to carry no AI-written paragraph: the single-workout route beside it does, and stays refused for exactly that reason.",
@@ -2228,11 +2217,8 @@ const ACTOR_ROUTES: Record<string, string> = {
  * side). The activity goals route does not: setting or changing goals stays
  * owner-only, and a delegate sees the goals only as the calendar reports them.
  * 270 -> 273.
- *
- * The topic overview and the topic page (preview) join the record list as
- * whole-record reads, like the timeline. 273 -> 275.
  */
-const FROZEN_ENTRY_COUNT = 275;
+const FROZEN_ENTRY_COUNT = 273;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

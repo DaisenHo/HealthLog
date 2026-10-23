@@ -12,7 +12,6 @@ function index(over: Partial<PaletteIndexInput> = {}) {
     t,
     modules: {},
     navModules: {},
-    previews: null,
     inSharedRecord: false,
     sections: null,
     isAdmin: false,
@@ -27,16 +26,6 @@ function index(over: Partial<PaletteIndexInput> = {}) {
 }
 
 const ids = (entries: ReturnType<typeof index>) => entries.map((e) => e.id);
-
-describe("buildPaletteIndex — previews", () => {
-  it("offers the Topics page only while the person switched the preview on", () => {
-    expect(ids(index())).not.toContain("nav:/topics");
-    expect(ids(index({ previews: { topics: false } }))).not.toContain(
-      "nav:/topics",
-    );
-    expect(ids(index({ previews: { topics: true } }))).toContain("nav:/topics");
-  });
-});
 
 describe("buildPaletteIndex — modules", () => {
   it("a switched-off module takes its page, its Insights page and its cards along", () => {

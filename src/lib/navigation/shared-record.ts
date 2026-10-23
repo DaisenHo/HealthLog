@@ -51,8 +51,6 @@ const WHOLE_RECORD_ROUTE_FAMILIES = [
   "/achievements",
   // v1.42 — the timeline lays every section side by side.
   "/timeline",
-  // So does a topic page (preview).
-  "/topics",
 ] as const;
 
 interface RouteFamily {

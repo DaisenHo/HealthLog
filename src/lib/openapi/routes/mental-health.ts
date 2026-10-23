@@ -115,7 +115,7 @@ const changeVerdict = z
   .enum(["improved", "worsened", "within_threshold"])
   .nullable();
 
-export const assessmentTrendSchema = z
+const assessmentTrend = z
   .object({
     instrument: z.enum(["PHQ9", "GAD7", "WHO5"]),
     n: z.number().int(),
@@ -143,7 +143,7 @@ const listResponse = z
   .object({
     assessments: z.array(assessmentRow),
     trends: z
-      .array(assessmentTrendSchema)
+      .array(assessmentTrend)
       .optional()
       .describe(
         "v1.44 — one per PHQ-9 / GAD-7 / WHO-5 with at least one administration. Absent on older servers.",

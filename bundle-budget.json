@@ -116,8 +116,6 @@
     "/settings/modules/[module]/page": 374,
     "/settings/page": 282,
     "/timeline/page": 331,
-    "/topics/[topic]/page": 298,
-    "/topics/page": 293,
     "/vaccinations/page": 327
   }
 }

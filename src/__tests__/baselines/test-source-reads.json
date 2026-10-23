@@ -1,7 +1,7 @@
 {
   "$comment": "tests that read a source file by path, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 367,
-  "total": 367,
+  "count": 366,
+  "total": 366,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 1,
     "__tests__/admin-data-wipe-completeness.test.ts": 1,
@@ -284,7 +284,6 @@
     "lib/ai/coach/__tests__/snapshot.test.ts": 1,
     "lib/ai/coach/memory/__tests__/contract.test.ts": 1,
     "lib/ai/coach/tools/__tests__/turn-budget.test.ts": 1,
-    "lib/ai/coach/turn/__tests__/steps.test.ts": 1,
     "lib/analytics/__tests__/glucose-panel-window.test.ts": 1,
     "lib/analytics/compliance/__tests__/as-needed-compliance-exclusion.test.ts": 1,
     "lib/analytics/mood-prognosis/__tests__/gates.test.ts": 1,

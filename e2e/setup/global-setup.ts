@@ -35,7 +35,6 @@ import pg from "pg";
 
 import { seedDayDoorsRecord } from "./day-doors-fixture";
 import { seedMobileRoutesRecord } from "./mobile-routes-fixture";
-import { seedTopicsRecord } from "./topics-fixture";
 
 // Resolve relative to the project root rather than __dirname/import.meta.url —
 // Playwright's TS loader runs files as CJS without `"type":"module"`, and
@@ -288,27 +287,6 @@ export const E2E_SCORE_HISTORY = {
 export const SCORE_HISTORY_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateScoreHistory.json",
-);
-
-/**
- * The topic pages' own account (`topics-preview.spec.ts`).
- *
- * The journey switches the Topics preview on and off, which adds and removes
- * a navigation entry for the whole account; on the shared account a parallel
- * spec would see its More sheet change underneath it. The preview starts off,
- * the way every account starts, and the record is written after the login
- * capture (`topics-fixture.ts`).
- */
-export const E2E_TOPICS = {
-  email: "e2e-topics@healthlog.test",
-  username: "e2e-topics",
-  password: "Tp8!Hq4nVw7zKc3M",
-  role: "USER",
-} as const;
-
-export const TOPICS_STORAGE_STATE_PATH = resolve(
-  process.cwd(),
-  "e2e/setup/storageStateTopics.json",
 );
 
 export const AI_OPTIONAL_STORAGE_STATE_PATH = resolve(
@@ -930,17 +908,15 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
     // The phone-width route sweep's account. Every opt-in module is on, so
     // the sweep reaches the glucose, documents, wellbeing, nutrients and
-    // environment surfaces, and the Topics preview is on, so the topic pages
-    // render rather than leave for Insights; its record is written after the
-    // login capture.
+    // environment surfaces; its record is written after the login capture.
     await pool.query(
       `INSERT INTO users
         (id, username, email, password_hash, role, created_at, updated_at,
          height_cm, date_of_birth, gender,
          onboarding_completed_at, onboarding_tour_completed,
-         module_preferences_json, preview_features_json)
+         module_preferences_json)
        VALUES ($1, $2, $3, $4, $5, $6, $6, 168, $7, 'FEMALE', $6, true,
-               $8::jsonb, '{"topics": true}'::jsonb)
+               $8::jsonb)
        ON CONFLICT (username) DO UPDATE SET
          email = EXCLUDED.email,
          password_hash = EXCLUDED.password_hash,
@@ -948,8 +924,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
          updated_at = EXCLUDED.updated_at,
          onboarding_completed_at = EXCLUDED.onboarding_completed_at,
          onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
-         module_preferences_json = EXCLUDED.module_preferences_json,
-         preview_features_json = EXCLUDED.preview_features_json`,
+         module_preferences_json = EXCLUDED.module_preferences_json`,
       [
         cuid(),
         E2E_MOBILE_ROUTES.username,
@@ -1011,31 +986,6 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
         E2E_TIMELINE.username,
         E2E_TIMELINE.email,
         await hashPassword(E2E_TIMELINE.password),
-        now,
-      ],
-    );
-
-    // The topic pages' account. Default modules, the preview off; its record
-    // is written after the login capture.
-    await pool.query(
-      `INSERT INTO users
-        (id, username, email, password_hash, role, created_at, updated_at,
-         onboarding_completed_at, onboarding_tour_completed,
-         module_preferences_json, preview_features_json)
-       VALUES ($1, $2, $3, $4, 'USER', $5, $5, $5, true, NULL, NULL)
-       ON CONFLICT (username) DO UPDATE SET
-         email = EXCLUDED.email,
-         password_hash = EXCLUDED.password_hash,
-         updated_at = EXCLUDED.updated_at,
-         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
-         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
-         module_preferences_json = NULL,
-         preview_features_json = NULL`,
-      [
-        cuid(),
-        E2E_TOPICS.username,
-        E2E_TOPICS.email,
-        await hashPassword(E2E_TOPICS.password),
         now,
       ],
     );
@@ -1699,14 +1649,6 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // The day-doors journey's jar, then its record — see `E2E_DAY_DOORS`.
     await capture(E2E_DAY_DOORS, DAY_DOORS_STORAGE_STATE_PATH);
     await seedDayDoorsRecord(baseURL, DAY_DOORS_STORAGE_STATE_PATH);
-
-    // The topic pages' jar, then its record — see `E2E_TOPICS`.
-    await capture(E2E_TOPICS, TOPICS_STORAGE_STATE_PATH);
-    await seedTopicsRecord(
-      baseURL,
-      TOPICS_STORAGE_STATE_PATH,
-      E2E_TOPICS.username,
-    );
 
     // The score-history journey's jar — see `E2E_SCORE_HISTORY`.
     await capture(E2E_SCORE_HISTORY, SCORE_HISTORY_STORAGE_STATE_PATH);
