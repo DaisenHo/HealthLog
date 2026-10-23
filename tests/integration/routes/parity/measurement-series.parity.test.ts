@@ -27,7 +27,9 @@ import { makeGrant, makeSession, makeUser } from "../../../kit/factories";
 import {
   eventFacts,
   expectParity,
+  relativeToAnchor,
   stable,
+  startOfUtcToday,
   wideEventRecorder,
 } from "../../../kit/parity";
 import {
@@ -51,7 +53,7 @@ vi.mock("@/lib/logging/transports", async (importOriginal) => {
 const prisma = getPrismaClient();
 const DAY = 86_400_000;
 /** The start of the current UTC day: the anchor the record is laid out from. */
-const ANCHOR = new Date(Math.floor(Date.now() / DAY) * DAY);
+const ANCHOR = startOfUtcToday();
 /**
  * Days back the daily readings sit. The windows asked for are 7, 14, 30 and
  * 365 days; a reading on exactly that many days back would fall in or out of
@@ -69,40 +71,6 @@ function at(daysAgo: number, hour: number, minute = 0): Date {
   return new Date(
     ANCHOR.getTime() - daysAgo * DAY + (hour * 60 + minute) * 60_000,
   );
-}
-
-const ISO_INSTANT = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g;
-const DAY_KEY = /\b\d{4}-\d{2}-\d{2}\b/g;
-
-/** An instant as days and time from the anchor: `anchor-13d+06:30`. */
-function relativeInstant(iso: string): string {
-  const ms = Date.parse(iso) - ANCHOR.getTime();
-  const days = Math.floor(ms / DAY);
-  const rest = new Date(ms - days * DAY).toISOString().slice(11, 19);
-  return `anchor${days >= 0 ? "+" : ""}${days}d+${rest}`;
-}
-
-/** A day key as days from the anchor's day: `day-13`. */
-function relativeDay(key: string): string {
-  const days = Math.round(
-    (Date.parse(`${key}T00:00:00Z`) - ANCHOR.getTime()) / DAY,
-  );
-  return `day${days >= 0 ? "+" : ""}${days}`;
-}
-
-function relativeDates(value: unknown): unknown {
-  if (typeof value === "string") {
-    return value
-      .replace(ISO_INSTANT, relativeInstant)
-      .replace(DAY_KEY, relativeDay);
-  }
-  if (Array.isArray(value)) return value.map(relativeDates);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, relativeDates(v)]),
-    );
-  }
-  return value;
 }
 
 function seedRows(): Prisma.MeasurementCreateManyInput[] {
@@ -238,11 +206,14 @@ async function step(
   await expectParity(
     `measurement-series.${name}`,
     stable(
-      relativeDates({
-        status: res.status,
-        body: res.body,
-        events: events.map(eventFacts),
-      }),
+      relativeToAnchor(
+        {
+          status: res.status,
+          body: res.body,
+          events: events.map(eventFacts),
+        },
+        ANCHOR,
+      ),
       { since: new Date() },
     ),
   );

@@ -101,6 +101,57 @@ export function stable(value: unknown, options: StableOptions): unknown {
   return walk(value, null);
 }
 
+const DAY_MS = 86_400_000;
+const ANCHORED_INSTANT = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g;
+const ANCHORED_DAY_KEY = /\b\d{4}-\d{2}-\d{2}\b/g;
+
+/** The start of the current UTC day, the anchor `relativeToAnchor` uses. */
+export function startOfUtcToday(): Date {
+  return new Date(Math.floor(Date.now() / DAY_MS) * DAY_MS);
+}
+
+/**
+ * A copy of `value` with every ISO instant written as days and time from
+ * `anchor` (`anchor-13d+06:30:00`) and every `YYYY-MM-DD` day key as days from
+ * the anchor's day (`day-13`), inside any string.
+ *
+ * For a walk whose route reads windows against the database clock, which a
+ * pinned `Date` cannot reach: the record is laid out from the start of the
+ * current UTC day, the clock is pinned to that day, and the snapshot holds
+ * only positions relative to it, so it reads the same on every day it runs.
+ * Keep the account in UTC, so a daylight-saving change between two runs
+ * cannot move a local day boundary against the anchor.
+ */
+export function relativeToAnchor(value: unknown, anchor: Date): unknown {
+  const base = anchor.getTime();
+  const instant = (iso: string) => {
+    const ms = Date.parse(iso) - base;
+    const days = Math.floor(ms / DAY_MS);
+    const time = new Date(ms - days * DAY_MS).toISOString().slice(11, 19);
+    return `anchor${days >= 0 ? "+" : ""}${days}d+${time}`;
+  };
+  const dayKey = (key: string) => {
+    const days = Math.round((Date.parse(`${key}T00:00:00Z`) - base) / DAY_MS);
+    return `day${days >= 0 ? "+" : ""}${days}`;
+  };
+  const walk = (node: unknown): unknown => {
+    if (node instanceof Date) node = node.toISOString();
+    if (typeof node === "string") {
+      return node
+        .replace(ANCHORED_INSTANT, instant)
+        .replace(ANCHORED_DAY_KEY, dayKey);
+    }
+    if (Array.isArray(node)) return node.map(walk);
+    if (node && typeof node === "object" && !(node instanceof Uint8Array)) {
+      return Object.fromEntries(
+        Object.entries(node).map(([k, v]) => [k, walk(v)]),
+      );
+    }
+    return node;
+  };
+  return walk(value);
+}
+
 /**
  * The wide events requests emitted, collected in order. Install with
  * `vi.mock("@/lib/logging/transports", wideEventRecorder.mockFactory)` in

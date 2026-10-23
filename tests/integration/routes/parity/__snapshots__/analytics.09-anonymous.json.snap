@@ -25,8 +25,8 @@
   "stored": {
     "healthScores": [
       {
-        "dayKey": "2026-10-15",
-        "timezone": "Europe/Berlin",
+        "dayKey": "day+0",
+        "timezone": "UTC",
         "composite": 86,
         "band": "green",
         "scoreVersion": 4,
@@ -43,7 +43,7 @@
           "BLOOD_PRESSURE": 73
         },
         "inputFingerprint": "5653cd8c051404182d6c6f813a48b1c2ebc3abe1116901466ab7cc1ab70cb276",
-        "computedAt": "<now>"
+        "computedAt": "anchor+0d+12:00:00"
       }
     ],
     "patterns": []

@@ -1278,7 +1278,7 @@
             "inputs": [],
             "source": "none",
             "windowDays": 0,
-            "computedAt": "<now>"
+            "computedAt": "anchor+0d+12:00:00"
           },
           "reason": "no_usable_data"
         },
@@ -1302,7 +1302,7 @@
                 ],
                 "source": "live",
                 "windowDays": 90,
-                "computedAt": "<now>"
+                "computedAt": "anchor+0d+12:00:00"
               },
               "reason": "missing_reference_profile"
             }
@@ -1326,7 +1326,7 @@
                 ],
                 "source": "live",
                 "windowDays": 90,
-                "computedAt": "<now>"
+                "computedAt": "anchor+0d+12:00:00"
               },
               "reason": "not_tracked"
             }
@@ -1350,7 +1350,7 @@
                 ],
                 "source": "live",
                 "windowDays": 28,
-                "computedAt": "<now>"
+                "computedAt": "anchor+0d+12:00:00"
               },
               "reason": "not_tracked"
             }
@@ -1374,7 +1374,7 @@
                 ],
                 "source": "live",
                 "windowDays": 28,
-                "computedAt": "<now>"
+                "computedAt": "anchor+0d+12:00:00"
               },
               "reason": "not_tracked"
             }
@@ -1398,7 +1398,7 @@
                 ],
                 "source": "live",
                 "windowDays": 180,
-                "computedAt": "<now>"
+                "computedAt": "anchor+0d+12:00:00"
               },
               "reason": "not_tracked"
             }
@@ -1422,7 +1422,7 @@
                 ],
                 "source": "live",
                 "windowDays": 90,
-                "computedAt": "<now>"
+                "computedAt": "anchor+0d+12:00:00"
               },
               "reason": "not_tracked"
             }
@@ -1446,7 +1446,7 @@
                 ],
                 "source": "live",
                 "windowDays": 365,
-                "computedAt": "<now>"
+                "computedAt": "anchor+0d+12:00:00"
               },
               "reason": "not_tracked"
             }
@@ -1473,7 +1473,7 @@
             ],
             "source": "live",
             "windowDays": 60,
-            "computedAt": "<now>"
+            "computedAt": "anchor+0d+12:00:00"
           },
           "reason": "no_personal_goal"
         },

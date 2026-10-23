@@ -15,7 +15,8 @@
  * event, the rollup refreshes the request handed off, and the stored health
  * scores and correlation patterns.
  *
- * The clock is pinned (`Date` only). The record's rollups are built once
+ * The clock is pinned (`Date` only) to noon of the day the test runs; see
+ * `NOW`. The record's rollups are built once
  * before the walk; the fire-and-forget refresh the route starts on every
  * request is recorded instead of run, so the wide event never depends on
  * whether it finished first.
@@ -31,7 +32,9 @@ import {
   effectRecorder,
   eventFacts,
   expectParity,
+  relativeToAnchor,
   stable,
+  startOfUtcToday,
   wideEventRecorder,
 } from "../../../kit/parity";
 import { getPrismaClient, truncateAllTables } from "../../setup";
@@ -62,8 +65,16 @@ vi.mock("@/lib/rollups/measurement-rollups", async (importOriginal) => {
 });
 
 const prisma = getPrismaClient();
-const NOW = new Date("2026-10-15T12:00:00.000Z");
-const TZ = "Europe/Berlin";
+/**
+ * Noon of the current UTC day. The summaries read their 90-day windows in SQL
+ * against the database clock, which a pinned `Date` cannot move, so the clock
+ * is pinned to today and the snapshot records positions relative to today's
+ * start (`relativeToAnchor`). The record is under sixty days old, so no
+ * reading sits on a SQL window's edge whatever the time of day.
+ */
+const ANCHOR = startOfUtcToday();
+const NOW = new Date(ANCHOR.getTime() + 12 * 60 * 60 * 1000);
+const TZ = "UTC";
 const OWNER_ID = parityId("analytics", 1);
 const EMPTY_ID = parityId("analytics", 2);
 
@@ -133,14 +144,17 @@ async function step(
   await expectParity(
     `analytics.${name}`,
     stable(
-      {
-        status: res.status,
-        cacheControl: res.headers.get("cache-control"),
-        body: res.body,
-        events: events.map(eventFacts).map(withoutRollupCoverage),
-        effects: effectRecorder.take(),
-        stored: await stored(options.userId ?? OWNER_ID),
-      },
+      relativeToAnchor(
+        {
+          status: res.status,
+          cacheControl: res.headers.get("cache-control"),
+          body: res.body,
+          events: events.map(eventFacts).map(withoutRollupCoverage),
+          effects: effectRecorder.take(),
+          stored: await stored(options.userId ?? OWNER_ID),
+        },
+        ANCHOR,
+      ),
       { since: NOW },
     ),
   );

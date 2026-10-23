@@ -11,8 +11,8 @@
           "max": 84.4,
           "mean": 83.18,
           "median": 83.2,
-          "avg7": null,
-          "avg30": 82.42,
+          "avg7": 82.11,
+          "avg30": 82.58,
           "slope7": {
             "slope": -0.042,
             "direction": "down",
@@ -23,7 +23,7 @@
             "direction": "down",
             "confidence": 0.99
           },
-          "avg30LastMonth": 83.46,
+          "avg30LastMonth": 83.78,
           "avg30LastYear": null
         },
         "BLOOD_PRESSURE_SYS": {
@@ -33,8 +33,8 @@
           "max": 137,
           "mean": 129.92,
           "median": 130,
-          "avg7": null,
-          "avg30": 130.36,
+          "avg7": 131.14,
+          "avg30": 130,
           "slope7": {
             "slope": -0.393,
             "direction": "down",
@@ -55,8 +55,8 @@
           "max": 86,
           "mean": 81.96,
           "median": 82,
-          "avg7": null,
-          "avg30": 81.82,
+          "avg7": 81.43,
+          "avg30": 81.8,
           "slope7": {
             "slope": -0.714,
             "direction": "down",
@@ -67,7 +67,7 @@
             "direction": "down",
             "confidence": 0
           },
-          "avg30LastMonth": 82,
+          "avg30LastMonth": 82.1,
           "avg30LastYear": null
         },
         "PULSE": {
@@ -77,8 +77,8 @@
           "max": 69,
           "mean": 66.5,
           "median": 66.5,
-          "avg7": null,
-          "avg30": 66.32,
+          "avg7": 66.14,
+          "avg30": 66.5,
           "slope7": {
             "slope": -0.143,
             "direction": "down",
@@ -99,8 +99,8 @@
           "max": 25.1,
           "mean": 24.56,
           "median": 24.6,
-          "avg7": null,
-          "avg30": 24.2,
+          "avg7": 24,
+          "avg30": 24.28,
           "slope7": {
             "slope": -0.014,
             "direction": "down",
@@ -111,7 +111,7 @@
             "direction": "down",
             "confidence": 0.99
           },
-          "avg30LastMonth": 24.78,
+          "avg30LastMonth": 24.9,
           "avg30LastYear": null
         },
         "ACTIVITY_STEPS": {
@@ -121,8 +121,8 @@
           "max": 9833,
           "mean": 7808.5,
           "median": 7781.5,
-          "avg7": null,
-          "avg30": 7916.5,
+          "avg7": 7119,
+          "avg30": 7808.5,
           "slope7": {
             "slope": -373,
             "direction": "down",
@@ -133,7 +133,7 @@
             "direction": "down",
             "confidence": 0.06
           },
-          "avg30LastMonth": 7511.5,
+          "avg30LastMonth": null,
           "avg30LastYear": null
         },
         "TOTAL_BODY_WATER": {
@@ -171,7 +171,7 @@
           "max": 98,
           "mean": 96.9,
           "median": 97,
-          "avg7": null,
+          "avg7": 96.86,
           "avg30": 96.9,
           "slope7": {
             "slope": -0.036,
@@ -193,8 +193,8 @@
           "max": 52,
           "mean": 48.3,
           "median": 48,
-          "avg7": null,
-          "avg30": 48.23,
+          "avg7": 48,
+          "avg30": 48.3,
           "slope7": {
             "slope": -1,
             "direction": "down",
@@ -205,7 +205,7 @@
             "direction": "down",
             "confidence": 0.02
           },
-          "avg30LastMonth": 48.5,
+          "avg30LastMonth": null,
           "avg30LastYear": null
         },
         "ACTIVE_ENERGY_BURNED": {
@@ -1150,37 +1150,37 @@
       "bmi": null,
       "lastSeenByType": {
         "WEIGHT": {
-          "lastSeenAt": "2026-10-15T06:30:00.000Z",
+          "lastSeenAt": "anchor+0d+06:30:00",
           "daysAgo": 0
         },
         "BLOOD_PRESSURE_SYS": {
-          "lastSeenAt": "2026-10-15T07:00:00.000Z",
+          "lastSeenAt": "anchor+0d+07:00:00",
           "daysAgo": 0
         },
         "BLOOD_PRESSURE_DIA": {
-          "lastSeenAt": "2026-10-15T07:00:00.000Z",
+          "lastSeenAt": "anchor+0d+07:00:00",
           "daysAgo": 0
         },
         "PULSE": {
-          "lastSeenAt": "2026-10-15T07:01:00.000Z",
+          "lastSeenAt": "anchor+0d+07:01:00",
           "daysAgo": 0
         },
         "BODY_FAT": {
-          "lastSeenAt": "2026-10-15T06:31:00.000Z",
+          "lastSeenAt": "anchor+0d+06:31:00",
           "daysAgo": 0
         },
         "ACTIVITY_STEPS": {
-          "lastSeenAt": "2026-10-15T09:00:00.000Z",
+          "lastSeenAt": "anchor+0d+09:00:00",
           "daysAgo": 0
         },
         "TOTAL_BODY_WATER": null,
         "BONE_MASS": null,
         "OXYGEN_SATURATION": {
-          "lastSeenAt": "2026-10-15T04:40:00.000Z",
+          "lastSeenAt": "anchor+0d+04:40:00",
           "daysAgo": 0
         },
         "HEART_RATE_VARIABILITY": {
-          "lastSeenAt": "2026-10-15T04:30:00.000Z",
+          "lastSeenAt": "anchor+0d+04:30:00",
           "daysAgo": 0
         },
         "ACTIVE_ENERGY_BURNED": null,
@@ -1273,8 +1273,8 @@
   "stored": {
     "healthScores": [
       {
-        "dayKey": "2026-10-15",
-        "timezone": "Europe/Berlin",
+        "dayKey": "day+0",
+        "timezone": "UTC",
         "composite": 86,
         "band": "green",
         "scoreVersion": 4,
@@ -1291,7 +1291,7 @@
           "BLOOD_PRESSURE": 73
         },
         "inputFingerprint": "5653cd8c051404182d6c6f813a48b1c2ebc3abe1116901466ab7cc1ab70cb276",
-        "computedAt": "<now>"
+        "computedAt": "anchor+0d+12:00:00"
       }
     ],
     "patterns": []
