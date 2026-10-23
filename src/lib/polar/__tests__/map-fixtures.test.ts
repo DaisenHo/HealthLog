@@ -24,13 +24,15 @@ import {
   mapSpo2,
   normaliseExerciseList,
   parseIsoDuration,
+} from "@/lib/polar/map";
+import {
   type PolarActivity,
   type PolarCardioLoad,
   type PolarExercise,
   type PolarNightlyRecharge,
   type PolarSleep,
   type PolarSpo2,
-} from "../client";
+} from "@/lib/polar/wire-types";
 import activityFixture from "./__fixtures__/activity.json";
 import cardioLoadFixture from "./__fixtures__/cardio-load.json";
 import exercisesFixture from "./__fixtures__/exercises.json";

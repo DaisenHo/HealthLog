@@ -40,7 +40,7 @@ import {
   googleHealthSliceBudget,
   type GoogleHealthSliceStopReason,
   runWithGoogleHealthStop,
-} from "@/lib/google-health/client";
+} from "@/lib/google-health/budget";
 import { reportJobProgress } from "@/lib/jobs/job-observer";
 import { LANE_YIELD_DELAY_SECONDS, laneWanted } from "@/lib/jobs/heavy-lane";
 import { GOOGLE_HEALTH_COLLECTION_KEYS } from "@/lib/google-health/collection-keys";

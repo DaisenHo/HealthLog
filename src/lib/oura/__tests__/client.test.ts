@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  RESILIENCE_LEVELS,
-  derivePeriodDaysFromCyclePhases,
   fetchCardiovascularAge,
   fetchDailyCyclePhases,
   fetchReadiness,
   fetchResilience,
   fetchVo2Max,
+} from "../client";
+import {
+  RESILIENCE_LEVELS,
+  derivePeriodDaysFromCyclePhases,
   mapCardiovascularAge,
   mapDailyActivity,
   mapDailySleep,
@@ -16,6 +18,8 @@ import {
   mapResilience,
   mapSleep,
   mapVo2Max,
+} from "@/lib/oura/map";
+import {
   type OuraCardiovascularAge,
   type OuraDailyActivity,
   type OuraDailySleep,
@@ -24,7 +28,7 @@ import {
   type OuraResilience,
   type OuraSleep,
   type OuraVo2Max,
-} from "../client";
+} from "@/lib/oura/wire-types";
 import {
   OURA_OAUTH_LEGACY_TOKEN_URL,
   OURA_OAUTH_TOKEN_URL,

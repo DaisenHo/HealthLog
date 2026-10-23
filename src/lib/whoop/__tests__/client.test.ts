@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  KJ_TO_KCAL,
-  WHOOP_FIELD_MAP,
   WHOOP_PAGE_LIMIT,
   fetchBodyMeasurement,
   fetchRecoveryByCycleId,
@@ -13,13 +11,19 @@ import {
   fetchRecoveries,
   fetchSleeps,
   fetchWorkouts,
+} from "../client";
+import {
+  KJ_TO_KCAL,
+  WHOOP_FIELD_MAP,
   mapCycle,
   mapRecovery,
   mapSleep,
+} from "@/lib/whoop/map";
+import {
   type WhoopCycle,
   type WhoopRecovery,
   type WhoopSleep,
-} from "../client";
+} from "@/lib/whoop/wire-types";
 import { WHOOP_OAUTH_SCOPE } from "@/lib/whoop/oauth";
 import { WhoopApiError } from "../response-classifier";
 import { whoopOAuth } from "../oauth";

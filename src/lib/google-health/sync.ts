@@ -9,7 +9,7 @@ import {
   runWithGoogleHealthClientOutcome,
   runWithGoogleHealthStop,
   type GoogleHealthClientOutcome,
-} from "./client";
+} from "./budget";
 import { syncUserActivity } from "./sync-activity";
 import { syncUserMetrics } from "./sync-metrics";
 import { syncUserSleep } from "./sync-sleep";

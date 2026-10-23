@@ -14,16 +14,13 @@
 import { format } from "prettier";
 import { describe, expect, it } from "vitest";
 
+import { mapBody, mapCycle, mapRecovery, mapSleep } from "@/lib/whoop/map";
 import {
-  mapBody,
-  mapCycle,
-  mapRecovery,
-  mapSleep,
   type WhoopBodyMeasurement,
   type WhoopCycle,
   type WhoopRecovery,
   type WhoopSleep,
-} from "../client";
+} from "@/lib/whoop/wire-types";
 import { mapWhoopSportType } from "../sport-map";
 import bodyFixture from "./__fixtures__/body.json";
 import cycleFixture from "./__fixtures__/cycle.json";

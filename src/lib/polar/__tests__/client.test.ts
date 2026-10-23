@@ -12,18 +12,22 @@ import {
   fetchNightlyRecharges,
   fetchSleeps,
   fetchSpo2,
+  registerUser,
+} from "../client";
+import {
   mapActivity,
   mapCardioLoad,
   mapNightlyRecharge,
   mapSleep,
   mapSpo2,
-  registerUser,
+} from "@/lib/polar/map";
+import {
   type PolarActivity,
   type PolarCardioLoad,
   type PolarNightlyRecharge,
   type PolarSleep,
   type PolarSpo2,
-} from "../client";
+} from "@/lib/polar/wire-types";
 import { POLAR_OAUTH_SCOPE, getPolarCredentials } from "@/lib/polar/oauth";
 import { PolarApiError } from "../response-classifier";
 import { polarOAuth } from "../oauth";

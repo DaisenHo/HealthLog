@@ -33,7 +33,7 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import type { MeasurementType, Prisma } from "@/generated/prisma/client";
-import { WHOOP_RECOVERY_FIELD_TAGS } from "./client";
+import { WHOOP_RECOVERY_FIELD_TAGS } from "./map";
 import {
   WHOOP_RECOVERY_SYNC_QUEUE,
   WHOOP_SLEEP_SYNC_QUEUE,

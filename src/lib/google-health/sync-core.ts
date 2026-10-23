@@ -40,6 +40,8 @@ import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit
 import { recordSyncFailure, type FailureKind } from "@/lib/integrations/status";
 import { collapseToTypeDayKeys } from "@/lib/rollups/measurement-rollups";
 import { afterProviderWrite } from "@/lib/integrations/sync-kit/after-write";
+import { type GoogleHealthResumePoint } from "./data-points";
+import { type GoogleHealthTokenSource } from "./request";
 import {
   googleHealthOutcomeTruncated,
   googleHealthSliceExhausted,
@@ -48,9 +50,7 @@ import {
   noteGoogleHealthMapped,
   noteGoogleHealthOutcomeFailure,
   noteGoogleHealthWritten,
-  type GoogleHealthResumePoint,
-  type GoogleHealthTokenSource,
-} from "./client";
+} from "./budget";
 import {
   GOOGLE_HEALTH_TOKEN_REFRESH_BUFFER_MS,
   googleHealthTokenDescriptor,

@@ -69,6 +69,8 @@ import {
   fetchSleep,
   fetchVo2Max,
   fetchWorkouts,
+} from "./client";
+import {
   isRetiredOuraSleepPeriod,
   mapCardiovascularAge,
   mapDailyActivity,
@@ -79,7 +81,7 @@ import {
   mapSleep,
   mapVo2Max,
   type MappedMeasurement,
-} from "./client";
+} from "./map";
 import { getOuraConnection, syncOuraScopeDenied } from "./credentials";
 import { refreshOuraAfterRefusal } from "./oauth-descriptor";
 import { OuraApiError, classifyOuraError } from "./response-classifier";
@@ -883,10 +885,8 @@ export async function upsertOuraMeasurements(
   }
 
   opts.onInserted?.(insertedRows);
-  // The shared tail: arrivals (unless the caller emits its own), the rollups,
-  // the measurement read caches back to the oldest reading written (a history
-  // backfill writes through here and has no other invalidation), and the
-  // cached assessments of the types.
+  // The shared tail (a history backfill writes through here and has no other
+  // invalidation); the caller may emit the arrivals itself.
   await afterProviderWrite({
     userId,
     provider: "oura",

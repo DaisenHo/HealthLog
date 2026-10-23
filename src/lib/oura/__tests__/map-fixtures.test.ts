@@ -29,6 +29,8 @@ import {
   mapSleep,
   mapVo2Max,
   type MappedMeasurement,
+} from "@/lib/oura/map";
+import {
   type OuraCardiovascularAge,
   type OuraCyclePhase,
   type OuraDailyActivity,
@@ -40,7 +42,7 @@ import {
   type OuraSleep,
   type OuraVo2Max,
   type OuraWorkout,
-} from "../client";
+} from "@/lib/oura/wire-types";
 import { mapOuraWorkout } from "../sync-workouts";
 
 import cardiovascularAgeFixture from "./__fixtures__/cardiovascular-age.json";

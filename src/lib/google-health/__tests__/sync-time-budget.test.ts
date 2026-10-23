@@ -54,7 +54,7 @@ vi.mock("../sync-sleep", () => ({ syncUserSleep: resources.sleep }));
 vi.mock("../sync-activity", () => ({ syncUserActivity: resources.activity }));
 vi.mock("../sync-metrics", () => ({ syncUserMetrics: resources.metrics }));
 
-import { googleHealthSliceExhausted } from "../client";
+import { googleHealthSliceExhausted } from "@/lib/google-health/budget";
 import { syncUserGoogleHealth } from "../sync";
 
 beforeEach(() => {

@@ -15,13 +15,12 @@
 import { format } from "prettier";
 import { describe, expect, it } from "vitest";
 
+import { stravaRateLimitRetryAfterSeconds } from "../client";
+import { mapActivity, summaryHasHeartRate } from "@/lib/strava/map";
 import {
-  mapActivity,
-  stravaRateLimitRetryAfterSeconds,
-  summaryHasHeartRate,
   type StravaDetailedActivity,
   type StravaSummaryActivity,
-} from "../client";
+} from "@/lib/strava/wire-types";
 import { mapStravaSportType } from "../sport-map";
 import activitiesFixture from "./__fixtures__/activities.json";
 

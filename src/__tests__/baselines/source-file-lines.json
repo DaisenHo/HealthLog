@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 116,
-  "total": 136568,
+  "count": 113,
+  "total": 132997,
   "entries": {
     "app/api/dashboard/summary/route.ts": 1032,
     "app/api/documents/inbound/route.ts": 811,
@@ -73,7 +73,6 @@
     "lib/fitbit/sync-core.ts": 951,
     "lib/gamification/achievements-result.ts": 1094,
     "lib/gamification/achievements.ts": 913,
-    "lib/google-health/client.ts": 1589,
     "lib/google-health/mappers.ts": 1295,
     "lib/google-health/sync-core.ts": 1621,
     "lib/idempotency.ts": 879,
@@ -107,9 +106,7 @@
     "lib/medications/scheduling/recurrence.ts": 1108,
     "lib/medications/scheduling/slot-upsert.ts": 926,
     "lib/notifications/senders/apns.ts": 1100,
-    "lib/oura/client.ts": 1089,
     "lib/oura/sync.ts": 900,
-    "lib/polar/client.ts": 893,
     "lib/rollups/measurement-rollups.ts": 1496,
     "lib/search/search-records.ts": 996,
     "lib/sharing/grants.ts": 1046,

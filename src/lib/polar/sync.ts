@@ -68,13 +68,15 @@ import {
   fetchNightlyRecharges,
   fetchSleeps,
   fetchSpo2,
+} from "./client";
+import {
   mapActivity,
   mapCardioLoad,
   mapNightlyRecharge,
   mapSleep,
   mapSpo2,
   type MappedMeasurement,
-} from "./client";
+} from "./map";
 import {
   sweepStaleSleepSegments,
   type SleepSegmentSweep,

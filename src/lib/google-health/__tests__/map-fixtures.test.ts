@@ -51,13 +51,15 @@ import {
   buildDailyRollUpBody,
   chunkCivilRange,
   civilDateInTz,
+  resolveGoogleHealthUserId,
+} from "../client";
+import { refusesEdgeFilter } from "@/lib/google-health/data-points";
+import {
   extractGoogleApiErrorDetail,
   formatCivilBound,
   googleHealthRetryDelayMs,
   incrementalFilter,
-  refusesEdgeFilter,
-  resolveGoogleHealthUserId,
-} from "../client";
+} from "@/lib/google-health/request";
 import dailySummariesJson from "./__fixtures__/daily-summaries.json";
 import exerciseJson from "./__fixtures__/exercise.json";
 import rollupsJson from "./__fixtures__/rollups.json";
