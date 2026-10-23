@@ -135,7 +135,7 @@ type HttpMethod = (typeof HTTP_METHODS)[number];
  */
 const REASONS = {
   /**
-   * `requireAdmin()` is cookie-only by construction (`src/lib/api-handler.ts`),
+   * `requireAdmin()` is cookie-only by construction (`src/lib/auth/guards/cookie.ts`),
    * so a Bearer token cannot reach these however wide its scope. The only
    * caller that can is the operator's own browser on the admin console, which
    * ships with the server and does not read a spec to find out what it talks

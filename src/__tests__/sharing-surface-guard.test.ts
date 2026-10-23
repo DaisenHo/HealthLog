@@ -75,6 +75,7 @@ import { ENTIRE_RECORD, SHARE_DOMAINS } from "@/lib/sharing/scope";
 import type { ShareScope } from "@/lib/sharing/scope";
 
 import { ADMITTED_MUTATING_HANDLERS } from "../../tests/fixtures/v137/sharing-matrix";
+import { API_HANDLER, guardModuleOf } from "./helpers/auth-guards";
 import { readSourceText } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
@@ -115,7 +116,7 @@ const VALID_SCOPES: ReadonlySet<string> = new Set<string>([
  * "is this caller an admin", "has this caller just re-proven a second factor",
  * "is this caller here over a cookie". All three resolve through `getSession()`
  * and see the actor, never the owner — that is what
- * `acting-account-boundary-guard.test.ts` pins inside `api-handler.ts`.
+ * `acting-account-boundary-guard.test.ts` pins inside `lib/auth/guards/`.
  *
  * This file pins the other end. A handler that resolves a RECORD and then runs
  * one of these has put a role check and a substituted data scope in the same
@@ -719,6 +720,25 @@ function functionSource(rel: string, name: string): string {
     found = text.slice(node.getStart(parsed), node.getEnd());
   });
   return found;
+}
+
+/** Names a module re-exports with `export { … } from "…"`. */
+function reexportedNames(rel: string): string[] {
+  const parsed = ts.createSourceFile(
+    rel,
+    read(rel),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const names: string[] = [];
+  parsed.forEachChild((node) => {
+    if (!ts.isExportDeclaration(node) || !node.moduleSpecifier) return;
+    const clause = node.exportClause;
+    if (!clause || !ts.isNamedExports(clause)) return;
+    for (const spec of clause.elements) names.push(spec.name.text);
+  });
+  return names;
 }
 
 /** Names of the top-level functions a module exports. */
@@ -2571,11 +2591,17 @@ describe("the resolvers exist and live in one place", () => {
     // between "no route administers a managed profile" and "the guard is
     // looking for a function that does not exist": its frozen list is empty,
     // so its leg's negative result proves nothing on its own.
-    const exported = exportedFunctionNames("lib/api-handler.ts");
+    const declaring = guardModuleOf(RECORD_RESOLVER);
+    const exported = exportedFunctionNames(declaring);
     expect(exported.length).toBeGreaterThan(0);
     expect(exported).toContain(RECORD_RESOLVER);
     expect(exported).toContain(ACTOR_RESOLVER);
     expect(exported).toContain(GUARDIAN_RESOLVER);
+    // And the public entry routes import them from re-exports all three.
+    const reexported = reexportedNames(API_HANDLER);
+    expect(reexported).toContain(RECORD_RESOLVER);
+    expect(reexported).toContain(ACTOR_RESOLVER);
+    expect(reexported).toContain(GUARDIAN_RESOLVER);
   });
 
   it("nothing outside the frozen route lists reaches any resolver", () => {
@@ -2596,7 +2622,9 @@ describe("the resolvers exist and live in one place", () => {
     expect(naming).toEqual(
       [
         // Declares all three. Not a caller.
-        "lib/api-handler.ts",
+        guardModuleOf(RECORD_RESOLVER),
+        // Re-exports all three as the public entry. Not a caller.
+        API_HANDLER,
         ...Object.keys(DELEGABLE_ROUTES),
         ...Object.keys(GUARDIAN_ROUTES),
         ...Object.keys(ACTOR_ROUTES),
@@ -2631,10 +2659,11 @@ describe("(a) the delegable route set is frozen", () => {
     // names nothing" were the same sentence; the list is populated now, so the
     // assertion below would catch a neutered matcher on its own. Kept anyway,
     // because a future removal could empty the list again and the day that
-    // happens is not the day to rediscover this. `lib/api-handler.ts` is the
-    // guaranteed positive — it declares the symbol.
-    expect(modulesNaming(["lib/api-handler.ts"], RECORD_RESOLVER)).toEqual([
-      "lib/api-handler.ts",
+    // happens is not the day to rediscover this. The guard module that
+    // declares the symbol is the guaranteed positive.
+    const recordModule = guardModuleOf(RECORD_RESOLVER);
+    expect(modulesNaming([recordModule], RECORD_RESOLVER)).toEqual([
+      recordModule,
     ]);
 
     expect(modulesNaming(scanned, RECORD_RESOLVER)).toEqual(
@@ -2654,9 +2683,8 @@ describe("(b) the actor-surface route set is frozen", () => {
     expect(scanned.length).toBeGreaterThan(ROUTE_MODULE_FLOOR);
 
     // Positive control, same reason as leg (a).
-    expect(modulesNaming(["lib/api-handler.ts"], ACTOR_RESOLVER)).toEqual([
-      "lib/api-handler.ts",
-    ]);
+    const actorModule = guardModuleOf(ACTOR_RESOLVER);
+    expect(modulesNaming([actorModule], ACTOR_RESOLVER)).toEqual([actorModule]);
 
     expect(modulesNaming(scanned, ACTOR_RESOLVER)).toEqual(
       Object.keys(ACTOR_ROUTES).sort(),
@@ -2747,14 +2775,22 @@ describe("(c) a record resolver never shares a module with a role or step-up che
   });
 
   it("the declaration site is out of scope by construction", () => {
-    // `lib/api-handler.ts` declares the record resolver AND all three cookie-
-    // only helpers, so a scan of every source file would need it exempted, and
-    // an exemption is a hole. Scoping the leg to handler modules removes the
-    // need for one. This asserts the scoping still holds.
-    const src = exportedFunctionNames("lib/api-handler.ts");
-    expect(src).toContain(RECORD_RESOLVER);
-    for (const helper of COOKIE_ONLY_HELPERS) expect(src).toContain(helper);
-    expect(routeModules()).not.toContain("lib/api-handler.ts");
+    // The auth layer declares the record resolver AND all three cookie-only
+    // helpers (in `lib/auth/guards/`, re-exported by `lib/api-handler.ts`), so
+    // a scan of every source file would need those modules exempted, and an
+    // exemption is a hole. Scoping the leg to handler modules removes the need
+    // for one. This asserts the scoping still holds.
+    const declaring = [RECORD_RESOLVER, ...COOKIE_ONLY_HELPERS].map((name) =>
+      guardModuleOf(name),
+    );
+    expect(exportedFunctionNames(declaring[0])).toContain(RECORD_RESOLVER);
+    COOKIE_ONLY_HELPERS.forEach((helper, i) =>
+      expect(exportedFunctionNames(declaring[i + 1])).toContain(helper),
+    );
+    const routes = routeModules();
+    for (const rel of [API_HANDLER, ...declaring]) {
+      expect(routes).not.toContain(rel);
+    }
   });
 });
 
@@ -3166,7 +3202,7 @@ describe("(g) the MANAGE route set is frozen", () => {
     // …and the fact it reads has to be stamped. The resolver is where the
     // owner row is in hand, so it is the only place that can decide it.
     const resolver = functionSource(
-      "lib/api-handler.ts",
+      guardModuleOf("resolveSwitchedRecord"),
       "resolveSwitchedRecord",
     );
     expect(resolver.length).toBeGreaterThan(0);
@@ -3357,10 +3393,11 @@ describe("(h) the guardian route set is frozen", () => {
     // Positive control for this leg's own matcher, the same one leg (a) uses
     // and for the same reason twice over: the literal is empty, so "no route
     // names the resolver" and "the matcher names nothing" are one sentence
-    // until something the matcher CAN find is named. `lib/api-handler.ts`
-    // declares the symbol and is the guaranteed positive.
-    expect(modulesNaming(["lib/api-handler.ts"], GUARDIAN_RESOLVER)).toEqual([
-      "lib/api-handler.ts",
+    // until something the matcher CAN find is named. The guard module that
+    // declares the symbol is the guaranteed positive.
+    const guardianModule = guardModuleOf(GUARDIAN_RESOLVER);
+    expect(modulesNaming([guardianModule], GUARDIAN_RESOLVER)).toEqual([
+      guardianModule,
     ]);
 
     expect(modulesNaming(scanned, GUARDIAN_RESOLVER)).toEqual(
@@ -3375,7 +3412,10 @@ describe("(h) the guardian route set is frozen", () => {
     // marker. A resolver that stopped reading it would leave every leg here
     // passing and the identity fence gone — an invited adult's MANAGE grant
     // would reach the settings of a record its owner still runs.
-    const guardian = functionSource("lib/api-handler.ts", GUARDIAN_RESOLVER);
+    const guardian = functionSource(
+      guardModuleOf(GUARDIAN_RESOLVER),
+      GUARDIAN_RESOLVER,
+    );
     // Non-zero proof, twice: the slice found a function, and it is the one it
     // claims to be. A renamed resolver must fail here rather than assert
     // against an empty string.
@@ -3386,7 +3426,10 @@ describe("(h) the guardian route set is frozen", () => {
     // …and the record resolver must NOT read it. The two resolvers differ in
     // exactly this fact, so a marker check that drifted into the delegable
     // path would make the fence meaningless while every list still agreed.
-    const record = functionSource("lib/api-handler.ts", RECORD_RESOLVER);
+    const record = functionSource(
+      guardModuleOf(RECORD_RESOLVER),
+      RECORD_RESOLVER,
+    );
     expect(record.length).toBeGreaterThan(0);
     expect(record).not.toContain("managedProfileAt");
   });

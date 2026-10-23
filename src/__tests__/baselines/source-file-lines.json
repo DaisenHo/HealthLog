@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 121,
-  "total": 143770,
+  "count": 120,
+  "total": 141792,
   "entries": {
     "app/api/dashboard/summary/route.ts": 1032,
     "app/api/documents/inbound/route.ts": 811,
@@ -55,7 +55,6 @@
     "lib/analytics/score/reader.ts": 998,
     "lib/analytics/sleep-night.ts": 1345,
     "lib/analytics/summaries-slice.ts": 1248,
-    "lib/api-handler.ts": 1978,
     "lib/auth/session.ts": 811,
     "lib/cache/server-cache.ts": 851,
     "lib/cycle/prediction.ts": 883,
