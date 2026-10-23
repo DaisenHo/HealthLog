@@ -33,7 +33,7 @@ import {
 } from "@playwright/test";
 import pg from "pg";
 
-import { allCriticalAccounts } from "./critical-fixture";
+import { allCriticalAccounts, FORM_SIGN_IN_JOURNEYS } from "./critical-fixture";
 import { seedDayDoorsRecord } from "./day-doors-fixture";
 import { seedMobileRoutesRecord } from "./mobile-routes-fixture";
 
@@ -1754,8 +1754,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     );
 
     // The @critical journeys' jars. The sign-in journey signs in through the
-    // form, so its account gets a jar only for the steps that start signed in.
+    // form in every test, so its account gets none.
     for (const account of allCriticalAccounts()) {
+      if (FORM_SIGN_IN_JOURNEYS.has(account.journey)) continue;
       await capture(account, account.storageStatePath);
     }
   } finally {

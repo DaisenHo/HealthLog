@@ -39,6 +39,16 @@ export const CRITICAL_JOURNEYS = [
 
 export type CriticalJourney = (typeof CRITICAL_JOURNEYS)[number];
 
+/**
+ * Journeys that sign in through the form in every test and so get no jar.
+ * The sign-in journey ends the sessions it opens; a jar captured once in
+ * global setup would be dead for a retry, and a retry has to start from the
+ * same place as the first attempt.
+ */
+export const FORM_SIGN_IN_JOURNEYS: ReadonlySet<CriticalJourney> = new Set([
+  "auth",
+]);
+
 /** The projects the journeys run in; each gets its own account per journey. */
 export const CRITICAL_PROJECTS = {
   "chromium-desktop": "d",
