@@ -15,7 +15,7 @@ import {
   grantCoversDomain,
   touchGrantUsage,
   type GrantNeed,
-} from "@/lib/sharing/grants";
+} from "@/lib/sharing/grant-access";
 import type { ShareScope } from "@/lib/sharing/scope";
 import { assertRecordSessionFence } from "@/lib/sharing/record-session-fence";
 import {

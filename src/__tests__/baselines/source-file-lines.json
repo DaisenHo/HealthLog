@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 120,
-  "total": 141792,
+  "total": 141553,
   "entries": {
     "app/api/dashboard/summary/route.ts": 1032,
     "app/api/documents/inbound/route.ts": 811,
@@ -115,7 +115,7 @@
     "lib/polar/client.ts": 1010,
     "lib/rollups/measurement-rollups.ts": 1496,
     "lib/search/search-records.ts": 996,
-    "lib/sharing/grants.ts": 1046,
+    "lib/sharing/grants.ts": 807,
     "lib/support/report.ts": 905,
     "lib/telegram-webhook-handlers.ts": 1341,
     "lib/validations/inbound-documents.ts": 1130,

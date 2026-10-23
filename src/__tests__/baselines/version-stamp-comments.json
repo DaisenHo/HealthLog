@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2954,
-  "total": 10481,
+  "total": 10480,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -2819,7 +2819,7 @@
     "lib/sharing/audit-details.ts": 1,
     "lib/sharing/delegated-generation.ts": 1,
     "lib/sharing/grant-view.ts": 2,
-    "lib/sharing/grants.ts": 4,
+    "lib/sharing/grants.ts": 3,
     "lib/sharing/module-disclosure.ts": 1,
     "lib/sharing/record-session-fence-contract.ts": 1,
     "lib/sharing/record-session-fence.ts": 1,

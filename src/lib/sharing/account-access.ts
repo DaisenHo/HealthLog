@@ -44,7 +44,7 @@ import type {
 } from "@/lib/sharing/account-access-view";
 import { delegatedDomains } from "@/lib/sharing/domain-write-support";
 import { resolveGrantSections } from "@/lib/sharing/grant-view";
-import { grantAllows, isGrantActive } from "@/lib/sharing/grants";
+import { grantAllows, isGrantActive } from "@/lib/sharing/grant-access";
 import type { AccountGrantAccess } from "@/generated/prisma/client";
 
 /**

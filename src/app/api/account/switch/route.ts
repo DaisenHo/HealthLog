@@ -69,7 +69,7 @@ import {
   pointSessionAt,
   pointSessionAtIfUnchanged,
 } from "@/lib/sharing/acting-session";
-import { findActiveGrant } from "@/lib/sharing/grants";
+import { findActiveGrant } from "@/lib/sharing/grant-access";
 import { switchAccountSchema } from "@/lib/validations/account-sharing";
 
 export const POST = apiHandler(async (request: NextRequest) => {

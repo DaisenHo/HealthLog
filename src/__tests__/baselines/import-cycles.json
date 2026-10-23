@@ -1,6 +1,6 @@
 {
   "$comment": "Runtime import cycles under src/: the back-edge count and the strongly connected components. Maintained by src/__tests__/import-cycle-guard.test.ts.",
-  "cycles": 7,
+  "cycles": 6,
   "components": [
     [
       "components/command-palette/command-palette.tsx",
@@ -17,11 +17,6 @@
       "lib/medications/scheduling/cadence.ts",
       "lib/medications/scheduling/compliance.ts",
       "lib/medications/scheduling/schedule-eras.ts"
-    ],
-    [
-      "lib/integrations/oauth-kit/connect-target.ts",
-      "lib/managed-profiles/lifecycle.ts",
-      "lib/sharing/grants.ts"
     ],
     [
       "lib/cycle/gate.ts",

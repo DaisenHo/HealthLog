@@ -54,13 +54,13 @@ import {
 } from "../idempotency";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-vi.mock("@/lib/sharing/grants", () => ({
+vi.mock("@/lib/sharing/grant-access", () => ({
   findActiveGrant: vi.fn(),
 }));
 
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
-import { findActiveGrant } from "@/lib/sharing/grants";
+import { findActiveGrant } from "@/lib/sharing/grant-access";
 
 /** A live WRITE grant, whole record, as `delegatedGrantFacet` reads it. */
 const GRANT = { id: "grant-1", access: "WRITE", scopeJson: null };
