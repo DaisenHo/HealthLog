@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2949,
-  "total": 10287,
+  "count": 2948,
+  "total": 10257,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1376,7 +1376,6 @@
     "components/settings/coach-prefs-section.tsx": 2,
     "components/settings/coach-reminders-section.tsx": 2,
     "components/settings/coach-section.tsx": 3,
-    "components/settings/dashboard-layout-section.tsx": 30,
     "components/settings/dashboard-section.tsx": 1,
     "components/settings/environment-section.tsx": 3,
     "components/settings/export-section.tsx": 4,

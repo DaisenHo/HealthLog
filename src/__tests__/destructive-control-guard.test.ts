@@ -316,7 +316,8 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["ConfirmButton"],
   },
   {
-    file: "components/settings/dashboard-layout-section.tsx",
+    file: "components/settings/dashboard-layout/use-dashboard-layout-draft.ts",
+    triggers: ["components/settings/dashboard-layout-section.tsx"],
     destroys:
       "the dashboard arrangement: tile order, hidden tiles, ring choice",
     recovery: "permanent",

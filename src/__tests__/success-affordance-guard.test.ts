@@ -360,7 +360,7 @@ const PINNED_AFFORDANCES: Record<
   },
   "src/components/settings/coach-memory-section.tsx": { "toast.success": 2 },
   "src/components/settings/coach-prefs-section.tsx": { "toast.success": 1 },
-  "src/components/settings/dashboard-layout-section.tsx": {
+  "src/components/settings/dashboard-layout/use-dashboard-layout-draft.ts": {
     "toast.success": 2,
   },
   "src/components/settings/environment-section.tsx": { "toast.success": 4 },

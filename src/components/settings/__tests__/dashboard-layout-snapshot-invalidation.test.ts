@@ -128,7 +128,10 @@ describe("dashboard snapshot invalidation — same-tab staleness mechanism", () 
 
 describe("dashboard layout save — every layout source is covered (source pins)", () => {
   const sectionSrc = readFileSync(
-    join(process.cwd(), "src/components/settings/dashboard-layout-section.tsx"),
+    join(
+      process.cwd(),
+      "src/components/settings/dashboard-layout/use-dashboard-layout-draft.ts",
+    ),
     "utf8",
   );
 
