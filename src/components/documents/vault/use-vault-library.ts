@@ -201,5 +201,3 @@ export function useVaultLibrary({
     years,
   };
 }
-
-export type VaultLibrary = ReturnType<typeof useVaultLibrary>;

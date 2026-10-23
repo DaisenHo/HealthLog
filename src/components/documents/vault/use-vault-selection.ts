@@ -130,5 +130,3 @@ export function useVaultSelection(documents: InboundDocumentDto[]) {
     openBulkShare,
   };
 }
-
-export type VaultSelection = ReturnType<typeof useVaultSelection>;
