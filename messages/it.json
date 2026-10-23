@@ -10947,25 +10947,6 @@
       "who5": "Test sul benessere, 5 domande",
       "sci": "Test sul sonno, 8 domande"
     },
-    "options": {
-      "0": "Mai",
-      "1": "Alcuni giorni",
-      "2": "Per più della metà dei giorni",
-      "3": "Quasi ogni giorno"
-    },
-    "gad7Options": {
-      "0": "Mai",
-      "1": "Alcuni giorni",
-      "2": "Per oltre la metà dei giorni",
-      "3": "Quasi ogni giorno"
-    },
-    "functionalTitle": "Se ha fatto una crocetta su uno qualsiasi di questi problemi, quanto questi problemi le hanno reso difficile fare il suo lavoro, occuparsi delle sue cose a casa o avere buoni rapporti con gli altri?",
-    "functional": {
-      "0": "Per niente difficile",
-      "1": "Abbastanza difficile",
-      "2": "Molto difficile",
-      "3": "Estremamente difficile"
-    },
     "functionalOptionalHint": "Facoltativo: puoi inviare anche senza rispondere a questa domanda.",
     "result": {
       "title": "Il tuo risultato",
@@ -11014,35 +10995,6 @@
       "intro": "Hai indicato pensieri che sarebbe meglio essere morto/a o di farti del male. Un supporto è disponibile proprio ora, e chiedere aiuto è un segno di forza.",
       "ifDanger": "Se sei in pericolo immediato, chiama subito il {emergency}.",
       "resourcesTitle": "Persone che possono aiutare"
-    },
-    "items": {
-      "phq9": {
-        "1": "Scarso interesse o piacere nel fare le cose",
-        "2": "Sentirsi giù, triste o disperato/a",
-        "3": "Problemi ad addormentarsi o a dormire tutta la notte senza svegliarsi, o a dormire troppo",
-        "4": "Sentirsi stanco/a o avere poca energia",
-        "5": "Scarso appetito o mangiare troppo",
-        "6": "Avere una scarsa opinione di sé, o sentirsi un/una fallito/a o aver deluso se stesso/a o i propri familiari",
-        "7": "Difficoltà a concentrarsi su qualcosa, per esempio leggere il giornale o guardare la televisione",
-        "8": "Muoversi o parlare così lentamente da poter essere notato/a da altre persone. O, al contrario, essere così irrequieto/a da muoversi molto più del solito",
-        "9": "Pensare che sarebbe meglio morire o farsi del male in un modo o nell’altro"
-      },
-      "gad7": {
-        "1": "Sentirsi nervoso/a, ansioso/a o teso/a",
-        "2": "Non riuscire a smettere di preoccuparsi o a tenere sotto controllo le preoccupazioni",
-        "3": "Preoccuparsi troppo per varie cose",
-        "4": "Avere difficoltà a rilassarsi",
-        "5": "Essere talmente irrequieto/a da far fatica a stare seduto/a fermo/a",
-        "6": "Infastidirsi o irritarsi facilmente",
-        "7": "Avere paura che possa succedere qualcosa di terribile"
-      },
-      "who5": {
-        "1": "Mi sono sentito/a allegro/a e di buon umore",
-        "2": "Mi sono sentito/a calmo/a e rilassato/a",
-        "3": "Mi sono sentito/a attivo/a ed energico/a",
-        "4": "Mi sono svegliato/a sentendomi fresco/a e riposato/a",
-        "5": "La mia vita di tutti i giorni è stata piena di cose che mi interessano"
-      }
     },
     "crisisResource": {
       "telefonSeelsorge": {
@@ -11102,26 +11054,6 @@
       "who5": "Un punteggio di benessere pari o inferiore a 50 può meritare uno sguardo più attento. Se vuoi, il PHQ-9 in questa pagina esplora l'umore più in dettaglio. È un suggerimento gentile, non una diagnosi.",
       "sci": "Nello studio di questo questionario, punteggi pari o inferiori a 16 erano associati a insonnia probabile. Se dormire male continua a pesarti, parlare con un professionista sanitario può aiutare. Non è una diagnosi."
     },
-    "validatedInEnglishNote": "Questo questionario è validato in inglese; le domande sono mostrate nella versione originale inglese.",
-    "who5Options": {
-      "0": "Mai",
-      "1": "A volte",
-      "2": "Meno della metà del tempo",
-      "3": "Più della metà del tempo",
-      "4": "La maggior parte del tempo",
-      "5": "Sempre"
-    },
-    "stems": {
-      "phq9": {
-        "period": "Nelle ultime 2 settimane, con quale frequenza le ha dato fastidio ciascuno dei seguenti problemi?"
-      },
-      "gad7": {
-        "period": "Nelle ultime 2 settimane, con quale frequenza le ha dato fastidio ciascuno dei seguenti problemi?"
-      },
-      "who5": {
-        "period": "Nelle ultime due settimane"
-      }
-    },
     "openDetail": "Mostra dettagli",
     "historyLoadError": "Non è stato possibile caricare la cronologia dei test",
     "historyLoadErrorHint": "Questo non significa che non ci siano risultati: non è stato possibile recuperare l'elenco. Riprova.",
@@ -11171,6 +11103,13 @@
         "belowThreshold": "Il tuo sonno nell’ultimo mese era nella fascia in cui lo studio alla base di questo questionario riteneva probabile un’insonnia.",
         "aboveThreshold": "Il tuo sonno nell’ultimo mese era fuori dalla fascia che quello studio collega all’insonnia."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "Questa traduzione non è stata validata scientificamente; considera il risultato come un orientamento.",
+      "showOriginal": "Mostra il testo originale in inglese",
+      "showTranslation": "Mostra la traduzione",
+      "resultUnvalidated": "Risposte date in una traduzione non validata scientificamente; considera il risultato come un orientamento.",
+      "historyUnvalidated": "Risposte date in una traduzione non validata scientificamente"
     }
   },
   "records": {

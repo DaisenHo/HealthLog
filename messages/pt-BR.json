@@ -11054,7 +11054,6 @@
       "who5": "Uma pontuação de bem-estar de 50 ou abaixo pode valer uma olhada mais de perto. Se quiser, o check-in PHQ-9 nesta página examina o humor com mais profundidade. Esta é uma sugestão gentil, não um diagnóstico.",
       "sci": "No estudo por trás deste questionário, pontuações de 16 ou abaixo foram associadas a provável insônia. Se o sono ruim continuar incomodando, conversar com um profissional de saúde pode ajudar. Isto não é um diagnóstico."
     },
-    "validatedInEnglishNote": "Este questionário é validado em inglês; as perguntas são exibidas na redação original em inglês.",
     "openDetail": "Mostrar detalhes",
     "historyLoadError": "Não foi possível carregar seu histórico de avaliações",
     "historyLoadErrorHint": "Isso não significa que você não tem resultados; a lista não pôde ser buscada. Tente novamente.",
@@ -11104,6 +11103,13 @@
         "belowThreshold": "Seu sono no último mês ficou na faixa em que o estudo por trás deste questionário considerou provável uma insônia.",
         "aboveThreshold": "Seu sono no último mês ficou fora da faixa que esse estudo associa à insônia."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "Esta tradução não foi validada cientificamente; considere o resultado como uma orientação.",
+      "showOriginal": "Ver o texto original em inglês",
+      "showTranslation": "Ver a tradução",
+      "resultUnvalidated": "Respondido em uma tradução que não foi validada cientificamente; considere o resultado como uma orientação.",
+      "historyUnvalidated": "Respondido em uma tradução não validada cientificamente"
     }
   },
   "records": {

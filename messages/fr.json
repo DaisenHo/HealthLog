@@ -10947,12 +10947,6 @@
       "who5": "Test de bien-être, 5 questions",
       "sci": "Test de sommeil, 8 questions"
     },
-    "gad7Options": {
-      "0": "Jamais",
-      "1": "Plusieurs jours",
-      "2": "Plus de la moitié du temps",
-      "3": "Presque tous les jours"
-    },
     "functionalOptionalHint": "Facultatif : tu peux envoyer sans répondre à cette question.",
     "result": {
       "title": "Ton résultat",
@@ -11001,24 +10995,6 @@
       "intro": "Tu as indiqué des pensées qu'il vaudrait mieux être mort(e) ou de te faire du mal. De l'aide est disponible dès maintenant, et demander de l'aide est un signe de force.",
       "ifDanger": "Si tu es en danger immédiat, appelle le {emergency} maintenant.",
       "resourcesTitle": "Des personnes qui peuvent aider"
-    },
-    "items": {
-      "gad7": {
-        "1": "Un sentiment de nervosité, d’anxiété ou de tension",
-        "2": "Une incapacité à arrêter de s’inquiéter ou à contrôler ses inquiétudes",
-        "3": "Une inquiétude excessive à propos de différentes choses",
-        "4": "Des difficultés à se détendre",
-        "5": "Une agitation telle qu’il est difficile à tenir en place",
-        "6": "Une tendance à être facilement contrarié(e) ou irritable",
-        "7": "Un sentiment de peur comme si quelque chose de terrible risquait de se produire"
-      },
-      "who5": {
-        "1": "Je me suis senti(e) bien et de bonne humeur",
-        "2": "Je me suis senti(e) calme et tranquille",
-        "3": "Je me suis senti(e) plein(e) d'énergie et vigoureux(se)",
-        "4": "Je me suis réveillé(e) en me sentant frais(che) et dispos(e)",
-        "5": "Ma vie quotidienne a été remplie de choses intéressantes"
-      }
     },
     "crisisResource": {
       "telefonSeelsorge": {
@@ -11078,23 +11054,6 @@
       "who5": "Un score de bien-être de 50 ou moins peut mériter un regard plus attentif. Si tu le souhaites, le PHQ-9 sur cette page explore l'humeur plus en détail. C'est une suggestion bienveillante, pas un diagnostic.",
       "sci": "Dans l'étude de ce questionnaire, des scores de 16 ou moins étaient associés à une insomnie probable. Si un mauvais sommeil continue de te peser, parler à un professionnel de santé peut aider. Ce n'est pas un diagnostic."
     },
-    "validatedInEnglishNote": "Ce questionnaire est validé en anglais ; les questions sont affichées dans leur version originale anglaise.",
-    "who5Options": {
-      "0": "Jamais",
-      "1": "De temps en temps",
-      "2": "Moins de la moitié du temps",
-      "3": "Plus de la moitié du temps",
-      "4": "La plupart du temps",
-      "5": "Tout le temps"
-    },
-    "stems": {
-      "gad7": {
-        "period": "Au cours des 2 dernières semaines, selon quelle fréquence avez-vous été gêné(e) par les problèmes suivants ?"
-      },
-      "who5": {
-        "period": "Au cours des deux dernières semaines"
-      }
-    },
     "openDetail": "Voir les détails",
     "historyLoadError": "Ton historique d'évaluations n'a pas pu être chargé",
     "historyLoadErrorHint": "Cela ne veut pas dire que tu n'as aucun résultat : la liste n'a pas pu être récupérée. Réessaie.",
@@ -11144,6 +11103,13 @@
         "belowThreshold": "Votre sommeil du dernier mois se situait dans la zone où l’étude à l’origine de ce questionnaire jugeait une insomnie probable.",
         "aboveThreshold": "Votre sommeil du dernier mois se situait en dehors de la zone que cette étude associe à l’insomnie."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "Cette traduction n’a pas été validée scientifiquement ; considérez le résultat comme une indication.",
+      "showOriginal": "Afficher le texte original en anglais",
+      "showTranslation": "Afficher la traduction",
+      "resultUnvalidated": "Réponses données dans une traduction qui n’a pas été validée scientifiquement ; considérez le résultat comme une indication.",
+      "historyUnvalidated": "Réponses données dans une traduction non validée scientifiquement"
     }
   },
   "records": {

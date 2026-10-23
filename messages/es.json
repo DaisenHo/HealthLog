@@ -10947,25 +10947,6 @@
       "who5": "Test de bienestar, 5 preguntas",
       "sci": "Test de sueño, 8 preguntas"
     },
-    "options": {
-      "0": "Nunca",
-      "1": "Varios días",
-      "2": "Más de la mitad de los días",
-      "3": "Casi cada día"
-    },
-    "gad7Options": {
-      "0": "Nunca",
-      "1": "Varios días",
-      "2": "Más de la mitad de los días",
-      "3": "Casi cada día"
-    },
-    "functionalTitle": "Si ha marcado alguno de los problemas de este cuestionario, ¿hasta qué punto estos problemas le han creado dificultades para hacer su trabajo, ocuparse de la casa o relacionarse con los demás?",
-    "functional": {
-      "0": "Ninguna dificultad",
-      "1": "Algunas dificultades",
-      "2": "Muchas dificultades",
-      "3": "Muchísimas dificultades"
-    },
     "functionalOptionalHint": "Opcional: puedes enviar sin responder esta pregunta.",
     "result": {
       "title": "Tu resultado",
@@ -11014,35 +10995,6 @@
       "intro": "Indicaste pensamientos de estar mejor muerto o de hacerte daño. Hay apoyo disponible ahora mismo, y pedir ayuda es una señal de fortaleza.",
       "ifDanger": "Si estás en peligro inmediato, llama ahora al {emergency}.",
       "resourcesTitle": "Personas que pueden ayudar"
-    },
-    "items": {
-      "phq9": {
-        "1": "Poco interés o alegría por hacer cosas",
-        "2": "Sensación de estar decaído/a, deprimido/a o desesperanzado/a",
-        "3": "Problemas para quedarse dormido/a, para seguir durmiendo o dormir demasiado",
-        "4": "Sensación de cansancio o de tener poca energía",
-        "5": "Poco apetito o comer demasiado",
-        "6": "Sentirse mal consigo mismo/a; sentir que es un/a fracasado/a o que ha decepcionado a su familia o a sí mismo/a",
-        "7": "Problemas para concentrarse en algo, como leer el periódico o ver la televisión",
-        "8": "Moverse o hablar tan despacio que los demás pueden haberlo notado. O lo contrario: estar tan inquieto/a o agitado/a que se ha estado moviendo de un lado a otro más de lo habitual",
-        "9": "Pensamientos de que estaría mejor muerto/a o de querer hacerse daño de algún modo"
-      },
-      "gad7": {
-        "1": "Sentirse nervioso/a, angustiado/a o muy tenso/a",
-        "2": "Ser incapaz de dejar de preocuparse o de controlar la preocupación",
-        "3": "Preocuparse demasiado por diferentes cuestiones",
-        "4": "Tener problemas para relajarse",
-        "5": "Estar tan inquieto/a que le resulta difícil permanecer sentado/a",
-        "6": "Enfadarse o irritarse con facilidad",
-        "7": "Sentir miedo de que algo terrible pueda ocurrir"
-      },
-      "who5": {
-        "1": "Me he sentido alegre y de buen humor",
-        "2": "Me he sentido tranquilo y relajado",
-        "3": "Me he sentido activo y enérgico",
-        "4": "Me he despertado fresco y descansado",
-        "5": "Mi vida cotidiana ha estado llena de cosas que me interesan"
-      }
     },
     "crisisResource": {
       "telefonSeelsorge": {
@@ -11102,26 +11054,6 @@
       "who5": "Una puntuación de bienestar de 50 o menos puede merecer una mirada más atenta. Si quieres, el PHQ-9 de esta página explora el estado de ánimo con más detalle. Es una sugerencia amable, no un diagnóstico.",
       "sci": "En el estudio de este cuestionario, puntuaciones de 16 o menos se asociaron con insomnio probable. Si dormir mal te sigue afectando, hablar con un profesional de salud puede ayudar. No es un diagnóstico."
     },
-    "validatedInEnglishNote": "Este cuestionario está validado en inglés; las preguntas se muestran en su versión original en inglés.",
-    "who5Options": {
-      "0": "Nunca",
-      "1": "De vez en cuando",
-      "2": "Menos de la mitad del tiempo",
-      "3": "Más de la mitad del tiempo",
-      "4": "La mayor parte del tiempo",
-      "5": "Todo el tiempo"
-    },
-    "stems": {
-      "phq9": {
-        "period": "Durante las últimas 2 semanas ¿con qué frecuencia le ha molestado alguno de los siguientes problemas?"
-      },
-      "gad7": {
-        "period": "En los últimos 14 días, ¿con qué frecuencia le han supuesto una molestia los siguientes problemas?"
-      },
-      "who5": {
-        "period": "Durante las últimas dos semanas:"
-      }
-    },
     "openDetail": "Ver detalles",
     "historyLoadError": "No se pudo cargar tu historial de evaluaciones",
     "historyLoadErrorHint": "Esto no significa que no tengas resultados: no se pudo obtener la lista. Vuelve a intentarlo.",
@@ -11171,6 +11103,13 @@
         "belowThreshold": "Tu sueño del último mes estuvo en el rango en el que el estudio detrás de este cuestionario consideró probable un insomnio.",
         "aboveThreshold": "Tu sueño del último mes estuvo fuera del rango que ese estudio asocia con el insomnio."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "Esta traducción no ha sido validada científicamente; toma el resultado como orientación.",
+      "showOriginal": "Ver el texto original en inglés",
+      "showTranslation": "Ver la traducción",
+      "resultUnvalidated": "Respondido con una traducción que no ha sido validada científicamente; toma el resultado como orientación.",
+      "historyUnvalidated": "Respondido con una traducción no validada científicamente"
     }
   },
   "records": {

@@ -10,10 +10,12 @@
  * question is one more, optional step. A review step then lists every
  * answer with a way back to each one, and only the review submits.
  *
- * Items, answers and stems come from `instrumentText`: the validated
- * translation where the language has one, the English original otherwise,
- * under an honest note. The header carries the app's own title and one
- * explanation line; the disclaimer stays on the landing.
+ * Items, answers and stems come from the instrument's wording for the
+ * reader's language (one chunk per language, `useQuestionnaireWording`): the
+ * published validated translation where one exists, otherwise a translation
+ * written for HealthLog under a note that the result is orientation, with a
+ * switch to the English original. The header carries the app's own title and
+ * one explanation line; the disclaimer stays on the landing.
  *
  * Keyboard: Tab reaches the selected answer (or the first), the arrow keys
  * move between answers, Space or Enter chooses, and the number keys choose
@@ -34,20 +36,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { InlineAction } from "@/components/ui/inline-action";
 import { PageHeader } from "@/components/ui/page-header";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "@/lib/i18n/context";
+import { INSTRUMENTS } from "@/lib/mental-health/instruments";
 import {
-  INSTRUMENTS,
-  hasValidatedItems,
-  optionLabelKey,
-  stemKey,
-} from "@/lib/mental-health/instruments";
-import {
-  FUNCTIONAL_TITLE_KEY,
-  functionalOptionKey,
+  anchorText,
   hasFunctionalItem,
-  instrumentText,
-  itemKey,
+  stemText,
 } from "@/lib/mental-health/instrument-wording";
+import { useQuestionnaireWording } from "@/hooks/use-questionnaire-wording";
+import type { InstrumentWording } from "@/lib/mental-health/wording/types";
 
 import {
   UNANSWERED,
@@ -57,11 +55,15 @@ import {
   nextStep,
   prevStep,
 } from "./check-in-nav";
-import type { InstrumentId } from "./types";
+import type { CheckInAnswers, InstrumentId } from "./types";
 
 const FUNCTIONAL_SCALE = [0, 1, 2, 3] as const;
 
-type Wording = (key: string) => string;
+/** The text a step shows, and the language it is written in. */
+interface StepWording {
+  text: InstrumentWording;
+  lang: string;
+}
 
 export function CheckInWizard({
   instrument,
@@ -71,16 +73,17 @@ export function CheckInWizard({
   isError,
 }: {
   instrument: InstrumentId;
-  /** Submit the completed check-in (+ the optional PHQ-9 follow-up). */
-  onSubmit: (items: number[], functionalDifficulty?: number) => void;
+  /** Submit the completed check-in and the wording it was answered in. */
+  onSubmit: (answers: CheckInAnswers) => void;
   /** Return to the landing (abandons the in-progress check-in). */
   onBack: () => void;
   isPending: boolean;
   isError: boolean;
 }) {
-  const { t, locale } = useTranslations();
+  const { t } = useTranslations();
   const def = INSTRUMENTS[instrument];
-  const wording: Wording = (k) => instrumentText(instrument, k, locale, t);
+  const { wording, validated, englishOriginal, toggle } =
+    useCheckInWording(instrument);
   const steps = checkInSteps(def.itemCount, hasFunctionalItem(instrument));
 
   const [step, setStep] = useState(1);
@@ -158,13 +161,11 @@ export function CheckInWizard({
           title={t(`mentalHealth.instrument.${def.i18nKey}`)}
           description={t(`mentalHealth.instrumentDescription.${def.i18nKey}`)}
         />
-        {!hasValidatedItems(instrument, locale) && (
-          <p
-            className="text-muted-foreground text-xs"
-            data-slot="check-in-validated-note"
-          >
-            {t("mentalHealth.validatedInEnglishNote")}
-          </p>
+        {!validated && (
+          <UnvalidatedNote
+            showingOriginal={englishOriginal}
+            onToggle={toggle}
+          />
         )}
       </header>
 
@@ -236,7 +237,7 @@ export function CheckInWizard({
               type="button"
               className="h-11"
               onClick={() =>
-                onSubmit(items, functional >= 0 ? functional : undefined)
+                onSubmit(checkInAnswers(items, functional, englishOriginal))
               }
               disabled={!isComplete(items) || isPending}
               aria-busy={isPending || undefined}
@@ -266,6 +267,86 @@ export function CheckInWizard({
         </div>
       </Card>
     </section>
+  );
+}
+
+/** What the review submits; the follow-up only when it was answered. */
+function checkInAnswers(
+  items: number[],
+  functional: number,
+  englishOriginal: boolean,
+): CheckInAnswers {
+  const functionalDifficulty = functional >= 0 ? functional : undefined;
+  return { items, functionalDifficulty, englishOriginal };
+}
+
+/**
+ * The text the wizard shows: the reader's language, or the English original
+ * when the reader switched to it, which only an unvalidated translation
+ * offers.
+ */
+function useCheckInWording(instrument: InstrumentId) {
+  const { locale } = useTranslations();
+  const [showOriginal, setShowOriginal] = useState(false);
+  const own = useQuestionnaireWording(locale)?.[instrument];
+  const wantsOriginal = showOriginal && own?.validated === false;
+  const english = useQuestionnaireWording(wantsOriginal ? "en" : locale)?.[
+    instrument
+  ];
+  // The original counts as shown once its text is on the page.
+  const englishOriginal = wantsOriginal && english !== undefined;
+  const wording: StepWording | undefined = englishOriginal
+    ? { text: english, lang: "en" }
+    : own && { text: own, lang: locale };
+  const toggle = () => setShowOriginal((v) => !v);
+  return {
+    wording,
+    validated: own?.validated ?? true,
+    englishOriginal,
+    toggle,
+  };
+}
+
+/** The space a step takes while its language's text loads. */
+function StepLoading() {
+  return (
+    <div className="flex flex-col gap-3" data-slot="check-in-loading">
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-5 w-full" />
+      <Skeleton className="h-44 w-full" />
+    </div>
+  );
+}
+
+/** The note beside an unvalidated translation, and its switch. */
+function UnvalidatedNote({
+  showingOriginal,
+  onToggle,
+}: {
+  showingOriginal: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <p
+        className="text-muted-foreground text-xs"
+        data-slot="check-in-unvalidated-note"
+      >
+        {t("mentalHealth.wording.unvalidatedNote")}
+      </p>
+      <InlineAction
+        tone="primary"
+        size="sm"
+        onClick={onToggle}
+        data-slot="check-in-wording-toggle"
+        data-showing={showingOriginal ? "original_en" : "translation"}
+      >
+        {showingOriginal
+          ? t("mentalHealth.wording.showTranslation")
+          : t("mentalHealth.wording.showOriginal")}
+      </InlineAction>
+    </div>
   );
 }
 
@@ -312,24 +393,26 @@ function QuestionStep({
   step: number;
   onFunctional: boolean;
   selected: number;
-  wording: Wording;
+  /** Undefined while the language's text is still loading. */
+  wording: StepWording | undefined;
   headingRef: RefObject<HTMLHeadingElement | null>;
   disabled: boolean;
   onChoose: (value: number) => void;
 }) {
   const { t } = useTranslations();
+  if (!wording) return <StepLoading />;
   const def = INSTRUMENTS[instrument];
   const index = step - 1;
-  const stem = onFunctional ? null : stemKey(instrument, index);
-  const question = onFunctional
-    ? wording(FUNCTIONAL_TITLE_KEY)
-    : wording(itemKey(instrument, index));
-  const scale = onFunctional ? FUNCTIONAL_SCALE : def.optionOrder;
+  const { text, lang } = wording;
+  const functional = onFunctional ? text.functional : undefined;
+  const stem = onFunctional ? null : stemText(instrument, text, index);
+  const question = functional ? functional.title : text.items[index];
+  const scale = functional ? FUNCTIONAL_SCALE : def.optionOrder;
   const options = scale.map((value) => ({
     value,
-    label: onFunctional
-      ? wording(functionalOptionKey(value))
-      : wording(optionLabelKey(instrument, index, value)),
+    label: functional
+      ? functional.anchors[value]
+      : anchorText(instrument, text, index, value),
   }));
   const questionId = `check-in-question-${instrument}-${step}`;
 
@@ -341,14 +424,15 @@ function QuestionStep({
       data-functional={onFunctional || undefined}
     >
       {stem && (
-        <p className="text-sm" data-slot="check-in-stem">
-          {wording(`mentalHealth.stems.${stem}`)}
+        <p className="text-sm" lang={lang} data-slot="check-in-stem">
+          {stem}
         </p>
       )}
       <h2
         ref={headingRef}
         id={questionId}
         tabIndex={-1}
+        lang={lang}
         className="scroll-mt-4 text-base font-medium outline-none"
         data-slot="check-in-question"
       >
@@ -361,6 +445,7 @@ function QuestionStep({
       )}
       <AnswerGroup
         labelledBy={questionId}
+        lang={lang}
         options={options}
         selected={selected}
         disabled={disabled}
@@ -379,12 +464,14 @@ function QuestionStep({
  */
 function AnswerGroup({
   labelledBy,
+  lang,
   options,
   selected,
   disabled,
   onChoose,
 }: {
   labelledBy: string;
+  lang: string;
   options: ReadonlyArray<{ value: number; label: string }>;
   selected: number;
   disabled: boolean;
@@ -424,6 +511,7 @@ function AnswerGroup({
     <div
       role="radiogroup"
       aria-labelledby={labelledBy}
+      lang={lang}
       className="flex flex-col gap-2"
       data-slot="check-in-options"
       onKeyDown={onKeyDown}
@@ -470,26 +558,31 @@ function ReviewStep({
   items: readonly number[];
   functional: number;
   functionalStep: number | null;
-  wording: Wording;
+  wording: StepWording | undefined;
   headingRef: RefObject<HTMLHeadingElement | null>;
   onEdit: (step: number) => void;
 }) {
   const { t } = useTranslations();
+  if (!wording) return <StepLoading />;
+  const { text, lang } = wording;
   const rows = items.map((value, index) => ({
     step: index + 1,
-    question: wording(itemKey(instrument, index)),
-    answer: wording(optionLabelKey(instrument, index, value)),
+    question: text.items[index],
+    answer: anchorText(instrument, text, index, value),
+    // The answer is questionnaire text; "not answered" is the app's own.
+    answerLang: lang,
     value: value as number | null,
-    stem: stemKey(instrument, index),
+    stem: stemText(instrument, text, index),
   }));
-  if (functionalStep !== null) {
+  if (functionalStep !== null && text.functional) {
+    const answered = functional >= 0;
     rows.push({
       step: functionalStep,
-      question: wording(FUNCTIONAL_TITLE_KEY),
-      answer:
-        functional >= 0
-          ? wording(functionalOptionKey(functional))
-          : t("mentalHealth.review.notAnswered"),
+      question: text.functional.title,
+      answer: answered
+        ? text.functional.anchors[functional]
+        : t("mentalHealth.review.notAnswered"),
+      answerLang: answered ? lang : "",
       value: null,
       stem: null,
     });
@@ -515,12 +608,14 @@ function ReviewStep({
             data-value={row.value ?? undefined}
           >
             {row.stem && row.stem !== rows[i - 1]?.stem && (
-              <p className="text-muted-foreground text-xs">
-                {wording(`mentalHealth.stems.${row.stem}`)}
+              <p className="text-muted-foreground text-xs" lang={lang}>
+                {row.stem}
               </p>
             )}
             <div className="flex items-start justify-between gap-3">
-              <span className="min-w-0 flex-1">{row.question}</span>
+              <span className="min-w-0 flex-1" lang={lang}>
+                {row.question}
+              </span>
               <InlineAction
                 tone="primary"
                 size="sm"
@@ -535,7 +630,7 @@ function ReviewStep({
               </InlineAction>
             </div>
             <span className="text-foreground font-medium">
-              {row.answer}
+              <span lang={row.answerLang || undefined}>{row.answer}</span>
               {row.value !== null && (
                 <span className="text-muted-foreground font-normal tabular-nums">
                   {" "}

@@ -10947,25 +10947,6 @@
       "who5": "Wohlbefindens-Check, 5 Fragen",
       "sci": "Schlaf-Check, 8 Fragen"
     },
-    "options": {
-      "0": "Überhaupt nicht",
-      "1": "An einzelnen Tagen",
-      "2": "An mehr als der Hälfte der Tage",
-      "3": "Beinahe jeden Tag"
-    },
-    "gad7Options": {
-      "0": "Überhaupt nicht",
-      "1": "An einzelnen Tagen",
-      "2": "An mehr als der Hälfte der Tage",
-      "3": "Beinahe jeden Tag"
-    },
-    "functionalTitle": "Wenn eines oder mehrere der bisher in diesem Fragebogen beschriebenen Probleme bei Ihnen vorliegen, geben Sie bitte an, wie sehr diese Probleme es Ihnen erschwert haben, Ihre Arbeit zu tun, Ihren Haushalt zu regeln oder mit anderen Menschen zurecht zu kommen:",
-    "functional": {
-      "0": "Überhaupt nicht erschwert",
-      "1": "Etwas erschwert",
-      "2": "Stark erschwert",
-      "3": "Extrem erschwert"
-    },
     "functionalOptionalHint": "Optional: Du kannst auch ohne Antwort auf diese Frage absenden.",
     "result": {
       "title": "Dein Ergebnis",
@@ -11014,35 +10995,6 @@
       "intro": "Du hast Gedanken angegeben, lieber tot zu sein oder dir etwas anzutun. Es gibt jetzt sofort Unterstützung. Sich zu melden ist ein Zeichen von Stärke.",
       "ifDanger": "Wenn du in unmittelbarer Gefahr bist, ruf jetzt {emergency} an.",
       "resourcesTitle": "Menschen, die helfen können"
-    },
-    "items": {
-      "phq9": {
-        "1": "Wenig Interesse oder Freude an Ihren Tätigkeiten",
-        "2": "Niedergeschlagenheit, Schwermut oder Hoffnungslosigkeit",
-        "3": "Schwierigkeiten, ein- oder durchzuschlafen, oder vermehrter Schlaf",
-        "4": "Müdigkeit oder Gefühl, keine Energie zu haben",
-        "5": "Verminderter Appetit oder übermäßiges Bedürfnis zu essen",
-        "6": "Schlechte Meinung von sich selbst; Gefühl, ein Versager zu sein oder die Familie enttäuscht zu haben",
-        "7": "Schwierigkeiten, sich auf etwas zu konzentrieren, z. B. beim Zeitungslesen oder Fernsehen",
-        "8": "Waren Ihre Bewegungen oder Ihre Sprache so verlangsamt, dass es auch anderen auffallen würde? Oder waren Sie im Gegenteil „zappelig“ oder ruhelos und hatten dadurch einen stärkeren Bewegungsdrang als sonst?",
-        "9": "Gedanken, dass Sie lieber tot wären oder sich Leid zufügen möchten"
-      },
-      "gad7": {
-        "1": "Nervosität, Ängstlichkeit oder Anspannung",
-        "2": "Nicht in der Lage sein, Sorgen zu stoppen oder zu kontrollieren",
-        "3": "Übermäßige Sorgen bezüglich verschiedener Angelegenheiten",
-        "4": "Schwierigkeiten zu entspannen",
-        "5": "Rastlosigkeit, so dass Stillsitzen schwer fällt",
-        "6": "Schnelle Verärgerung oder Gereiztheit",
-        "7": "Gefühl der Angst, so als würde etwas Schlimmes passieren"
-      },
-      "who5": {
-        "1": "… war ich froh und guter Laune",
-        "2": "… habe ich mich ruhig und entspannt gefühlt",
-        "3": "… habe ich mich energisch und aktiv gefühlt",
-        "4": "… habe ich mich beim Aufwachen frisch und ausgeruht gefühlt",
-        "5": "… war mein Alltag voller Dinge, die mich interessieren"
-      }
     },
     "crisisResource": {
       "telefonSeelsorge": {
@@ -11102,26 +11054,6 @@
       "who5": "Ein Wohlbefindens-Wert von 50 oder darunter kann einen genaueren Blick wert sein. Wenn du magst, schaut der PHQ-9-Check-in auf dieser Seite genauer auf die Stimmung. Das ist ein behutsamer Hinweis, keine Diagnose.",
       "sci": "In der Studie zu diesem Fragebogen waren Werte von 16 oder darunter mit wahrscheinlicher Insomnie verbunden. Wenn schlechter Schlaf dich weiter belastet, kann ein Gespräch mit einer Fachperson helfen. Das ist keine Diagnose."
     },
-    "validatedInEnglishNote": "Dieser Fragebogen ist in englischer Sprache validiert; die Fragen erscheinen im englischen Original.",
-    "who5Options": {
-      "0": "Zu keinem Zeitpunkt",
-      "1": "Ab und zu",
-      "2": "Etwas weniger als die Hälfte der Zeit",
-      "3": "Etwas mehr als die Hälfte der Zeit",
-      "4": "Meistens",
-      "5": "Die ganze Zeit"
-    },
-    "stems": {
-      "phq9": {
-        "period": "Wie oft fühlten Sie sich im Verlauf der letzten 2 Wochen durch die folgenden Beschwerden beeinträchtigt?"
-      },
-      "gad7": {
-        "period": "Wie oft fühlten Sie sich im Verlauf der letzten 2 Wochen durch die folgenden Beschwerden beeinträchtigt?"
-      },
-      "who5": {
-        "period": "In den letzten zwei Wochen …"
-      }
-    },
     "openDetail": "Details anzeigen",
     "historyLoadError": "Dein Testverlauf konnte nicht geladen werden",
     "historyLoadErrorHint": "Das heißt nicht, dass keine Ergebnisse vorliegen. Die Liste konnte nicht abgerufen werden. Versuche es erneut.",
@@ -11171,6 +11103,13 @@
         "belowThreshold": "Dein Schlaf lag im letzten Monat in dem Bereich, in dem die Studie hinter diesem Fragebogen eine Insomnie für wahrscheinlich hielt.",
         "aboveThreshold": "Dein Schlaf lag im letzten Monat außerhalb des Bereichs, den diese Studie mit Insomnie verbindet."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "Diese Übersetzung ist nicht wissenschaftlich validiert; nimm das Ergebnis als Orientierung.",
+      "showOriginal": "Englischen Originaltext zeigen",
+      "showTranslation": "Übersetzung zeigen",
+      "resultUnvalidated": "Beantwortet in einer Übersetzung, die nicht wissenschaftlich validiert ist; nimm das Ergebnis als Orientierung.",
+      "historyUnvalidated": "Beantwortet in einer nicht wissenschaftlich validierten Übersetzung"
     }
   },
   "records": {

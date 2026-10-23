@@ -10947,25 +10947,6 @@
       "who5": "Well-being check, 5 questions",
       "sci": "Sleep check, 8 questions"
     },
-    "options": {
-      "0": "Not at all",
-      "1": "Several days",
-      "2": "More than half the days",
-      "3": "Nearly every day"
-    },
-    "gad7Options": {
-      "0": "Not at all",
-      "1": "Several days",
-      "2": "More than half the days",
-      "3": "Nearly every day"
-    },
-    "functionalTitle": "If you checked off any problems, how difficult have these problems made it for you to do your work, take care of things at home, or get along with other people?",
-    "functional": {
-      "0": "Not difficult at all",
-      "1": "Somewhat difficult",
-      "2": "Very difficult",
-      "3": "Extremely difficult"
-    },
     "functionalOptionalHint": "Optional: you can submit without answering this question.",
     "result": {
       "title": "Your result",
@@ -11014,45 +10995,6 @@
       "intro": "You indicated thoughts of being better off dead or of hurting yourself. Support is available right now, and reaching out is a sign of strength.",
       "ifDanger": "If you are in immediate danger, call {emergency} now.",
       "resourcesTitle": "People who can help"
-    },
-    "items": {
-      "phq9": {
-        "1": "Little interest or pleasure in doing things",
-        "2": "Feeling down, depressed, or hopeless",
-        "3": "Trouble falling or staying asleep, or sleeping too much",
-        "4": "Feeling tired or having little energy",
-        "5": "Poor appetite or overeating",
-        "6": "Feeling bad about yourself — or that you are a failure or have let yourself or your family down",
-        "7": "Trouble concentrating on things, such as reading the newspaper or watching television",
-        "8": "Moving or speaking so slowly that other people could have noticed. Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual",
-        "9": "Thoughts that you would be better off dead, or of hurting yourself in some way"
-      },
-      "gad7": {
-        "1": "Feeling nervous, anxious, or on edge",
-        "2": "Not being able to stop or control worrying",
-        "3": "Worrying too much about different things",
-        "4": "Trouble relaxing",
-        "5": "Being so restless that it is hard to sit still",
-        "6": "Becoming easily annoyed or irritable",
-        "7": "Feeling afraid as if something awful might happen"
-      },
-      "who5": {
-        "1": "I have felt cheerful and in good spirits",
-        "2": "I have felt calm and relaxed",
-        "3": "I have felt active and vigorous",
-        "4": "I woke up feeling fresh and rested",
-        "5": "My daily life has been filled with things that interest me"
-      },
-      "sci": {
-        "1": "… how long does it take you to fall asleep?",
-        "2": "… if you then wake up during the night … how long are you awake for in total? (add all the wakenings up)",
-        "3": "… how many nights a week do you have a problem with your sleep?",
-        "4": "… how would you rate your sleep quality?",
-        "5": "… affected your mood, energy, or relationships?",
-        "6": "… affected your concentration, productivity, or ability to stay awake?",
-        "7": "… troubled you in general?",
-        "8": "… how long have you had a problem with your sleep?"
-      }
     },
     "crisisResource": {
       "telefonSeelsorge": {
@@ -11112,68 +11054,6 @@
       "who5": "A well-being score of 50 or below can be worth a closer look. If you like, the PHQ-9 check-in on this page looks at mood in more depth. This is a gentle suggestion, not a diagnosis.",
       "sci": "In the study behind this questionnaire, scores of 16 or below were associated with probable insomnia. If poor sleep keeps troubling you, talking to a health professional may help. This is not a diagnosis."
     },
-    "validatedInEnglishNote": "This questionnaire is validated in English; the questions are shown in the original English wording.",
-    "who5Options": {
-      "0": "At no time",
-      "1": "Some of the time",
-      "2": "Less than half of the time",
-      "3": "More than half of the time",
-      "4": "Most of the time",
-      "5": "All of the time"
-    },
-    "sciOptions": {
-      "duration": {
-        "0": "≥ 61 min",
-        "1": "46–60 min",
-        "2": "31–45 min",
-        "3": "16–30 min",
-        "4": "0–15 min"
-      },
-      "nights": {
-        "0": "5–7",
-        "1": "4",
-        "2": "3",
-        "3": "2",
-        "4": "0–1"
-      },
-      "quality": {
-        "0": "Very poor",
-        "1": "Poor",
-        "2": "Average",
-        "3": "Good",
-        "4": "Very good"
-      },
-      "impact": {
-        "0": "Very much",
-        "1": "Much",
-        "2": "Somewhat",
-        "3": "A little",
-        "4": "Not at all"
-      },
-      "problemDuration": {
-        "0": "> 1 year",
-        "1": "7–12 months",
-        "2": "3–6 months",
-        "3": "1–2 months",
-        "4": "I don't have a problem / < 1 month"
-      }
-    },
-    "stems": {
-      "phq9": {
-        "period": "Over the last 2 weeks, how often have you been bothered by any of the following problems?"
-      },
-      "gad7": {
-        "period": "Over the last 2 weeks, how often have you been bothered by the following problems?"
-      },
-      "who5": {
-        "period": "Over the last two weeks …"
-      },
-      "sci": {
-        "night": "Thinking about a typical night in the last month …",
-        "impact": "Thinking about the past month, to what extent has poor sleep …",
-        "finally": "Finally …"
-      }
-    },
     "openDetail": "Show details",
     "historyLoadError": "Your assessment history could not be loaded",
     "historyLoadErrorHint": "This does not mean you have no results; the list could not be fetched. Try again.",
@@ -11223,6 +11103,13 @@
         "belowThreshold": "Your sleep over the last month was in the range where the study behind this questionnaire found insomnia likely.",
         "aboveThreshold": "Your sleep over the last month was outside the range that study linked with insomnia."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "This translation has not been scientifically validated; treat the result as orientation.",
+      "showOriginal": "Show original English wording",
+      "showTranslation": "Show translation",
+      "resultUnvalidated": "Answered in a translation that has not been scientifically validated; treat the result as orientation.",
+      "historyUnvalidated": "Answered in a translation that has not been scientifically validated"
     }
   },
   "records": {

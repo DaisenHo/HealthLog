@@ -6,6 +6,8 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import en from "../../../../messages/en.json";
 import nl from "../../../../messages/nl.json";
+import { WORDING } from "@/lib/mental-health/wording";
+import { seedQuestionnaireWording } from "@/__tests__/helpers/questionnaire-wording";
 
 /**
  * Mental-wellbeing surface redesign (v1.25.3). The SSR-only convention
@@ -47,6 +49,7 @@ function withProviders(node: React.ReactNode): string {
     data: { assessments: [] },
     cap: null,
   });
+  seedQuestionnaireWording(queryClient);
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
       <I18nProvider initialLocale="en">{node}</I18nProvider>
@@ -109,7 +112,7 @@ describe("check-in wizard scaffolding (v1.27.6 — questions only)", () => {
   });
 
   it("opens on the first question with the Back/Next footer", () => {
-    expect(html).toContain(mh.items.phq9["1"]);
+    expect(html).toContain(WORDING.PHQ9.en.items[0]);
     expect(html).toContain('data-slot="check-in-back"');
     expect(html).toContain('data-slot="check-in-next"');
     // Back is disabled on the first step.
@@ -126,6 +129,7 @@ describe("item-9 crisis surfacing on the result", () => {
         id: "a1",
         instrument: "PHQ9",
         locale: "en",
+        wording: "validated",
         totalScore: 18,
         severityBand: "modSevere",
         item9Flagged: crisis !== null,
@@ -173,6 +177,7 @@ describe("history rendering", () => {
       id: "h1",
       instrument: "PHQ9",
       locale: "en",
+      wording: "validated",
       totalScore: 16,
       severityBand: "modSevere",
       item9Flagged: true,
@@ -183,6 +188,7 @@ describe("history rendering", () => {
       id: "h2",
       instrument: "PHQ9",
       locale: "en",
+      wording: "validated",
       totalScore: 4,
       severityBand: "minimal",
       item9Flagged: false,
@@ -247,15 +253,16 @@ describe("WHO-5 / SCI on the same infrastructure (v1.27.9)", () => {
         isError={false}
       />,
     );
-    expect(html).toContain(mh.items.who5["1"]);
+    expect(html).toContain(WORDING.WHO5.en.items[0]);
     expect(html).toContain('data-slot="check-in-stem"');
-    expect(html).toContain(mh.stems.who5.period);
+    expect(html).toContain(WORDING.WHO5.en.stems.period);
     // Six anchors, 5 → 0 (the WHO form leads with "All of the time").
-    for (const v of ["5", "4", "3", "2", "1", "0"] as const) {
-      expect(html).toContain(mh.who5Options[v]);
+    for (const v of [5, 4, 3, 2, 1, 0]) {
+      expect(html).toContain(WORDING.WHO5.en.anchors.all[v]);
     }
     // English items are the validated wording for en — no translation note.
-    expect(html).not.toContain('data-slot="check-in-validated-note"');
+    expect(html).not.toContain('data-slot="check-in-unvalidated-note"');
+    expect(html).not.toContain('data-slot="check-in-wording-toggle"');
     // No functional follow-up outside the PHQ-9: 5 steps total.
     expect(html).toContain("Question 1 of 5");
   });
@@ -270,11 +277,11 @@ describe("WHO-5 / SCI on the same infrastructure (v1.27.9)", () => {
         isError={false}
       />,
     );
-    expect(html).toContain(mh.items.sci["1"]);
-    expect(html).toContain(mh.stems.sci.night);
+    expect(html).toContain(WORDING.SCI.en.items[0]);
+    expect(html).toContain(WORDING.SCI.en.stems.night);
     // Item 1 carries the sleep-latency time ranges, 4 → 0.
-    for (const v of ["4", "3", "2", "1", "0"] as const) {
-      expect(html).toContain(mh.sciOptions.duration[v]);
+    for (const v of [4, 3, 2, 1, 0]) {
+      expect(html).toContain(WORDING.SCI.en.anchors.duration[v]);
     }
     expect(html).toContain("Question 1 of 8");
   });
@@ -285,6 +292,7 @@ describe("WHO-5 / SCI on the same infrastructure (v1.27.9)", () => {
         id: "w1",
         instrument: "WHO5",
         locale: "en",
+        wording: "validated",
         totalScore: 48,
         severityBand: "low",
         item9Flagged: false,
@@ -314,6 +322,7 @@ describe("WHO-5 / SCI on the same infrastructure (v1.27.9)", () => {
         id: "w2",
         instrument: "WHO5",
         locale: "en",
+        wording: "validated",
         totalScore: 80,
         severityBand: "good",
         item9Flagged: false,
@@ -339,6 +348,7 @@ describe("WHO-5 / SCI on the same infrastructure (v1.27.9)", () => {
         id: "s1",
         instrument: "SCI",
         locale: "en",
+        wording: "validated",
         totalScore: 14,
         severityBand: "belowThreshold",
         item9Flagged: false,
@@ -365,6 +375,7 @@ describe("WHO-5 / SCI on the same infrastructure (v1.27.9)", () => {
       id: "t1",
       instrument: "WHO5",
       locale: "en",
+      wording: "validated",
       totalScore: 72,
       severityBand: "good",
       item9Flagged: false,
@@ -384,6 +395,7 @@ describe("instrument card (med-/Vorsorge card anatomy + detail opener)", () => {
     id: "l1",
     instrument: "PHQ9",
     locale: "en",
+    wording: "validated",
     totalScore: 8,
     severityBand: "mild",
     item9Flagged: false,
@@ -463,6 +475,7 @@ describe("instrument detail (v1.27.9 — opened from a card)", () => {
       id: "d1",
       instrument: "SCI",
       locale: "en",
+      wording: "validated",
       totalScore: 22,
       severityBand: "aboveThreshold",
       item9Flagged: false,
@@ -473,6 +486,7 @@ describe("instrument detail (v1.27.9 — opened from a card)", () => {
       id: "d2",
       instrument: "PHQ9",
       locale: "en",
+      wording: "validated",
       totalScore: 4,
       severityBand: "minimal",
       item9Flagged: false,
@@ -500,65 +514,112 @@ describe("instrument detail (v1.27.9 — opened from a card)", () => {
   });
 });
 
-describe("unvalidated languages see the English instrument wording", () => {
-  function renderIn(
-    locale: "nl",
-    messages: Record<string, unknown>,
-    node: React.ReactNode,
-  ): string {
+describe("questionnaires in the reader's language", () => {
+  function renderIn(locale: "nl" | "de", node: React.ReactNode): string {
+    const queryClient = new QueryClient();
+    seedQuestionnaireWording(queryClient);
     return renderToStaticMarkup(
-      <QueryClientProvider client={new QueryClient()}>
-        <I18nProvider initialLocale={locale} initialMessages={messages}>
+      <QueryClientProvider client={queryClient}>
+        <I18nProvider
+          initialLocale={locale}
+          initialMessages={locale === "nl" ? nl : undefined}
+        >
           {node}
         </I18nProvider>
       </QueryClientProvider>,
     );
   }
 
-  it("the PHQ-9 wizard in Dutch shows the English item and answers under the honest note", () => {
-    // A bundle that still carries the self-made Dutch wording: the surface
-    // must not read it.
-    const drifted = structuredClone(nl) as Record<string, unknown>;
-    const mhDrifted = drifted.mentalHealth as Record<string, unknown>;
-    mhDrifted.items = {
-      phq9: { "1": "Weinig interesse in of plezier aan activiteiten" },
-    };
-    mhDrifted.options = { "0": "Helemaal niet", "3": "Bijna elke dag" };
-    const html = renderIn(
-      "nl",
-      drifted,
+  function wizard(instrument: "PHQ9" | "SCI") {
+    return (
       <CheckInWizard
-        instrument="PHQ9"
+        instrument={instrument}
         onSubmit={() => {}}
         onBack={() => {}}
         isPending={false}
         isError={false}
-      />,
+      />
     );
-    expect(html).toContain(mh.items.phq9["1"]);
-    for (const v of ["0", "1", "2", "3"] as const) {
-      expect(html).toContain(mh.options[v]);
-    }
-    expect(html).not.toContain("Weinig interesse");
-    expect(html).not.toContain("Helemaal niet");
-    expect(html).toContain('data-slot="check-in-validated-note"');
-    expect(html).toContain(nl.mentalHealth.validatedInEnglishNote);
+  }
+
+  it("holds the step's place while the language's text loads", () => {
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={new QueryClient()}>
+        <I18nProvider initialLocale="nl" initialMessages={nl}>
+          {wizard("SCI")}
+        </I18nProvider>
+      </QueryClientProvider>,
+    );
+    expect(html).toContain('data-slot="check-in-loading"');
+    expect(html).not.toContain('data-slot="check-in-question"');
+    expect(html).not.toContain('data-slot="check-in-unvalidated-note"');
   });
 
-  it("the WHO-5 wizard in Dutch shows the English stem and anchors", () => {
-    const html = renderIn(
+  it("the PHQ-9 in Dutch is the validated Dutch form, with no note and no switch", () => {
+    const html = renderIn("nl", wizard("PHQ9"));
+    const dutch = WORDING.PHQ9.nl;
+    expect(html).toContain(dutch.stems.period);
+    expect(html).toContain(dutch.items[0]);
+    for (const v of [0, 1, 2, 3]) expect(html).toContain(dutch.anchors.all[v]);
+    expect(html).not.toContain(WORDING.PHQ9.en.items[0]);
+    expect(html).not.toContain('data-slot="check-in-unvalidated-note"');
+    expect(html).not.toContain('data-slot="check-in-wording-toggle"');
+  });
+
+  it("the SCI in Dutch shows the translation under the note, with the switch to the English original", () => {
+    const html = renderIn("nl", wizard("SCI"));
+    const dutch = WORDING.SCI.nl;
+    expect(dutch.validated).toBe(false);
+    expect(html).toContain(dutch.stems.night);
+    expect(html).toContain(dutch.items[0]);
+    expect(html).not.toContain(WORDING.SCI.en.items[0]);
+    expect(html).toContain('data-slot="check-in-unvalidated-note"');
+    expect(html).toContain(nl.mentalHealth.wording.unvalidatedNote);
+    expect(html).toContain('data-slot="check-in-wording-toggle"');
+    expect(html).toContain(nl.mentalHealth.wording.showOriginal);
+  });
+
+  it("the result and the history mark an unvalidated translation, and only that", () => {
+    const row = (wording: AssessmentRow["wording"]): AssessmentRow => ({
+      id: `s-${wording}`,
+      instrument: "SCI",
+      locale: "nl",
+      wording,
+      totalScore: 20,
+      severityBand: "aboveThreshold",
+      item9Flagged: false,
+      crisisShownAt: null,
+      takenAt: "2026-06-20T00:00:00.000Z",
+    });
+    const result = (wording: AssessmentRow["wording"]) =>
+      renderIn(
+        "nl",
+        <AssessmentResult
+          result={{
+            assessment: row(wording),
+            actionThreshold: 16,
+            crisis: null,
+          }}
+          onTakeAnother={() => {}}
+          onBack={() => {}}
+        />,
+      );
+    expect(result("unvalidated_translation")).toContain(
+      nl.mentalHealth.wording.resultUnvalidated,
+    );
+    for (const other of ["validated", "original_en", null] as const) {
+      expect(result(other)).not.toContain('data-slot="result-wording-note"');
+    }
+    const history = renderIn(
       "nl",
-      nl as Record<string, unknown>,
-      <CheckInWizard
-        instrument="WHO5"
-        onSubmit={() => {}}
-        onBack={() => {}}
-        isPending={false}
-        isError={false}
+      <AssessmentHistory
+        instrument="SCI"
+        rows={[row("unvalidated_translation"), row("original_en")]}
       />,
     );
-    expect(html).toContain(mh.stems.who5.period);
-    expect(html).toContain(mh.items.who5["1"]);
-    expect(html).toContain(mh.who5Options["5"]);
+    expect(history.split('data-slot="history-wording-note"').length - 1).toBe(
+      1,
+    );
+    expect(history).toContain(nl.mentalHealth.wording.historyUnvalidated);
   });
 });

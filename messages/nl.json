@@ -11054,7 +11054,6 @@
       "who5": "Een welzijnsscore van 50 of lager kan het waard zijn om beter naar te kijken. Als je wilt, gaat de PHQ-9-check-in op deze pagina dieper in op je stemming. Dit is een voorzichtige suggestie, geen diagnose.",
       "sci": "In het onderzoek achter deze vragenlijst hingen scores van 16 of lager samen met waarschijnlijke slapeloosheid. Blijf je last houden van slecht slapen, dan kan een gesprek met een zorgverlener helpen. Dit is geen diagnose."
     },
-    "validatedInEnglishNote": "Deze vragenlijst is in het Engels gevalideerd; de vragen worden in de oorspronkelijke Engelse formulering getoond.",
     "openDetail": "Details tonen",
     "historyLoadError": "Je testgeschiedenis kon niet worden geladen",
     "historyLoadErrorHint": "Dit betekent niet dat je geen resultaten hebt; de lijst kon niet worden opgehaald. Probeer het opnieuw.",
@@ -11104,6 +11103,13 @@
         "belowThreshold": "Je slaap in de afgelopen maand lag in het bereik waarin het onderzoek achter deze vragenlijst slapeloosheid waarschijnlijk vond.",
         "aboveThreshold": "Je slaap in de afgelopen maand lag buiten het bereik dat dat onderzoek met slapeloosheid verbindt."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "Deze vertaling is niet wetenschappelijk gevalideerd; zie de uitkomst als een indicatie.",
+      "showOriginal": "Oorspronkelijke Engelse tekst tonen",
+      "showTranslation": "Vertaling tonen",
+      "resultUnvalidated": "Beantwoord in een vertaling die niet wetenschappelijk gevalideerd is; zie de uitkomst als een indicatie.",
+      "historyUnvalidated": "Beantwoord in een niet wetenschappelijk gevalideerde vertaling"
     }
   },
   "records": {

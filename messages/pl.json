@@ -10947,25 +10947,6 @@
       "who5": "Test samopoczucia, 5 pytań",
       "sci": "Test snu, 8 pytań"
     },
-    "options": {
-      "0": "Wcale nie dokuczały",
-      "1": "Kilka dni",
-      "2": "Więcej niż połowę dni",
-      "3": "Niemal codziennie"
-    },
-    "gad7Options": {
-      "0": "Wcale nie dokuczały",
-      "1": "Kilka dni",
-      "2": "Więcej niż połowę dni",
-      "3": "Niemal codziennie"
-    },
-    "functionalTitle": "Jeżeli zaznaczył/-a Pan/Pani którekolwiek z problemów, jak bardzo utrudniły one Panu/Pani wykonywanie pracy, zajmowanie się domem lub relacje z innymi ludźmi?",
-    "functional": {
-      "0": "W ogóle nie utrudniły",
-      "1": "Trochę utrudniły",
-      "2": "Bardzo utrudniły",
-      "3": "Niezmiernie utrudniły"
-    },
     "functionalOptionalHint": "Opcjonalne: możesz wysłać bez odpowiedzi na to pytanie.",
     "result": {
       "title": "Twój wynik",
@@ -11014,35 +10995,6 @@
       "intro": "Wskazałeś(-aś) myśli, że lepiej byłoby nie żyć lub zrobić sobie krzywdę. Wsparcie jest dostępne już teraz, a sięgnięcie po pomoc to oznaka siły.",
       "ifDanger": "Jeśli grozi Ci bezpośrednie niebezpieczeństwo, zadzwoń teraz pod {emergency}.",
       "resourcesTitle": "Osoby, które mogą pomóc"
-    },
-    "items": {
-      "phq9": {
-        "1": "Niewielkie zainteresowanie lub odczuwanie przyjemności z wykonywania czynności",
-        "2": "Uczucie smutku, przygnębienia lub beznadziejności",
-        "3": "Kłopoty z zaśnięciem lub przerywany sen, albo zbyt długi sen",
-        "4": "Uczucie zmęczenia lub brak energii",
-        "5": "Brak apetytu lub przejadanie się",
-        "6": "Poczucie niezadowolenia z siebie — lub uczucie, że jest się do niczego, albo że zawiódł/zawiodła Pan/Pani siebie lub rodzinę",
-        "7": "Problemy ze skupieniem się na przykład przy czytaniu gazety lub oglądaniu telewizji",
-        "8": "Poruszanie się lub mówienie tak wolno, że inni mogliby to zauważyć? Albo wręcz przeciwnie — niemożność usiedzenia w miejscu lub podenerwowanie powodujące ruchliwość znacznie większą niż zwykle",
-        "9": "Myśli, że lepiej byłoby umrzeć, albo chęć zrobienia sobie jakiejś krzywdy"
-      },
-      "gad7": {
-        "1": "Czuł(a) się Pan(i) podenerwowany(a), niespokojny(a), mocno spięty(a)",
-        "2": "Nie mógł(a) Pan(i) przestać się martwić albo zapanować nad tym",
-        "3": "Za bardzo się Pan(i) martwił(a) różnymi rzeczami",
-        "4": "Miał(a) Pan(i) trudności z relaksowaniem się",
-        "5": "Był(a) Pan(i) tak niespokojny(a), że nie mógł(a) usiedzieć na miejscu",
-        "6": "Łatwo stawał(a) się Pan(i) rozdrażniony(a) lub poirytowany(a)",
-        "7": "Obawiał(a) się Pan(i), tak jakby miało się stać coś strasznego"
-      },
-      "who5": {
-        "1": "Czułam się wesoła/Czułem się wesoły i w dobrym nastroju",
-        "2": "Czułam się spokojna i odprężona/Czułem się spokojny i odprężony",
-        "3": "Czułam się aktywna i energiczna/Czułem się aktywny i energiczny",
-        "4": "Budziłam się z uczuciem świeżości i wypoczęta/Budziłem się z uczuciem świeżości i wypoczęty",
-        "5": "Moje życie codzienne było wypełnione interesującymi mnie sprawami"
-      }
     },
     "crisisResource": {
       "telefonSeelsorge": {
@@ -11102,26 +11054,6 @@
       "who5": "Wynik samopoczucia 50 lub niższy może być wart bliższego spojrzenia. Jeśli chcesz, PHQ-9 na tej stronie przygląda się nastrojowi dokładniej. To życzliwa sugestia, a nie diagnoza.",
       "sci": "W badaniu tego kwestionariusza wyniki 16 lub niższe wiązały się z prawdopodobną bezsennością. Jeśli zły sen nadal Ci doskwiera, rozmowa ze specjalistą może pomóc. To nie jest diagnoza."
     },
-    "validatedInEnglishNote": "Ten kwestionariusz jest zwalidowany w języku angielskim; pytania są wyświetlane w angielskim oryginale.",
-    "who5Options": {
-      "0": "Nigdy",
-      "1": "Od czasu do czasu",
-      "2": "Mniej niż połowę czasu",
-      "3": "Więcej niż połowę czasu",
-      "4": "Prawie cały czas",
-      "5": "Cały czas"
-    },
-    "stems": {
-      "phq9": {
-        "period": "Jak często w ciągu ostatnich 2 tygodni dokuczały Panu/Pani następujące problemy?"
-      },
-      "gad7": {
-        "period": "Jak często w ciągu ostatnich 2 tygodni dokuczały Panu(i) następujące problemy?"
-      },
-      "who5": {
-        "period": "W ciągu ostatnich dwóch tygodni"
-      }
-    },
     "openDetail": "Pokaż szczegóły",
     "historyLoadError": "Nie udało się wczytać historii testów",
     "historyLoadErrorHint": "To nie znaczy, że nie masz wyników; nie udało się pobrać listy. Spróbuj ponownie.",
@@ -11171,6 +11103,13 @@
         "belowThreshold": "Twój sen w ostatnim miesiącu mieścił się w zakresie, w którym badanie stojące za tym kwestionariuszem uznało bezsenność za prawdopodobną.",
         "aboveThreshold": "Twój sen w ostatnim miesiącu był poza zakresem, który to badanie wiąże z bezsennością."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "To tłumaczenie nie zostało zwalidowane naukowo; traktuj wynik jako orientacyjny.",
+      "showOriginal": "Pokaż oryginalny tekst angielski",
+      "showTranslation": "Pokaż tłumaczenie",
+      "resultUnvalidated": "Odpowiedzi udzielone w tłumaczeniu, które nie zostało zwalidowane naukowo; traktuj wynik jako orientacyjny.",
+      "historyUnvalidated": "Odpowiedzi w tłumaczeniu niezwalidowanym naukowo"
     }
   },
   "records": {
