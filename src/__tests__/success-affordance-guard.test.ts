@@ -177,7 +177,12 @@ const PINNED_AFFORDANCES: Record<
   "src/components/dashboard/range-display.tsx": { "text-success": 2 },
   "src/components/documents/document-card.tsx": { "text-success": 1 },
   "src/components/documents/document-detail-sheet.tsx": { "toast.success": 2 },
-  "src/components/documents/documents-view.tsx": { "toast.success": 3 },
+  "src/components/documents/vault/use-vault-library.ts": {
+    "toast.success": 1,
+  },
+  "src/components/documents/vault/use-vault-bulk.ts": {
+    "toast.success": 2,
+  },
   // The document picker's per-row result: tinted only for the `imported` /
   // `duplicate` outcome the import route returned for that one document, i.e.
   // a document the vault now holds. The run's headline goes through

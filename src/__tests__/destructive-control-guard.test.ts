@@ -606,9 +606,10 @@ const REGISTRY: DestructiveEntry[] = [
     ],
   },
   {
-    file: "components/documents/documents-view.tsx",
+    file: "components/documents/vault/use-vault-bulk.ts",
     destroys: "every selected document, or one document from a focused card",
     triggers: [
+      "components/documents/documents-view.tsx",
       "components/documents/document-bulk-bar.tsx",
       "components/documents/document-card.tsx",
     ],
