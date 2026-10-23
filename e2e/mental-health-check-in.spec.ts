@@ -262,8 +262,14 @@ test.describe("mental-health check-in, in the reader's language", () => {
         await expect(
           wizard.locator('[data-slot="check-in-question"]'),
         ).toHaveAttribute("lang", locale);
-        if (expected === 1)
+        if (expected === 1) {
+          // On screen together with the question, at every width: the step
+          // scrolls to its top block, note and stem included.
+          await expect(
+            wizard.locator('[data-slot="check-in-unvalidated-note"]'),
+          ).toBeInViewport();
           await expectNoSeriousViolations(page, `${locale} ${c.id}`);
+        }
         await wizard.locator('[data-slot="check-in-back-to-landing"]').click();
       }
 
@@ -295,6 +301,19 @@ test.describe("mental-health check-in, in the reader's language", () => {
     );
     const question = wizard.locator('[data-slot="check-in-question"]');
     const translated = await question.textContent();
+    // The note and its switch travel with every step, not only the first.
+    for (const step of [1, 2]) {
+      const current = wizard.locator(
+        `[data-slot="check-in-step"][data-step="${step}"]`,
+      );
+      await expect(
+        current.locator('[data-slot="check-in-unvalidated-note"]'),
+      ).toBeInViewport();
+      await current.locator('[role="radio"]').first().click();
+    }
+    await wizard.locator('[data-slot="check-in-back"]').click();
+    await wizard.locator('[data-slot="check-in-back"]').click();
+    await expect(question).toHaveText(translated ?? "");
     const toggle = wizard.locator('[data-slot="check-in-wording-toggle"]');
     await toggle.click();
     await expect(toggle).toHaveAttribute("data-showing", "original_en");

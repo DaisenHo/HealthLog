@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 411,
-  "total": 148064,
+  "count": 410,
+  "total": 147860,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -210,7 +210,6 @@
     "components/medications/wizard/medication-wizard-dialog.tsx :: WizardDialogShell": 516,
     "components/medications/wizard/steps/step3-dose.tsx :: Step3Dose": 222,
     "components/medications/wizard/steps/step8-summary.tsx :: Step8Summary": 230,
-    "components/mental-health/check-in-wizard.tsx :: CheckInWizard": 204,
     "components/mental-health/mental-wellbeing.tsx :: MentalWellbeing": 202,
     "components/mood/manage/tag-groups-card.tsx :: TagGroupsCard": 256,
     "components/mood/manage/tag-manager-card.tsx :: TagManagerCard": 270,

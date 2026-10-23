@@ -14,7 +14,8 @@
  * reader's language (one chunk per language, `useQuestionnaireWording`): the
  * published validated translation where one exists, otherwise a translation
  * written for HealthLog under a note that the result is orientation, with a
- * switch to the English original. The header carries the app's own title and
+ * switch to the English original. The note sits at the top of every step's
+ * card, above the stem, so it stays on screen with the question. The header carries the app's own title and
  * one explanation line; the disclaimer stays on the landing.
  *
  * Keyboard: Tab reaches the selected answer (or the first), the arrow keys
@@ -27,6 +28,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type ReactNode,
   type RefObject,
 } from "react";
 import { ArrowLeft } from "lucide-react";
@@ -82,8 +84,7 @@ export function CheckInWizard({
 }) {
   const { t } = useTranslations();
   const def = INSTRUMENTS[instrument];
-  const { wording, validated, englishOriginal, toggle } =
-    useCheckInWording(instrument);
+  const { wording, englishOriginal, note } = useCheckInWording(instrument);
   const steps = checkInSteps(def.itemCount, hasFunctionalItem(instrument));
 
   const [step, setStep] = useState(1);
@@ -161,12 +162,6 @@ export function CheckInWizard({
           title={t(`mentalHealth.instrument.${def.i18nKey}`)}
           description={t(`mentalHealth.instrumentDescription.${def.i18nKey}`)}
         />
-        {!validated && (
-          <UnvalidatedNote
-            showingOriginal={englishOriginal}
-            onToggle={toggle}
-          />
-        )}
       </header>
 
       <Card className="gap-0 p-0">
@@ -195,6 +190,7 @@ export function CheckInWizard({
               functional={functional}
               functionalStep={steps.functionalStep}
               wording={wording}
+              note={note}
               headingRef={headingRef}
               onEdit={edit}
             />
@@ -206,6 +202,7 @@ export function CheckInWizard({
               onFunctional={onFunctional}
               selected={onFunctional ? functional : items[questionIndex]}
               wording={wording}
+              note={note}
               headingRef={headingRef}
               disabled={isPending}
               onChoose={choose}
@@ -298,13 +295,33 @@ function useCheckInWording(instrument: InstrumentId) {
   const wording: StepWording | undefined = englishOriginal
     ? { text: english, lang: "en" }
     : own && { text: own, lang: locale };
-  const toggle = () => setShowOriginal((v) => !v);
-  return {
-    wording,
-    validated: own?.validated ?? true,
-    englishOriginal,
-    toggle,
-  };
+  // Every step carries the note and its switch, inside the step's card.
+  const note =
+    own?.validated === false ? (
+      <UnvalidatedNote
+        showingOriginal={englishOriginal}
+        onToggle={() => setShowOriginal((v) => !v)}
+      />
+    ) : null;
+  return { wording, englishOriginal, note };
+}
+
+/**
+ * The top of a step: the note, the stem and the question. On arrival it is
+ * scrolled into view as a block, so the note and the stem stay on screen
+ * with the question; a block already in view does not move, and focusing
+ * the question afterwards finds it visible.
+ */
+function StepTop({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    ref.current?.scrollIntoView?.({ block: "nearest" });
+  }, []);
+  return (
+    <div ref={ref} className="flex scroll-mt-4 flex-col gap-3">
+      {children}
+    </div>
+  );
 }
 
 /** The space a step takes while its language's text loads. */
@@ -385,6 +402,7 @@ function QuestionStep({
   onFunctional,
   selected,
   wording,
+  note,
   headingRef,
   disabled,
   onChoose,
@@ -395,6 +413,8 @@ function QuestionStep({
   selected: number;
   /** Undefined while the language's text is still loading. */
   wording: StepWording | undefined;
+  /** The unvalidated-translation note, where it applies. */
+  note: ReactNode;
   headingRef: RefObject<HTMLHeadingElement | null>;
   disabled: boolean;
   onChoose: (value: number) => void;
@@ -423,21 +443,24 @@ function QuestionStep({
       data-step={step}
       data-functional={onFunctional || undefined}
     >
-      {stem && (
-        <p className="text-sm" lang={lang} data-slot="check-in-stem">
-          {stem}
-        </p>
-      )}
-      <h2
-        ref={headingRef}
-        id={questionId}
-        tabIndex={-1}
-        lang={lang}
-        className="scroll-mt-4 text-base font-medium outline-none"
-        data-slot="check-in-question"
-      >
-        {question}
-      </h2>
+      <StepTop>
+        {note}
+        {stem && (
+          <p className="text-sm" lang={lang} data-slot="check-in-stem">
+            {stem}
+          </p>
+        )}
+        <h2
+          ref={headingRef}
+          id={questionId}
+          tabIndex={-1}
+          lang={lang}
+          className="scroll-mt-4 text-base font-medium outline-none"
+          data-slot="check-in-question"
+        >
+          {question}
+        </h2>
+      </StepTop>
       {onFunctional && (
         <p className="text-muted-foreground text-xs">
           {t("mentalHealth.functionalOptionalHint")}
@@ -551,6 +574,7 @@ function ReviewStep({
   functional,
   functionalStep,
   wording,
+  note,
   headingRef,
   onEdit,
 }: {
@@ -559,6 +583,7 @@ function ReviewStep({
   functional: number;
   functionalStep: number | null;
   wording: StepWording | undefined;
+  note: ReactNode;
   headingRef: RefObject<HTMLHeadingElement | null>;
   onEdit: (step: number) => void;
 }) {
@@ -590,13 +615,16 @@ function ReviewStep({
 
   return (
     <div className="flex flex-col gap-3" data-slot="check-in-review">
-      <h2
-        ref={headingRef}
-        tabIndex={-1}
-        className="text-base font-medium outline-none"
-      >
-        {t("mentalHealth.review.title")}
-      </h2>
+      <StepTop>
+        {note}
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-base font-medium outline-none"
+        >
+          {t("mentalHealth.review.title")}
+        </h2>
+      </StepTop>
       <p className="text-sm">{t("mentalHealth.review.description")}</p>
       <ol className="flex flex-col gap-3">
         {rows.map((row, i) => (
