@@ -16,7 +16,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { CoachToolResult } from "@/lib/ai/coach/tools/executor";
+import type { CoachToolResult } from "@/lib/ai/coach/tools/run/types";
 
 vi.mock("undici", async (importOriginal) => {
   const actual = await importOriginal<typeof import("undici")>();

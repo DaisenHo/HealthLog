@@ -26,6 +26,8 @@ import { join } from "node:path";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { readSource } from "@/__tests__/helpers/source-files";
+
 import { DEFAULT_UNIT_PREFERENCES } from "@/lib/measurements/display-transform";
 import type { CoachSnapshotResult } from "@/lib/ai/coach/snapshot";
 import type {
@@ -187,10 +189,8 @@ vi.mock("@/lib/ai/coach/persistence", () => ({
 }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
-import {
-  admittedPriorResults,
-  executeCoachTool,
-} from "@/lib/ai/coach/tools/executor";
+import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
+import { admittedPriorResults } from "@/lib/ai/coach/tools/run/prior-results";
 import { renderPriorResultRefs } from "@/lib/ai/coach/chat-request-builder";
 import {
   COACH_TOOL_DEFS,
@@ -426,7 +426,10 @@ function callArguments(raw: string, fn: string): string[] {
 
 describe("the source hands the limit on", () => {
   it("passes the limit in every dispatch branch of the executor", () => {
-    const source = readFileSync(join(COACH_DIR, "tools/executor.ts"), "utf8");
+    const source = readSource("src/lib/ai/coach/tools/executor.ts", [
+      "async function dispatchRead(",
+      /case\s+"get_/,
+    ]);
     const dispatch = source.slice(
       source.indexOf("async function dispatchRead("),
     );

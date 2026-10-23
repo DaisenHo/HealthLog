@@ -30,7 +30,7 @@ import {
   coachDomainLabelKey,
   coachWindowLabelKey,
 } from "@/lib/ai/coach/dialog-keys";
-import type { CoachToolResult } from "@/lib/ai/coach/tools/executor";
+import type { CoachToolResult } from "@/lib/ai/coach/tools/run/types";
 import {
   SHOW_RESULT_TOOL_NAME,
   isCoachToolName,
