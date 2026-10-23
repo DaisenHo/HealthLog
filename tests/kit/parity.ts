@@ -72,6 +72,8 @@ export function stable(value: unknown, options: StableOptions): unknown {
       return `<${key}>`;
     }
     if (node instanceof Date) node = node.toISOString();
+    // Sealed columns carry a fresh nonce on every write: keep the length.
+    if (node instanceof Uint8Array) return `<bytes:${node.length}>`;
     if (typeof node === "string") {
       if (GENERATED_ID.test(node)) {
         let label = ids.get(node);
