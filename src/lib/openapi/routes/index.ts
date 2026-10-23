@@ -56,6 +56,7 @@ import { cyclePaths } from "./cycle";
 import { dashboardWidgetPaths } from "./dashboard";
 import { dayPaths } from "./day";
 import { searchPaths } from "./search";
+import { topicPaths } from "./topics";
 import { biomarkerPaths } from "./biomarkers";
 import { inboundDocumentPaths } from "./documents";
 import { documentSourcePaths } from "./document-sources";
@@ -204,6 +205,9 @@ const registeredPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   ...lifeCircumstancesPaths,
   ...dawarichPaths,
   ...relationLinkPaths,
+  // The topic pages, a preview each account switches on for itself
+  // (appended, spread order is load-bearing).
+  ...topicPaths,
   // The environmental-context overview. Its own module because nothing else
   // owns the surface (appended, spread order is load-bearing).
   //

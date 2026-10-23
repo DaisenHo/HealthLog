@@ -72,12 +72,12 @@ const moduleListLayoutSchema = z
       "Per-user presentation of the labs, illness and checkups lists. Display-only; a client that does not render a list ignores it.",
   });
 
-const previewFeaturesSchema = z
+export const previewFeaturesSchema = z
   .object({
     topics: z
       .boolean()
       .describe(
-        "Topic overview pages above the single-metric Insights pages. Off by default.",
+        "The Topics area (`/api/topics`): overview pages that bring related signals together above the single-metric Insights pages, which stay as they are. Off by default.",
       ),
   })
   .meta({

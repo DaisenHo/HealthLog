@@ -122,7 +122,7 @@ const trainingLoadPoint = z.object({
     ),
 });
 
-const trainingLoad = z
+export const trainingLoadSchema = z
   .union([
     z.object({
       status: z.literal("ok"),
@@ -174,7 +174,7 @@ const workoutListResponse = z
       offset: z.number().int().nonnegative(),
       droppedDuplicates: z.number().int().nonnegative(),
     }),
-    trainingLoad: trainingLoad
+    trainingLoad: trainingLoadSchema
       .optional()
       .describe(
         "v1.44 — on the first page (`offset=0`) only, account-wide whatever the filter. Absent on later pages and older servers.",

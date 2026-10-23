@@ -161,6 +161,12 @@ export async function seedContractAccount(
     nutrients: true,
     timeline: true,
   });
+  // The topic pages are a preview the account switches on for itself; the
+  // topic in their path is a fixed name, not a seeded row.
+  await write("preview", "PATCH", "api/settings/preview-features", {
+    topics: true,
+  });
+  ids.topic = "heart";
 
   // ── Measurements: ninety days of the common series ─────────────────────
   const rows: Array<{
@@ -1061,6 +1067,7 @@ export async function seedContractAccount(
 /** Which seeded id fills which path parameter. */
 const PATH_PARAM_SOURCES: Record<string, Record<string, string>> = {
   "/api/measurements/{id}": { id: "measurement" },
+  "/api/topics/{topic}": { topic: "topic" },
   "/api/mood-entries/{id}": { id: "mood" },
   "/api/medications/{id}": { id: "medication" },
   "/api/medications/{id}/glp1": { id: "medication" },

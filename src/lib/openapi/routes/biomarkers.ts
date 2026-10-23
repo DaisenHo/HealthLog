@@ -77,7 +77,7 @@ const biomarkerRow = z
       "A user-scoped catalog marker. `context` is the decrypted per-marker note (or null); `hasContext` flags its presence. `analyteKey` is the analyte the marker was recognised as: the catalog slug its name belongs to (e.g. `fasting-glucose`, `ldl`, `hdl`), or a key of the unit-conversion registry for an analyte with no catalog seed (e.g. `urea`, `uric-acid`), or null when its name matches none. It is derived from `name` and `unit`, never chosen: it is set on create and re-derived (or cleared) when an update changes either. A reading in another unit is converted only for a marker that has one. `hidden` drops the marker from the active catalog list and the lab-entry pickers without deleting it (its readings and unit/range survive). A `LabResult` linking this marker resolves its unit + reference bounds from here.",
   });
 
-const labTrend = z
+export const biomarkerTrendSchema = z
   .union([
     z.object({
       status: z.literal("ok"),
@@ -140,7 +140,9 @@ const labTrend = z
 
 const biomarkerDetail = biomarkerRow
   .extend({
-    trend: labTrend.optional().describe("v1.44 — absent on older servers."),
+    trend: biomarkerTrendSchema
+      .optional()
+      .describe("v1.44 — absent on older servers."),
   })
   .meta({ id: "BiomarkerDetail" });
 
