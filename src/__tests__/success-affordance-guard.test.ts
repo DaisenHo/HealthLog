@@ -97,7 +97,10 @@ const PINNED_AFFORDANCES: Record<
   "src/components/admin/assistant-section.tsx": { "toast.success": 1 },
   // v1.43 — the AI usage bounds: a settings save, not a write with counts.
   "src/components/admin/ai-usage-section.tsx": { "toast.success": 1 },
-  "src/components/admin/backups-section.tsx": { "toast.success": 4 },
+  // The run, the download, the upload and the finished restore, one toast each.
+  "src/components/admin/backups/use-backup-actions.ts": { "toast.success": 2 },
+  "src/components/admin/backups/use-backup-restores.ts": { "toast.success": 1 },
+  "src/components/admin/backups/use-backup-upload.ts": { "toast.success": 1 },
   "src/components/admin/central-codex-section.tsx": { "toast.success": 2 },
   "src/components/admin/danger-zone-section.tsx": { "text-success": 1 },
   "src/components/admin/encryption-section.tsx": {

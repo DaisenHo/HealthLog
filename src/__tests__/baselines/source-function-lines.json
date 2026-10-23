@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 401,
-  "total": 137456,
+  "count": 399,
+  "total": 136612,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -80,8 +80,6 @@
     "components/admin/admin-shell.tsx :: AdminShell": 254,
     "components/admin/api-token-overview-section.tsx :: ApiTokenOverviewSection": 212,
     "components/admin/app-log-preview-section.tsx :: AppLogPreviewSection": 341,
-    "components/admin/backups-section.tsx :: BackupsSection": 618,
-    "components/admin/backups-section.tsx :: RestoreRowDialog": 226,
     "components/admin/central-codex-section.tsx :: CentralCodexSection": 241,
     "components/admin/encryption-section.tsx :: EncryptionSection": 303,
     "components/admin/general-settings-section.tsx :: GeneralSettingsSection": 220,

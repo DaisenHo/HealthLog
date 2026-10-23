@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 113,
-  "total": 130546,
+  "count": 112,
+  "total": 129084,
   "entries": {
     "app/api/dashboard/summary/route.ts": 1032,
     "app/api/documents/inbound/route.ts": 811,
@@ -12,7 +12,6 @@
     "app/api/medications/intake/bulk/route.ts": 1044,
     "app/api/workouts/batch/route.ts": 958,
     "app/medications/page-client.tsx": 839,
-    "components/admin/backups-section.tsx": 1462,
     "components/charts/mood-chart.tsx": 1166,
     "components/cycle/log-day-sheet.tsx": 1639,
     "components/insights/coach-panel/chat-bubble.tsx": 888,

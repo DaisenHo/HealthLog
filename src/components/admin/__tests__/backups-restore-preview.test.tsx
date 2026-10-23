@@ -84,13 +84,16 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { BackupsSection, restorePreviewFailure } from "../backups-section";
+import {
+  RestorePreview,
+  restorePreviewFailure,
+} from "../backups/restore-dialog";
 
 describe("restore preview query", () => {
   it("is never retried and waits a bounded time", async () => {
     renderToStaticMarkup(
       <I18nProvider initialLocale="en">
-        <BackupsSection />
+        <RestorePreview backupId="b1" open />
       </I18nProvider>,
     );
     const key = JSON.stringify(queryKeys.adminBackupSummary("b1"));

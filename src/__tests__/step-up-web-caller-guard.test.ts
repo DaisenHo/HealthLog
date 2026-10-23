@@ -319,7 +319,7 @@ function findGatedWebCalls(): GatedCall[] {
 const PRECHECKED = new Set<string>([
   // `upload.mutationFn` asks first, then calls `uploadOnce`, so a large file
   // is not sent once only to be refused.
-  "components/admin/backups-section.tsx -> POST /api/admin/backups/upload",
+  "components/admin/backups/use-backup-upload.ts -> POST /api/admin/backups/upload",
 ]);
 
 describe("fresh-proof gates on the web", () => {
