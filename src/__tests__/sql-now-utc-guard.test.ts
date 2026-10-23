@@ -13,9 +13,10 @@
  * The few bare reads left are listed below with the reason they are safe:
  * each feeds a `timestamptz` column or returns the instant to JavaScript.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import { readSource, readSourceText } from "./helpers/source-files";
 
 const ROOT = join(__dirname, "..", "..");
 const SRC = join(ROOT, "src");
@@ -69,7 +70,7 @@ function bareReads(): string[] {
   const found: string[] = [];
   for (const file of walk(SRC)) {
     const rel = relative(ROOT, file);
-    readFileSync(file, "utf8")
+    readSourceText(file)
       .split("\n")
       .forEach((line, index) => {
         if (/^\s*(\/\/|\*|\/\*|--)/.test(line)) return;
@@ -84,7 +85,7 @@ function bareReads(): string[] {
 describe("raw SQL clock reads are anchored to UTC", () => {
   it("finds the anchored form across the swept files", () => {
     // The matcher must see something, or a broken walk would pass.
-    const passkey = readFileSync(join(SRC, "lib/auth/passkey.ts"), "utf8");
+    const passkey = readSource("src/lib/auth/passkey.ts", ANCHORED);
     expect(passkey.match(ANCHORED)?.length).toBeGreaterThanOrEqual(3);
     expect(SQL_CLOCK.test("AND expires_at > NOW()")).toBe(true);
     expect(SQL_CLOCK.test("updated_at = now()")).toBe(true);

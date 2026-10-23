@@ -19,12 +19,8 @@ import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
-import {
-  collapseToTypeDayKeys,
-  recomputeBucketsForKeys,
-} from "@/lib/rollups/measurement-rollups";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
-import { getEvent } from "@/lib/logging/context";
+import { collapseToTypeDayKeys } from "@/lib/rollups/measurement-rollups";
+import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import {
   forEachHeartRatePage,
   mapHeartRateSample,
@@ -120,23 +116,13 @@ export async function refoldOuraTouchedDays(
   touched: TouchedDays,
 ): Promise<void> {
   if (touched.size === 0) return;
-  const keys = touched.list();
-  try {
-    await recomputeBucketsForKeys(userId, keys);
-    invalidateStatusInsightsForTypes(
-      userId,
-      [...new Set(keys.map((k) => k.type))],
-      { source: "sync" },
-    ).catch((err) => {
-      getEvent()?.addWarning(
-        `oura: status-insight invalidate failed for ${userId}: ${err}`,
-      );
-    });
-  } catch (err) {
-    getEvent()?.addWarning(
-      `oura: heart-rate rollup recompute failed for ${userId}: ${err}`,
-    );
-  }
+  // The shared tail: the rollups, the measurement read caches back to the
+  // first touched day (a backfill window reaches years back), and the cached
+  // assessments of the types.
+  await afterMeasurementMutation(userId, touched.list(), {
+    source: "sync",
+    label: "oura heart rate",
+  });
 }
 
 /**

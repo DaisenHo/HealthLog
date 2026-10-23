@@ -10,7 +10,7 @@
  * user's click (post-render setState is a no-op under the server renderer;
  * the router spies record the navigation the click causes).
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 const baseEntries = [
@@ -101,6 +101,13 @@ vi.mock("@/components/ui/filter-bar", () => ({
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { MoodList } from "../mood-list";
+import {
+  installUrlStateBrowser,
+  type UrlStateBrowser,
+} from "@/__tests__/helpers/url-state-browser";
+
+let browser: UrlStateBrowser = installUrlStateBrowser("/");
+afterEach(() => browser.uninstall());
 
 function render(search: string) {
   mockSearch = search;
@@ -108,11 +115,15 @@ function render(search: string) {
   barProps = null;
   dateRange = null;
   recordedQueryKeys.length = 0;
-  return renderToStaticMarkup(
+  const html = renderToStaticMarkup(
     <I18nProvider initialLocale="en">
       <MoodList />
     </I18nProvider>,
   );
+  // The live address the writes start from (`@/lib/url-state`).
+  browser.uninstall();
+  browser = installUrlStateBrowser(search ? `/mood?${search}` : "/mood");
+  return html;
 }
 
 const moodSelect = () => selects[0]!;
@@ -127,37 +138,33 @@ describe("MoodList — filter changes write the URL", () => {
   it("pushes the mood facet", () => {
     render("");
     moodSelect().onValueChange("GUT");
-    expect(pushMock).toHaveBeenCalledWith("/mood?mood=GUT", { scroll: false });
+    expect(browser.push).toHaveBeenCalledWith("/mood?mood=GUT");
   });
 
   it("pushes the source facet on top of the active mood", () => {
     render("mood=GUT");
     sourceSelect().onValueChange("TELEGRAM");
-    expect(pushMock).toHaveBeenCalledWith("/mood?mood=GUT&source=TELEGRAM", {
-      scroll: false,
-    });
+    expect(browser.push).toHaveBeenCalledWith("/mood?mood=GUT&source=TELEGRAM");
   });
 
   it("replaces (no history entry) for a committed date bound", () => {
     render("");
     dateRange!.onToChange("2026-05-31");
-    expect(replaceMock).toHaveBeenCalledWith("/mood?to=2026-05-31", {
-      scroll: false,
-    });
-    expect(pushMock).not.toHaveBeenCalled();
+    expect(browser.replace).toHaveBeenCalledWith("/mood?to=2026-05-31");
+    expect(browser.push).not.toHaveBeenCalled();
   });
 
   it("clearing the last facet restores the bare pathname", () => {
     render("mood=GUT");
     moodSelect().onValueChange("ALL");
-    expect(pushMock).toHaveBeenCalledWith("/mood", { scroll: false });
+    expect(browser.push).toHaveBeenCalledWith("/mood");
   });
 
   it("reset clears every facet in one push", () => {
     render("mood=GUT&source=TELEGRAM&from=2026-05-01");
     expect(barProps!.isFiltered).toBe(true);
     barProps!.onReset();
-    expect(pushMock).toHaveBeenCalledWith("/mood", { scroll: false });
+    expect(browser.push).toHaveBeenCalledWith("/mood");
   });
 });
 

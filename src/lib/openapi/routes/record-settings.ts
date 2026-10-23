@@ -34,6 +34,7 @@ import {
   stdResponses,
 } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
+import { locales } from "@/lib/i18n/config";
 
 const thresholdMetricEnum = z
   .enum(Object.keys(METRIC_BOUNDS) as [string, ...string[]])
@@ -127,7 +128,7 @@ const profileSettings = z
       .nullable()
       .describe("Calendar date (`YYYY-MM-DD`), not an instant."),
     gender: z.enum(["MALE", "FEMALE", "OTHER"]).nullable(),
-    locale: z.enum(["de", "en", "es", "fr", "it", "pl", "ko", "nl"]).nullable(),
+    locale: z.enum(locales).nullable(),
     timezone: z.string(),
     unitPreference: z
       .enum(["metric", "imperial"])

@@ -19,24 +19,11 @@ import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { sendViaApns } from "@/lib/notifications/senders/apns";
-import { defaultLocale, type Locale } from "@/lib/i18n/config";
+import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
-
-function isLocale(value: string | null | undefined): value is Locale {
-  return (
-    value === "de" ||
-    value === "en" ||
-    value === "fr" ||
-    value === "es" ||
-    value === "it" ||
-    value === "pl" ||
-    value === "ko" ||
-    value === "nl"
-  );
-}
 
 export const POST = apiHandler(async (request: NextRequest) => {
   void request;

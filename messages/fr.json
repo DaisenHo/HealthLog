@@ -1556,11 +1556,11 @@
         "weekdays": {
           "label": "Jours de la semaine",
           "short": {
-            "mo": "Mo",
+            "mo": "Lu",
             "tu": "Ma",
             "we": "Me",
             "th": "Je",
-            "fr": "Fr",
+            "fr": "Ve",
             "sa": "Sa",
             "su": "Di"
           },
@@ -3231,11 +3231,11 @@
           "last30days": "{days} jours",
           "last90days": "{days} jours",
           "lastYear": "{months} mois",
-          "allTime": "Tout"
+          "allTime": "{months} mois en détail, plus pour les analyses"
         },
         "detailDays": "Le Coach ne lit rien de plus ancien que {days} jours, dans aucune réponse.",
         "detailMonths": "Le Coach ne lit rien de plus ancien que {months} mois, dans aucune réponse.",
-        "detailAll": "Tout ce que vous avez enregistré : {dailyMonths} mois au jour près, les mesures plus anciennes en valeurs mensuelles jusqu’à {years} ans en arrière, les analyses des {labMonths} derniers mois.",
+        "detailAll": "Sans limite, le Coach lit {dailyMonths} mois de mesures au jour près et les mesures plus anciennes en valeurs mensuelles jusqu’à {years} ans en arrière. Pour les analyses, il lit la dernière valeur des marqueurs mesurés le plus récemment et, pour un marqueur sur lequel vous l’interrogez, ses {labRecent} résultats précédents ; les plus anciens sont résumés par année jusqu’à {labYears} ans en arrière, les années antérieures sont seulement comptées.",
         "note": "Votre profil, vos médicaments actuels, une maladie en cours et vos prochains rendez-vous restent visibles ; les synthèses qui demandent plus d’historique sont raccourcies ou omises. Les réponses données plus tôt par le Coach dans d’anciennes conversations peuvent encore citer des valeurs plus anciennes."
       },
       "showConversations": "Afficher les conversations",
@@ -3599,7 +3599,7 @@
         "headphoneAudioBody": "Les niveaux audio au casque suivent, en décibels, le volume auquel vous écoutez avec des écouteurs ou un casque. Baisser le volume et faire des pauses protège votre audition sur le long terme.",
         "audioEventsBody": "Les événements sonores forts signalent les moments où le bruit autour de vous a atteint un niveau pouvant nuire à l'audition en cas d'exposition suffisante. Des événements fréquents invitent à rechercher un environnement plus calme ou une protection auditive.",
         "daylightBody": "Le temps à la lumière du jour correspond à la durée passée en lumière extérieure chaque jour. Une lumière naturelle régulière soutient un rythme veille-sommeil et une humeur sains (CDC 2024), et le temps passé dehors est lié à la santé oculaire.",
-        "bloodGlucoseBody": "La glycémie est la quantité de sucre dans votre sang, principale source d'énergie de l'organisme. Elle augmente après les repas et se stabilise entre eux ; des valeurs durablement élevées peuvent signaler un diabète ou un prédiabète.",
+        "bloodGlucoseBody": "La glycémie est la quantité de sucre dans votre sang, principale source d'énergie de l'organisme. Elle augmente après les repas et se stabilise entre eux. À titre indicatif pour les adultes sans diabète, une glycémie à jeun inférieure à {prediabetesFrom} {unit} est normale, de {prediabetesFrom} à {prediabetesTo} elle correspond au prédiabète, et à partir de {diabetesFrom} elle se situe dans la zone du diabète (ADA 2024). Une seule valeur élevée ne suffit pas à poser un diagnostic : un médecin la confirme par un nouveau test, et les personnes qui suivent un diabète ont d'autres objectifs, fixés avec leur médecin.",
         "skinTemperatureBody": "La température cutanée correspond ici à la petite variation nocturne de la température de votre poignet par rapport à votre propre référence, et non à une mesure absolue de fièvre. Les variations peuvent suivre le sommeil, l'environnement, une maladie ou la phase du cycle menstruel.",
         "cardioFitnessBody": "Le VO₂ max correspond à la quantité d'oxygène que votre corps peut utiliser à l'effort maximal. C'est le meilleur indice de laboratoire de la forme aérobie, que les wearables estiment de façon indirecte. Une tendance plus élevée ou en hausse est un fort signe de santé cardiovasculaire.",
         "cardioRecoveryBody": "La récupération cardiaque correspond au nombre de battements par minute dont votre fréquence cardiaque diminue dans la première minute après l'arrêt d'un effort intense. Une baisse plus forte signifie que votre cœur se calme plus vite, signe d'une bonne condition physique.",
@@ -7431,6 +7431,7 @@
         "lastReceived": "Dernière réception {relative}",
         "lastNewValue": "Dernière nouvelle valeur {relative}",
         "lastBackground": "Dernière fois en arrière-plan {relative}",
+        "lastDuplicate": "Dernier renvoi sans nouvelle donnée {relative}",
         "never": "Pas encore reçu",
         "lastBackfill": "Historique rattrapé {relative}",
         "lastEnteredHere": "Dernière saisie ici {relative}"
@@ -10427,6 +10428,8 @@
       "yellow-fever": "Fièvre jaune",
       "japanese-encephalitis": "Encéphalite japonaise",
       "cholera": "Choléra",
+      "dengue": "Dengue",
+      "tuberculosis": "Tuberculose",
       "td": "dT (tétanos, diphtérie)",
       "tdap": "dTca (tétanos, diphtérie, coqueluche)",
       "tdap-ipv": "dTca-VPI (quadruple)",
@@ -10944,25 +10947,21 @@
       "who5": "Test de bien-être, 5 questions",
       "sci": "Test de sommeil, 8 questions"
     },
-    "options": {
+    "gad7Options": {
       "0": "Jamais",
       "1": "Plusieurs jours",
-      "2": "Plus de la moitié des jours",
+      "2": "Plus de la moitié du temps",
       "3": "Presque tous les jours"
-    },
-    "functionalTitle": "Si tu as coché des problèmes, à quel point t'ont-ils gêné(e) dans ton travail, à la maison ou dans tes relations avec les autres ?",
-    "functional": {
-      "0": "Pas du tout gênant",
-      "1": "Un peu gênant",
-      "2": "Très gênant",
-      "3": "Extrêmement gênant"
     },
     "functionalOptionalHint": "Facultatif : tu peux envoyer sans répondre à cette question.",
     "result": {
       "title": "Ton résultat",
       "totalLabel": "Score total",
       "bandLabel": "Plage pour ce dépistage",
-      "takeAnother": "Faire un autre bilan"
+      "takeAnother": "Faire un autre bilan",
+      "scoreOf": "sur {max}",
+      "firstCheckIn": "C’est votre premier résultat pour ce questionnaire. À partir du prochain, l’évolution s’affichera ici.",
+      "nextStep": "Vous pouvez refaire ce questionnaire dans deux semaines ou plus tard pour suivre l’évolution. Si quelque chose vous inquiète, parlez-en à tout moment à un professionnel de santé."
     },
     "band": {
       "PHQ9": {
@@ -11004,25 +11003,14 @@
       "resourcesTitle": "Des personnes qui peuvent aider"
     },
     "items": {
-      "phq9": {
-        "1": "Peu d'intérêt ou de plaisir à faire les choses",
-        "2": "Se sentir triste, déprimé(e) ou désespéré(e)",
-        "3": "Difficultés à s'endormir ou à rester endormi(e), ou dormir trop",
-        "4": "Se sentir fatigué(e) ou avoir peu d'énergie",
-        "5": "Avoir peu d'appétit ou manger trop",
-        "6": "Avoir une mauvaise opinion de soi-même — ou avoir le sentiment d'être nul(le) ou d'avoir déçu sa famille ou soi-même",
-        "7": "Avoir du mal à se concentrer, par exemple pour lire le journal ou regarder la télévision",
-        "8": "Bouger ou parler si lentement que les autres ont pu le remarquer. Ou au contraire, être si agité(e) que vous avez bougé beaucoup plus que d'habitude",
-        "9": "Penser qu'il vaudrait mieux mourir ou envisager de vous faire du mal d'une manière ou d'une autre"
-      },
       "gad7": {
-        "1": "Se sentir nerveux/nerveuse, anxieux/anxieuse ou tendu(e)",
-        "2": "Être incapable d'arrêter de vous inquiéter ou de contrôler vos inquiétudes",
-        "3": "Vous inquiéter trop à propos de choses diverses",
-        "4": "Avoir du mal à vous détendre",
-        "5": "Être si agité(e) qu'il est difficile de rester tranquille",
-        "6": "Devenir facilement contrarié(e) ou irritable",
-        "7": "Avoir peur que quelque chose d'épouvantable puisse arriver"
+        "1": "Un sentiment de nervosité, d’anxiété ou de tension",
+        "2": "Une incapacité à arrêter de s’inquiéter ou à contrôler ses inquiétudes",
+        "3": "Une inquiétude excessive à propos de différentes choses",
+        "4": "Des difficultés à se détendre",
+        "5": "Une agitation telle qu’il est difficile à tenir en place",
+        "6": "Une tendance à être facilement contrarié(e) ou irritable",
+        "7": "Un sentiment de peur comme si quelque chose de terrible risquait de se produire"
       },
       "who5": {
         "1": "Je me suis senti(e) bien et de bonne humeur",
@@ -11030,16 +11018,6 @@
         "3": "Je me suis senti(e) plein(e) d'énergie et vigoureux(se)",
         "4": "Je me suis réveillé(e) en me sentant frais(che) et dispos(e)",
         "5": "Ma vie quotidienne a été remplie de choses intéressantes"
-      },
-      "sci": {
-        "1": "… how long does it take you to fall asleep?",
-        "2": "… if you then wake up during the night … how long are you awake for in total? (add all the wakenings up)",
-        "3": "… how many nights a week do you have a problem with your sleep?",
-        "4": "… how would you rate your sleep quality?",
-        "5": "… affected your mood, energy, or relationships?",
-        "6": "… affected your concentration, productivity, or ability to stay awake?",
-        "7": "… troubled you in general?",
-        "8": "… how long have you had a problem with your sleep?"
       }
     },
     "crisisResource": {
@@ -11069,6 +11047,18 @@
       },
       "crisisTextLine": {
         "name": "Crisis Text Line"
+      },
+      "cvv": {
+        "name": "CVV, Centro de Valorização da Vida (Brésil, 24h/24, 7j/7, gratuit et confidentiel)"
+      },
+      "samu": {
+        "name": "SAMU, urgences médicales (Brésil)"
+      },
+      "sns24": {
+        "name": "SNS 24, soutien psychologique (Portugal, 24h/24, 7j/7, option 4)"
+      },
+      "sosVozAmiga": {
+        "name": "SOS Voz Amiga (Portugal, tous les jours de 15h30 à 0h30)"
       }
     },
     "instrumentDescription": {
@@ -11077,7 +11067,6 @@
       "who5": "Test de bien-être en 5 questions. Répondez en pensant aux deux dernières semaines ; des chiffres plus élevés signifient un meilleur bien-être.",
       "sci": "Test de sommeil en 8 questions. La plupart des questions portent sur le dernier mois ; des scores plus élevés signifient un meilleur sommeil."
     },
-    "progress": "{current} / {total}",
     "next": "Suivant",
     "lastResult": "Dernier test",
     "lastScore": "Dernier résultat",
@@ -11098,51 +11087,12 @@
       "4": "La plupart du temps",
       "5": "Tout le temps"
     },
-    "sciOptions": {
-      "duration": {
-        "0": "≥ 61 min",
-        "1": "46–60 min",
-        "2": "31–45 min",
-        "3": "16–30 min",
-        "4": "0–15 min"
-      },
-      "nights": {
-        "0": "5–7",
-        "1": "4",
-        "2": "3",
-        "3": "2",
-        "4": "0–1"
-      },
-      "quality": {
-        "0": "Very poor",
-        "1": "Poor",
-        "2": "Average",
-        "3": "Good",
-        "4": "Very good"
-      },
-      "impact": {
-        "0": "Very much",
-        "1": "Much",
-        "2": "Somewhat",
-        "3": "A little",
-        "4": "Not at all"
-      },
-      "problemDuration": {
-        "0": "> 1 year",
-        "1": "7–12 months",
-        "2": "3–6 months",
-        "3": "1–2 months",
-        "4": "I don't have a problem / < 1 month"
-      }
-    },
     "stems": {
+      "gad7": {
+        "period": "Au cours des 2 dernières semaines, selon quelle fréquence avez-vous été gêné(e) par les problèmes suivants ?"
+      },
       "who5": {
         "period": "Au cours des deux dernières semaines"
-      },
-      "sci": {
-        "night": "Thinking about a typical night in the last month …",
-        "impact": "Thinking about the past month, to what extent has poor sleep …",
-        "finally": "Finally …"
       }
     },
     "openDetail": "Voir les détails",
@@ -11156,6 +11106,43 @@
         "improved": "Cela atteint la variation de {threshold} points que les études jugent significative, dans le bon sens.",
         "worsened": "Cela atteint la variation de {threshold} points que les études jugent significative, dans le sens moins favorable.",
         "within_threshold": "C'est moins que la variation de {threshold} points que les études jugent significative."
+      }
+    },
+    "wizard": {
+      "progressLabel": "Question {current} sur {total}",
+      "followUpLabel": "Question complémentaire (facultative)",
+      "keyboardHint": "Les touches 1 à {count} choisissent une réponse.",
+      "allAnswered": "Les {total} questions ont une réponse"
+    },
+    "review": {
+      "title": "Vérifier les réponses",
+      "description": "Rien n’est enregistré avant l’envoi, et chaque réponse peut encore être modifiée.",
+      "change": "Modifier",
+      "changeLabel": "Modifier la réponse à la question {number}",
+      "notAnswered": "Sans réponse",
+      "open": "Vérifier les réponses"
+    },
+    "bandMeaning": {
+      "PHQ9": {
+        "minimal": "Vos réponses indiquent peu ou pas de symptômes dépressifs au cours des deux dernières semaines.",
+        "mild": "Vos réponses indiquent des symptômes dépressifs légers au cours des deux dernières semaines.",
+        "moderate": "Vos réponses indiquent des symptômes dépressifs modérés au cours des deux dernières semaines.",
+        "modSevere": "Vos réponses indiquent des symptômes dépressifs modérément sévères au cours des deux dernières semaines.",
+        "severe": "Vos réponses indiquent des symptômes dépressifs sévères au cours des deux dernières semaines."
+      },
+      "GAD7": {
+        "minimal": "Vos réponses indiquent peu ou pas de symptômes d’anxiété au cours des deux dernières semaines.",
+        "mild": "Vos réponses indiquent des symptômes d’anxiété légers au cours des deux dernières semaines.",
+        "moderate": "Vos réponses indiquent des symptômes d’anxiété modérés au cours des deux dernières semaines.",
+        "severe": "Vos réponses indiquent des symptômes d’anxiété sévères au cours des deux dernières semaines."
+      },
+      "WHO5": {
+        "low": "Votre bien-être des deux dernières semaines était en dessous de la zone que le WHO-5 considère comme bonne.",
+        "good": "Votre bien-être des deux dernières semaines était dans la zone que le WHO-5 considère comme bonne."
+      },
+      "SCI": {
+        "belowThreshold": "Votre sommeil du dernier mois se situait dans la zone où l’étude à l’origine de ce questionnaire jugeait une insomnie probable.",
+        "aboveThreshold": "Votre sommeil du dernier mois se situait en dehors de la zone que cette étude associe à l’insomnie."
       }
     }
   },
@@ -11894,7 +11881,6 @@
     },
     "chat": {
       "title": "Discuter de ce document",
-      "openAria": "Interroger le Coach sur ce document",
       "openButton": "Demander au Coach"
     },
     "readingConsent": {

@@ -33,6 +33,13 @@
  * job that has stood in line for `LANE_WAIT_WARN_MS` is reported at `warn`
  * (`job.heavy_lane.waiting_long`), once per holder, so a lane that is held
  * for hours shows in the alerts instead of only in `info` lines.
+ *
+ * The container memory guard (`observability/container-memory.ts`) closes
+ * the lane for a while when the cgroup's working set reaches 85 % of its
+ * limit: a heavy job that arrives then goes back to the queue the same way,
+ * and a holder that runs in slices gives way at its next boundary, so the
+ * peak of an import does not land on top of a memory peak and end in a
+ * SIGKILL. The guard holds jobs back for fifteen minutes at most.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Job } from "pg-boss";
@@ -40,6 +47,7 @@ import type { Job } from "pg-boss";
 import { prisma } from "@/lib/db";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { annotate } from "@/lib/logging/context";
+import { memoryPressureActive } from "@/lib/observability/container-memory";
 import { emitSignal } from "@/lib/logging/signal";
 
 export interface HeavyQueue {
@@ -155,7 +163,8 @@ const holdScope = new AsyncLocalStorage<LaneHold>();
  */
 export function laneWanted(): boolean {
   const current = holdScope.getStore();
-  return current !== undefined && current === hold && current.wantedBy !== null;
+  if (current === undefined || current !== hold) return false;
+  return current.wantedBy !== null || memoryPressureActive();
 }
 
 function reportLongWait(
@@ -201,6 +210,19 @@ export function heavyLane<J extends Job<unknown>>(
   return async (jobs) => {
     if (!jobs.some(inLane)) return handler(jobs);
     const current = hold;
+    if (!current && memoryPressureActive()) {
+      const deferral = await defer(queue, jobs);
+      annotate({
+        action: { name: "job.heavy_lane.deferred" },
+        meta: {
+          queue,
+          holder: "memory_pressure",
+          jobs: jobs.length,
+          deferred: deferral.deferred,
+        },
+      });
+      return jobDone({ lane_deferred: deferral.deferred });
+    }
     if (current) {
       const deferral = await defer(queue, jobs);
       if (queue !== current.queue) current.wantedBy ??= queue;

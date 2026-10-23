@@ -192,7 +192,9 @@ test.describe("the day view", () => {
     await expect(expand).toBeFocused();
     await expect(expand).toHaveAttribute("aria-expanded", "false");
     await expect(expand).toHaveAttribute("aria-controls", "day-docked-panel");
-    expect(await expand.getAttribute("aria-label")).toMatch(/^Show /);
+    // Named by its visible date (WCAG 2.5.3); the action is the tooltip.
+    expect(await expand.getAttribute("aria-label")).toBeNull();
+    expect(await expand.getAttribute("title")).toMatch(/^Show /);
     expect((await rail.boundingBox())!.width).toBeLessThanOrEqual(40);
 
     // Another page: the edge is still there and brings the same day back,

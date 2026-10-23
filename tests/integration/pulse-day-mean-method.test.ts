@@ -357,19 +357,38 @@ describe("a large account under the production heap", () => {
     });
     // One reading a minute for two years, about a million rows, and every
     // seventh hour holding a single reading so the two methods disagree.
-    await prisma.$executeRaw`
-      INSERT INTO measurements (id, user_id, type, unit, source, value, measured_at, created_at, updated_at)
-      SELECT 'big-' || g::text, ${BIG}, 'PULSE', 'bpm', 'APPLE_HEALTH',
-             60 + (g % 40),
-             ts, now(), now()
-      FROM generate_series(
-             date_trunc('day', now()) - (${YEARS} * interval '365 days'),
-             date_trunc('day', now()) - interval '1 minute',
-             interval '1 minute'
-           ) WITH ORDINALITY AS s(ts, g)
-      WHERE extract(hour FROM ts)::int % 7 <> 3 OR extract(minute FROM ts)::int = 0
-    `;
-    await prisma.$executeRaw`ANALYZE measurements`;
+    //
+    // Written a month at a time, each month in its own transaction with the
+    // statement timeout lifted for that transaction only: as one statement
+    // the million-row insert outran the timeout on CI's shared Postgres, and
+    // the timeout guards the code under test, not this fixture.
+    const end = new Date();
+    end.setUTCHours(0, 0, 0, 0);
+    const start = new Date(end.getTime() - YEARS * 365 * DAY);
+    const CHUNK = 30 * DAY;
+    for (let from = start.getTime(); from < end.getTime(); from += CHUNK) {
+      const chunkFrom = new Date(from);
+      const chunkTo = new Date(Math.min(from + CHUNK, end.getTime()));
+      await prisma.$transaction([
+        prisma.$executeRaw`SET LOCAL statement_timeout = 0`,
+        prisma.$executeRaw`
+          INSERT INTO measurements (id, user_id, type, unit, source, value, measured_at, created_at, updated_at)
+          SELECT 'big-' || (extract(epoch FROM ts)::bigint / 60)::text, ${BIG}, 'PULSE', 'bpm', 'APPLE_HEALTH',
+                 60 + ((extract(epoch FROM ts)::bigint / 60) % 40),
+                 ts, now(), now()
+          FROM generate_series(
+                 ${chunkFrom}::timestamptz,
+                 ${chunkTo}::timestamptz - interval '1 minute',
+                 interval '1 minute'
+               ) AS s(ts)
+          WHERE extract(hour FROM ts)::int % 7 <> 3 OR extract(minute FROM ts)::int = 0
+        `,
+      ]);
+    }
+    await prisma.$transaction([
+      prisma.$executeRaw`SET LOCAL statement_timeout = 0`,
+      prisma.$executeRaw`ANALYZE measurements`,
+    ]);
   }, 600_000);
 
   async function peakHeapMb(work: () => Promise<unknown>) {

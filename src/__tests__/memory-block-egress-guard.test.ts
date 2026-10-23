@@ -18,18 +18,21 @@
  *
  * Every check is also run against a source broken on purpose.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const MEMORY = "lib/ai/coach/memory";
 
 function read(rel: string): string {
-  return readFileSync(join(SRC, rel), "utf8");
+  return readSourceText(join(SRC, rel));
 }
 
 function sourceFiles(): string[] {
@@ -60,18 +63,21 @@ function checksBeforeRead(body: string, check: RegExp): boolean {
 
 describe("memory block egress guard", () => {
   const block = functionBody(
-    read(`${MEMORY}/context-block.ts`),
+    readSource(`src/${MEMORY}/context-block.ts`, "buildMemoryContextBlock"),
     "buildMemoryContextBlock",
   );
   const lines = functionBody(
-    read(`${MEMORY}/plan-progress.ts`),
+    readSource(`src/${MEMORY}/plan-progress.ts`, "buildPlanProgressLines"),
     "buildPlanProgressLines",
   );
 
   it("the memory block checks egress before it reads anything", () => {
     expect(block.length).toBeGreaterThan(200);
     expect(checksBeforeRead(block, /egressAllowed\(/)).toBe(true);
-    const helper = read(`${MEMORY}/context-block.ts`);
+    const helper = readSource(
+      `src/${MEMORY}/context-block.ts`,
+      "aiEgressRefusal",
+    );
     expect(helper).toMatch(/aiEgressRefusal\(\s*"coach"/);
     expect(helper).toMatch(/aiCapabilityForRecord\(args\.userId, "coach"\)/);
     // Broken on purpose: the check moved below the reads.

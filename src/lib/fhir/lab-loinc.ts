@@ -355,14 +355,24 @@ function buildLocalisedAliases(): Record<string, string> {
   return index;
 }
 
-const LOCALISED_LAB_ALIASES = buildLocalisedAliases();
+let memoLocalisedLabAliasesCache:
+  ReturnType<typeof memoLocalisedLabAliasesBuild> | undefined;
+/** Built on first use, not at module load: it reads every shipped catalog. */
+function memoLocalisedLabAliases(): ReturnType<
+  typeof memoLocalisedLabAliasesBuild
+> {
+  return (memoLocalisedLabAliasesCache ??= memoLocalisedLabAliasesBuild());
+}
+function memoLocalisedLabAliasesBuild() {
+  return buildLocalisedAliases();
+}
 
 /**
  * Test seam: the guard suite asserts the derived index covers every shipped
  * locale and contradicts no hand-written alias. Production reads the constant.
  */
 export function localisedLabAliases(): Readonly<Record<string, string>> {
-  return LOCALISED_LAB_ALIASES;
+  return memoLocalisedLabAliases();
 }
 
 /**
@@ -462,7 +472,7 @@ export function resolveLabCoding(
   // every resolution that worked before working the same way.
   const resolvedKey = LAB_LOINC_BY_KEY[key]
     ? key
-    : (LAB_ALIASES[key] ?? LOCALISED_LAB_ALIASES[key]);
+    : (LAB_ALIASES[key] ?? memoLocalisedLabAliases()[key]);
   if (!resolvedKey) return null;
   const mapping = LAB_LOINC_BY_KEY[resolvedKey];
   if (!mapping) return null;

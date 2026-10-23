@@ -19,6 +19,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useTranslations } from "@/lib/i18n/context";
 import { InlineAction } from "@/components/ui/inline-action";
+import { writeUrlState } from "@/lib/url-state";
 
 export default function MoodPageClient() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -99,11 +100,10 @@ export default function MoodPageClient() {
 
   useEffect(() => {
     if (!searchParams.has("add")) return;
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete("add");
-    const search = next.toString();
-    router.replace(search ? `/mood?${search}` : "/mood");
-  }, [searchParams, router]);
+    // From the live query at the moment of the write, never the rendered
+    // copy, so a filter written meanwhile is kept (`@/lib/url-state`).
+    writeUrlState((params) => params.delete("add"), { afterPaint: true });
+  }, [searchParams]);
 
   useEffect(() => {
     if (isLoading) return;

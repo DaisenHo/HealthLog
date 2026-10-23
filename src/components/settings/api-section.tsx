@@ -352,7 +352,7 @@ function ApiEndpointsCard() {
       />
 
       {/* Desktop table — verbatim layout for md+. */}
-      <div className="border-border hidden overflow-x-auto rounded-lg border md:block">
+      <div className="border-border relative hidden overflow-x-auto rounded-lg border md:block">
         <table className="w-full min-w-[760px] text-xs md:min-w-0">
           <thead>
             <tr className="bg-muted/40 text-muted-foreground border-b">
@@ -514,7 +514,7 @@ function ApiTokensCard() {
                 {t("settings.activeTokensTitle")}
               </p>
               {/* Desktop table — verbatim layout for md+, hidden on phones. */}
-              <div className="border-border hidden overflow-x-auto rounded-lg border md:block">
+              <div className="border-border relative hidden overflow-x-auto rounded-lg border md:block">
                 <table className="w-full min-w-[860px] text-sm md:min-w-0">
                   <thead>
                     <tr className="bg-muted/40 text-muted-foreground border-b text-xs">
@@ -695,7 +695,7 @@ function ApiTokensCard() {
                 {showRevokedTokens && (
                   <>
                     {/* Desktop table — verbatim layout for md+. */}
-                    <div className="border-border hidden overflow-x-auto rounded-lg border md:block">
+                    <div className="border-border relative hidden overflow-x-auto rounded-lg border md:block">
                       <table className="w-full min-w-[760px] text-sm md:min-w-0">
                         <thead>
                           <tr className="bg-muted/40 text-muted-foreground border-b text-xs">

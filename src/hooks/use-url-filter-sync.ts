@@ -1,7 +1,8 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
+
+import { setAllParams, useUrlSearch, writeUrlState } from "@/lib/url-state";
 
 /**
  * URL-owned filter state — the documents-vault pattern
@@ -20,6 +21,13 @@ import { useCallback, useMemo, useState } from "react";
  * the vault's kind/year chips; high-frequency typed input passes `replace` so
  * the history never fills with keystrokes, like the vault's debounced search.
  *
+ * Reads and writes go through `@/lib/url-state`: the filters parse from the
+ * live address bar, and `applyFilters` takes either the next filters or an
+ * updater that receives the live ones at the moment of the write. A change
+ * computed from a rendered copy wrote the previous filters back when Next
+ * adopted an earlier write a render late (clearing the vault's filters left
+ * `?encounter=` behind).
+ *
  * `syncToUrl: false` keeps the identical contract in component memory only —
  * for a list embedded under a URL that belongs to another surface (the
  * type-locked insights readings subpage).
@@ -34,16 +42,16 @@ export function useUrlFilterSync<T>({
   syncToUrl?: boolean;
 }): {
   filters: T;
-  applyFilters: (next: T, mode?: "push" | "replace") => void;
+  applyFilters: (
+    next: T | ((current: T) => T),
+    mode?: "push" | "replace",
+  ) => void;
+  /** Merge `patch` into the live filters (the common facet change). */
+  patchFilters: (patch: Partial<T>, mode?: "push" | "replace") => void;
 } {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const params = useUrlSearch();
 
-  const urlFilters = useMemo(
-    () => parse(new URLSearchParams(searchParams.toString())),
-    [parse, searchParams],
-  );
+  const urlFilters = useMemo(() => parse(params), [parse, params]);
 
   // Memory-only fallback for `syncToUrl: false`. The hook always mounts both
   // sources (hooks are unconditional); only one is read.
@@ -52,21 +60,33 @@ export function useUrlFilterSync<T>({
   );
 
   const applyFilters = useCallback(
-    (next: T, mode: "push" | "replace" = "push") => {
+    (next: T | ((current: T) => T), mode: "push" | "replace" = "push") => {
+      const resolve = (current: T): T =>
+        typeof next === "function" ? (next as (c: T) => T)(current) : next;
       if (!syncToUrl) {
-        setLocalFilters(next);
+        setLocalFilters(resolve);
         return;
       }
-      const search = serialise(next);
-      const href = search ? `${pathname}?${search}` : pathname;
-      if (mode === "push") {
-        router.push(href, { scroll: false });
-      } else {
-        router.replace(href, { scroll: false });
-      }
+      writeUrlState(
+        (live) => {
+          const search = serialise(resolve(parse(live)));
+          setAllParams(search)(live);
+        },
+        { mode },
+      );
     },
-    [syncToUrl, serialise, pathname, router],
+    [syncToUrl, serialise, parse],
   );
 
-  return { filters: syncToUrl ? urlFilters : localFilters, applyFilters };
+  const patchFilters = useCallback(
+    (patch: Partial<T>, mode: "push" | "replace" = "push") =>
+      applyFilters((current) => ({ ...current, ...patch }), mode),
+    [applyFilters],
+  );
+
+  return {
+    filters: syncToUrl ? urlFilters : localFilters,
+    applyFilters,
+    patchFilters,
+  };
 }

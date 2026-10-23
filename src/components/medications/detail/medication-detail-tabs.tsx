@@ -50,7 +50,7 @@ import {
 } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useUrlSearch, writeUrlState } from "@/lib/url-state";
 import { ArrowLeft, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -88,7 +88,7 @@ import { PhaseConfigSheet } from "@/components/medications/sections/phase-config
 import { SideEffectsSection } from "@/components/medications/side-effects-section";
 import { ChartSkeleton } from "@/components/charts/chart-skeleton";
 import { TitrationTimeline } from "@/components/medications/titration-timeline";
-import { estimateRunwayDays } from "@/components/medications/detail/supply-runway";
+import { estimateRunwayDays } from "@/lib/medications/supply-runway";
 import type { SupplySummary } from "@/lib/medications/inventory/summary";
 import { MedicationWizardDialog } from "@/components/medications/wizard/medication-wizard-dialog";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
@@ -309,8 +309,8 @@ export function MedicationDetailTabs({
   const fmt = useFormatters();
   const { canManageDomain, inSharedRecord } = useRecordCapabilities();
   const canManageMedications = canManageDomain("medications");
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  // Read live (`@/lib/url-state`): the tab is written here.
+  const searchParams = useUrlSearch();
 
   // v1.15.20 — the medications-list kebab's "Bearbeiten" arrives as
   // `?edit=1` and opens the wizard straight away (the same editOpen the
@@ -407,33 +407,17 @@ export function MedicationDetailTabs({
   useEffect(() => {
     if (shouldOpenEditFromUrl) {
       // Drop `?edit=1` (keep any `tab` param) so a refresh after closing
-      // the wizard does not keep reopening it.
-      const params = new URLSearchParams(
-        Array.from(searchParams?.entries() ?? []),
-      );
-      params.delete("edit");
-      const qs = params.toString();
-      router.replace(`/medications/${id}${qs ? `?${qs}` : ""}`, {
-        scroll: false,
-      });
+      // the wizard does not keep reopening it. Made while mounting, so it
+      // waits for the router's history integration (`afterPaint`).
+      writeUrlState((params) => params.delete("edit"), { afterPaint: true });
     }
-  }, [shouldOpenEditFromUrl, id, router, searchParams]);
+  }, [shouldOpenEditFromUrl]);
 
-  const onTabChange = useCallback(
-    (next: string) => {
-      const params = new URLSearchParams(
-        Array.from(searchParams?.entries() ?? []),
-      );
-      params.set("tab", next);
-      // Shallow URL swap so the tab is deep-linkable + survives reload
-      // without a full navigation. `scroll: false` keeps the viewport
-      // pinned to the tab strip on switch.
-      router.replace(`/medications/${id}?${params.toString()}`, {
-        scroll: false,
-      });
-    },
-    [id, router, searchParams],
-  );
+  const onTabChange = useCallback((next: string) => {
+    // The tab is deep-linkable and survives a reload; a shallow in-place
+    // write keeps the viewport pinned to the tab strip on switch.
+    writeUrlState((params) => params.set("tab", next));
+  }, []);
 
   const { data: compliance } = useQuery({
     queryKey: queryKeys.medicationCompliance(id),

@@ -34,6 +34,7 @@ const NAMES: Record<Locale, readonly string[]> = {
   it: ["Ramipril", "Amlodipina", "Eliquis"],
   pl: ["Ramipril", "Amlodypina", "Eliquis"],
   nl: ["Ramipril 5 mg", "Amlodipine", "Eliquis"],
+  "pt-BR": ["Ramipril 5 mg", "Anlodipino", "Eliquis"],
   ko: ["라미프릴", "암로디핀", "엘리퀴스"],
 };
 
@@ -104,6 +105,17 @@ const VIOLATIONS: Record<Locale, readonly string[]> = {
     "Pauzeer je Eliquis in het weekend.",
     "Neem een halve tablet amlodipine.",
     "Neem vanavond een tablet meer.",
+  ],
+  "pt-BR": [
+    "Depois tome um ramipril a mais.",
+    "Pule o anlodipino amanhã.",
+    "Tome mais um comprimido de ramipril.",
+    "Pare o anticoagulante antes da corrida.",
+    "Tome dois comprimidos de ramipril hoje à noite.",
+    "Tome outro anlodipino se a pressão estiver alta.",
+    "Suspenda o Eliquis no fim de semana.",
+    "Tire o Eliquis amanhã.",
+    "Tome meio comprimido de anlodipino.",
   ],
   ko: [
     "라미프릴을 한 알 더 드세요.",
@@ -193,6 +205,17 @@ const CLEAN: Record<Locale, readonly string[]> = {
     "Ramipril en amlodipine verlagen allebei de bloeddruk.",
     "Laat de suiker in je koffie weg.",
     "Neem nog een meting vanavond.",
+  ],
+  "pt-BR": [
+    "Seu registro de ramipril mostra todas as doses tomadas.",
+    "Não pule o ramipril.",
+    "Nunca tome um anlodipino a mais para compensar um esquecido.",
+    "Você tomou um ramipril a mais na terça-feira, segundo o seu registro.",
+    "Faça uma caminhada a mais depois do jantar.",
+    "Tome o seu ramipril conforme prescrito.",
+    "Ramipril e anlodipino baixam a pressão.",
+    "Tire o açúcar do café.",
+    "Faça mais uma medição hoje à noite.",
   ],
   ko: [
     "라미프릴 기록을 보면 모두 복용하셨어요.",
@@ -295,13 +318,14 @@ describe("screenModelOutput — a brand name needs the schedule", () => {
 });
 
 describe("screenCoachReply — passes the schedule's names through", () => {
+  const PLAN = [{ name: "Eliquis", dose: 5 }];
   it("blocks a named-drug skip when the names are supplied", () => {
     expect(
-      screenCoachReply("Skip the Eliquis tomorrow.", "en", [5], ["Eliquis"])
+      screenCoachReply("Skip the Eliquis tomorrow.", "en", PLAN, ["Eliquis"])
         .block,
     ).toBe(true);
     expect(
-      screenCoachReply("Skip the Eliquis tomorrow.", "en", [5]).block,
+      screenCoachReply("Skip the Eliquis tomorrow.", "en", PLAN).block,
     ).toBe(false);
   });
 });

@@ -33,7 +33,7 @@ const EN_PATH = join(MESSAGES_DIR, "en.json");
 // intentionally excluded — it carries accepted anglicisms (e.g. "Health
 // Score") that would be noise here, and is covered by its own pinned checks in
 // `i18n-locale-integrity`.
-const LEAK_LOCALES = ["es", "fr", "it", "pl", "ko", "nl"] as const;
+const LEAK_LOCALES = ["es", "fr", "it", "pl", "ko", "nl", "pt-BR"] as const;
 
 function flattenValues(
   obj: unknown,
@@ -144,10 +144,8 @@ const LEGIT_IDENTICAL = new Set<string>([
   "settings.whoopClientId",
   "settings.whoopClientSecret",
   "settings.sections.api.title",
-  // Mental-health screener + crisis-resource copy is owned and translated by
-  // the mental-health workstream (PHQ-9/GAD-7 wording is locale-validated
-  // separately); the US brand names (988 / Crisis Text Line) stay verbatim.
-  // Listed here so this guard does not double-own those strings.
+  // Crisis-resource names: services and US brand names (988 / Crisis Text
+  // Line) that stay verbatim.
   "mentalHealth.crisisResource.crisisTextLine.name",
   "mentalHealth.crisisResource.euEmotionalSupport.name",
   "mentalHealth.crisisResource.findahelpline.name",
@@ -155,55 +153,10 @@ const LEGIT_IDENTICAL = new Set<string>([
   "mentalHealth.crisisResource.lifeline988.name",
   "mentalHealth.crisisResource.nummerGegenKummer.name",
   "mentalHealth.crisisResource.telefonSeelsorge.name",
-  "mentalHealth.items.gad7.1",
-  "mentalHealth.items.gad7.2",
-  "mentalHealth.items.gad7.3",
-  "mentalHealth.items.gad7.4",
-  "mentalHealth.items.gad7.5",
-  "mentalHealth.items.gad7.6",
-  "mentalHealth.items.gad7.7",
-  "mentalHealth.items.phq9.1",
-  "mentalHealth.items.phq9.2",
-  "mentalHealth.items.phq9.3",
-  "mentalHealth.items.phq9.4",
-  "mentalHealth.items.phq9.5",
-  "mentalHealth.items.phq9.6",
-  "mentalHealth.items.phq9.7",
-  "mentalHealth.items.phq9.8",
-  "mentalHealth.items.phq9.9",
-  // v1.27.9 — the Sleep Condition Indicator is validated in English only
-  // (Espie 2014, CC BY-NC). Item text, section stems and response anchors
-  // ship VERBATIM in the source language in every locale — a self-made
-  // translation would invalidate the instrument — and the UI shows a
-  // localized "validated in English" note instead. Identical-to-EN is the
-  // intended state here, not a leak.
-  "mentalHealth.items.sci.1",
-  "mentalHealth.items.sci.2",
-  "mentalHealth.items.sci.3",
-  "mentalHealth.items.sci.4",
-  "mentalHealth.items.sci.5",
-  "mentalHealth.items.sci.6",
-  "mentalHealth.items.sci.7",
-  "mentalHealth.items.sci.8",
-  "mentalHealth.stems.sci.night",
-  "mentalHealth.stems.sci.impact",
-  "mentalHealth.stems.sci.finally",
-  "mentalHealth.sciOptions.duration.0",
-  "mentalHealth.sciOptions.quality.4",
-  "mentalHealth.sciOptions.quality.3",
-  "mentalHealth.sciOptions.quality.2",
-  "mentalHealth.sciOptions.quality.1",
-  "mentalHealth.sciOptions.quality.0",
-  "mentalHealth.sciOptions.impact.4",
-  "mentalHealth.sciOptions.impact.3",
-  "mentalHealth.sciOptions.impact.2",
-  "mentalHealth.sciOptions.impact.1",
-  "mentalHealth.sciOptions.impact.0",
-  "mentalHealth.sciOptions.problemDuration.4",
-  "mentalHealth.sciOptions.problemDuration.3",
-  "mentalHealth.sciOptions.problemDuration.2",
-  "mentalHealth.sciOptions.problemDuration.1",
-  "mentalHealth.sciOptions.problemDuration.0",
+  // Questionnaire items, answers and stems are absent from every bundle whose
+  // language an instrument is not validated in (`instrument-wording.ts`), so
+  // no entry is needed for them here: a locale either carries a validated
+  // translation or nothing.
   // Proper nouns, a URL label and an acronym — the accepted written form in
   // Korean is the Latin original, so these stay identical to en.json.
   "auth.emailPlaceholder",

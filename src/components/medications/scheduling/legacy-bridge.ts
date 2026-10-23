@@ -17,9 +17,11 @@ import {
   type CadenceSubControls,
   type CadenceValue,
   DEFAULT_SUB_CONTROLS,
+} from "./types";
+import {
   type WeekdayToken,
   WEEKDAY_TOKENS,
-} from "./types";
+} from "@/lib/medications/scheduling/weekday-tokens";
 
 /**
  * Legacy schedule shape the page passes to the form. Sunday-anchored

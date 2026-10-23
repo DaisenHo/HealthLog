@@ -14,6 +14,8 @@
  * once in `sections`. Nothing here writes, and nothing here talks to a model;
  * `model-projection.ts` is the one way a day leaves for one.
  */
+import pLimit from "p-limit";
+
 import type { MeasurementType } from "@/generated/prisma/enums";
 
 import { readDayMovement } from "@/lib/dawarich/movement";
@@ -34,6 +36,9 @@ import {
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { localDayWindow } from "@/lib/tz/local-day";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+
+/** Record sections read at once for one day (see `loadDay`). */
+const DAY_SECTION_CONCURRENCY = 6;
 
 const NO_READINGS: DayReadings = {
   rowsByType: new Map(),
@@ -99,6 +104,7 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
       ? await loadUserSourcePriority(recordId)
       : null;
 
+  const sectionLimit = pLimit(DAY_SECTION_CONCURRENCY);
   const recordSections = [...access.readable].filter(
     (section) => RECORD_SECTION_READERS[section] !== undefined,
   );
@@ -115,13 +121,20 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
           priority,
         )
       : Promise.resolve(NO_READINGS),
+    // About twenty-five section readers, each a query or two, beside the
+    // readings, scores and movement: unbounded they took more connections
+    // than the pool holds, and a neighbouring request waited for a slot.
+    // Six at a time keeps the day under a third of the pool; the parts come
+    // back in section order as before.
     Promise.all(
       recordSections.map((section) =>
-        (
-          RECORD_SECTION_READERS[section] as (
-            frame: DayFrame,
-          ) => Promise<SectionPart>
-        )(frame),
+        sectionLimit(() =>
+          (
+            RECORD_SECTION_READERS[section] as (
+              frame: DayFrame,
+            ) => Promise<SectionPart>
+          )(frame),
+        ),
       ),
     ),
     scoresReadable

@@ -15,7 +15,10 @@
  */
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { pickCanonicalWorkoutRows } from "@/lib/measurements/pick-canonical-workout-rows";
+import {
+  canonicalWorkoutsInRange,
+  readWorkoutsAroundRange,
+} from "@/lib/workouts/canonical-read";
 import { seriesRowsFrom } from "@/lib/measurements/series-canonical";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
@@ -118,26 +121,31 @@ export async function readActivityDays(args: {
       ),
     ),
     includeWorkouts
-      ? prisma.workout.findMany({
-          where: { userId, startedAt: { gte: from, lt: to } },
-          select: {
-            startedAt: true,
-            durationSec: true,
-            sportType: true,
-            source: true,
-            avgHeartRate: true,
-            maxHeartRate: true,
-            metadata: true,
-          },
-          orderBy: { startedAt: "asc" },
-        })
-      : Promise.resolve([]),
+      ? readWorkoutsAroundRange({ from, to }, (bounds) =>
+          prisma.workout.findMany({
+            where: { userId, startedAt: bounds },
+            select: {
+              id: true,
+              startedAt: true,
+              durationSec: true,
+              sportType: true,
+              source: true,
+              avgHeartRate: true,
+              maxHeartRate: true,
+              metadata: true,
+            },
+            orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+          }),
+        )
+      : Promise.resolve(null),
   ]);
 
   const loadIndex = loads.findIndex((m) => m.size > 0);
   const load = loadIndex >= 0 ? loads[loadIndex] : null;
 
-  const workouts = pickCanonicalWorkoutRows(workoutRows, priorityJson);
+  const workouts = workoutRows
+    ? canonicalWorkoutsInRange(workoutRows, priorityJson)
+    : [];
   const workoutsByDay = new Map<
     string,
     { minutes: number; count: number; bySport: Record<string, number> }

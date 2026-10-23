@@ -75,6 +75,7 @@ describe("<OfflineBanner>", () => {
       "pl",
       "ko",
       "nl",
+      "pt-BR",
     ] as const) {
       const m = loadMessages(locale);
       expect(m.offlineBanner.message.length, locale).toBeGreaterThan(0);

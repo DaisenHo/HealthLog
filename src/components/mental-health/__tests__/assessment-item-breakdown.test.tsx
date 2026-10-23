@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import en from "../../../../messages/en.json";
+import ptBR from "../../../../messages/pt-BR.json";
 
 /**
  * The expandable per-item answer breakdown (the read side of
@@ -45,7 +46,11 @@ function detailRow(overrides: Partial<AssessmentDetail>): AssessmentDetail {
   };
 }
 
-function render(detail: AssessmentDetail): string {
+function render(
+  detail: AssessmentDetail,
+  locale: "en" | "pt-BR" = "en",
+  messages?: Record<string, unknown>,
+): string {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -54,7 +59,7 @@ function render(detail: AssessmentDetail): string {
   });
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
-      <I18nProvider initialLocale="en">
+      <I18nProvider initialLocale={locale} initialMessages={messages}>
         <AssessmentItemBreakdown
           assessmentId={detail.id}
           instrument={detail.instrument}
@@ -114,5 +119,31 @@ describe("AssessmentItemBreakdown", () => {
     const html = render(detailRow({ items: null, itemsUnavailable: true }));
     expect(html).toContain(mh.history.answersUnavailable);
     expect(html).not.toContain(mh.items.phq9["1"]);
+  });
+
+  it("shows the English PHQ-9 items to a pt-BR reader, even from a bundle that carries a translation", () => {
+    // A drifted pt-BR bundle with the self-made wording the release once
+    // shipped. The PHQ-9 is not validated in Brazilian Portuguese, so none
+    // of it may reach the page.
+    const drifted = structuredClone(ptBR) as Record<string, unknown>;
+    const mhDrifted = drifted.mentalHealth as Record<string, unknown>;
+    mhDrifted.items = {
+      phq9: {
+        "9": "Pensamentos de que estaria melhor morto, ou de se machucar de alguma forma",
+      },
+    };
+    mhDrifted.options = { "2": "Mais da metade dos dias" };
+    mhDrifted.functionalTitle = "Se você assinalou algum problema";
+    const html = render(
+      detailRow({ functionalDifficulty: 1 }),
+      "pt-BR",
+      drifted,
+    );
+    expect(html).toContain(mh.items.phq9["9"]);
+    expect(html).toContain(mh.options["2"]);
+    expect(html).toContain(mh.functionalTitle);
+    expect(html).not.toContain("Pensamentos de que estaria melhor morto");
+    expect(html).not.toContain("Mais da metade dos dias");
+    expect(html).not.toContain("Se você assinalou");
   });
 });

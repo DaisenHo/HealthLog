@@ -10,20 +10,23 @@ permissions:
   contents: read
 
 jobs:
-  # The suite outgrew a single runner, then a half-suite outgrew a slow one,
-  # and then a third of it did too. Three shards of about 68 files cleared in
-  # 13 minutes on an ordinary runner, but a slow runner day ran every test at
-  # twice its usual duration and the first shard was still working through
-  # its list when the 25-minute guard cut it off: three of four pushes to main
-  # between 2026-08-31 and 2026-09-01 failed that way, with green tests logged
-  # up to the last second. Four shards keep each slice around 50 files, and
-  # the guard sits at three times the ordinary run rather than under two. A
-  # wedged test still surfaces through vitest's own 60-second budget, so the
-  # job timeout only needs to catch a container that never boots. Each shard
-  # boots its own Postgres testcontainer.
+  # Four shards of about equal duration, each running its files in parallel
+  # against one database per worker. The shards used to be four slices of
+  # equal file count, run serially: 954 s to 1 449 s, because a slice holding
+  # the sharing matrix and the backup files took half again as long as one
+  # holding small files. `--shard` now goes through the duration sequencer
+  # (`tests/durations/sequencer.ts`, timings in
+  # `tests/durations/integration.json`), and every file in a shard runs on
+  # one of three workers, each against its own clone of the migrated template
+  # (`tests/integration/worker-database.ts`). Three workers leave a core of
+  # the four-core runner to the Postgres container. The job guard stays well
+  # above an ordinary run; a wedged test still surfaces through vitest's own
+  # 60-second budget, so the guard only needs to catch a container that never
+  # boots. Each shard boots its own Postgres testcontainer and uploads its
+  # JSON report, which `scripts/test-durations.mjs` turns into the timing file.
   shard:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -48,8 +51,13 @@ jobs:
       # vitest a stray positional argument and the shard flag never applies —
       # both "shards" then run the full suite. Proven by a paired local run
       # before this workflow shipped.
-      - run: pnpm exec vitest run --config vitest.integration.config.mts --shard=${{ matrix.shard }}/4
+      - run: >-
+          pnpm exec vitest run --config vitest.integration.config.mts
+          --shard=${{ matrix.shard }}/4
+          --reporter=default --reporter=json
+          --outputFile.json=integration-report-${{ matrix.shard }}.json
         env:
+          HEALTHLOG_INTEGRATION_WORKERS: "3"
           # The integration suite boots a Postgres testcontainer and points
           # Prisma at it via DATABASE_URL set inside `tests/integration/setup.ts`.
           # These env vars satisfy code paths that read them at module load.
@@ -62,6 +70,15 @@ jobs:
           API_TOKEN_HMAC_KEY: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
           ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
           SESSION_SECRET: "integration-tests"
+
+      - name: Upload the timing report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: integration-report-${{ matrix.shard }}
+          path: integration-report-${{ matrix.shard }}.json
+          if-no-files-found: ignore
+          retention-days: 14
 
   # Branch protection requires a check named exactly "integration". This job
   # carries that name and answers for every shard: it fails when any shard

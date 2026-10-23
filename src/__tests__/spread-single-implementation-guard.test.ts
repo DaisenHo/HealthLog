@@ -16,11 +16,15 @@
  * `glucoseSD`) and is out of the matcher's reach by shape. Comments are
  * stripped first; the planted case proves the matcher fires.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { stripComments, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -51,7 +55,7 @@ function computesSpread(code: string): boolean {
 }
 
 function read(file: string): string {
-  return stripComments(readFileSync(join(SRC, file), "utf8"));
+  return stripComments(readSourceText(join(SRC, file)));
 }
 
 describe("one standard deviation", () => {
@@ -84,10 +88,17 @@ describe("one standard deviation", () => {
   });
 
   it("the series API and the AI and MCP payload report the same spread", () => {
-    expect(read("app/api/measurements/series/route.ts")).toMatch(
-      /standardDeviation\(\s*values,\s*READING_SPREAD\s*\)/,
+    expect(
+      stripComments(
+        readSource(
+          "src/app/api/measurements/series/route.ts",
+          "READING_SPREAD",
+        ),
+      ),
+    ).toMatch(/standardDeviation\(\s*values,\s*READING_SPREAD\s*\)/);
+    const features = stripComments(
+      readSource("src/lib/insights/features.ts", "READING_SPREAD"),
     );
-    const features = read("lib/insights/features.ts");
     expect(
       features.match(/roundedSpread\(\s*vals,\s*READING_SPREAD\s*\)/g),
     ).toHaveLength(2);

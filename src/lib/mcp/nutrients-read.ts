@@ -85,13 +85,21 @@ export const NUTRIENT_LABELS: Readonly<Record<NutrientCode, string>> =
  * `locales`, so a seventh language starts resolving the moment its bundle
  * lands, with no edit here.
  */
-const NUTRIENT_NAME_INDEX = buildLocalisedLabelIndex<NutrientCode>(
-  NUTRIENT_CODES.map((code) => ({
-    id: code,
-    messageKey: nutrientLabelKey(code),
-    value: code,
-  })),
-);
+let nutrientNameIndexCache:
+  ReturnType<typeof nutrientNameIndexBuild> | undefined;
+/** Built on first use, not at module load: it reads every shipped catalog. */
+function nutrientNameIndex(): ReturnType<typeof nutrientNameIndexBuild> {
+  return (nutrientNameIndexCache ??= nutrientNameIndexBuild());
+}
+function nutrientNameIndexBuild() {
+  return buildLocalisedLabelIndex<NutrientCode>(
+    NUTRIENT_CODES.map((code) => ({
+      id: code,
+      messageKey: nutrientLabelKey(code),
+      value: code,
+    })),
+  );
+}
 
 /** Overview mode (no `nutrient` arg) mirrors `GET /api/nutrients`'s bounds. */
 const OVERVIEW_DEFAULT_DAYS = 14;
@@ -148,7 +156,7 @@ export function resolveNutrientCode(input: string): NutrientCode | null {
   if (!raw) return null;
   const key = raw.toLowerCase().replace(/[\s-]+/g, "_");
   if (isNutrientCode(key)) return key;
-  return NUTRIENT_NAME_INDEX.index.get(foldLabel(raw)) ?? null;
+  return nutrientNameIndex().index.get(foldLabel(raw)) ?? null;
 }
 
 /**

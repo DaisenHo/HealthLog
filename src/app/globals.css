@@ -30,6 +30,36 @@
 @source not "../../.planning";
 @source not "../../docs";
 
+/*
+ * Inter's fallback and the font-sans stack. The Inter faces themselves come
+ * from `./fonts/inter.ts`. This is what next/font/google generated for Inter
+ * when it still fetched the font at build time: Arial, scaled with the metric
+ * overrides it shipped for Inter, so text keeps its box while the web font
+ * loads. They are written out here because next/font/local would compute its
+ * own, slightly different overrides from the font file.
+ */
+@font-face {
+  font-family: "Inter Fallback";
+  src: local("Arial");
+  ascent-override: 90.44%;
+  descent-override: 22.52%;
+  line-gap-override: 0%;
+  size-adjust: 107.12%;
+}
+
+/*
+ * On body, where the next/font variable class used to set it, and on the
+ * chart text-measurement host, which sits under <html> beside <body>
+ * (`src/components/charts/text-measurement-host.ts`). The host copies body's
+ * classes to measure in the app font; the variable class used to be one of
+ * them, so without this rule the host fell back to the default font and
+ * every axis label was sized in a font the chart did not draw in.
+ */
+body,
+[data-slot="chart-text-measurement-host"] {
+  --font-sans: "Inter", "Inter Fallback";
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*

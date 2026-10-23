@@ -19,6 +19,7 @@ import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
 import type { InsightsSettings } from "./shared";
 import { InlineAction } from "@/components/ui/inline-action";
+import { dropParams, writeUrlState } from "@/lib/url-state";
 
 export function CodexProviderForm({
   settings,
@@ -52,10 +53,9 @@ export function CodexProviderForm({
 
   useEffect(() => {
     if (!oauthOutcome) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("codex_connected");
-    url.searchParams.delete("codex_error");
-    window.history.replaceState({}, "", url.toString());
+    writeUrlState(dropParams("codex_connected", "codex_error"), {
+      afterPaint: true,
+    });
     if (oauthOutcome.kind === "connected") {
       void invalidateKeys(queryClient, aiInputDependentKeys);
     }

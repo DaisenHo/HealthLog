@@ -60,6 +60,7 @@ import { useMedicationComplianceSummaryAll } from "@/lib/queries/use-medication-
 import { useMedicationListLayout } from "@/lib/queries/use-medication-list-layout";
 import { applyMedicationOrder } from "@/lib/medications/medication-order";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { setAllParams, writeUrlState } from "@/lib/url-state";
 
 interface Schedule {
   id: string;
@@ -310,14 +311,13 @@ export default function MedicationsPageClient() {
     if (!shouldOpenFromUrl) return;
 
     // Child effects may run before the App Router installs its native-history
-    // integration, while the responsive sheet also settles its first client
-    // layout. Wait until the following painted frame so replaceState preserves
-    // Next's internals and synchronizes useSearchParams without starting a
-    // router navigation that can remount the open wizard and discard fields.
+    // integration while the sheet settles its first layout. Wait two painted
+    // frames so the write keeps Next's internals and syncs useSearchParams
+    // without a router navigation that would remount the open wizard.
     let cleanupFrame: number | undefined;
     const layoutFrame = window.requestAnimationFrame(() => {
       cleanupFrame = window.requestAnimationFrame(() => {
-        window.history.replaceState(null, "", "/medications");
+        writeUrlState(setAllParams(""));
       });
     });
 

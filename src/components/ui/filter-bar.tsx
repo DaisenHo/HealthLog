@@ -44,8 +44,12 @@ import { cn } from "@/lib/utils";
  * - Purely presentational: filter state, query keys and fetching stay
  *   in the owning page/component — this file only renders the controls.
  *
- * A11y: every pill keeps an explicit `aria-label`; the per-pill clear
- * button carries `dataList.clearFilter` with the dimension name; touch
+ * A11y: every pill is named by what it shows ("Label" or "Label: value"),
+ * so the accessible name always contains the visible text (WCAG 2.5.3); an
+ * `aria-label` of the bare dimension dropped the value once a filter was
+ * set. The select pill spells that name out (a combobox takes none from
+ * its content), the popover pills take it from their content. The per-pill
+ * clear button carries `dataList.clearFilter` with the dimension name; touch
  * targets follow the dense-surface idiom (`min-h-11 sm:min-h-9`,
  * ui-guidelines §5).
  */
@@ -159,7 +163,9 @@ export function FilterBarSelect({
     <span className="relative inline-flex shrink-0">
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger
-          aria-label={label}
+          // A combobox takes no name from its content, so it is named here,
+          // with exactly the text it shows (WCAG 2.5.3).
+          aria-label={active ? `${label}: ${activeLabel}` : label}
           data-slot="filter-bar-pill"
           data-active={active ? "true" : "false"}
           className={cn(
@@ -239,7 +245,6 @@ export function FilterBarDateRange({
     <span className="relative inline-flex shrink-0">
       <Popover>
         <PopoverTrigger
-          aria-label={label}
           data-slot="filter-bar-pill"
           data-active={active ? "true" : "false"}
           className={cn(
@@ -335,7 +340,6 @@ export function FilterBarNumberRange({
     <span className="relative inline-flex shrink-0">
       <Popover>
         <PopoverTrigger
-          aria-label={label}
           data-slot="filter-bar-pill"
           data-active={active ? "true" : "false"}
           className={cn(

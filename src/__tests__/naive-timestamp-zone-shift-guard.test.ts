@@ -17,11 +17,14 @@
  * (`bucket_start`) is out of its reach by name. Comments are stripped first;
  * the planted cases prove it fires. It is a tripwire, not a proof.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { stripComments, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 /** The shared comment strip, plus SQL line comments inside template strings. */
 function stripCode(text: string): string {
@@ -59,8 +62,7 @@ describe("naive timestamp zone shifts", () => {
         !file.includes("__tests__/") &&
         !/\.test\.tsx?$/.test(file),
     );
-    const code = (file: string) =>
-      stripCode(readFileSync(join(SRC, file), "utf8"));
+    const code = (file: string) => stripCode(readSourceText(join(SRC, file)));
     // The reads that shift correctly, so a sweep that reads nothing fails.
     const doubleShifts = files.filter((file) => DOUBLE_SHIFT.test(code(file)));
     expect(doubleShifts.length).toBeGreaterThanOrEqual(5);

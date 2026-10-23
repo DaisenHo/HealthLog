@@ -19,7 +19,7 @@
  * thin and the person has not closed it; empty lanes are never drawn.
  */
 import { useCallback, useMemo, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { setAllParams, useUrlSearch, writeUrlState } from "@/lib/url-state";
 import { CalendarRange, Plus } from "lucide-react";
 
 import { openDay as openDayLayer } from "@/components/day/day-layer-controller";
@@ -151,8 +151,9 @@ export function TimelineView() {
   const { t } = useTranslations();
   const { user } = useAuth();
   const caps = useRecordCapabilities();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  // Read live (`@/lib/url-state`): the router's copy trails a write by a
+  // render, and the zoom, the range and `?day=` are all written here.
+  const searchParams = useUrlSearch();
   const today = todayKeyIn(user?.timezone);
   const dayParam = parseDayParam(searchParams.get(DAY_QUERY_PARAM), today);
   // Life events are written in one's own record only (owner-only routes).
@@ -285,14 +286,7 @@ export function TimelineView() {
     if (open) return;
     setEditing(null);
     if (searchParams.has("add")) {
-      const next = new URLSearchParams(searchParams.toString());
-      next.delete("add");
-      const search = next.toString();
-      window.history.replaceState(
-        null,
-        "",
-        search ? `${pathname}?${search}` : pathname,
-      );
+      writeUrlState((params) => params.delete("add"));
     }
   }
 
@@ -312,8 +306,13 @@ export function TimelineView() {
     (range ? range.to : today);
 
   function navigate(nextZoom: TimelineZoom, nextRange: TimelineRange | null) {
-    const search = timelineSearch(window.location.search, nextZoom, nextRange);
-    window.history.pushState(null, "", `${pathname}${search}`);
+    writeUrlState(
+      (params) => {
+        const next = timelineSearch(`?${params}`, nextZoom, nextRange);
+        setAllParams(next)(params);
+      },
+      { mode: "push" },
+    );
   }
 
   function setZoom(next: Exclude<TimelineZoom, "range">) {

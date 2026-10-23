@@ -91,6 +91,7 @@ import {
   medicationExtractionSchema,
   type MedicationExtractionResult,
 } from "@/lib/ai/coach/medication-extract-prompt";
+import { locales } from "@/lib/i18n/config";
 
 /**
  * How the extractor refuses with no provider. 503 predates the capability
@@ -118,7 +119,7 @@ const requestSchema = z
   .object({
     text: z.string().min(1).max(MAX_TEXT_LENGTH),
     /** Optional UI locale; informational hint for the model. */
-    locale: z.enum(["en", "de", "es", "fr", "it", "pl", "ko", "nl"]).optional(),
+    locale: z.enum(locales).optional(),
     /**
      * Optional override of the reference date used to resolve relative
      * phrases ("tomorrow", "next Monday"). Defaults to the server's

@@ -33,7 +33,10 @@ import {
   type CoachTurnContext,
 } from "@/lib/ai/coach/chat-request-builder";
 import { buildWorkoutEvidenceSection } from "@/lib/ai/coach/workout-evidence-builder";
-import { getScheduledDoseValues } from "@/lib/medications/scheduled-doses";
+import {
+  getScheduledDosePlan,
+  type ScheduledDose,
+} from "@/lib/medications/scheduled-doses";
 import { getMedicationNames } from "@/lib/medications/medication-names";
 import { buildRememberAddendum } from "@/lib/ai/coach/reminders";
 import { buildSuggestActionAddendum } from "@/lib/ai/coach/suggest-action";
@@ -65,7 +68,10 @@ export interface TurnContext {
   effectiveScope: CoachScope | undefined;
   snapshot: CoachSnapshotResult;
   aboutMe: string | null;
-  scheduleDoses: Awaited<ReturnType<typeof getScheduledDoseValues>>;
+  /** The active doses' magnitudes, the Grounding Ledger's `schedule` source. */
+  scheduleDoses: number[];
+  /** The active medications with their doses, which the dose screen reads. */
+  dosePlan: ScheduledDose[];
   /** The schedule's medication names, which the outbound dose screen reads. */
   medicationNames: string[];
   turnContext: CoachTurnContext;
@@ -137,9 +143,12 @@ export async function assembleTurnContext(args: {
   const aboutMe = await getSelfContextTextForUser(userId, locale);
   // v1.32.9 (Coach Guard II / G3) — the user's active medication doses, for the
   // Grounding Ledger's `schedule` source AND the schedule-gated dose
-  // continuation exemption. Fail-open: a read failure yields an empty set, which
-  // keeps the Guard I phrase-anchored dose behaviour.
-  const scheduleDoses = await getScheduledDoseValues(userId).catch(() => []);
+  // continuation exemption. A read failure yields an empty plan, under which
+  // the screen trusts no stated amount (fail closed).
+  const dosePlan = await getScheduledDosePlan(userId).catch(
+    (): ScheduledDose[] => [],
+  );
+  const scheduleDoses = [...new Set(dosePlan.map((entry) => entry.dose))];
   const medicationNames = await getMedicationNames(userId).catch(() => []);
   // v1.22 — the canonical system-prompt module is owned elsewhere, so
   // the two memory/action clauses are appended at assembly time here: one
@@ -242,6 +251,7 @@ export async function assembleTurnContext(args: {
     snapshot,
     aboutMe,
     scheduleDoses,
+    dosePlan,
     medicationNames,
     turnContext,
     workoutEvidence,

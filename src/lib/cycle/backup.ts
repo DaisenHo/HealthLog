@@ -154,6 +154,12 @@ export interface CycleBackupSection {
      * never rated it — which is not the same as rating it zero.
      */
     symptomSeverities: Array<{ key: string; severity: number }>;
+    /**
+     * When each symptom link was written, by key. Disaster-recovery files
+     * only, and sparse like `symptomSeverities`; a file without it restores
+     * the links stamped with the restore.
+     */
+    symptomLinkCreatedAt?: Array<{ key: string; createdAt: string }>;
   }>;
   /**
    * The account's OWN symptom definitions.
@@ -226,20 +232,23 @@ export async function buildCycleBackupSection(
       where: disasterRecovery
         ? { userId }
         : { userId, deletedAt: null, isPredicted: false },
-      orderBy: { startDate: "asc" },
+      orderBy: [{ startDate: "asc" }, { id: "asc" }],
     }),
     prisma.cycleDayLog.findMany({
       where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-      orderBy: { date: "asc" },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
       include: {
-        symptomLinks: { include: { symptom: { select: { key: true } } } },
+        symptomLinks: {
+          include: { symptom: { select: { key: true } } },
+          orderBy: { symptomId: "asc" },
+        },
       },
     }),
     // `userId` set means the user made it. The NULL rows are the seeded
     // catalogue, which the restoring instance already has.
     prisma.cycleSymptom.findMany({
       where: { userId },
-      orderBy: { key: "asc" },
+      orderBy: [{ key: "asc" }, { id: "asc" }],
     }),
   ]);
 
@@ -329,6 +338,14 @@ export async function buildCycleBackupSection(
       symptomSeverities: d.symptomLinks
         .filter((l): l is typeof l & { severity: number } => l.severity != null)
         .map((l) => ({ key: l.symptom.key, severity: l.severity })),
+      ...(disasterRecovery
+        ? {
+            symptomLinkCreatedAt: d.symptomLinks.map((l) => ({
+              key: l.symptom.key,
+              createdAt: l.createdAt.toISOString(),
+            })),
+          }
+        : {}),
     })),
     customSymptoms: customSymptoms.map((sym) => ({
       ...(disasterRecovery ? { id: sym.id } : {}),
@@ -443,6 +460,50 @@ function enumOrNull<T extends string>(
   return value != null && (allow as ReadonlySet<string>).has(value)
     ? (value as T)
     : null;
+}
+
+/**
+ * The symptom links of one restored day log.
+ *
+ * Severities: the day's rated intensities, keyed by symptom. A file written
+ * before severities were carried has no list at all and every link comes back
+ * unrated, which is what it was. An entry naming a symptom the day does not
+ * have is simply never read. Each link's own write time comes back when the
+ * file carries it (disaster recovery), and is the restore's otherwise.
+ *
+ * Every unresolvable key was counted into `skips` by the caller, so dropping
+ * it here is a reported drop rather than a silent one. The rest of the day is
+ * unaffected by a symptom chip that will not resolve.
+ */
+function dayLogSymptomLinks(
+  d: {
+    symptomKeys?: string[];
+    symptomSeverities?: Array<{ key: string; severity?: number | null }>;
+    symptomLinkCreatedAt?: Array<{ key: string; createdAt: string }>;
+  },
+  symptomIdByKey: ReadonlyMap<string, string>,
+) {
+  const severityByKey = new Map<string, number>();
+  for (const s of d.symptomSeverities ?? []) {
+    const severity = severityOrNull(s.severity);
+    if (severity !== null) severityByKey.set(s.key, severity);
+  }
+  const linkCreatedAt = new Map(
+    (d.symptomLinkCreatedAt ?? []).map((l) => [l.key, l.createdAt]),
+  );
+  return (d.symptomKeys ?? []).flatMap((k) => {
+    const id = symptomIdByKey.get(k);
+    const createdAt = linkCreatedAt.get(k);
+    return id
+      ? [
+          {
+            symptomId: id,
+            severity: severityByKey.get(k) ?? null,
+            ...(createdAt ? { createdAt: new Date(createdAt) } : {}),
+          },
+        ]
+      : [];
+  });
 }
 
 /**
@@ -617,26 +678,7 @@ export async function restoreCycleData(
   };
 
   for (const d of payload.cycleDayLogs) {
-    // The day's rated intensities, keyed by symptom. A file written before
-    // severities were carried has no list at all and every link comes back
-    // unrated, which is what it was. An entry naming a symptom the day does not
-    // have is simply never read.
-    const severityByKey = new Map<string, number>();
-    for (const s of d.symptomSeverities ?? []) {
-      const severity = severityOrNull(s.severity);
-      if (severity !== null) severityByKey.set(s.key, severity);
-    }
-
-    // Every unresolvable key was counted into `skips` above, so dropping it
-    // here is a reported drop rather than a silent one. The rest of the day —
-    // flow, temperature, the encrypted note, every observation the person
-    // actually wrote — is unaffected by a symptom chip that will not resolve.
-    const symptomLinks = (d.symptomKeys ?? []).flatMap((k) => {
-      const id = symptomIdByKey.get(k);
-      return id
-        ? [{ symptomId: id, severity: severityByKey.get(k) ?? null }]
-        : [];
-    });
+    const symptomLinks = dayLogSymptomLinks(d, symptomIdByKey);
     const cycleId =
       d.cycleId !== undefined
         ? d.cycleId === null

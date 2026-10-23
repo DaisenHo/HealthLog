@@ -57,7 +57,6 @@
 import pLimit from "p-limit";
 
 import type { MeasurementType } from "@/generated/prisma/client";
-import { Prisma } from "@/generated/prisma/client";
 
 import { prisma } from "@/lib/db";
 import {
@@ -69,8 +68,6 @@ import {
   SESSION_DAY_FRAME,
   dayValue,
   dayWeightedRows,
-  dayWeightedRowsSql,
-  foldMeanSql,
   isHourlyMeanTypeSql,
   windowMeanSql,
 } from "@/lib/measurements/day-mean";
@@ -78,6 +75,7 @@ import { wireSummary, type DataSummary } from "@/lib/analytics/trends";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
 import { annotate } from "@/lib/logging/context";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
+import { readPreFoldRemainder } from "@/lib/analytics/pre-fold-remainder";
 import {
   ensureUserRollupsFresh,
   readRollupBuckets,
@@ -704,73 +702,9 @@ async function computeFromRollups(userId: string): Promise<SummariesSlice> {
           sumYy: true,
         },
       }),
-      // v1.37.19 — all-time remainder OLDER than the fold window,
-      // spliced into the per-type figures below so "all-time" means all time
-      // on the rollup path too (empty for any account younger than the
-      // window). It keeps one source per (type, day) the way the rollup half
-      // and the live path do: without it, a vital recorded by two devices
-      // counted both of them on every pre-fold day. Each source is folded per
-      // day first (a hash aggregate, a few rows per day however dense the
-      // stream), each day then keeps its ladder-canonical source, so the
-      // sort never sees more than one row per source per day.
-      // An hourly-mean type folds each source's day as the mean of its
-      // hours' means (`wsum` / `wdays`, see `day-mean.ts`) and the days into
-      // the remainder once each, the statistic the DAY rollup stores.
-      prisma.$queryRaw<
-        Array<{
-          type: string;
-          count: number;
-          days: number;
-          min: number;
-          max: number;
-          mean: number;
-        }>
-      >`
-      WITH src AS (
-        SELECT *
-        FROM measurements m
-        WHERE m."user_id" = ${userId}
-          AND m."deleted_at" IS NULL
-          AND m."measured_at" < ${foldSplit}
-      ),
-      per_source AS (
-        SELECT
-          m."type",
-          m."source",
-          date_trunc('day', m."measured_at") AS day,
-          COUNT(*)::int                      AS cnt,
-          SUM(m."value")::double precision   AS total,
-          MIN(m."value")::double precision   AS min_value,
-          MAX(m."value")::double precision   AS max_value,
-          SUM(m."value" * m.day_weight)::double precision AS wsum,
-          SUM(m.day_weight)::double precision             AS wdays
-        FROM ${dayWeightedRowsSql("src", null, { bySource: true })} m
-        GROUP BY m."type", m."source", 3
-      ),
-      canon AS (
-        SELECT DISTINCT ON (p."type", p.day)
-          p."type", p.cnt, p.total, p.min_value, p.max_value, p.wsum, p.wdays
-        FROM per_source p
-        ORDER BY p."type", p.day, (${Prisma.raw(rankPerSource)}), p."source"::text
-      )
-      SELECT
-        c."type"::text                                  AS type,
-        SUM(c.cnt)::int                                 AS count,
-        COUNT(*)::int                                   AS days,
-        MIN(c.min_value)::double precision              AS min,
-        MAX(c.max_value)::double precision              AS max,
-        ${Prisma.raw(
-          foldMeanSql({
-            typeColumn: 'c."type"',
-            total: "c.total",
-            count: "c.cnt",
-            weightedSum: "c.wsum",
-            weightSum: "c.wdays",
-          }),
-        )}::double precision                            AS mean
-      FROM canon c
-      GROUP BY c."type"
-    `,
+      // The all-time remainder older than the fold window (a closed block,
+      // see `pre-fold-remainder.ts`).
+      readPreFoldRemainder(userId, foldSplit, priorityJson, rankPerSource),
     ]);
 
   const preFoldByType = new Map<

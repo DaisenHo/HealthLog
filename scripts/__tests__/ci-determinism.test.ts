@@ -157,6 +157,9 @@ describe("container dependency installation", () => {
 
     expect(dockerfile).toContain(
       "COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./\n" +
+        "# The dependency patches pnpm-workspace.yaml names; the frozen install\n" +
+        "# refuses to run without them.\n" +
+        "COPY patches patches\n" +
         "COPY scripts/prepare.mjs scripts/prepare.mjs\n" +
         "RUN pnpm install --frozen-lockfile --prod=false",
     );

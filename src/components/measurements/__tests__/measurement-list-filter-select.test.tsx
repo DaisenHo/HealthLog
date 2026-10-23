@@ -83,12 +83,12 @@ describe("MeasurementList — filter bar + multi-select chrome", () => {
   it("renders the filter rail with type, source, date-range and value pills", () => {
     const html = render("en");
     expect(html).toContain('data-slot="filter-bar"');
-    expect(html).toContain('aria-label="Type"');
-    expect(html).toContain('aria-label="Source"');
-    expect(html).toContain('aria-label="Date range"');
+    expect(html).toContain(">Type</span>");
+    expect(html).toContain(">Source</span>");
+    expect(html).toContain(">Date range</span>");
     // v1.18.5 — value-range pill rides the rail for the raw per-sample
     // list (the default `ALL` type is not a day-grouped/sleep type).
-    expect(html).toContain('aria-label="Value"');
+    expect(html).toContain(">Value</span>");
     const pills = html.match(/data-slot="filter-bar-pill"/g);
     expect(pills?.length).toBe(4);
   });
@@ -105,8 +105,8 @@ describe("MeasurementList — filter bar + multi-select chrome", () => {
 
   it("localises the new chrome in German", () => {
     const html = render("de");
-    expect(html).toContain('aria-label="Quelle"');
-    expect(html).toContain('aria-label="Zeitraum"');
+    expect(html).toContain(">Quelle</span>");
+    expect(html).toContain(">Zeitraum</span>");
     expect(html).toContain('aria-label="Alle auf dieser Seite auswählen"');
   });
 });

@@ -14,10 +14,13 @@
  * those.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -30,7 +33,7 @@ function sourceFiles(): string[] {
 }
 
 function read(rel: string): string {
-  return readFileSync(join(SRC, rel), "utf8");
+  return readSourceText(join(SRC, rel));
 }
 
 function filesMatching(re: RegExp): string[] {
@@ -177,7 +180,7 @@ describe("the cookie-only helpers cannot see the acting account", () => {
   const COOKIE_ONLY = ["requireAdmin", "requireCookieAuth", "requireFreshMfa"];
 
   it.each(COOKIE_ONLY)("%s resolves the actor and nothing else", (name) => {
-    const body = functionBody(read("lib/api-handler.ts"), name);
+    const body = functionBody(readSource("src/lib/api-handler.ts", name), name);
 
     // Non-zero proof, twice over: the slice found a function, and the slice is
     // the function it claims to be. A renamed helper must fail here rather
@@ -191,7 +194,7 @@ describe("the cookie-only helpers cannot see the acting account", () => {
   });
 
   it("substitutes a data-scope user in exactly two functions", () => {
-    const src = read("lib/api-handler.ts");
+    const src = readSource("src/lib/api-handler.ts", "requireRecordAuth");
     const record = functionBody(src, "requireRecordAuth");
     expect(record).toContain("readActingCarrier");
 
@@ -292,7 +295,7 @@ describe("ending a grant and clearing the switch are one act", () => {
 
   it("runs the transition and the cleanup in one transaction", () => {
     const body = privateFunctionBody(
-      read("lib/sharing/grants.ts"),
+      readSource("src/lib/sharing/grants.ts", "endAndClear"),
       "endAndClear",
     );
     // Non-zero proof: a renamed helper fails here rather than asserting
@@ -309,7 +312,7 @@ describe("ending a grant and clearing the switch are one act", () => {
     // claim's own transaction (it takes `tx`), so the guard here is that the
     // cleanup is part of the same function as the ending.
     const body = functionBody(
-      read("lib/sharing/grants.ts"),
+      readSource("src/lib/sharing/grants.ts", "settleHandoverGuardianGrant"),
       "settleHandoverGuardianGrant",
     );
     expect(body.length).toBeGreaterThan(0);

@@ -99,23 +99,79 @@ const US: CrisisResourceSet = {
 };
 
 /**
+ * Brazil, reached only by the bare region code "br". "pt-BR" and "pt_BR"
+ * are not a region signal: the web folds every Portuguese reader into that
+ * one bundle, so they get PT_BR_AMBIGUOUS. CVV by phone and chat, SAMU as
+ * the emergency number. Both numbers are free and answer around the clock
+ * (cvv.org.br; the Ministry of Health's SAMU 192 page).
+ */
+const BR: CrisisResourceSet = {
+  emergencyNumber: "192",
+  resources: [
+    { id: "cvv", contacts: ["188", "cvv.org.br/chat"] },
+    { id: "findahelpline", contacts: ["findahelpline.com"] },
+  ],
+};
+
+/**
+ * Portugal (explicit "pt-PT" / "pt_PT" / "pt-pt"). 112 is the emergency
+ * number. SNS 24 (808 24 24 24) runs the national psychological counselling
+ * line around the clock as menu option 4 and transfers a call at risk to
+ * INEM; SOS Voz Amiga answers daily from 15:30 to 00:30 (sosvozamiga.org).
+ */
+const PT: CrisisResourceSet = {
+  emergencyNumber: "112",
+  resources: [
+    { id: "sns24", contacts: ["808 24 24 24"] },
+    { id: "sosVozAmiga", contacts: ["213 544 545", "sosvozamiga.org"] },
+    { id: "findahelpline", contacts: ["findahelpline.com"] },
+  ],
+};
+
+/**
+ * Portuguese with no region signal. The app ships one Portuguese bundle,
+ * `pt-BR`, and `localeFromLanguageTag` folds `pt-PT`, `pt-AO` and bare `pt`
+ * into it, so a stored "pt-BR" says only that the reader reads Portuguese:
+ * it is as likely to be someone in Lisbon as in São Paulo. The account keeps
+ * no country to tell them apart. Following DE_AT_CH, the set leads with 112
+ * (the emergency number across Portugal and the EU, which mobile networks in
+ * Brazil also route to the police) and the worldwide directory, then names
+ * every country's own lines with the country in the label, so nothing reads
+ * as if it reached everyone.
+ */
+const PT_BR_AMBIGUOUS: CrisisResourceSet = {
+  emergencyNumber: "112",
+  resources: [
+    { id: "findahelpline", contacts: ["findahelpline.com"] },
+    ...BR.resources.filter((r) => r.id !== "findahelpline"),
+    { id: "samu", contacts: ["192"] },
+    ...PT.resources.filter((r) => r.id !== "findahelpline"),
+  ],
+};
+
+/**
  * Resolve a crisis-resource set from the user's locale. Region detection is
  * coarse (locale prefix) and defaults to the international set — the goal is to
  * always surface SOMETHING actionable, never to be exhaustive.
  *
- * A region-qualified tag ("de-AT", "de_CH", …) resolves to the exact country
- * set when the caller has one to give us. `User.locale` today only ever
- * stores the bare short code, so in practice every "de" hits the DE_AT_CH
- * branch below — that is the safe default for an unqualified "de": never
- * assume Germany when the region is unknown.
+ * A region-qualified tag ("de-AT", "de_CH", "pt-PT", …) resolves to the exact
+ * country set when the caller has one to give us. The web stores the app
+ * locale, which is a bare "de" or the folded "pt-BR", so it lands on the
+ * combined sets: never assume Germany or Brazil when the region is unknown.
  */
 export function crisisResourcesForLocale(
   locale: string | null | undefined,
 ): CrisisResourceSet {
-  const lc = (locale ?? "").toLowerCase();
-  if (lc === "de-at" || lc === "de_at" || lc === "at") return AT;
-  if (lc === "de-ch" || lc === "de_ch" || lc === "ch") return CH;
+  const lc = (locale ?? "").toLowerCase().replace("_", "-");
+  if (lc === "de-at" || lc === "at") return AT;
+  if (lc === "de-ch" || lc === "ch") return CH;
   if (lc.startsWith("de")) return DE_AT_CH;
-  if (lc === "en-us" || lc.startsWith("en_us") || lc === "us") return US;
+  if (lc.startsWith("en-us") || lc === "us") return US;
+  if (lc === "br") return BR;
+  if (lc === "pt-pt") return PT;
+  // "pt-BR" from the web is the folded app locale, not a region signal; see
+  // PT_BR_AMBIGUOUS. Any other Portuguese tag (pt, pt-AO, pt-MZ) lands here
+  // too, and still gets 112 and the worldwide directory first.
+  if (lc === "pt" || lc.startsWith("pt-")) return PT_BR_AMBIGUOUS;
   return INTERNATIONAL;
 }

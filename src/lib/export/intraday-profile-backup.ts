@@ -108,7 +108,7 @@ export async function buildIntradayProfileBackupSection(
   // both purposes read the same set and only identity differs.
   const rows = await prisma.intradayCumulativeProfile.findMany({
     where: { userId },
-    orderBy: [{ dateKey: "desc" }, { type: "asc" }],
+    orderBy: [{ dateKey: "desc" }, { type: "asc" }, { id: "asc" }],
   });
 
   return {

@@ -16,6 +16,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import { COACH_SCOPE_SOURCES } from "@/lib/ai/coach/scope-sources";
 import type { CoachScopeSource } from "@/lib/ai/coach/types";
+import { writeUrlState } from "@/lib/url-state";
 
 /**
  * v1.12.0 (Coach v2 #6) — full-page Coach conversation.
@@ -133,13 +134,7 @@ function CoachPageBody() {
   );
   useEffect(() => {
     if (!openSettingsOnData) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("settings");
-    window.history.replaceState(
-      window.history.state,
-      "",
-      url.pathname + url.search,
-    );
+    writeUrlState((params) => params.delete("settings"), { state: "keep" });
   }, [openSettingsOnData]);
 
   // #781 — a navigation away mid-reply recorded the interrupted conversation

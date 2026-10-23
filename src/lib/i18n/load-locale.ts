@@ -7,8 +7,8 @@
  * for every user, in every language). The t() chain (active locale →
  * EN → raw key) now resolves its bundles through three paths:
  *
- *   1. SSR pass: this module seeds its cache with the full server-side
- *      catalog map (`shared-resolve`) inside a `typeof window ===
+ *   1. SSR pass: this module seeds its cache with the lazy server-side
+ *      catalog map (`server-catalogs`) inside a `typeof window ===
  *      "undefined"` branch. Turbopack compiles the branch away for the
  *      browser bundle (verified — zero catalog bytes reach any client
  *      chunk), while the server render of every client component
@@ -33,6 +33,10 @@
  * seed bundles directly (`primeMessages`).
  */
 import { type Locale } from "./config";
+import type { lazyServerCatalogs } from "./server-catalogs";
+
+/** The SSR branch's view of `./server-catalogs` (types only; see below). */
+type ServerCatalogsModule = { lazyServerCatalogs: typeof lazyServerCatalogs };
 
 export type MessageBundle = Record<string, unknown>;
 
@@ -51,6 +55,7 @@ const loaders: Record<Locale, () => Promise<{ default: MessageBundle }>> = {
   pl: () => import("../../../messages/pl.json"),
   ko: () => import("../../../messages/ko.json"),
   nl: () => import("../../../messages/nl.json"),
+  "pt-BR": () => import("../../../messages/pt-BR.json"),
 };
 
 function initialCache(): Partial<Record<Locale, MessageBundle>> {
@@ -63,10 +68,12 @@ function initialCache(): Partial<Record<Locale, MessageBundle>> {
     // where a bare require of a TS module throws) — there the cache starts
     // empty and `vitest.setup.ts` primes every bundle up front.
     try {
-      const { allMessages } =
+      const { lazyServerCatalogs } =
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        require("./shared-resolve") as typeof import("./shared-resolve");
-      return { ...allMessages };
+        require("./server-catalogs") as ServerCatalogsModule;
+      // Entries load on first read, so the render loads the locales it
+      // renders in, not all of them.
+      return lazyServerCatalogs();
     } catch {
       return {};
     }

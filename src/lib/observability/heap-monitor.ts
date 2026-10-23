@@ -11,6 +11,11 @@ import { WideEventBuilder } from "@/lib/logging/event-builder";
 import { emitIfSampled } from "@/lib/logging/transports";
 import { megabytes } from "@/lib/support/heap-limit";
 
+import {
+  ContainerMemoryGuard,
+  containerMemoryFields,
+  readContainerMemory,
+} from "./container-memory";
 import { inFlightRegistry, type InFlightRegistry } from "./in-flight";
 
 /**
@@ -351,10 +356,22 @@ export function startHeapMonitor(overrides: Partial<HeapMonitorDeps> = {}) {
   slots[STARTED] = true;
 
   const registry = overrides.registry ?? inFlightRegistry();
+  // The container guard rides the same tick, and its latest reading rides
+  // every heap line, so the trend shows the cgroup beside the heap.
+  const guard = new ContainerMemoryGuard({
+    now: Date.now,
+    read: () => readContainerMemory(),
+    registry,
+    emit: emitHeapLine,
+    figures: () => ({ ...defaultReadFigures(registry) }),
+  });
   const monitor = new HeapMonitor({
     now: Date.now,
     readHeap: defaultReadHeap,
-    readFigures: () => defaultReadFigures(registry),
+    readFigures: () => ({
+      ...defaultReadFigures(registry),
+      ...containerMemoryFields(guard.last),
+    }),
     registry,
     emit: emitHeapLine,
     snapshotEnabled: envFlag("HEALTHLOG_HEAP_SNAPSHOT"),
@@ -363,6 +380,11 @@ export function startHeapMonitor(overrides: Partial<HeapMonitorDeps> = {}) {
   });
 
   const timer = setInterval(() => {
+    try {
+      guard.check();
+    } catch {
+      // A diagnostic must never take the process down.
+    }
     try {
       monitor.check();
     } catch {

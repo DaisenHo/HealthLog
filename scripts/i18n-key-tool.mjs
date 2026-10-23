@@ -11,7 +11,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"];
+const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl", "pt-BR"];
 const file = (loc) => `messages/${loc}.json`;
 
 function read(loc) {

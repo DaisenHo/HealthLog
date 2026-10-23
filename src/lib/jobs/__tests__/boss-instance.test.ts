@@ -108,9 +108,10 @@ describe("worker pg-boss pool", () => {
   it("uses the pg-boss share of the process connection budget", () => {
     createWorkerBoss("postgres://healthlog@test/db");
 
+    // A worker polls; a web-only producer keeps two (see `db.ts`).
     expect(PgBoss).toHaveBeenCalledWith({
       connectionString: "postgres://healthlog@test/db",
-      max: 2,
+      max: 4,
       connectionTimeoutMillis: 20_000,
       options: "-c TimeZone=UTC",
     });

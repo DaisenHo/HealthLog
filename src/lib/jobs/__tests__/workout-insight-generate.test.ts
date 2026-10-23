@@ -50,8 +50,23 @@ vi.mock("@/lib/insights/status-provider", () => ({
 vi.mock("@/lib/ai/coach/bytes-codec", () => ({
   encryptToBytes: vi.fn(() => new Uint8Array([1, 2, 3])),
 }));
-vi.mock("@/lib/measurements/pick-canonical-workout-rows", () => ({
-  pickCanonicalWorkoutRows: vi.fn((rows) => rows),
+vi.mock("@/lib/workouts/canonical-read", () => ({
+  readWorkoutsAroundRange: vi.fn(
+    async (
+      range: { from: Date | null; to: Date | null },
+      read: (bounds: { gte?: Date; lt?: Date }) => Promise<unknown[]>,
+    ) => ({
+      rows: await read({
+        gte: range.from ?? undefined,
+        lt: range.to ?? undefined,
+      }),
+      range,
+      __windowed: true,
+    }),
+  ),
+  canonicalWorkoutsInRange: vi.fn((windowed: { rows: unknown[] }) => [
+    ...windowed.rows,
+  ]),
 }));
 
 import {
@@ -636,8 +651,8 @@ describe("Activity Insight — locale", () => {
  */
 describe("Activity Insight — own-history comparison", () => {
   it("routes the history rows through the canonical picker", async () => {
-    const { pickCanonicalWorkoutRows } =
-      await import("@/lib/measurements/pick-canonical-workout-rows");
+    const { canonicalWorkoutsInRange } =
+      await import("@/lib/workouts/canonical-read");
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       dateOfBirth: null,
       locale: "en",
@@ -650,20 +665,27 @@ describe("Activity Insight — own-history comparison", () => {
 
     await runWorkoutInsightGenerate({ userId: USER, workoutId: WORKOUT }, NOW);
 
-    expect(pickCanonicalWorkoutRows).toHaveBeenCalledTimes(1);
+    expect(canonicalWorkoutsInRange).toHaveBeenCalledTimes(1);
     // The user's own source ladder decides the winner, not a default.
-    expect(vi.mocked(pickCanonicalWorkoutRows).mock.calls[0][1]).toEqual({
+    expect(vi.mocked(canonicalWorkoutsInRange).mock.calls[0][1]).toEqual({
       ladder: ["APPLE_HEALTH"],
     });
   });
 
-  it("excludes the workout being described from its own baseline", async () => {
+  it("excludes the workout being described, twins included, from its own baseline", async () => {
+    const { canonicalWorkoutsInRange } =
+      await import("@/lib/workouts/canonical-read");
     await runWorkoutInsightGenerate({ userId: USER, workoutId: WORKOUT }, NOW);
 
     const where = vi.mocked(prisma.workout.findMany).mock.calls[0][0]
-      ?.where as { userId: string; id: { not: string } };
+      ?.where as { userId: string; id?: unknown };
     expect(where.userId).toBe(USER);
-    expect(where.id).toEqual({ not: WORKOUT });
+    // The row stays in the read so its whole duplicate cluster can be left
+    // out after the pick; dropping it in SQL left a twin behind.
+    expect(where.id).toBeUndefined();
+    expect(vi.mocked(canonicalWorkoutsInRange).mock.calls[0][2]).toEqual({
+      excludeClusterOf: WORKOUT,
+    });
   });
 });
 

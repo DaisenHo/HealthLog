@@ -138,7 +138,6 @@ export function CoverageMeter({
             data-present={present}
             data-required={required}
             data-percent={percent}
-            aria-label={summaryLabel}
             aria-describedby={tooltipId}
             className={cn(
               // 44px hit target via padding while the dots stay optically
@@ -183,6 +182,9 @@ export function CoverageMeter({
                   required,
                 })}
             </span>
+            {/* The visible ratio names the button; the sentence adds what it
+                counts (WCAG 2.5.3: the name contains what is shown). */}
+            <span className="sr-only">{summaryLabel}</span>
           </button>
         </TooltipTrigger>
         <TooltipContent

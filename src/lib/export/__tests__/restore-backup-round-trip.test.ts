@@ -139,7 +139,12 @@ function sourceClient() {
           deletedAt: null,
           createdAt: new Date("2026-07-19T00:00:00.000Z"),
           updatedAt: new Date("2026-07-19T00:00:00.000Z"),
-          symptomLinks: [{ symptom: { key: "custom:jaw_tension" } }],
+          symptomLinks: [
+            {
+              symptom: { key: "custom:jaw_tension" },
+              createdAt: new Date("2026-07-19T08:00:00.000Z"),
+            },
+          ],
         },
       ]),
     },

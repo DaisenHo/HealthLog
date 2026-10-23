@@ -32,27 +32,33 @@
  * with every list.
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
 function read(rel: string): string {
-  return readFileSync(join(SRC, rel), "utf8");
+  return readSourceText(join(SRC, rel));
 }
 
 /**
  * Source with comments removed, so a route that only DESCRIBES a gate in its
  * doc comment is not counted, and a path quoted in a comment is not a call.
  */
+const codeCache = new Map<string, string>();
+
 function code(rel: string): string {
-  return read(rel)
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n")
-    .map((line) => line.replace(/(^|[^:"'`\\])\/\/.*$/, "$1"))
-    .join("\n");
+  let stripped = codeCache.get(rel);
+  if (stripped === undefined) {
+    stripped = read(rel)
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .map((line) => line.replace(/(^|[^:"'`\\])\/\/.*$/, "$1"))
+      .join("\n");
+    codeCache.set(rel, stripped);
+  }
+  return stripped;
 }
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
@@ -252,7 +258,15 @@ function hookCallersWrap(
   return callers > 0;
 }
 
+let gatedCalls: GatedCall[] | null = null;
+
+/** Every web call of a gated route, found once per run. */
 function gatedWebCalls(): GatedCall[] {
+  gatedCalls ??= findGatedWebCalls();
+  return gatedCalls;
+}
+
+function findGatedWebCalls(): GatedCall[] {
   const calls: GatedCall[] = [];
   const files = webFiles();
   const sources = new Map(files.map((f) => [f, code(f)]));
@@ -260,8 +274,12 @@ function gatedWebCalls(): GatedCall[] {
     if (GATED_ROUTES[route] !== "web") continue;
     const [method, path] = route.split(" ");
     const re = pathPattern(path);
+    // Every match spells the path's static head out literally, up to the
+    // first `[param]`; a file without it cannot match and is not searched.
+    const head = path.split("/[")[0];
     for (const file of files) {
       const src = sources.get(file) ?? "";
+      if (!src.includes(head)) continue;
       for (const m of src.matchAll(re)) {
         const index = m.index ?? 0;
         // The path handed to a component as a prop (`endpoint="/api/…"`):

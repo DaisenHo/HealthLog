@@ -9,11 +9,14 @@
  *
  * Algorithm (v1.4.30 — matches the measurement ladder per R-F open
  * question #4):
- *   1. Bucket workouts by the rounded start timestamp + sport-type
- *      (`<5-minute slot>:<sport>`). Two HKWorkout entries for the same
- *      logical run start within a minute of each other on both
- *      sources; the rounding gives the cross-source matcher slack
- *      without collapsing distinct back-to-back workouts.
+ *   1. Cluster workouts per user and sport-type by start time: sorted by
+ *      start, a workout joins the open cluster when it starts less than
+ *      five minutes after the cluster's first workout, and opens a new
+ *      one otherwise. Two HKWorkout entries for the same logical run
+ *      start within a minute of each other on both sources; the window
+ *      gives the cross-source matcher slack without collapsing distinct
+ *      back-to-back workouts, and anchoring on the first start keeps a
+ *      row of workouts a few minutes apart from chaining into one.
  *   2. For each bucket, walk the source ladder (`workoutSourceLadder`)
  *      and pick the FIRST source that has any row in that bucket. Keep
  *      every row from the winning source; drop the rest.
@@ -115,30 +118,70 @@ function deduplicateWinningRows<T extends WorkoutPickerRow>(rows: T[]): T[] {
 }
 
 /**
- * Bucket-slot length. Two workouts whose `startedAt` falls in the
- * same 5-minute slot AND share the same sportType are treated as the
- * "same" workout from different sources. Tightens further than the
- * 1-minute clock skew between HK + Withings would suggest because
- * iOS posts HK `startDate` rounded to the second but Withings stamps
- * its `startdate` independently — five minutes gives both heads
- * enough slack on a heavy-traffic morning sync without crossing the
- * "two back-to-back runs" boundary (a user does NOT do two ten-minute
- * runs five minutes apart in practice).
+ * The cross-source duplicate window. Two workouts of the same sport whose
+ * starts lie less than five minutes apart are treated as the "same" workout
+ * from different sources. iOS posts the HealthKit `startDate` rounded to the
+ * second while Withings stamps its `startdate` independently; five minutes
+ * gives both heads enough slack on a heavy-traffic morning sync without
+ * crossing the "two back-to-back runs" boundary (a user does NOT do two
+ * ten-minute runs five minutes apart in practice).
+ *
+ * This used to be a fixed five-minute clock slot (`floor(start / 5 min)`),
+ * so two copies of one session thirty seconds apart that straddled a slot
+ * boundary (08:04:50 and 08:05:20) were never compared. The window is now
+ * measured from the cluster's first start. Where no two workouts of one sport
+ * within the window straddle a slot boundary, the clusters are exactly the
+ * old slots: every pair inside one slot is less than five minutes apart, and
+ * a cluster cannot reach past its slot without such a pair.
+ *
+ * Because a cluster is anchored on its first start, which cluster a workout
+ * lands in depends on the workouts before it. A reader that decides which row
+ * is canonical therefore reads through `readWorkoutsAroundRange` in
+ * `src/lib/workouts/canonical-read.ts`, which widens the read until the
+ * clusters of the requested range no longer depend on where the read began.
  */
-const BUCKET_SLOT_MS = 5 * 60 * 1000;
+export const WORKOUT_DUPLICATE_WINDOW_MS = 5 * 60 * 1000;
+const DUPLICATE_WINDOW_MS = WORKOUT_DUPLICATE_WINDOW_MS;
 
-/**
- * The cross-source duplicate slot a workout falls in. Exported for the one
- * reader that has to look past the picked row: the strain engine, whose winner
- * may carry no heart-rate series while its dropped twin does.
- */
-export function workoutDuplicateSlotKey(row: WorkoutPickerRow): string {
-  return bucketKey(row);
+/** Rows of different groups never share a duplicate cluster. */
+export function workoutClusterGroup(row: WorkoutPickerRow): string {
+  return `${row.userId ?? ""}:${row.sportType}`;
 }
 
-function bucketKey(row: WorkoutPickerRow): string {
-  const slot = Math.floor(row.startedAt.getTime() / BUCKET_SLOT_MS);
-  return `${row.userId ?? ""}:${slot}:${row.sportType}`;
+/**
+ * The duplicate cluster of every row, aligned with `rows`. Rows of different
+ * users or sports never share a cluster. Within one (user, sport), rows are
+ * taken in start order (input order on equal starts) and a row joins the open
+ * cluster while it starts less than {@link DUPLICATE_WINDOW_MS} after the
+ * cluster's first row. The key names the cluster by that first row's start,
+ * so it is stable for a given set of rows. Exported for the one reader that
+ * has to look past the picked row: the strain engine, whose winner may carry
+ * no heart-rate series while its dropped twin does.
+ */
+export function workoutDuplicateClusterKeys(
+  rows: readonly WorkoutPickerRow[],
+): string[] {
+  const groups = new Map<string, number[]>();
+  rows.forEach((row, index) => {
+    const group = workoutClusterGroup(row);
+    const list = groups.get(group);
+    if (list) list.push(index);
+    else groups.set(group, [index]);
+  });
+  const keys = new Array<string>(rows.length);
+  for (const [group, indexes] of groups) {
+    indexes.sort(
+      (a, b) =>
+        rows[a]!.startedAt.getTime() - rows[b]!.startedAt.getTime() || a - b,
+    );
+    let anchor = Number.NaN;
+    for (const index of indexes) {
+      const start = rows[index]!.startedAt.getTime();
+      if (!(start - anchor < DUPLICATE_WINDOW_MS)) anchor = start;
+      keys[index] = `${group}:${anchor}`;
+    }
+  }
+  return keys;
 }
 
 function jsonRecord(value: unknown): Record<string, unknown> | null {
@@ -205,7 +248,7 @@ function enrichFromWhoopTwin<T extends WorkoutPickerRow>(
 /**
  * Pair winners and WHOOP donors one-to-one by nearest start time. A single
  * donor can never enrich two same-source occurrences that happen to share a
- * fixed slot. Stable input indexes break equal-distance ties.
+ * duplicate cluster. Stable input indexes break equal-distance ties.
  */
 function enrichWinnersFromWhoop<T extends WorkoutPickerRow>(
   winners: readonly T[],
@@ -293,8 +336,9 @@ export function pickCanonicalWorkoutRows<T extends WorkoutPickerRow>(
       sources: Set<MeasurementSource>;
     }
   >();
-  for (const row of rows) {
-    const key = bucketKey(row);
+  const clusterKeys = workoutDuplicateClusterKeys(rows);
+  for (const [index, row] of rows.entries()) {
+    const key = clusterKeys[index]!;
     const slot = buckets.get(key) ?? { rows: [], sources: new Set() };
     slot.rows.push(row);
     slot.sources.add(row.source);

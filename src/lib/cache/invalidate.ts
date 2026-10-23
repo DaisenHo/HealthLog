@@ -20,6 +20,7 @@
 
 import { forgetCoverageProbe } from "@/lib/rollups/coverage-inflight";
 
+import { closedBlockUntouched } from "./closed-block";
 import { caches } from "./server-cache";
 
 /**
@@ -74,16 +75,28 @@ export function invalidateUserDashboardSnapshot(userId: string): void {
  */
 export function invalidateUserMeasurements(
   userId: string,
-  opts?: { evict?: boolean },
+  opts?: {
+    evict?: boolean;
+    /**
+     * The earliest `measuredAt` the write created, changed or removed. With
+     * it, closed blocks of older readings (`closedBlockKeyPart`) stay.
+     * Leave it out unless the caller knows every row it touched.
+     */
+    touchedFrom?: Date;
+  },
 ): void {
   // A coverage probe already running read the set before this write; the
   // next reader must not join it.
   forgetCoverageProbe(userId);
+  const touchedFrom = opts?.touchedFrom;
+  const spare = touchedFrom
+    ? (key: string) => closedBlockUntouched(key, touchedFrom)
+    : undefined;
   // The `${userId}|` prefix covers the slim / thick analytics cells, the
   // iOS summary cell, AND the v1.7.0 dashboard snapshot
   // (`${userId}|dashboard-snapshot`) in one pass.
   if (opts?.evict) {
-    caches.analytics.deleteByPrefix(`${userId}|`);
+    caches.analytics.deleteByPrefix(`${userId}|`, spare);
   } else {
     // v1.12.7 — mark stale rather than hard-evict. Measurement writes are
     // the highest-frequency dirty signal (every iOS Apple-Health sync
@@ -94,7 +107,7 @@ export function invalidateUserMeasurements(
     // summary cells read via plain `cached` are unaffected: a marked-stale
     // entry has `expiresAt === now`, so their next read is a clean miss and
     // rebuilds fresh — identical to the old evict for those keys.
-    caches.analytics.markStaleByPrefix(`${userId}|`);
+    caches.analytics.markStaleByPrefix(`${userId}|`, spare);
   }
   caches.achievements.deleteByPrefix(userId);
   caches.workouts.deleteByPrefix(`${userId}|`);

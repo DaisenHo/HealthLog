@@ -450,7 +450,12 @@ describe("pickCanonicalWorkoutRows", () => {
     ]);
   });
 
-  it("does not chain neighbouring workouts across fixed canonical slots", () => {
+  it("does not chain neighbouring workouts past the first start's window", () => {
+    // `middle` starts four minutes after `first`: inside the duplicate
+    // window, so it is the same run from a lower-ranked source. `last` is
+    // eight minutes after `first`, outside the window measured from the
+    // cluster's first start, so it stays even though it is only four minutes
+    // after `middle`.
     const rows: RowFixture[] = [
       {
         id: "first",
@@ -474,7 +479,6 @@ describe("pickCanonicalWorkoutRows", () => {
 
     expect(pickCanonicalWorkoutRows(rows).map((row) => row.id)).toEqual([
       "first",
-      "middle",
       "last",
     ]);
   });

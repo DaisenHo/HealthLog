@@ -1556,12 +1556,12 @@
         "weekdays": {
           "label": "Días de la semana",
           "short": {
-            "mo": "Mo",
+            "mo": "Lu",
             "tu": "Ma",
             "we": "Mi",
             "th": "Ju",
-            "fr": "Fr",
-            "sa": "Sa",
+            "fr": "Vi",
+            "sa": "Sá",
             "su": "Do"
           },
           "long": {
@@ -3231,11 +3231,11 @@
           "last30days": "{days} días",
           "last90days": "{days} días",
           "lastYear": "{months} meses",
-          "allTime": "Todo"
+          "allTime": "{months} meses en detalle, más para los análisis"
         },
         "detailDays": "El Coach no lee nada con más de {days} días de antigüedad, en ninguna respuesta.",
         "detailMonths": "El Coach no lee nada con más de {months} meses de antigüedad, en ninguna respuesta.",
-        "detailAll": "Todo lo que has registrado: {dailyMonths} meses al detalle diario, las mediciones más antiguas como valores mensuales hasta {years} años atrás, los análisis de los últimos {labMonths} meses.",
+        "detailAll": "Sin límite, el Coach lee {dailyMonths} meses de mediciones al detalle diario y las más antiguas como valores mensuales hasta {years} años atrás. De los análisis lee el último valor de los marcadores medidos más recientemente y, de un marcador por el que preguntes, sus {labRecent} resultados anteriores; los más antiguos se resumen por año hasta {labYears} años atrás y los años anteriores solo se cuentan.",
         "note": "Tu perfil, tu medicación actual, una enfermedad en curso y las próximas citas siguen visibles; los resúmenes que necesitan más historial se acortan o se omiten. Las respuestas que el Coach dio antes en conversaciones anteriores pueden seguir citando valores más antiguos."
       },
       "showConversations": "Mostrar conversaciones",
@@ -3599,7 +3599,7 @@
         "headphoneAudioBody": "Los niveles de audio con auriculares registran en decibelios el volumen al que escuchas con auriculares. Bajar el volumen y hacer pausas protege tu audición a largo plazo.",
         "audioEventsBody": "Los eventos de sonido fuerte señalan momentos en que el ruido a tu alrededor alcanzó un nivel que puede dañar la audición con suficiente exposición. Los eventos frecuentes son una señal para buscar un entorno más silencioso o protección auditiva.",
         "daylightBody": "El tiempo a la luz del día es cuánto pasas bajo luz exterior cada día. La luz diurna regular favorece un ritmo sueño-vigilia y un estado de ánimo saludables (CDC 2024), y el tiempo al aire libre se asocia con la salud ocular.",
-        "bloodGlucoseBody": "La glucosa en sangre es la cantidad de azúcar en tu sangre, la principal fuente de energía del cuerpo. Sube tras comer y se estabiliza entre comidas; valores que se mantienen altos con el tiempo pueden indicar diabetes o prediabetes.",
+        "bloodGlucoseBody": "La glucosa en sangre es la cantidad de azúcar en tu sangre, la principal fuente de energía del cuerpo. Sube tras comer y se estabiliza entre comidas. Como orientación general para adultos sin diabetes, una glucosa en ayunas por debajo de {prediabetesFrom} {unit} es normal, entre {prediabetesFrom} y {prediabetesTo} es prediabetes, y a partir de {diabetesFrom} está en el rango de la diabetes (ADA 2024). Una sola lectura alta no es un diagnóstico; un profesional sanitario lo confirma con una prueba repetida, y quienes controlan una diabetes usan otros objetivos, fijados por su profesional sanitario.",
         "skinTemperatureBody": "La temperatura de la piel aquí es el pequeño cambio nocturno de la temperatura de tu muñeca respecto a tu propio valor de referencia, no una medición absoluta de fiebre. Las variaciones pueden seguir el sueño, el entorno, una enfermedad o la fase del ciclo menstrual.",
         "cardioFitnessBody": "El VO₂ máx es la cantidad de oxígeno que tu cuerpo puede usar al máximo esfuerzo: el mejor índice de laboratorio de la forma aeróbica, que los wearables estiman de forma indirecta. Una tendencia más alta o en aumento es una fuerte señal de salud cardiovascular.",
         "cardioRecoveryBody": "La recuperación cardiaca es cuántas pulsaciones por minuto baja tu frecuencia cardiaca en el primer minuto tras parar un ejercicio intenso. Una caída mayor significa que tu corazón se calma más rápido, señal de buena forma física.",
@@ -7431,6 +7431,7 @@
         "lastReceived": "Última recepción {relative}",
         "lastNewValue": "Último valor nuevo {relative}",
         "lastBackground": "Última vez en segundo plano {relative}",
+        "lastDuplicate": "Último reenvío sin datos nuevos {relative}",
         "never": "Aún no recibido",
         "lastBackfill": "Historial recuperado {relative}",
         "lastEnteredHere": "Último registro aquí {relative}"
@@ -10427,6 +10428,8 @@
       "yellow-fever": "Fiebre amarilla",
       "japanese-encephalitis": "Encefalitis japonesa",
       "cholera": "Cólera",
+      "dengue": "Dengue",
+      "tuberculosis": "Tuberculosis",
       "td": "Td (tétanos, difteria)",
       "tdap": "Tdap (tétanos, difteria, tos ferina)",
       "tdap-ipv": "Tdap-IPV (tetravalente)",
@@ -10948,21 +10951,30 @@
       "0": "Nunca",
       "1": "Varios días",
       "2": "Más de la mitad de los días",
-      "3": "Casi todos los días"
+      "3": "Casi cada día"
     },
-    "functionalTitle": "Si marcaste algún problema, ¿cuánta dificultad te han causado para trabajar, ocuparte de la casa o relacionarte con otras personas?",
+    "gad7Options": {
+      "0": "Nunca",
+      "1": "Varios días",
+      "2": "Más de la mitad de los días",
+      "3": "Casi cada día"
+    },
+    "functionalTitle": "Si ha marcado alguno de los problemas de este cuestionario, ¿hasta qué punto estos problemas le han creado dificultades para hacer su trabajo, ocuparse de la casa o relacionarse con los demás?",
     "functional": {
       "0": "Ninguna dificultad",
-      "1": "Algo de dificultad",
-      "2": "Mucha dificultad",
-      "3": "Dificultad extrema"
+      "1": "Algunas dificultades",
+      "2": "Muchas dificultades",
+      "3": "Muchísimas dificultades"
     },
     "functionalOptionalHint": "Opcional: puedes enviar sin responder esta pregunta.",
     "result": {
       "title": "Tu resultado",
       "totalLabel": "Puntuación total",
       "bandLabel": "Rango para este cribado",
-      "takeAnother": "Hacer otra revisión"
+      "takeAnother": "Hacer otra revisión",
+      "scoreOf": "de {max}",
+      "firstCheckIn": "Es tu primer resultado con este cuestionario. A partir del próximo verás aquí el cambio.",
+      "nextStep": "Puedes repetir este cuestionario dentro de dos semanas o más tarde para seguir el cambio. Si algo te preocupa, habla con un profesional de la salud en cualquier momento."
     },
     "band": {
       "PHQ9": {
@@ -11005,24 +11017,24 @@
     },
     "items": {
       "phq9": {
-        "1": "Tener poco interés o placer en hacer las cosas",
-        "2": "Sentirse desanimado/a, deprimido/a o sin esperanza",
-        "3": "Tener problemas para dormir o mantenerse dormido/a, o dormir demasiado",
-        "4": "Sentirse cansado/a o tener poca energía",
-        "5": "Tener poco apetito o comer en exceso",
-        "6": "Sentirse mal con usted mismo/a, o sentir que es un fracaso o que se ha fallado a sí mismo/a o a su familia",
-        "7": "Tener dificultad para concentrarse en cosas tales como leer el periódico o ver la televisión",
-        "8": "¿Moverse o hablar tan despacio que otras personas podrían haberlo notado? O lo contrario: estar tan inquieto/a o agitado/a que se ha estado moviendo mucho más de lo habitual",
-        "9": "Pensar que estaría mejor muerto/a o en hacerse daño de alguna manera"
+        "1": "Poco interés o alegría por hacer cosas",
+        "2": "Sensación de estar decaído/a, deprimido/a o desesperanzado/a",
+        "3": "Problemas para quedarse dormido/a, para seguir durmiendo o dormir demasiado",
+        "4": "Sensación de cansancio o de tener poca energía",
+        "5": "Poco apetito o comer demasiado",
+        "6": "Sentirse mal consigo mismo/a; sentir que es un/a fracasado/a o que ha decepcionado a su familia o a sí mismo/a",
+        "7": "Problemas para concentrarse en algo, como leer el periódico o ver la televisión",
+        "8": "Moverse o hablar tan despacio que los demás pueden haberlo notado. O lo contrario: estar tan inquieto/a o agitado/a que se ha estado moviendo de un lado a otro más de lo habitual",
+        "9": "Pensamientos de que estaría mejor muerto/a o de querer hacerse daño de algún modo"
       },
       "gad7": {
-        "1": "Sentirse nervioso/a, ansioso/a o muy alterado/a",
-        "2": "No poder dejar de preocuparse o no poder controlar la preocupación",
-        "3": "Preocuparse demasiado por diferentes cosas",
-        "4": "Tener dificultad para relajarse",
-        "5": "Estar tan inquieto/a que es difícil quedarse sentado/a tranquilamente",
-        "6": "Molestarse o irritarse fácilmente",
-        "7": "Sentir miedo como si algo terrible fuera a suceder"
+        "1": "Sentirse nervioso/a, angustiado/a o muy tenso/a",
+        "2": "Ser incapaz de dejar de preocuparse o de controlar la preocupación",
+        "3": "Preocuparse demasiado por diferentes cuestiones",
+        "4": "Tener problemas para relajarse",
+        "5": "Estar tan inquieto/a que le resulta difícil permanecer sentado/a",
+        "6": "Enfadarse o irritarse con facilidad",
+        "7": "Sentir miedo de que algo terrible pueda ocurrir"
       },
       "who5": {
         "1": "Me he sentido alegre y de buen humor",
@@ -11030,16 +11042,6 @@
         "3": "Me he sentido activo y enérgico",
         "4": "Me he despertado fresco y descansado",
         "5": "Mi vida cotidiana ha estado llena de cosas que me interesan"
-      },
-      "sci": {
-        "1": "… how long does it take you to fall asleep?",
-        "2": "… if you then wake up during the night … how long are you awake for in total? (add all the wakenings up)",
-        "3": "… how many nights a week do you have a problem with your sleep?",
-        "4": "… how would you rate your sleep quality?",
-        "5": "… affected your mood, energy, or relationships?",
-        "6": "… affected your concentration, productivity, or ability to stay awake?",
-        "7": "… troubled you in general?",
-        "8": "… how long have you had a problem with your sleep?"
       }
     },
     "crisisResource": {
@@ -11069,6 +11071,18 @@
       },
       "crisisTextLine": {
         "name": "Crisis Text Line"
+      },
+      "cvv": {
+        "name": "CVV, Centro de Valorização da Vida (Brasil, 24/7, gratuito y confidencial)"
+      },
+      "samu": {
+        "name": "SAMU, urgencias médicas (Brasil)"
+      },
+      "sns24": {
+        "name": "SNS 24, asesoramiento psicológico (Portugal, 24/7, opción 4)"
+      },
+      "sosVozAmiga": {
+        "name": "SOS Voz Amiga (Portugal, todos los días de 15:30 a 0:30)"
       }
     },
     "instrumentDescription": {
@@ -11077,7 +11091,6 @@
       "who5": "Test de bienestar de 5 preguntas. Responde pensando en las últimas dos semanas; cifras mayores significan mayor bienestar.",
       "sci": "Test de sueño de 8 preguntas. La mayoría se refiere al último mes; puntuaciones mayores significan mejor sueño."
     },
-    "progress": "{current} / {total}",
     "next": "Siguiente",
     "lastResult": "Última prueba",
     "lastScore": "Último resultado",
@@ -11098,51 +11111,15 @@
       "4": "La mayor parte del tiempo",
       "5": "Todo el tiempo"
     },
-    "sciOptions": {
-      "duration": {
-        "0": "≥ 61 min",
-        "1": "46–60 min",
-        "2": "31–45 min",
-        "3": "16–30 min",
-        "4": "0–15 min"
-      },
-      "nights": {
-        "0": "5–7",
-        "1": "4",
-        "2": "3",
-        "3": "2",
-        "4": "0–1"
-      },
-      "quality": {
-        "0": "Very poor",
-        "1": "Poor",
-        "2": "Average",
-        "3": "Good",
-        "4": "Very good"
-      },
-      "impact": {
-        "0": "Very much",
-        "1": "Much",
-        "2": "Somewhat",
-        "3": "A little",
-        "4": "Not at all"
-      },
-      "problemDuration": {
-        "0": "> 1 year",
-        "1": "7–12 months",
-        "2": "3–6 months",
-        "3": "1–2 months",
-        "4": "I don't have a problem / < 1 month"
-      }
-    },
     "stems": {
+      "phq9": {
+        "period": "Durante las últimas 2 semanas ¿con qué frecuencia le ha molestado alguno de los siguientes problemas?"
+      },
+      "gad7": {
+        "period": "En los últimos 14 días, ¿con qué frecuencia le han supuesto una molestia los siguientes problemas?"
+      },
       "who5": {
         "period": "Durante las últimas dos semanas:"
-      },
-      "sci": {
-        "night": "Thinking about a typical night in the last month …",
-        "impact": "Thinking about the past month, to what extent has poor sleep …",
-        "finally": "Finally …"
       }
     },
     "openDetail": "Ver detalles",
@@ -11156,6 +11133,43 @@
         "improved": "Alcanza el cambio de {threshold} puntos que los estudios consideran relevante, en la dirección favorable.",
         "worsened": "Alcanza el cambio de {threshold} puntos que los estudios consideran relevante, en la dirección menos favorable.",
         "within_threshold": "Es menor que el cambio de {threshold} puntos que los estudios consideran relevante."
+      }
+    },
+    "wizard": {
+      "progressLabel": "Pregunta {current} de {total}",
+      "followUpLabel": "Pregunta adicional (opcional)",
+      "keyboardHint": "Las teclas 1 a {count} eligen una respuesta.",
+      "allAnswered": "Las {total} preguntas tienen respuesta"
+    },
+    "review": {
+      "title": "Revisar respuestas",
+      "description": "No se guarda nada hasta que lo envíes, y cada respuesta todavía se puede cambiar.",
+      "change": "Cambiar",
+      "changeLabel": "Cambiar la respuesta a la pregunta {number}",
+      "notAnswered": "Sin respuesta",
+      "open": "Revisar respuestas"
+    },
+    "bandMeaning": {
+      "PHQ9": {
+        "minimal": "Tus respuestas apuntan a pocos o ningún síntoma depresivo en las últimas dos semanas.",
+        "mild": "Tus respuestas apuntan a síntomas depresivos leves en las últimas dos semanas.",
+        "moderate": "Tus respuestas apuntan a síntomas depresivos moderados en las últimas dos semanas.",
+        "modSevere": "Tus respuestas apuntan a síntomas depresivos moderadamente graves en las últimas dos semanas.",
+        "severe": "Tus respuestas apuntan a síntomas depresivos graves en las últimas dos semanas."
+      },
+      "GAD7": {
+        "minimal": "Tus respuestas apuntan a pocos o ningún síntoma de ansiedad en las últimas dos semanas.",
+        "mild": "Tus respuestas apuntan a síntomas de ansiedad leves en las últimas dos semanas.",
+        "moderate": "Tus respuestas apuntan a síntomas de ansiedad moderados en las últimas dos semanas.",
+        "severe": "Tus respuestas apuntan a síntomas de ansiedad graves en las últimas dos semanas."
+      },
+      "WHO5": {
+        "low": "Tu bienestar en las últimas dos semanas estuvo por debajo del rango que el WHO-5 considera bueno.",
+        "good": "Tu bienestar en las últimas dos semanas estuvo dentro del rango que el WHO-5 considera bueno."
+      },
+      "SCI": {
+        "belowThreshold": "Tu sueño del último mes estuvo en el rango en el que el estudio detrás de este cuestionario consideró probable un insomnio.",
+        "aboveThreshold": "Tu sueño del último mes estuvo fuera del rango que ese estudio asocia con el insomnio."
       }
     }
   },
@@ -11894,7 +11908,6 @@
     },
     "chat": {
       "title": "Chatea sobre este documento",
-      "openAria": "Pregunta al Coach sobre este documento",
       "openButton": "Preguntar al Coach"
     },
     "readingConsent": {

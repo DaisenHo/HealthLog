@@ -4,6 +4,9 @@ RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# The dependency patches pnpm-workspace.yaml names; the frozen install
+# refuses to run without them.
+COPY patches patches
 COPY scripts/prepare.mjs scripts/prepare.mjs
 RUN pnpm install --frozen-lockfile --prod=false
 
@@ -57,6 +60,11 @@ RUN node -p "require('/app/node_modules/pdfjs-dist/package.json').version" \
 # The same for @napi-rs/canvas, whose native binary must match its JS loader.
 RUN node -p "require('/app/node_modules/@napi-rs/canvas/package.json').version" \
       > /app/.canvas-version
+# Every shipped locale's message catalog is present and parses, checked
+# against the locale list in the source; the list is written out so the runner
+# stage can check the catalogs the image actually carries.
+RUN node scripts/verify-message-catalogs.mjs --dir messages \
+      --config src/lib/i18n/config.ts --write /app/.message-locales
 
 # ── Stage 3: Production runner ─────────────────────────────
 FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runner
@@ -105,6 +113,15 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 # Copy built assets
 COPY --from=builder /app/public ./public
+# The server reads its message catalogs from here on first use, one locale at
+# a time (src/lib/i18n/server-catalogs.ts); they are not bundled.
+COPY --from=builder /app/messages ./messages
+# A missing or broken catalog is only noticed when a page asks for that
+# locale, so check the copies in this stage against the builder's list.
+COPY --from=builder /app/.message-locales /app/scripts/verify-message-catalogs.mjs /tmp/catalog-check/
+RUN node /tmp/catalog-check/verify-message-catalogs.mjs --dir /app/messages \
+      --locales /tmp/catalog-check/.message-locales && \
+    rm -rf /tmp/catalog-check
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Next's standalone output must carry the externalized worker dependencies.
@@ -265,7 +282,7 @@ RUN mkdir -p /opt/prisma-cli && \
     npm pkg set 'overrides.mysql2=^3.22.0' && \
     npm pkg set 'overrides.@hono/node-server=^1.19.15' && \
     npm pkg set 'overrides.valibot=^1.4.2' && \
-    npm install --omit=dev prisma@7.10.0 @prisma/engines@7.10.0 tsx@4.23.1 dotenv@18.0.6 && \
+    npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.8 && \
     ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx && \
     ln -sfn /opt/prisma-cli/node_modules/dotenv /app/node_modules/dotenv && \
     ln -sfn /opt/prisma-cli/node_modules/prisma /app/node_modules/prisma && \

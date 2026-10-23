@@ -23,10 +23,9 @@
  *      are pinned to a named allowlist, so a new converted-value surface
  *      cannot quietly join them.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 import { describe, it, expect } from "vitest";
 
@@ -83,7 +82,7 @@ function sourceFiles(): string[] {
 }
 
 function read(rel: string): string {
-  return readFileSync(join(SRC, rel), "utf8");
+  return readSourceText(join(SRC, rel));
 }
 
 describe("display-transform rounding guard — the registry property", () => {

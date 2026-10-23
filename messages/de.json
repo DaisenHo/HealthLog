@@ -3231,11 +3231,11 @@
           "last30days": "{days} Tage",
           "last90days": "{days} Tage",
           "lastYear": "{months} Monate",
-          "allTime": "Alles"
+          "allTime": "{months} Monate im Detail, Labor länger"
         },
         "detailDays": "Der Coach liest nichts, was älter als {days} Tage ist, in keiner Antwort.",
         "detailMonths": "Der Coach liest nichts, was älter als {months} Monate ist, in keiner Antwort.",
-        "detailAll": "Alles, was du erfasst hast: {dailyMonths} Monate tagesgenau, ältere Werte als Monatswerte bis {years} Jahre zurück, Laborwerte der letzten {labMonths} Monate.",
+        "detailAll": "Ohne Begrenzung liest der Coach {dailyMonths} Monate tagesgenau und ältere Werte als Monatswerte bis {years} Jahre zurück. Von Laborwerten liest er den jüngsten Wert der zuletzt gemessenen Marker und, wenn du nach einem Marker fragst, dessen {labRecent} vorherige Werte; ältere Werte sind pro Jahr zusammengefasst, bis {labYears} Jahre zurück, noch frühere Jahre werden nur gezählt.",
         "note": "Dein Profil, aktuelle Medikamente, eine laufende Erkrankung und anstehende Termine bleiben sichtbar; Auswertungen, die mehr Verlauf brauchen, werden gekürzt oder weggelassen. Antworten, die der Coach früher in älteren Unterhaltungen gegeben hat, können noch ältere Werte nennen."
       },
       "showConversations": "Unterhaltungen anzeigen",
@@ -3599,7 +3599,7 @@
         "headphoneAudioBody": "Die Kopfhörerlautstärke erfasst in Dezibel, wie laut du über Ohrhörer oder Kopfhörer hörst. Die Lautstärke niedrig zu halten und Pausen einzulegen schützt dein Gehör langfristig.",
         "audioEventsBody": "Laute Geräuschereignisse markieren Momente, in denen der Lärm um dich herum ein Niveau erreicht hat, das bei ausreichender Belastung das Gehör schädigen kann. Häufige Ereignisse sind ein Hinweis, eine ruhigere Umgebung oder Gehörschutz zu suchen.",
         "daylightBody": "Die Zeit im Tageslicht ist, wie lange du dich täglich im Freien im Licht aufhältst. Regelmäßiges Tageslicht unterstützt einen gesunden Schlaf-Wach-Rhythmus und die Stimmung (CDC 2024), und Zeit im Freien ist mit der Augengesundheit verbunden.",
-        "bloodGlucoseBody": "Der Blutzucker ist die Zuckermenge in deinem Blut, die wichtigste Energiequelle des Körpers. Er steigt nach dem Essen und pendelt sich zwischen den Mahlzeiten ein; dauerhaft hohe Werte können auf Diabetes oder Prädiabetes hinweisen.",
+        "bloodGlucoseBody": "Der Blutzucker ist die Zuckermenge in deinem Blut, die wichtigste Energiequelle des Körpers. Er steigt nach dem Essen und pendelt sich zwischen den Mahlzeiten ein. Als allgemeine Orientierung für Erwachsene ohne Diabetes gilt ein Nüchternwert unter {prediabetesFrom} {unit} als normal, {prediabetesFrom}–{prediabetesTo} als Prädiabetes, und ab {diabetesFrom} liegt er im Diabetesbereich (ADA 2024). Ein einzelner hoher Wert ist keine Diagnose; eine Ärztin oder ein Arzt bestätigt sie mit einer Wiederholungsmessung, und wer Diabetes behandelt, arbeitet mit anderen, ärztlich festgelegten Zielwerten.",
         "skinTemperatureBody": "Die Hauttemperatur ist hier die kleine nächtliche Abweichung deiner Handgelenkstemperatur von deinem eigenen Ausgangswert, keine absolute Fiebermessung. Veränderungen können Schlaf, Umgebung, Krankheit oder Zyklusphase widerspiegeln.",
         "cardioFitnessBody": "VO₂max gibt an, wie viel Sauerstoff dein Körper bei maximaler Anstrengung verwerten kann. Es ist der beste Laborindex der Ausdauerfitness, den Wearables indirekt schätzen. Ein höherer oder steigender Trend ist ein starkes Zeichen für eine gute Herz-Kreislauf-Gesundheit.",
         "cardioRecoveryBody": "Der Erholungspuls gibt an, um wie viele Schläge pro Minute dein Puls in der ersten Minute nach dem Ende einer anstrengenden Belastung fällt. Ein größerer Abfall bedeutet, dass sich dein Herz schneller beruhigt, ein Zeichen guter Fitness.",
@@ -7431,6 +7431,7 @@
         "lastReceived": "Zuletzt empfangen {relative}",
         "lastNewValue": "Letzter neuer Wert {relative}",
         "lastBackground": "Zuletzt im Hintergrund {relative}",
+        "lastDuplicate": "Zuletzt ohne neue Werte erneut gesendet {relative}",
         "never": "Noch nicht empfangen",
         "lastBackfill": "Verlauf nachgeladen {relative}",
         "lastEnteredHere": "Zuletzt hier eingetragen {relative}"
@@ -10427,6 +10428,8 @@
       "yellow-fever": "Gelbfieber",
       "japanese-encephalitis": "Japanische Enzephalitis",
       "cholera": "Cholera",
+      "dengue": "Dengue",
+      "tuberculosis": "Tuberkulose",
       "td": "Td (Tetanus, Diphtherie)",
       "tdap": "Tdap (Tetanus, Diphtherie, Pertussis)",
       "tdap-ipv": "Tdap-IPV (Vierfachimpfung)",
@@ -10950,11 +10953,17 @@
       "2": "An mehr als der Hälfte der Tage",
       "3": "Beinahe jeden Tag"
     },
-    "functionalTitle": "Wenn du eine oder mehrere Beschwerden angegeben hast: Wie sehr haben diese deine Arbeit, deinen Haushalt oder den Umgang mit anderen Menschen erschwert?",
+    "gad7Options": {
+      "0": "Überhaupt nicht",
+      "1": "An einzelnen Tagen",
+      "2": "An mehr als der Hälfte der Tage",
+      "3": "Beinahe jeden Tag"
+    },
+    "functionalTitle": "Wenn eines oder mehrere der bisher in diesem Fragebogen beschriebenen Probleme bei Ihnen vorliegen, geben Sie bitte an, wie sehr diese Probleme es Ihnen erschwert haben, Ihre Arbeit zu tun, Ihren Haushalt zu regeln oder mit anderen Menschen zurecht zu kommen:",
     "functional": {
       "0": "Überhaupt nicht erschwert",
       "1": "Etwas erschwert",
-      "2": "Sehr erschwert",
+      "2": "Stark erschwert",
       "3": "Extrem erschwert"
     },
     "functionalOptionalHint": "Optional: Du kannst auch ohne Antwort auf diese Frage absenden.",
@@ -10962,7 +10971,10 @@
       "title": "Dein Ergebnis",
       "totalLabel": "Gesamtwert",
       "bandLabel": "Bereich für dieses Screening",
-      "takeAnother": "Weiteren Check-in machen"
+      "takeAnother": "Weiteren Check-in machen",
+      "scoreOf": "von {max}",
+      "firstCheckIn": "Das ist dein erstes Ergebnis mit diesem Fragebogen. Ab dem nächsten siehst du hier die Veränderung.",
+      "nextStep": "Du kannst den Check-in in zwei Wochen oder später wiederholen, um die Veränderung zu sehen. Wenn dich etwas beunruhigt, sprich jederzeit mit einer Fachperson."
     },
     "band": {
       "PHQ9": {
@@ -11011,8 +11023,8 @@
         "4": "Müdigkeit oder Gefühl, keine Energie zu haben",
         "5": "Verminderter Appetit oder übermäßiges Bedürfnis zu essen",
         "6": "Schlechte Meinung von sich selbst; Gefühl, ein Versager zu sein oder die Familie enttäuscht zu haben",
-        "7": "Schwierigkeiten, sich auf etwas zu konzentrieren, z. B. beim Zeitunglesen oder Fernsehen",
-        "8": "Waren Ihre Bewegungen oder Ihre Sprache so verlangsamt, dass es auch anderen auffallen würde? Oder waren Sie im Gegenteil „zappelig“ oder ruhelos und hatten einen stärkeren Bewegungsdrang als sonst?",
+        "7": "Schwierigkeiten, sich auf etwas zu konzentrieren, z. B. beim Zeitungslesen oder Fernsehen",
+        "8": "Waren Ihre Bewegungen oder Ihre Sprache so verlangsamt, dass es auch anderen auffallen würde? Oder waren Sie im Gegenteil „zappelig“ oder ruhelos und hatten dadurch einen stärkeren Bewegungsdrang als sonst?",
         "9": "Gedanken, dass Sie lieber tot wären oder sich Leid zufügen möchten"
       },
       "gad7": {
@@ -11020,9 +11032,9 @@
         "2": "Nicht in der Lage sein, Sorgen zu stoppen oder zu kontrollieren",
         "3": "Übermäßige Sorgen bezüglich verschiedener Angelegenheiten",
         "4": "Schwierigkeiten zu entspannen",
-        "5": "Rastlosigkeit, sodass Stillsitzen schwerfällt",
+        "5": "Rastlosigkeit, so dass Stillsitzen schwer fällt",
         "6": "Schnelle Verärgerung oder Gereiztheit",
-        "7": "Gefühl der Angst, als würde etwas Schlimmes passieren"
+        "7": "Gefühl der Angst, so als würde etwas Schlimmes passieren"
       },
       "who5": {
         "1": "… war ich froh und guter Laune",
@@ -11030,16 +11042,6 @@
         "3": "… habe ich mich energisch und aktiv gefühlt",
         "4": "… habe ich mich beim Aufwachen frisch und ausgeruht gefühlt",
         "5": "… war mein Alltag voller Dinge, die mich interessieren"
-      },
-      "sci": {
-        "1": "… how long does it take you to fall asleep?",
-        "2": "… if you then wake up during the night … how long are you awake for in total? (add all the wakenings up)",
-        "3": "… how many nights a week do you have a problem with your sleep?",
-        "4": "… how would you rate your sleep quality?",
-        "5": "… affected your mood, energy, or relationships?",
-        "6": "… affected your concentration, productivity, or ability to stay awake?",
-        "7": "… troubled you in general?",
-        "8": "… how long have you had a problem with your sleep?"
       }
     },
     "crisisResource": {
@@ -11069,6 +11071,18 @@
       },
       "crisisTextLine": {
         "name": "Crisis Text Line"
+      },
+      "cvv": {
+        "name": "CVV, Centro de Valorização da Vida (Brasilien, rund um die Uhr, kostenlos, vertraulich)"
+      },
+      "samu": {
+        "name": "SAMU, medizinischer Notruf (Brasilien)"
+      },
+      "sns24": {
+        "name": "SNS 24, psychologische Beratung (Portugal, rund um die Uhr, Option 4 wählen)"
+      },
+      "sosVozAmiga": {
+        "name": "SOS Voz Amiga (Portugal, täglich 15:30 bis 0:30 Uhr)"
       }
     },
     "instrumentDescription": {
@@ -11077,7 +11091,6 @@
       "who5": "Wohlbefindens-Check mit 5 Fragen. Beziehe dich auf die letzten zwei Wochen; höhere Werte bedeuten besseres Wohlbefinden.",
       "sci": "Schlaf-Check mit 8 Fragen. Die meisten Fragen beziehen sich auf den letzten Monat; höhere Werte bedeuten besseren Schlaf."
     },
-    "progress": "{current} / {total}",
     "next": "Weiter",
     "lastResult": "Letzter Test",
     "lastScore": "Letztes Ergebnis",
@@ -11098,51 +11111,15 @@
       "4": "Meistens",
       "5": "Die ganze Zeit"
     },
-    "sciOptions": {
-      "duration": {
-        "0": "≥ 61 min",
-        "1": "46–60 min",
-        "2": "31–45 min",
-        "3": "16–30 min",
-        "4": "0–15 min"
-      },
-      "nights": {
-        "0": "5–7",
-        "1": "4",
-        "2": "3",
-        "3": "2",
-        "4": "0–1"
-      },
-      "quality": {
-        "0": "Very poor",
-        "1": "Poor",
-        "2": "Average",
-        "3": "Good",
-        "4": "Very good"
-      },
-      "impact": {
-        "0": "Very much",
-        "1": "Much",
-        "2": "Somewhat",
-        "3": "A little",
-        "4": "Not at all"
-      },
-      "problemDuration": {
-        "0": "> 1 year",
-        "1": "7–12 months",
-        "2": "3–6 months",
-        "3": "1–2 months",
-        "4": "I don't have a problem / < 1 month"
-      }
-    },
     "stems": {
+      "phq9": {
+        "period": "Wie oft fühlten Sie sich im Verlauf der letzten 2 Wochen durch die folgenden Beschwerden beeinträchtigt?"
+      },
+      "gad7": {
+        "period": "Wie oft fühlten Sie sich im Verlauf der letzten 2 Wochen durch die folgenden Beschwerden beeinträchtigt?"
+      },
       "who5": {
         "period": "In den letzten zwei Wochen …"
-      },
-      "sci": {
-        "night": "Thinking about a typical night in the last month …",
-        "impact": "Thinking about the past month, to what extent has poor sleep …",
-        "finally": "Finally …"
       }
     },
     "openDetail": "Details anzeigen",
@@ -11156,6 +11133,43 @@
         "improved": "Das erreicht die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen, in die bessere Richtung.",
         "worsened": "Das erreicht die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen, in die weniger gute Richtung.",
         "within_threshold": "Das ist weniger als die Veränderung von {threshold} Punkten, die Studien als bedeutsam ansehen."
+      }
+    },
+    "wizard": {
+      "progressLabel": "Frage {current} von {total}",
+      "followUpLabel": "Zusatzfrage (freiwillig)",
+      "keyboardHint": "Mit den Zahlentasten 1 bis {count} wählst du eine Antwort.",
+      "allAnswered": "Alle {total} Fragen beantwortet"
+    },
+    "review": {
+      "title": "Antworten prüfen",
+      "description": "Gespeichert wird erst beim Absenden, bis dahin lässt sich jede Antwort noch ändern.",
+      "change": "Ändern",
+      "changeLabel": "Antwort auf Frage {number} ändern",
+      "notAnswered": "Nicht beantwortet",
+      "open": "Antworten prüfen"
+    },
+    "bandMeaning": {
+      "PHQ9": {
+        "minimal": "Deine Antworten weisen für die letzten zwei Wochen auf keine oder kaum depressive Beschwerden hin.",
+        "mild": "Deine Antworten weisen für die letzten zwei Wochen auf leichte depressive Beschwerden hin.",
+        "moderate": "Deine Antworten weisen für die letzten zwei Wochen auf mittelgradige depressive Beschwerden hin.",
+        "modSevere": "Deine Antworten weisen für die letzten zwei Wochen auf mittelschwere depressive Beschwerden hin.",
+        "severe": "Deine Antworten weisen für die letzten zwei Wochen auf schwere depressive Beschwerden hin."
+      },
+      "GAD7": {
+        "minimal": "Deine Antworten weisen für die letzten zwei Wochen auf keine oder kaum Angstbeschwerden hin.",
+        "mild": "Deine Antworten weisen für die letzten zwei Wochen auf leichte Angstbeschwerden hin.",
+        "moderate": "Deine Antworten weisen für die letzten zwei Wochen auf mittelgradige Angstbeschwerden hin.",
+        "severe": "Deine Antworten weisen für die letzten zwei Wochen auf schwere Angstbeschwerden hin."
+      },
+      "WHO5": {
+        "low": "Dein Wohlbefinden lag in den letzten zwei Wochen unter dem Bereich, den der WHO-5 als gut wertet.",
+        "good": "Dein Wohlbefinden lag in den letzten zwei Wochen in dem Bereich, den der WHO-5 als gut wertet."
+      },
+      "SCI": {
+        "belowThreshold": "Dein Schlaf lag im letzten Monat in dem Bereich, in dem die Studie hinter diesem Fragebogen eine Insomnie für wahrscheinlich hielt.",
+        "aboveThreshold": "Dein Schlaf lag im letzten Monat außerhalb des Bereichs, den diese Studie mit Insomnie verbindet."
       }
     }
   },
@@ -11894,7 +11908,6 @@
     },
     "chat": {
       "title": "Über dieses Dokument chatten",
-      "openAria": "Coach über dieses Dokument fragen",
       "openButton": "Coach fragen"
     },
     "readingConsent": {

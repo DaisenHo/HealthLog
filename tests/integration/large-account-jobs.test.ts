@@ -4,7 +4,7 @@
  * A self-hoster with 1.25 million measurement rows (a multi-year Apple Health
  * export) saw the dense intra-day retention, the nightly drain tick and the
  * data backup all fail with `job timed out`. Reproduced against a seeded
- * account of the same size (`scripts/seed-large-account.ts`): the drains held
+ * account of the same size (`scripts/bench/seed-large-account.ts`): the drains held
  * a type's whole history in memory before folding a day, spent about 90
  * statements per folded day, and paged with a cursor Postgres could not use as
  * an index condition; the backup added about 640 MB to the process to store

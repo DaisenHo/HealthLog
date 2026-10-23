@@ -3,7 +3,9 @@
  *
  * The batch route records, per measurement type it received, when the type
  * last arrived, under which `syncTrigger`, and when it last brought a new or
- * updated sample (as opposed to duplicates only). Since v1.42.4 the intake
+ * updated sample. Since #1259 only a batch that brought something new or
+ * changed is an arrival; one of duplicates only stamps
+ * `last_seen_duplicate_at` and nothing else. Since v1.42.4 the intake
  * bulk route records Apple Health doses the same way under the key
  * `MEDICATION_DOSE`, and every row also keeps when a `background` batch last
  * carried the type. The Apple Health card reads it to show which types are
@@ -114,18 +116,47 @@ export type HealthKitArrivalType =
 export interface HealthKitTypeArrival {
   /** Entries of this type the batch accepted (inserted, updated or duplicate). */
   accepted: number;
-  /** Entries of this type that were inserted or updated. */
+  /**
+   * Entries of this type that wrote something new or changed. An `updated`
+   * answer that rewrote nothing (an unchanged `stats:` re-post, an hour
+   * posted again with the same value) is not one.
+   */
   newSamples: number;
 }
 
 /**
+ * Fold a batch's landed Apple Health entries and hours into what it did per
+ * type. `brought` is true for an entry or hour that wrote a new or different
+ * value; a duplicate, an unchanged `stats:` re-post and an hour posted again
+ * with its stored value are carried but bring nothing (#1259).
+ */
+export function tallyHealthKitArrivals(
+  items: Iterable<{ type: MeasurementType; brought: boolean }>,
+): Map<MeasurementType, HealthKitTypeArrival> {
+  const arrivals = new Map<MeasurementType, HealthKitTypeArrival>();
+  for (const { type, brought } of items) {
+    const entry = arrivals.get(type) ?? { accepted: 0, newSamples: 0 };
+    entry.accepted += 1;
+    if (brought) entry.newSamples += 1;
+    arrivals.set(type, entry);
+  }
+  return arrivals;
+}
+
+/**
  * One statement for the whole batch (`unnest` over at most a few dozen
- * types). `last_received_at` and `last_trigger` describe the latest batch
- * that carried the type, so they are overwritten; `last_new_sample_at` only
- * moves when this batch brought something new, so a duplicates-only re-send
- * keeps the earlier date standing. `last_background_at` moves only on a
- * `background` batch, so opening the app afterwards does not hide the
- * earlier background arrival.
+ * types). A type counts as arrived only when the batch brought at least one
+ * new or changed row of it (#1259): then `last_received_at` and
+ * `last_trigger` describe this batch and are overwritten, `last_new_sample_at`
+ * moves with them, and `last_background_at` moves on a `background` batch so
+ * opening the app afterwards does not hide the earlier background arrival.
+ *
+ * A type the batch carried only as duplicates (a replay, a retry after an
+ * abort, a history walk an older client sends live, an unchanged `stats:`
+ * re-post) moves none of those: it stamps `last_seen_duplicate_at` alone, on
+ * a row that already exists. Before #1259 it moved the arrival and the
+ * trigger, so a type whose live delivery had stalled kept reading "arrived a
+ * minute ago" for as long as anything re-sent its old samples.
  *
  * Best effort: the ledger is a diagnostic beside rows that are already
  * written, so a failure here leaves a `warn` line and never fails the ingest.
@@ -140,13 +171,13 @@ export async function recordHealthKitTypeArrivals(
   },
 ): Promise<void> {
   const types: string[] = [];
-  const brought: boolean[] = [];
+  const duplicateOnly: string[] = [];
   for (const [type, arrival] of input.counts) {
     if (arrival.accepted <= 0) continue;
-    types.push(type);
-    brought.push(arrival.newSamples > 0);
+    if (arrival.newSamples > 0) types.push(type);
+    else duplicateOnly.push(type);
   }
-  if (types.length === 0) return;
+  if (types.length === 0 && duplicateOnly.length === 0) return;
   // An ISO string cast in SQL, not a JS `Date`: a Date parameter is
   // serialised in the process's local zone and these are zone-less UTC
   // columns (same reasoning as the access-token sunset in refresh-token.ts).
@@ -154,7 +185,9 @@ export async function recordHealthKitTypeArrivals(
   if (input.trigger === BACKFILL_SYNC_TRIGGER) {
     // v1.43 — a catch-up moves only its own row; the live row of each type
     // keeps its arrival, trigger and sample stamps untouched.
-    const keys = types.map((type) => `${BACKFILL_LEDGER_PREFIX}${type}`);
+    const keys = [...types, ...duplicateOnly].map(
+      (type) => `${BACKFILL_LEDGER_PREFIX}${type}`,
+    );
     try {
       await tx.$executeRaw`
         INSERT INTO "healthkit_type_syncs"
@@ -173,32 +206,50 @@ export async function recordHealthKitTypeArrivals(
     return;
   }
   const background = input.trigger === "background";
-  try {
-    await tx.$executeRaw`
-      INSERT INTO "healthkit_type_syncs"
-        ("user_id", "type", "last_received_at", "last_trigger",
-         "last_new_sample_at", "last_background_at")
-      SELECT ${input.userId}, u.t,
-             ${at}::timestamptz AT TIME ZONE 'UTC', ${input.trigger},
-             CASE WHEN u.n THEN ${at}::timestamptz AT TIME ZONE 'UTC' END,
-             CASE WHEN ${background}::boolean THEN ${at}::timestamptz AT TIME ZONE 'UTC' END
-      FROM unnest(${types}::text[], ${brought}::boolean[]) AS u(t, n)
-      ON CONFLICT ("user_id", "type") DO UPDATE SET
-        "last_received_at" = EXCLUDED."last_received_at",
-        "last_trigger" = EXCLUDED."last_trigger",
-        "last_new_sample_at" = COALESCE(
-          EXCLUDED."last_new_sample_at",
-          "healthkit_type_syncs"."last_new_sample_at"
-        ),
-        "last_background_at" = COALESCE(
-          EXCLUDED."last_background_at",
-          "healthkit_type_syncs"."last_background_at"
-        )
-    `;
-  } catch (error) {
-    logCaught("healthkit.type_sync.record_failed", error, {
-      types: types.length,
-    });
+  if (types.length > 0) {
+    try {
+      await tx.$executeRaw`
+        INSERT INTO "healthkit_type_syncs"
+          ("user_id", "type", "last_received_at", "last_trigger",
+           "last_new_sample_at", "last_background_at")
+        SELECT ${input.userId}, u.t,
+               ${at}::timestamptz AT TIME ZONE 'UTC', ${input.trigger},
+               ${at}::timestamptz AT TIME ZONE 'UTC',
+               CASE WHEN ${background}::boolean THEN ${at}::timestamptz AT TIME ZONE 'UTC' END
+        FROM unnest(${types}::text[]) AS u(t)
+        ON CONFLICT ("user_id", "type") DO UPDATE SET
+          "last_received_at" = EXCLUDED."last_received_at",
+          "last_trigger" = EXCLUDED."last_trigger",
+          "last_new_sample_at" = EXCLUDED."last_new_sample_at",
+          "last_background_at" = COALESCE(
+            EXCLUDED."last_background_at",
+            "healthkit_type_syncs"."last_background_at"
+          )
+      `;
+    } catch (error) {
+      logCaught("healthkit.type_sync.record_failed", error, {
+        types: types.length,
+      });
+    }
+  }
+  if (duplicateOnly.length > 0) {
+    // An update, never an insert: `last_received_at` is the arrival and a
+    // type that has only ever been re-sent has not arrived. A type with no
+    // row yet (its samples predate the ledger, or came from the export
+    // import) keeps reading "not received", which is what the server knows.
+    try {
+      await tx.$executeRaw`
+        UPDATE "healthkit_type_syncs"
+        SET "last_seen_duplicate_at" = ${at}::timestamptz AT TIME ZONE 'UTC'
+        WHERE "user_id" = ${input.userId}
+          AND "type" = ANY(${duplicateOnly}::text[])
+      `;
+    } catch (error) {
+      logCaught("healthkit.type_sync.record_failed", error, {
+        types: duplicateOnly.length,
+        duplicateOnly: true,
+      });
+    }
   }
 }
 
@@ -211,6 +262,11 @@ export interface HealthKitTypeArrivalRecord {
   lastBackgroundAt: string | null;
   /** v1.43 — when a `backfill` batch last carried the type; null when none has. */
   lastBackfillAt: string | null;
+  /**
+   * #1259 — when a live batch last carried the type with duplicates only,
+   * nothing new or changed. Null when none has since the column exists.
+   */
+  lastSeenDuplicateAt: string | null;
 }
 
 /**
@@ -229,6 +285,7 @@ export async function getHealthKitTypeArrivals(
       lastTrigger: true,
       lastNewSampleAt: true,
       lastBackgroundAt: true,
+      lastSeenDuplicateAt: true,
     },
   });
   const out = new Map<string, HealthKitTypeArrivalRecord>();
@@ -238,6 +295,7 @@ export async function getHealthKitTypeArrivals(
     lastNewSampleAt: null,
     lastBackgroundAt: null,
     lastBackfillAt: null,
+    lastSeenDuplicateAt: null,
   });
   for (const row of rows) {
     if (isBackfillLedgerKey(row.type)) {
@@ -255,6 +313,7 @@ export async function getHealthKitTypeArrivals(
         : null;
     record.lastNewSampleAt = row.lastNewSampleAt?.toISOString() ?? null;
     record.lastBackgroundAt = row.lastBackgroundAt?.toISOString() ?? null;
+    record.lastSeenDuplicateAt = row.lastSeenDuplicateAt?.toISOString() ?? null;
     out.set(row.type, record);
   }
   return out;
@@ -298,6 +357,8 @@ export interface HealthKitFreshnessEntry extends MetricFreshnessEntry {
   lastBackgroundAt?: string | null;
   /** v1.43 — when a `backfill` batch last carried it. */
   lastBackfillAt?: string | null;
+  /** #1259 — when a live sync last re-sent it with nothing new or changed. */
+  lastSeenDuplicateAt?: string | null;
 }
 
 /**
@@ -324,6 +385,7 @@ export function withHealthKitArrivals(
       lastNewSampleAt: arrival?.lastNewSampleAt ?? null,
       lastBackgroundAt: arrival?.lastBackgroundAt ?? null,
       lastBackfillAt: arrival?.lastBackfillAt ?? null,
+      lastSeenDuplicateAt: arrival?.lastSeenDuplicateAt ?? null,
     };
   });
 }

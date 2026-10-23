@@ -61,7 +61,7 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
     "engagement streak of days with any logged action, no rate",
   "app/api/export/medications/route.ts": "export of the recorded history",
   "app/api/export/route.ts": "export of the recorded history",
-  "lib/export/full-backup-payload.ts": "backup of the recorded history",
+  "lib/export/medications-backup.ts": "backup of the recorded history",
   "app/api/sync/state/route.ts": "sync watermarks, no rate",
   "lib/jobs/measurement-tombstone-cleanup.ts": "tombstone purge",
   "lib/ai/coach/tools/availability.ts":
@@ -94,8 +94,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
 const MAY_READ_EVERY_ROW: Record<string, string> = {
   // Record-keeping: a backup, a restore and an export carry the medication
   // as stored, schedule and switch included.
-  "lib/export/full-backup-payload.ts": "backup carries the stored rows",
-  "lib/export/restore-backup.ts": "restore writes the stored rows back",
+  "lib/export/medications-backup.ts": "backup carries the stored rows",
+  "lib/export/medications-restore.ts": "restore writes the stored rows back",
   // v1.44 — the CSV import writes new medications and reads only their names
   // and doses to skip duplicates; it derives nothing due.
   "lib/import/medications-csv.ts": "imports new rows, derives nothing due",

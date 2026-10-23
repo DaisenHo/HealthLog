@@ -29,7 +29,8 @@ vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("@/lib/logging/context", () => ({
+vi.mock("@/lib/logging/context", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/logging/context")>()),
   annotate: vi.fn(),
 }));
 

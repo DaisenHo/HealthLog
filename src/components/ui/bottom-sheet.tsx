@@ -59,15 +59,19 @@ export type BottomSheetContentProps = React.ComponentProps<
 /**
  * No `bottom-*` here: the sheet's `bottom` comes from the keyboard rule in
  * `globals.css`, which a utility would outrank. In 260 ms, out 220 ms, both
- * easing out; no slide at all under reduced motion. The `after:` strip
+ * easing out; no slide at all under reduced motion. That `animate-none` is
+ * important: `data-[state=open]:animate-in` carries an attribute selector and
+ * outranks a plain media variant, so without the `!` the slide stayed on,
+ * only shortened to 0.01 ms by the global reduced-motion rule, and still
+ * existed (and ran) until the next frame was drawn. The `after:` strip
  * continues the sheet's own background below its edge, so the short
  * resisting travel above the top never shows the page underneath.
  */
 export const BOTTOM_SHEET_CLASS =
-  "bg-background fixed inset-x-0 z-50 flex max-h-[90dvh] flex-col gap-4 border-t shadow-lg transition-transform ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom data-[state=open]:duration-260 data-[state=closed]:duration-220 motion-reduce:animate-none motion-reduce:transition-none after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-10 after:bg-inherit after:content-['']";
+  "bg-background fixed inset-x-0 z-50 flex max-h-[90dvh] flex-col gap-4 border-t shadow-lg transition-transform ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom data-[state=open]:duration-260 data-[state=closed]:duration-220 motion-reduce:animate-none! motion-reduce:transition-none after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-10 after:bg-inherit after:content-['']";
 
 const OVERLAY_CLASS =
-  "fixed inset-0 z-50 touch-none bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 ease-out data-[state=open]:duration-260 data-[state=closed]:duration-220 motion-reduce:animate-none";
+  "fixed inset-0 z-50 touch-none bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 ease-out data-[state=open]:duration-260 data-[state=closed]:duration-220 motion-reduce:animate-none!";
 
 /** Puts a preview sheet back on its preview step each time it opens. */
 function OnOpen({ run }: { run: () => void }) {

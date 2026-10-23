@@ -110,7 +110,14 @@ function buildLocalisedIndex(): Record<string, QualitativeConcept> {
   return index;
 }
 
-const LOCALISED_SNOMED = buildLocalisedIndex();
+let localisedSnomedCache: ReturnType<typeof localisedSnomedBuild> | undefined;
+/** Built on first use, not at module load: it reads every shipped catalog. */
+function localisedSnomed(): ReturnType<typeof localisedSnomedBuild> {
+  return (localisedSnomedCache ??= localisedSnomedBuild());
+}
+function localisedSnomedBuild() {
+  return buildLocalisedIndex();
+}
 
 /**
  * Test seam: the guard suite asserts the derived index covers every shipped
@@ -120,7 +127,7 @@ const LOCALISED_SNOMED = buildLocalisedIndex();
 export function localisedQualitativeIndex(): Readonly<
   Record<string, QualitativeConcept>
 > {
-  return LOCALISED_SNOMED;
+  return localisedSnomed();
 }
 
 /**
@@ -144,7 +151,7 @@ export function qualitativeValueConcept(
   valueText: string,
 ): FhirCodeableConcept {
   const key = normaliseQualitativeKey(valueText);
-  const concept = HAND_WRITTEN_SNOMED[key] ?? LOCALISED_SNOMED[key];
+  const concept = HAND_WRITTEN_SNOMED[key] ?? localisedSnomed()[key];
   if (!concept) {
     return { text: valueText };
   }

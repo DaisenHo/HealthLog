@@ -1008,7 +1008,7 @@ async function postBulk(request: NextRequest): Promise<Response> {
   // trigger, when a sync last brought a new or changed dose, and when a
   // background sync last carried them. Entries sent with `source:
   // "APPLE_HEALTH"` only; a dose taken in the app is not an Apple Health
-  // arrival. A replay answered `duplicate` still counts as an arrival, the
+  // arrival. Replays answered `duplicate` alone are not one (#1259), the
   // same rule as the batch route.
   const doseArrival = { accepted: 0, newSamples: 0 };
   for (const result of results) {

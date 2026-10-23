@@ -15,7 +15,7 @@
  * user's click (post-render setState is a no-op under the server renderer;
  * the router spies record the navigation the click causes).
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 const baseMeasurements = [
@@ -113,6 +113,13 @@ vi.mock("@/components/ui/filter-bar", () => ({
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { MeasurementList } from "../measurement-list";
+import {
+  installUrlStateBrowser,
+  type UrlStateBrowser,
+} from "@/__tests__/helpers/url-state-browser";
+
+let browser: UrlStateBrowser = installUrlStateBrowser("/");
+afterEach(() => browser.uninstall());
 
 function render(search: string) {
   mockSearch = search;
@@ -121,11 +128,17 @@ function render(search: string) {
   dateRange = null;
   valueRange = null;
   recordedQueryKeys.length = 0;
-  return renderToStaticMarkup(
+  const html = renderToStaticMarkup(
     <I18nProvider initialLocale="en">
       <MeasurementList />
     </I18nProvider>,
   );
+  // The live address the writes start from (`@/lib/url-state`).
+  browser.uninstall();
+  browser = installUrlStateBrowser(
+    search ? `/measurements?${search}` : "/measurements",
+  );
+  return html;
 }
 
 const typeSelect = () => selects[0]!;
@@ -140,40 +153,37 @@ describe("MeasurementList — filter changes write the URL", () => {
   it("pushes the type facet", () => {
     render("");
     typeSelect().onValueChange("WEIGHT");
-    expect(pushMock).toHaveBeenCalledWith("/measurements?type=WEIGHT", {
-      scroll: false,
-    });
+    expect(browser.push).toHaveBeenCalledWith("/measurements?type=WEIGHT");
   });
 
   it("pushes the source facet on top of the active type", () => {
     render("type=WEIGHT");
     sourceSelect().onValueChange("WITHINGS");
-    expect(pushMock).toHaveBeenCalledWith(
+    expect(browser.push).toHaveBeenCalledWith(
       "/measurements?type=WEIGHT&source=WITHINGS",
-      { scroll: false },
     );
   });
 
   it("replaces (no history entry) for a committed date bound", () => {
     render("");
     dateRange!.onFromChange!("2026-05-01");
-    expect(replaceMock).toHaveBeenCalledWith("/measurements?from=2026-05-01", {
-      scroll: false,
-    });
-    expect(pushMock).not.toHaveBeenCalled();
+    expect(browser.replace).toHaveBeenCalledWith(
+      "/measurements?from=2026-05-01",
+    );
+    expect(browser.push).not.toHaveBeenCalled();
   });
 
   it("clearing the last facet restores the bare pathname", () => {
     render("type=WEIGHT");
     typeSelect().onValueChange("ALL");
-    expect(pushMock).toHaveBeenCalledWith("/measurements", { scroll: false });
+    expect(browser.push).toHaveBeenCalledWith("/measurements");
   });
 
   it("reset clears every facet in one push", () => {
     render("type=WEIGHT&source=WITHINGS&from=2026-05-01&min=60");
     expect(barProps!.isFiltered).toBe(true);
     barProps!.onReset();
-    expect(pushMock).toHaveBeenCalledWith("/measurements", { scroll: false });
+    expect(browser.push).toHaveBeenCalledWith("/measurements");
   });
 });
 

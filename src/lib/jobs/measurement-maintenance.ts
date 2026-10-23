@@ -61,7 +61,13 @@ import type { Job } from "pg-boss";
 import { sessionOptionsDisabled } from "@/lib/db";
 
 import { withJobLock } from "@/lib/jobs/job-lock";
-import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
+import {
+  jobDone,
+  jobFailed,
+  percentFact,
+  wholeFact,
+  type JobOutcome,
+} from "@/lib/jobs/job-outcome";
 import { reportJobRun, type JobRunCandidate } from "@/lib/jobs/job-run-report";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { logCaught } from "@/lib/logging/signal";
@@ -640,10 +646,12 @@ export async function handleMeasurementMaintenance(
       outcome: result.outcome,
       processed: result.steps.filter((s) => s.ok).length,
       failed: result.steps.filter((s) => !s.ok).length,
-      duration_ms: Date.now() - startedAt,
+      duration_ms: wholeFact(Date.now() - startedAt),
       dead_rows: health.deadRows,
-      // Zero before the table has statistics to measure against.
-      bloat_factor: health.bloatFactor ?? 0,
+      // In whole percent: a fact is a whole number and the factor a ratio
+      // (1.3). Reported as the ratio itself it failed every run's outcome
+      // validation (#1271). Zero before the table has statistics.
+      bloat_percent: percentFact(health.bloatFactor),
     };
     if (result.outcome === "failed") {
       const firstError = result.steps.find((s) => !s.ok);

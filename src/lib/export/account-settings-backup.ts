@@ -55,9 +55,9 @@ import {
 import { decrypt, encrypt } from "@/lib/crypto";
 import { readLocation, sealLocation } from "@/lib/environment/location-cipher";
 import {
-  USER_COLUMN_BACKUP_CLASS,
-  type AccountSettingColumn,
-} from "@/lib/export/backup-plan";
+  USER_COLUMNS_OUTSIDE_SETTINGS,
+  type UserColumnBackupClass,
+} from "@/lib/export/account-settings-classes";
 import { UNREADABLE_EXPORT_MARKER } from "@/lib/export/unreadable-marker";
 import { locales } from "@/lib/i18n/config";
 import { thresholdsUpdateSchema } from "@/lib/validations/thresholds";
@@ -79,12 +79,7 @@ export interface AccountSettingsBackupSection {
   accountSettings: AccountSettingsBackupEntry | null;
 }
 
-/** Every setting column, in the order the table below declares them. */
-export const ACCOUNT_SETTING_COLUMNS = Object.entries(USER_COLUMN_BACKUP_CLASS)
-  .filter(([, verdict]) => verdict === "SETTING")
-  .map(([column]) => column as AccountSettingColumn);
-
-type SettingsRow = Record<AccountSettingColumn, unknown>;
+type SettingsRow = Record<string, unknown>;
 
 /** What the restore knows about the account it writes into. */
 export interface AccountSettingsRestoreContext {
@@ -124,7 +119,7 @@ function has(entry: AccountSettingsBackupEntry, key: string): boolean {
 }
 
 /** Carried as it is: a string, number, boolean or list, or null. */
-function plain(column: AccountSettingColumn): SettingCodec {
+function plain(column: string): SettingCodec {
   return {
     write: (row) => ({ [column]: row[column] }),
     read: (entry) => (has(entry, column) ? entry[column] : undefined),
@@ -132,7 +127,7 @@ function plain(column: AccountSettingColumn): SettingCodec {
 }
 
 /** A timestamp, carried as ISO-8601. */
-function instant(column: AccountSettingColumn): SettingCodec {
+function instant(column: string): SettingCodec {
   return {
     write: (row) => ({
       [column]:
@@ -154,7 +149,7 @@ function instant(column: AccountSettingColumn): SettingCodec {
  * default), so a value written by another release restores rather than being
  * refused here on a stricter opinion than the app's own.
  */
-function json(column: AccountSettingColumn): SettingCodec {
+function json(column: string): SettingCodec {
   return {
     write: (row) => ({ [column]: row[column] ?? null }),
     read: (entry) => {
@@ -167,7 +162,7 @@ function json(column: AccountSettingColumn): SettingCodec {
 
 /** A closed vocabulary. A value outside it is refused, not coerced. */
 function oneOf(
-  column: AccountSettingColumn,
+  column: string,
   values: readonly string[],
   nullable: boolean,
 ): SettingCodec {
@@ -197,10 +192,7 @@ function isTimeZone(value: unknown): value is string {
 }
 
 /** An IANA zone this runtime knows, the check the settings routes apply. */
-function timeZone(
-  column: AccountSettingColumn,
-  nullable: boolean,
-): SettingCodec {
+function timeZone(column: string, nullable: boolean): SettingCodec {
   return {
     write: (row) => ({ [column]: row[column] }),
     read: (entry) => {
@@ -490,9 +482,15 @@ const homeLocation: SettingCodec = {
   },
 };
 
-const ACCOUNT_SETTING_CODECS: Readonly<
-  Record<AccountSettingColumn, SettingCodec>
-> = {
+/**
+ * Every setting the account row carries, and how each one travels. The
+ * keys of this table ARE the `SETTING` verdicts of `USER_COLUMN_BACKUP_CLASS`
+ * below: a column becomes a setting by getting a codec here, and a codec
+ * cannot exist for anything else.
+ */
+const ACCOUNT_SETTING_CODECS = {
+  // The body and the person, for the reference ranges, the score and the
+  // doctor's report. No other section carries them.
   heightCm: plain("heightCm"),
   dateOfBirth: instant("dateOfBirth"),
   gender: oneOf("gender", ["MALE", "FEMALE", "OTHER"], true),
@@ -506,10 +504,14 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   avatarBytes: avatar,
   avatarContentType: ridesWithAvatar,
   avatarUpdatedAt: ridesWithAvatar,
+  // Home, which the environment history is resolved against.
   homeTimezone: timeZone("homeTimezone", true),
   homeSince: instant("homeSince"),
+  // The sealed home location (the only copy since v1.43),
+  // and the account's switch for the air-quality part of the module.
   homeLocationEncrypted: homeLocation,
   environmentAirQualityEnabled: plain("environmentAirQualityEnabled"),
+  // How the interface reads.
   timezone: timeZone("timezone", false),
   locale: oneOf("locale", locales, true),
   // The vocabularies the two preference routes accept, read from their own
@@ -526,6 +528,7 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   ),
   timeFormat: oneOf("timeFormat", Object.values(TimeFormatPreference), false),
   dateFormat: oneOf("dateFormat", Object.values(DateFormatPreference), false),
+  // What is switched on, what is shown where, and what counts as in range.
   modulePreferencesJson: json("modulePreferencesJson"),
   thresholdsJson: thresholds,
   healthScoreConfigJson: json("healthScoreConfigJson"),
@@ -541,8 +544,14 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   reportSelectionJson: json("reportSelectionJson"),
   globalExcludedInjectionSites: excludedSites,
   healthKitConfigJson: json("healthKitConfigJson"),
+  // Reminders and notifications, as preferences rather than channels.
   notificationPrefs: json("notificationPrefs"),
   moodReminderEnabled: plain("moodReminderEnabled"),
+  // The AI choices, never the keys: which provider, which model, which
+  // order, how long to wait, what may be sent, and whether to use it at all.
+  // The keys stay behind, so a restored choice of provider reads as "not
+  // configured" until a key is entered, which is also how it reads after a
+  // key is removed in Settings.
   aiProvider: plain("aiProvider"),
   aiModel: plain("aiModel"),
   aiBaseUrl: aiEndpoint("aiBaseUrl"),
@@ -558,18 +567,52 @@ const ACCOUNT_SETTING_CODECS: Readonly<
   ),
   insightsExcludeMetrics: plain("insightsExcludeMetrics"),
   disableCoach: plain("disableCoach"),
+  // The account's own AI usage level; NULL follows the
+  // instance default, and a restored level above this host's ceiling is
+  // capped at read time like any stored choice.
   aiUsageLevel: oneOf("aiUsageLevel", Object.values(AiUsageLevel), true),
   coachPrefsJson: json("coachPrefsJson"),
   documentsAutoAiRead: plain("documentsAutoAiRead"),
   labsLocalOcrEnabled: plain("labsLocalOcrEnabled"),
   storeWorkoutRoutes: plain("storeWorkoutRoutes"),
+  // Where the person is in the app's introductions. Without these a restored
+  // account is sent through setup and the tour again, and asked to accept the
+  // disclaimer it already accepted (a newer disclaimer still asks, because the
+  // version is compared).
   onboardingCompletedAt: instant("onboardingCompletedAt"),
   onboardingTourCompleted: plain("onboardingTourCompleted"),
   onboardingTourProgressJson: json("onboardingTourProgressJson"),
   disclaimerAcknowledgedAt: instant("disclaimerAcknowledgedAt"),
   disclaimerAcknowledgedVersion: plain("disclaimerAcknowledgedVersion"),
   passkeyUpgradeNudgeDismissed: plain("passkeyUpgradeNudgeDismissed"),
+} as const satisfies Readonly<Record<string, SettingCodec>>;
+
+/** The `User` columns the `accountSettings` section carries. */
+export type AccountSettingColumn = keyof typeof ACCOUNT_SETTING_CODECS;
+
+/**
+ * Every column of the `User` row, and whether it travels: the settings from
+ * the codec table above, every other column from
+ * `account-settings-classes.ts`, which says what each verdict means.
+ * `src/__tests__/user-column-backup-classification.test.ts` reads the schema
+ * and fails on a column that has neither.
+ */
+export const USER_COLUMN_BACKUP_CLASS: Readonly<
+  Record<
+    keyof typeof USER_COLUMNS_OUTSIDE_SETTINGS | AccountSettingColumn,
+    UserColumnBackupClass
+  >
+> = {
+  ...USER_COLUMNS_OUTSIDE_SETTINGS,
+  ...(Object.fromEntries(
+    Object.keys(ACCOUNT_SETTING_CODECS).map((column) => [column, "SETTING"]),
+  ) as Record<AccountSettingColumn, "SETTING">),
 };
+
+/** Every setting column, in the order the codec table declares them. */
+export const ACCOUNT_SETTING_COLUMNS = Object.keys(
+  ACCOUNT_SETTING_CODECS,
+) as AccountSettingColumn[];
 
 /** Exactly the setting columns, so the read is the declaration. */
 const SETTINGS_SELECT = Object.fromEntries(
@@ -660,69 +703,4 @@ export function admitAccountSettings(
   }
 
   return { data, refused };
-}
-
-/** The slice of a parsed backup this restore consumes. */
-export interface AccountSettingsRestoreInput {
-  /** Absent from every file written before the section existed. */
-  accountSettings?: AccountSettingsBackupEntry | null;
-}
-
-export interface AccountSettingsRestoreResult {
-  /** How many setting columns were written. */
-  applied: number;
-  /** What the file carried and the account did not take, by column. */
-  refused: string[];
-  /** Whether a unit preference changed, so stored texts quote old units. */
-  unitsChanged: boolean;
-}
-
-/**
- * Put the account's settings back, inside the caller's transaction.
- *
- * Only the columns `admitAccountSettings` admitted, and only setting columns
- * can be admitted. Identity, credentials and the host's own bookkeeping on
- * the row are never in the write, so they stay exactly as the receiving
- * account has them. A file without the section leaves the row untouched,
- * which is how every backup written before the section existed restores.
- */
-export async function restoreAccountSettings(
-  tx: Prisma.TransactionClient,
-  ownerId: string,
-  payload: AccountSettingsRestoreInput,
-): Promise<AccountSettingsRestoreResult> {
-  const entry = payload.accountSettings;
-  if (!entry) return { applied: 0, refused: [], unitsChanged: false };
-
-  const current = await tx.user.findUniqueOrThrow({
-    where: { id: ownerId },
-    select: {
-      role: true,
-      aiProvider: true,
-      unitPreference: true,
-      glucoseUnit: true,
-    },
-  });
-  const { data, refused } = admitAccountSettings(
-    entry,
-    { operatorTrusted: current.role === "ADMIN" },
-    current.aiProvider,
-  );
-
-  const columns = Object.keys(data);
-  if (columns.length > 0) {
-    await tx.user.update({
-      where: { id: ownerId },
-      data: data as Prisma.UserUpdateInput,
-    });
-  }
-
-  return {
-    applied: columns.length,
-    refused,
-    unitsChanged:
-      ("unitPreference" in data &&
-        data.unitPreference !== current.unitPreference) ||
-      ("glucoseUnit" in data && data.glucoseUnit !== current.glucoseUnit),
-  };
 }

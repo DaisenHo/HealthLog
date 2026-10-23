@@ -7,11 +7,14 @@
  * implementation. Comments are stripped first; the planted cases prove the
  * matcher fires.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -52,16 +55,14 @@ describe("one least-squares line", () => {
     const offenders = files.filter(
       (file) =>
         !(file in ALLOWED) &&
-        HAND_ROLLED_SLOPE.test(
-          stripComments(readFileSync(join(SRC, file), "utf8")),
-        ),
+        HAND_ROLLED_SLOPE.test(stripComments(readSourceText(join(SRC, file)))),
     );
     expect(offenders).toEqual([]);
     // The six readers now call the implementation: a sweep that finds fewer
     // call sites read the wrong tree or lost one.
     const callers = files.filter((file) =>
       /\b(?:linearFit|fitFromSums|trendLineByTime)\s*\(/.test(
-        stripComments(readFileSync(join(SRC, file), "utf8")),
+        stripComments(readSourceText(join(SRC, file))),
       ),
     );
     expect(callers.length).toBeGreaterThanOrEqual(7);
@@ -69,7 +70,10 @@ describe("one least-squares line", () => {
     expect(
       HAND_ROLLED_SLOPE.test(
         stripComments(
-          readFileSync(join(SRC, "lib/stats/linear-fit.ts"), "utf8"),
+          readSource(
+            "src/lib/stats/linear-fit.ts",
+            "export function linearFit",
+          ),
         ),
       ),
     ).toBe(true);

@@ -203,6 +203,7 @@ export function parseYesNo(raw: string): boolean | null {
       "sí",
       "si",
       "oui",
+      "sim",
       "tak",
       "예",
       "wahr",
@@ -220,6 +221,8 @@ export function parseYesNo(raw: string): boolean | null {
       "non",
       "nie",
       "nee",
+      "não",
+      "nao",
       "아니오",
       "falsch",
     ].includes(v)

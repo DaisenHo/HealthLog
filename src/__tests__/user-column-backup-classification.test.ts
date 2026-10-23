@@ -5,8 +5,10 @@
  * The account row mixes the person's choices with sign-in credentials,
  * provider keys, the operator's policy for the account and the host's own
  * cursors, so it cannot have one verdict the way a model does. A column added
- * tomorrow has to land in `USER_COLUMN_BACKUP_CLASS` (`src/lib/export/
- * backup-plan.ts`) or this fails naming it: a new preference that silently
+ * tomorrow gets a verdict in the account-settings domain — a codec in
+ * `src/lib/export/account-settings-backup.ts` makes it a setting, an entry in
+ * `src/lib/export/account-settings-classes.ts` gives it any other verdict —
+ * or this fails naming it: a new preference that silently
  * stays behind on a restore, or a new secret that silently rides along in
  * every backup file, are the two failures this exists to stop.
  *
@@ -17,8 +19,11 @@
 import { describe, expect, it } from "vitest";
 
 import { parseWipeSchema } from "@/__tests__/helpers/wipe-schema-shape";
-import { USER_COLUMN_BACKUP_CLASS } from "@/lib/export/backup-plan";
-import { ACCOUNT_SETTING_COLUMNS } from "@/lib/export/account-settings-backup";
+import {
+  ACCOUNT_SETTING_COLUMNS,
+  USER_COLUMN_BACKUP_CLASS,
+} from "@/lib/export/account-settings-backup";
+import { USER_COLUMNS_OUTSIDE_SETTINGS } from "@/lib/export/account-settings-classes";
 
 const columns = parseWipeSchema().get("User")?.scalars ?? [];
 const classified = USER_COLUMN_BACKUP_CLASS as Readonly<Record<string, string>>;
@@ -31,15 +36,26 @@ describe("User column backup classification", () => {
     expect(
       unclassified,
       "these User columns have no backup verdict. Add each to " +
-        "USER_COLUMN_BACKUP_CLASS as SETTING, CREDENTIAL, IDENTITY or " +
-        "OPERATIONAL, and if it is a SETTING give it a codec in " +
-        "account-settings-backup.ts",
+        "account-settings-classes.ts as CREDENTIAL, IDENTITY or " +
+        "OPERATIONAL, or give it a codec in account-settings-backup.ts, " +
+        "which makes it a SETTING",
     ).toEqual([]);
   });
 
   it("names no column the schema no longer has", () => {
     const known = new Set(columns);
     expect(Object.keys(classified).filter((c) => !known.has(c))).toEqual([]);
+  });
+
+  it("gives no column both a codec and another verdict", () => {
+    // The composed table spreads the settings over the other verdicts, so a
+    // column in both would silently travel as a setting.
+    expect(ACCOUNT_SETTING_COLUMNS.length).toBeGreaterThan(50);
+    expect(
+      ACCOUNT_SETTING_COLUMNS.filter((column) =>
+        Object.hasOwn(USER_COLUMNS_OUTSIDE_SETTINGS, column),
+      ),
+    ).toEqual([]);
   });
 
   it("carries exactly the columns classified as settings", () => {

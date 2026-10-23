@@ -135,7 +135,7 @@ export const m = {
   getCoachSystemPrompt: vi.fn(),
   getSelfContextTextForUser: vi.fn(),
   buildCoachSnapshot: vi.fn(),
-  getScheduledDoseValues: vi.fn(),
+  getScheduledDosePlan: vi.fn(),
   buildWorkoutEvidenceSection: vi.fn(),
   buildCoachDataInventory: vi.fn(),
   renderDataInventory: vi.fn(),
@@ -278,7 +278,7 @@ export function resetGolden(): void {
   m.getCoachSystemPrompt.mockReturnValue("SYSTEM");
   m.getSelfContextTextForUser.mockResolvedValue(null);
   m.buildCoachSnapshot.mockImplementation(async () => defaultSnapshot());
-  m.getScheduledDoseValues.mockResolvedValue([]);
+  m.getScheduledDosePlan.mockResolvedValue([]);
   m.buildWorkoutEvidenceSection.mockResolvedValue({
     sportType: "running",
     durationSec: 2400,

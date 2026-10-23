@@ -117,8 +117,21 @@ function countBuildsPerKey(cache: {
   return builds;
 }
 
+/**
+ * The slice's pre-fold remainder is a cell of its own in the same bucket (a
+ * closed block, `pre-fold-remainder.ts`), built when the slice takes the
+ * rollup path; it is counted apart from the route's two cells.
+ */
+function preFoldBuildsOf(builds: Map<string, number>, userId: string) {
+  return [...builds.entries()]
+    .filter(([k]) => k.startsWith(`${userId}|pre-fold-remainder|`))
+    .reduce((n, [, c]) => n + c, 0);
+}
+
 function buildsOf(builds: Map<string, number>, userId: string) {
-  const entries = [...builds.entries()].filter(([k]) => k.startsWith(userId));
+  const entries = [...builds.entries()].filter(
+    ([k]) => k.startsWith(userId) && !k.includes("|pre-fold-remainder|"),
+  );
   return {
     defaultBody: entries
       .filter(([k]) => k.startsWith(`${userId}|default|`))
@@ -230,7 +243,9 @@ describe("v1.4.34 IW-G — server-cache route integration", () => {
       summaries: 2,
       keys: 2,
     });
-    expect(caches.analytics.stats().misses).toBe(4);
+    expect(caches.analytics.stats().misses).toBe(
+      4 + preFoldBuildsOf(builds, user.id),
+    );
 
     // Sanity: the body reflects the new write.
     const body = (await third.json()) as {

@@ -3,13 +3,13 @@
 import { useSyncExternalStore } from "react";
 
 import { DAY_QUERY_PARAM, type DateKey } from "@/lib/day/contract";
+import { currentUrlSearch, writeUrlState } from "@/lib/url-state";
 
 import {
   dayHistoryState,
   historyEntryOwnedByLayer,
   parseDayParam,
   shiftDateKey,
-  withDayHref,
 } from "./day-url";
 
 /**
@@ -134,10 +134,6 @@ export interface OpenDayOptions {
   trigger?: HTMLElement | null;
 }
 
-function currentLocation() {
-  return { pathname: window.location.pathname, search: window.location.search };
-}
-
 /** Open `date` over the current page. */
 export function openDay(date: DateKey, options: OpenDayOptions = {}): void {
   if (typeof window === "undefined") return;
@@ -154,13 +150,10 @@ export function openDay(date: DateKey, options: OpenDayOptions = {}): void {
     ? memory.trigger.getBoundingClientRect().top
     : null;
   emit();
-  const { pathname, search } = currentLocation();
-  const href = withDayHref(pathname, search, date);
-  if (historyEntryOwnedByLayer(window.history.state)) {
-    window.history.replaceState(dayHistoryState(date), "", href);
-  } else {
-    window.history.pushState(dayHistoryState(date), "", href);
-  }
+  writeUrlState((params) => params.set(DAY_QUERY_PARAM, date), {
+    mode: historyEntryOwnedByLayer(window.history.state) ? "replace" : "push",
+    state: dayHistoryState(date),
+  });
 }
 
 /**
@@ -191,7 +184,8 @@ let pendingStep: { delta: number; today: DateKey } | null = null;
 export function stepDay(delta: number, today: DateKey): DateKey | null {
   if (typeof window === "undefined") return null;
   const from = parseDayParam(
-    new URLSearchParams(window.location.search).get(DAY_QUERY_PARAM),
+    // The live address, a queued write included (`@/lib/url-state`).
+    new URLSearchParams(currentUrlSearch()).get(DAY_QUERY_PARAM),
     today,
   );
   if (from === null) {
@@ -218,15 +212,12 @@ export function stepDay(delta: number, today: DateKey): DateKey | null {
 export function jumpDay(next: DateKey): void {
   memory.focus = null;
   emit();
-  const { pathname, search } = currentLocation();
   const owned = historyEntryOwnedByLayer(window.history.state);
-  window.history.replaceState(
+  writeUrlState((params) => params.set(DAY_QUERY_PARAM, next), {
     // A deep link stays a deep link: marking it as pushed would make a later
     // close go Back off the page the person arrived on.
-    owned ? dayHistoryState(next) : null,
-    "",
-    withDayHref(pathname, search, next),
-  );
+    state: owned ? dayHistoryState(next) : null,
+  });
 }
 
 /**
@@ -283,6 +274,5 @@ export function closeDay(): void {
     window.history.back();
     return;
   }
-  const { pathname, search } = currentLocation();
-  window.history.replaceState(null, "", withDayHref(pathname, search, null));
+  writeUrlState((params) => params.delete(DAY_QUERY_PARAM));
 }

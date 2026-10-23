@@ -14,7 +14,7 @@
  */
 
 import { useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 
@@ -51,6 +51,7 @@ import {
   type ProviderType,
   type UserAIProvider,
 } from "./shared";
+import { writeUrlState } from "@/lib/url-state";
 
 export function AiInsightsCard({
   isAuthenticated,
@@ -59,8 +60,6 @@ export function AiInsightsCard({
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   // A read failure must surface, not be swallowed into a null that renders the
@@ -146,10 +145,7 @@ export function AiInsightsCard({
 
   function pickProvider(next: ProviderType) {
     setSelectedProvider(next);
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(searchParams?.toString() ?? "");
-    params.set("provider", next);
-    router.replace(`${pathname}?${params.toString()}`);
+    writeUrlState((params) => params.set("provider", next));
   }
 
   // v1.42 — one card per concern. The page used to be a single "AI provider"

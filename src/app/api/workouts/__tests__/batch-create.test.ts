@@ -128,6 +128,19 @@ function mockInsertReturning(
   }) => (args.where === undefined && args.select?.id ? rows : [])) as never);
 }
 
+/**
+ * Rows the pre-flight `(source, externalId)` probe finds. The probe is the
+ * read with an `OR` of keys; the windowed read of the stored workouts around
+ * the batch (a `startedAt` range) finds nothing here.
+ */
+function mockExistingByKey(
+  rows: Array<{ source: string; externalId: string }>,
+) {
+  vi.mocked(prisma.workout.findMany).mockImplementation((async (args: {
+    where?: { OR?: unknown };
+  }) => (args.where?.OR ? rows : [])) as never);
+}
+
 function validWorkout(
   externalId: string,
   overrides: Record<string, unknown> = {},
@@ -345,9 +358,9 @@ describe("POST /api/workouts/batch — per-entry status envelope", () => {
   });
 
   it("flags entries already in the DB as duplicate without re-inserting", async () => {
-    vi.mocked(prisma.workout.findMany).mockResolvedValue([
+    mockExistingByKey([
       { source: "APPLE_HEALTH", externalId: "uuid-existing" },
-    ] as never);
+    ]);
     vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 1 });
     const res = await POST(
       makeRequest({
@@ -825,9 +838,7 @@ describe("POST /api/workouts/batch — PR detection enqueue (v1.4.25 W16c)", () 
     // stays 0 but duplicateCount becomes 1. The hook fires anyway —
     // the detector is cheap and a duplicate batch can still reveal a
     // PR if the row was written by another path between dispatches.
-    vi.mocked(prisma.workout.findMany).mockResolvedValue([
-      { source: "APPLE_HEALTH", externalId: "uuid-dup" } as never,
-    ]);
+    mockExistingByKey([{ source: "APPLE_HEALTH", externalId: "uuid-dup" }]);
     vi.mocked(prisma.workout.createMany).mockResolvedValue({ count: 0 });
     const res = await POST(
       makeRequest({ workouts: [validWorkout("uuid-dup")] }),

@@ -368,7 +368,11 @@ export function transformRescales(transform: DisplayTransform): boolean {
 function roundToDecimals(value: number, decimals: number): number {
   if (!Number.isFinite(value)) return value;
   const scale = 10 ** decimals;
-  return Math.round(value * scale) / scale;
+  const rounded = Math.round(value * scale) / scale;
+  // A small negative value rounds to -0, and `Intl.NumberFormat` prints that
+  // as "-0" ("-0.0 °F" for a deviation of a few hundredths below zero, or
+  // for 0 °F typed and shown back). Zero has no sign on a screen.
+  return rounded === 0 ? 0 : rounded;
 }
 
 /**

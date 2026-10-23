@@ -24,7 +24,7 @@ import {
   estimateDailyDoseCount,
   estimateRunwayDays,
   lowStockTriggerDays,
-} from "@/components/medications/detail/supply-runway";
+} from "@/lib/medications/supply-runway";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import {
   invalidateKeys,

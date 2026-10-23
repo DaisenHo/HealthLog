@@ -33,13 +33,16 @@
  * from a variable that happens to hold a literal is not seen; review catches
  * that.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-import { stripComments, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const ROOT = process.cwd();
 
@@ -67,7 +70,7 @@ function clientFiles(): ClientFile[] {
       const rel = `${dir}/${file}`;
       if (rel.startsWith("src/app/api/")) continue;
       if (rel.includes("/__tests__/") || /\.test\.tsx?$/.test(rel)) continue;
-      const source = readFileSync(join(ROOT, rel), "utf8");
+      const source = readSourceText(join(ROOT, rel));
       if (!isClientModule(rel, source)) continue;
       out.push({ rel, source });
     }

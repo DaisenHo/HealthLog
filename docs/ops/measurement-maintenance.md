@@ -165,8 +165,9 @@ singleton key with the run you start, so the two never overlap. The admin
 card keeps showing only the runs you started.
 
 The check also measures how far the table file has grown past what its live
-rows need (`maintenance_bloat_factor` on the wide event, `bloat_factor` in the
-job result). Past 3 it adds a warning to the event: a vacuum makes the space
+rows need (`maintenance_bloat_factor` on the wide event, as a factor such as
+1.3; `bloat_percent` in the job result, as whole percent such as 130, because a
+job fact is a whole number). Past 3 it adds a warning to the event: a vacuum makes the space
 reusable but does not shrink the file, and only `VACUUM FULL` does (see
 below).
 

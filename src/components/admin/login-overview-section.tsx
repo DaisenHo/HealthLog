@@ -404,7 +404,7 @@ export function LoginOverviewSection() {
           // back to its starting offset. The CSV-export button was
           // already in the toolbar row above the table wrapper.
           <>
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-muted-foreground border-b text-xs">
@@ -493,31 +493,14 @@ export function LoginOverviewSection() {
                         </td>
                         <td className="text-muted-foreground px-3 py-2 font-mono text-xs">
                           {entry.ipAddress ? (
-                            <button
-                              type="button"
-                              onClick={() =>
+                            <IpCopyButton
+                              ip={entry.ipAddress}
+                              copied={copiedIp === entry.id}
+                              label={t("admin.copyIp")}
+                              onCopy={() =>
                                 copyIp(entry.id, entry.ipAddress as string)
                               }
-                              title={entry.ipAddress}
-                              aria-label={t("admin.copyIp")}
-                              data-slot="login-overview-ip"
-                              className="hover:text-foreground focus-visible:ring-ring inline-flex max-w-[10rem] items-center gap-1 rounded font-mono focus-visible:ring-2 focus-visible:outline-none"
-                            >
-                              <span className="truncate">
-                                {entry.ipAddress}
-                              </span>
-                              {copiedIp === entry.id ? (
-                                <Check
-                                  className="text-success h-3 w-3 shrink-0"
-                                  aria-hidden="true"
-                                />
-                              ) : (
-                                <Copy
-                                  className="h-3 w-3 shrink-0 opacity-60"
-                                  aria-hidden="true"
-                                />
-                              )}
-                            </button>
+                            />
                           ) : (
                             "—"
                           )}
@@ -587,5 +570,40 @@ export function LoginOverviewSection() {
         )}
       </div>
     </SettingsCard>
+  );
+}
+
+/**
+ * One login row's IP address, a button that copies it. Named by the address
+ * it shows with the action added for screen readers, so the accessible name
+ * contains the visible text (WCAG 2.5.3).
+ */
+function IpCopyButton({
+  ip,
+  copied,
+  label,
+  onCopy,
+}: {
+  ip: string;
+  copied: boolean;
+  label: string;
+  onCopy: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onCopy}
+      title={ip}
+      data-slot="login-overview-ip"
+      className="hover:text-foreground focus-visible:ring-ring inline-flex max-w-[10rem] items-center gap-1 rounded font-mono focus-visible:ring-2 focus-visible:outline-none"
+    >
+      <span className="sr-only">{label}</span>
+      <span className="truncate">{ip}</span>
+      {copied ? (
+        <Check className="text-success h-3 w-3 shrink-0" aria-hidden="true" />
+      ) : (
+        <Copy className="h-3 w-3 shrink-0 opacity-60" aria-hidden="true" />
+      )}
+    </button>
   );
 }

@@ -236,6 +236,7 @@ describe("enqueueStatusGeneration", () => {
       "pl",
       "ko",
       "nl",
+      "pt-BR",
     ] as const) {
       await enqueueStatusGeneration({ userId: "u1", metric: "mood", locale });
     }

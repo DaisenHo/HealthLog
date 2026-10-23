@@ -66,6 +66,7 @@ import {
 import { ADMIN_SECTIONS } from "@/components/admin/admin-shell";
 import { visibleUtilityDestinations } from "../nav-model";
 import { delegatedDomains } from "@/lib/sharing/domain-write-support";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 function render({
   pathname = "/",
@@ -331,13 +332,17 @@ describe("<SidebarNav> inside somebody else's record (#939)", () => {
   it("keeps the account settings door in one's own record", () => {
     const html = renderInRecord(null);
     expect(settingsLinks(html)).toEqual(["/settings/account"]);
-    expect(html).toContain(`aria-label="${accountSettingsLabel}"`);
+    expect(html).toContain(
+      `<span class="sr-only">${accountSettingsLabel}</span>`,
+    );
   });
 
   it("offers Settings inside a managed profile and keeps the identity block a plain block", () => {
     const html = renderInRecord({ recordKind: "managed", level: "manage" });
     expect(settingsLinks(html)).toEqual(["/settings/account"]);
-    expect(html).not.toContain(`aria-label="${accountSettingsLabel}"`);
+    expect(html).not.toContain(
+      `<span class="sr-only">${accountSettingsLabel}</span>`,
+    );
     expect(html).not.toContain('href="/notifications"');
   });
 
@@ -565,9 +570,9 @@ describe("<SidebarNav> carries no rules for a viewport it never shows on", () =>
     // A touch screen at most 520 px tall gets the phone shell (the
     // `shell-mobile` variant), so the rail is hidden there and a class keyed
     // on that query can never apply.
-    const source = readFileSync(
-      join(__dirname, "..", "sidebar-nav.tsx"),
-      "utf8",
+    const source = readSource(
+      "src/components/layout/sidebar-nav.tsx",
+      "export function SidebarNav",
     );
     expect(source).not.toMatch(/pointer:coarse\)_and_\(height<=520px\)/);
   });

@@ -1,5 +1,102 @@
 # Changelog
 
+## [1.45.0] — 2026-10-23
+
+### Added
+
+- **Brazilian Portuguese.** The whole app, the Coach and the reports are
+  available in pt-BR, with Brazil's crisis lines (CVV 188, SAMU 192) next
+  to the international ones. Portuguese readers outside Brazil see 112 and
+  Portugal's SNS 24 and SOS Voz Amiga as well.
+- **Translate in the browser.** Translators can edit any language on the
+  web with their GitHub account and send the change as a pull request; the
+  contributing guide links the editor and explains what reviewers check.
+- **Dengue and tuberculosis in the vaccine catalogue.** Dengue is listed
+  with the travel vaccines (two doses three months apart) and tuberculosis
+  with the childhood ones (one dose at birth); neither has a booster. Each
+  cites its WHO position paper, and searching "bcg" finds tuberculosis.
+- **The Coach knows your whole lab history.** Asked about a marker such as
+  LDL or PSA, it now sees your recent values and a yearly summary going
+  back ten years, instead of stopping at twelve months. Other readings keep
+  the one-year window. (#1263)
+
+### Changed
+
+- **Faster.** On an account with ten years of data the dashboard loads in
+  well under half the time, a ten-year chart about five times faster and a
+  one-year chart about three times faster. The values are the same: the
+  new reads are checked against the old ones across time zones, daylight
+  saving changes and multiple sources.
+- **Steadier start and less memory.** The app no longer freezes for most of
+  a second while it starts, holds only the language you use in memory, and
+  pauses heavy background work when the container gets close to its memory
+  limit instead of being restarted. Stopping the container lets running
+  jobs finish.
+- **The questionnaires follow the validated originals.** PHQ-9, GAD-7,
+  WHO-5 and the sleep questionnaire now share one flow: the question's time
+  frame is always shown, answers are a proper choice list you can use with
+  the keyboard, and a review step lets you check every answer before it is
+  saved. The result explains the score in plain words and whether it moved
+  meaningfully since last time. The German, Spanish, Italian, Polish and
+  French wording now matches the published validated versions word for
+  word; where no validated translation exists, the original English is
+  shown rather than an unvalidated one.
+- **Re-sent Apple Health data no longer counts as new.** When the iPhone
+  sends values the server already has, nothing is rewritten and the Apple
+  Health card no longer claims fresh data arrived; it says when data was
+  last re-sent without anything new. (#1259)
+- Fonts are now part of the app instead of being fetched from Google when
+  an image is built.
+
+### Fixed
+
+- A workout synced by two services counts once everywhere, including when
+  the two copies fall on either side of a five-minute mark, and opening
+  either copy shows the same session.
+- A backup restored for disaster recovery keeps the original creation
+  dates of medications, courses, ingredients, nutrient days and mood and
+  symptom links, and keeps sealed labels and notes sealed. Deleted family
+  history entries are part of that backup too.
+- The Coach refuses more ways of telling you to change a dose, such as
+  halving it or taking "the same as before" when that is not your plan, in
+  every language. Several of its safety checks never matched words with
+  accents; they do now.
+- A Strava connection whose refresh token expired now asks you to
+  reconnect instead of failing quietly.
+- Ending a session from the session list records correctly whether it was
+  your own.
+- Values that round to zero no longer show as "-0".
+- Clearing a filter on the documents, measurements or mood pages, closing
+  a document or zooming the timeline no longer brings the old address back
+  a moment later.
+- The nightly measurement maintenance no longer reports every run as
+  failed: it recorded the table's bloat as a decimal where only whole
+  numbers were accepted, although the maintenance itself had run. (#1271)
+- Mood dimensions logged between local and UTC midnight count for today
+  again instead of going missing until the next day.
+- Sheets on a phone open without a slide when your device asks for reduced
+  motion, and every control's accessible name now matches its visible
+  label.
+- A large import from Apple Health, Health Connect, Withings or Oura
+  refreshes the charts that depend on it straight away.
+
+### Upgrade notes
+
+- Migration 0471 adds one column for Apple Health bookkeeping.
+- Single-container installs need nothing else. If you run the web and
+  worker roles in separate containers, start the worker first: the job
+  queue updates its schema on start, and a web-only process waits for it.
+  See `docs/ops/deploy.md`.
+- The supported memory floor stays at 1536 MB for the app container.
+
+### Thanks
+
+Thanks to @dareoon for the Brazilian Portuguese translation (#1251), to
+@asmala for adding dengue and tuberculosis to the vaccine catalogue
+(#1266) and for asking the Coach to look further back in the lab history
+(#1263), and to @mills1975 for spotting the failing maintenance job
+(#1271).
+
 ## [1.44.2] — 2026-10-22
 
 ### Changed

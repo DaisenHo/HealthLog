@@ -5,11 +5,11 @@ import { useMemo } from "react";
 import { encodeCadence } from "@/components/medications/scheduling/cadence-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { type CadenceSubControls } from "@/components/medications/scheduling/types";
 import {
-  type CadenceSubControls,
   type WeekdayToken,
   WEEKDAY_TOKENS,
-} from "@/components/medications/scheduling/types";
+} from "@/lib/medications/scheduling/weekday-tokens";
 import { useTranslations } from "@/lib/i18n/context";
 
 import type { StepProps } from "./step1-name";

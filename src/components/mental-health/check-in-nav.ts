@@ -1,33 +1,27 @@
 /**
- * v1.25.3 — pure step grammar for the one-question-at-a-time check-in.
+ * Pure step grammar for the one-question-at-a-time check-in.
  *
- * The PHQ-9 / GAD-7 screeners are LINEAR (no mode/cadence branching like the
- * medication wizard), so the steps are exactly the questions `1..itemCount`:
- * you can always step backward to change an answer, and never skip ahead past
- * an unanswered question. Keeping the navigation here (mirroring the
- * medication wizard's `wizard-payload.ts`) makes the advance/back contract
- * unit-testable without driving a DOM.
+ * Every instrument runs the same sequence: its items `1..itemCount`, the
+ * PHQ-9's optional follow-up question as one more step, then a review step
+ * that lists every answer before anything is sent. The review step came
+ * back at a maintainer's request: a screener that submits on the last tap
+ * gives no chance to see what is about to be recorded. Backward navigation
+ * is always allowed and nothing skips past an unanswered item. Keeping the
+ * grammar here makes it unit-testable without driving a DOM.
  *
- * v1.27.6 — the review/summary step is gone: answering the last question
- * arms the submit directly (no "9 of 9 answered" interstitial demanding one
- * more decision). Step numbers are 1-based and run `1..itemCount`.
- *
- * An unanswered item carries the sentinel `-1`.
+ * Step numbers are 1-based. An unanswered item carries the sentinel `-1`.
  */
 
 export const UNANSWERED = -1;
 
-/** Every item answered (0–3) — gates the submit on the last question. */
+/** Every item answered — gates the review step and the submit. */
 export function isComplete(items: readonly number[]): boolean {
   return items.length > 0 && items.every((v) => v >= 0);
 }
 
-/**
- * The next step after `step`: a question advances to the next question; the
- * last question stays put (submit, not advance).
- */
-export function nextStep(step: number, itemCount: number): number {
-  if (step >= itemCount) return itemCount;
+/** The step after `step`, clamped at the last one. */
+export function nextStep(step: number, totalSteps: number): number {
+  if (step >= totalSteps) return totalSteps;
   return step + 1;
 }
 
@@ -36,7 +30,27 @@ export function prevStep(step: number): number {
   return step > 1 ? step - 1 : 1;
 }
 
-/** Whether `step` is the last question for this instrument. */
-export function isLastStep(step: number, itemCount: number): boolean {
-  return step >= itemCount;
+/**
+ * The step layout of one instrument: how many questions it asks (its items
+ * plus the optional follow-up) and the review step after them.
+ */
+export function checkInSteps(
+  itemCount: number,
+  hasFunctional: boolean,
+): { questions: number; functionalStep: number | null; review: number } {
+  const questions = itemCount + (hasFunctional ? 1 : 0);
+  return {
+    questions,
+    functionalStep: hasFunctional ? itemCount + 1 : null,
+    review: questions + 1,
+  };
+}
+
+/**
+ * The first unanswered item's step, or null when every item is answered.
+ * The review step is only reachable once this is null.
+ */
+export function firstUnanswered(items: readonly number[]): number | null {
+  const index = items.findIndex((v) => v < 0);
+  return index === -1 ? null : index + 1;
 }

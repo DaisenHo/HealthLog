@@ -77,6 +77,8 @@ export const ANTIGEN_SLUGS = [
   "yellow-fever",
   "japanese-encephalitis",
   "cholera",
+  "dengue",
+  "tuberculosis",
 ] as const;
 
 export type AntigenSlug = (typeof ANTIGEN_SLUGS)[number];
@@ -317,6 +319,21 @@ export const VACCINE_CATALOG: readonly VaccineSeed[] = [
     source: STIKO,
     synonyms: ["human papillomavirus"],
   },
+  {
+    // One dose, at birth where tuberculosis is common, and no booster after
+    // it: revaccination is advised against. Off the standing-committee
+    // schedule since 1998, so it cites the WHO position paper instead — but
+    // older Passes carry it, and in much of the world it is the first line
+    // of a child's.
+    slug: "tuberculosis",
+    atc: "J07AN01",
+    components: ["tuberculosis"],
+    typicalSeriesDoses: 1,
+    boosterIntervalMonths: null,
+    category: "childhood",
+    source: "WHO position paper on BCG vaccines",
+    synonyms: ["bcg", "tb", "bacillus calmette-guérin"],
+  },
 
   // ── Monovalent: by indication ───────────────────────────────────────────
   {
@@ -419,6 +436,22 @@ export const VACCINE_CATALOG: readonly VaccineSeed[] = [
     boosterIntervalMonths: 24,
     category: "travel",
     source: "WHO position paper on cholera vaccines",
+  },
+  {
+    // Two doses three months apart: the schedule of the live-attenuated
+    // tetravalent preparation in current use. No booster has been
+    // established after it, so null rather than an interval invented to
+    // fill the field. The older preparation runs three doses and is limited
+    // to people with a confirmed past infection; the record's own
+    // `seriesDoses` override is there for the Pass that says three.
+    slug: "dengue",
+    atc: "J07BX04",
+    components: ["dengue"],
+    typicalSeriesDoses: 2,
+    boosterIntervalMonths: null,
+    category: "travel",
+    source: "WHO position paper on dengue vaccines",
+    synonyms: ["dengue fever", "breakbone fever"],
   },
 
   // ── Combinations ────────────────────────────────────────────────────────

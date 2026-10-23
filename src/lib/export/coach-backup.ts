@@ -166,7 +166,7 @@ const COACH_CONVERSATION_BACKUP_SELECT = {
   createdAt: true,
   updatedAt: true,
   messages: {
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: {
       id: true,
       role: true,
@@ -182,7 +182,7 @@ const COACH_CONVERSATION_BACKUP_SELECT = {
     },
   },
   attachments: {
-    orderBy: { addedAt: "asc" },
+    orderBy: [{ addedAt: "asc" }, { documentId: "asc" }],
     select: { documentId: true, addedAt: true },
   },
 } satisfies Prisma.CoachConversationSelect;
@@ -225,7 +225,7 @@ export async function buildCoachBackupSection(
 
   const rows = await prisma.coachConversation.findMany({
     where: { userId },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: COACH_CONVERSATION_BACKUP_SELECT,
   });
 
@@ -682,17 +682,17 @@ export async function buildCoachMemoryBackupSection(
   const [factRows, planRows, reminderRows] = await Promise.all([
     prisma.coachFact.findMany({
       where: scope,
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: COACH_FACT_BACKUP_SELECT,
     }),
     prisma.coachPlan.findMany({
       where: scope,
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: COACH_PLAN_BACKUP_SELECT,
     }),
     prisma.coachReminder.findMany({
       where: scope,
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: COACH_REMINDER_BACKUP_SELECT,
     }),
   ]);

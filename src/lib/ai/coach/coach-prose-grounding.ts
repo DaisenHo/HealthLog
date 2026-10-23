@@ -65,6 +65,7 @@
  */
 import { extractNumbers } from "@/lib/ai/briefing-grounding";
 import type { Locale } from "@/lib/i18n/config";
+import { POPULATION_NORM_PATTERNS } from "./population-norms";
 
 /** Absolute + relative tolerance — identical basis to the briefing verifier. */
 const ABS_TOLERANCE = 0.15;
@@ -156,6 +157,10 @@ const UNIT_WORDS: Readonly<Record<NumKind, readonly string[]>> = {
     "livres",
     "libra",
     "libras",
+    "quilo",
+    "quilos",
+    "quilograma",
+    "quilogramas",
     "funt",
     "funty",
   ],
@@ -170,6 +175,7 @@ const UNIT_WORDS: Readonly<Record<NumKind, readonly string[]>> = {
     "pour cent",
     "pourcent",
     "por ciento",
+    "por cento",
     "porciento",
     "per cento",
     "procent",
@@ -214,6 +220,7 @@ const UNIT_WORDS: Readonly<Record<NumKind, readonly string[]>> = {
     "pasos",
     "passo",
     "passi",
+    "passos",
     "krok",
     "kroki",
     "krokow",
@@ -626,6 +633,8 @@ const MONTHS = [
   "stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|wrzesnia|października|pazdziernika|listopada|grudnia",
   // nl
   "januari|februari|maart|mei|augustus",
+  // pt-BR
+  "janeiro|fevereiro|março|marco|maio|junho|julho|setembro|outubro|novembro|dezembro",
 ].join("|");
 
 /** Parse a raw number token honouring the reply language's separators. */
@@ -635,7 +644,7 @@ function parseLocaleNumber(raw: string, locale: Locale): number | null {
     // EN: "," groups thousands, "." is the decimal point.
     normalised = raw.replace(/,/g, "");
   } else {
-    // DE / fr / es / it / pl / nl: "." groups thousands, "," is the decimal
+    // DE / fr / es / it / pl / nl / pt-BR: "." groups thousands, "," is the decimal
     // point.
     normalised = raw.replace(/\./g, "").replace(/,/g, ".");
   }
@@ -810,89 +819,11 @@ export function collectNumericLeaves(value: unknown, out: Set<number>): void {
  * Rung 2 — the reference-sentence exemption. A sentence framed as population
  * guidance ("adults generally need 7 to 9 hours", "die normale Ruheherzfrequenz
  * liegt bei 60 bis 100") cites a REFERENCE value, not a claim about the user's
- * data, so its numbers are exempt from the strip path. Six-locale banks — the
- * user base is DE-first and a fallback provider answers a French reader in
- * English, so the reader's bank plus EN both run (the screen's dual-bank rule).
+ * data, so its numbers are exempt from the strip path. One bank per locale,
+ * in `population-norms/`. The user base is DE-first and a fallback provider
+ * answers a French reader in English, so the reader's bank plus EN both run
+ * (the screen's dual-bank rule).
  * ────────────────────────────────────────────────────────────────────────── */
-
-const POPULATION_NORM_PATTERNS: Record<Locale, readonly RegExp[]> = {
-  en: [
-    /\bthe\s+normal\s+range\s+(?:is|for)\b/i,
-    /\b(?:healthy|most|the\s+average)\s+(?:adults?|people|population)\b/i,
-    /\bthe\s+general\s+population\b/i,
-    /\b(?:guidelines?|doctors?|experts?)\s+(?:say|recommend|suggest|consider|advise)\b/i,
-    /\b(?:adults?|people|most\s+people)\s+(?:generally|typically|usually|normally)\s+(?:need|require|get|aim)\b/i,
-    /\b(?:general|reference|normal|typical|healthy)\s+(?:reference\s+)?range\b/i,
-    /\b(?:recommended|typical|normal|healthy)\s+(?:amount|level|range|target)\s+(?:is|for|of)\b/i,
-  ],
-  de: [
-    /\bder\s+normal(?:e|bereich)\b/i,
-    /\bdie\s+normale\b/i,
-    /\bnormal(?:er|e)?\s+(?:ruhe)?(?:herzfrequenz|puls|bereich|wert)\b/i,
-    /\b(?:gesunde|die\s+meisten|der\s+durchschnittliche?)\s+(?:erwachsene|menschen|bevölkerung)\b/i,
-    /\b(?:leitlinien|ärzte|expert\w*)\s+(?:sagen|empfehlen|raten|betrachten)\b/i,
-    /\b(?:erwachsene|menschen)\s+(?:brauchen|benötigen)\s+(?:in\s+der\s+regel|generell|typischerweise|normalerweise)\b/i,
-    /\b(?:allgemeine|normale|typische)\s+(?:referenz)?(?:bereich|spanne|werte)\b/i,
-    /\bliegt\s+(?:normalerweise|üblicherweise|in\s+der\s+regel)\s+(?:bei|zwischen)\b/i,
-  ],
-  fr: [
-    /\bla\s+(?:plage|fourchette)\s+normale\b/i,
-    /\b(?:les\s+)?(?:adultes|personnes)\s+en\s+bonne\s+santé\b/i,
-    /\b(?:la\s+plupart\s+des|la\s+moyenne\s+des)\s+(?:adultes|gens|personnes)\b/i,
-    /\b(?:les\s+)?(?:recommandations|médecins|experts?)\s+(?:disent|recommandent|conseillent|suggèrent)\b/i,
-    /\b(?:les\s+)?adultes\s+(?:ont\s+généralement|ont\s+besoin|nécessitent)\b/i,
-    /\bplage\s+(?:de\s+référence|normale|recommandée)\b/i,
-    /\bse\s+situe\s+(?:généralement|normalement|habituellement)\s+(?:entre|autour)\b/i,
-  ],
-  es: [
-    /\b(?:el|la)\s+(?:rango|intervalo)\s+normal\b/i,
-    /\b(?:los\s+)?adultos\s+sanos\b/i,
-    /\b(?:la\s+mayoría\s+de|el\s+promedio\s+de)\s+(?:los\s+)?(?:adultos|personas|gente)\b/i,
-    /\b(?:las\s+)?(?:guías|directrices|médicos|expertos)\s+(?:dicen|recomiendan|aconsejan|sugieren)\b/i,
-    /\b(?:los\s+)?adultos\s+(?:generalmente|normalmente|suelen)\s+(?:necesitan|requieren)\b/i,
-    /\b(?:rango|intervalo)\s+(?:de\s+referencia|normal|recomendado)\b/i,
-    /\bse\s+sitúa\s+(?:generalmente|normalmente|habitualmente)\s+(?:entre|alrededor)\b/i,
-  ],
-  it: [
-    /\b(?:l'|il\s+|la\s+)?intervallo\s+normale\b/i,
-    /\b(?:gli\s+)?adulti\s+sani\b/i,
-    /\b(?:la\s+maggior\s+parte\s+(?:degli|delle)|la\s+media\s+(?:degli|delle))\s+(?:adulti|persone)\b/i,
-    /\b(?:le\s+)?(?:linee\s+guida|medici|esperti)\s+(?:dicono|raccomandano|consigliano|suggeriscono)\b/i,
-    /\b(?:gli\s+)?adulti\s+(?:generalmente|di\s+solito|normalmente)\s+(?:hanno\s+bisogno|necessitano)\b/i,
-    /\bintervallo\s+(?:di\s+riferimento|normale|raccomandato)\b/i,
-    /\bsi\s+(?:colloca|attesta)\s+(?:generalmente|normalmente|di\s+solito)\s+(?:tra|intorno)\b/i,
-  ],
-  pl: [
-    /\b(?:normalny|prawidłowy)\s+(?:zakres|przedział)\b/i,
-    /\bzdrow(?:i|ych)\s+doros(?:li|łych)\b/i,
-    /\b(?:większość|średnia)\s+(?:doros(?:łych|li)|ludzi|osób)\b/i,
-    /\b(?:wytyczne|lekarze|eksperci)\s+(?:mówią|zalecają|radzą|sugerują)\b/i,
-    /\bdoros(?:li|łych)\s+(?:zazwyczaj|zwykle|na\s+ogół)\s+(?:potrzebują|wymagają)\b/i,
-    /\b(?:zakres|przedział)\s+(?:referencyjny|normy|prawidłowy|zalecany)\b/i,
-    /\b(?:wynosi|mieści\s+się)\s+(?:zazwyczaj|zwykle|na\s+ogół)\s+(?:od|między|około)\b/i,
-  ],
-  nl: [
-    /\bhet\s+normale\s+(?:bereik|niveau)\b/i,
-    /\b(?:normale?|gezonde)\s+(?:rust)?(?:hartslag|pols|waarde|waarden|bereik)\b/i,
-    /\b(?:gezonde|de\s+meeste|de\s+gemiddelde)\s+(?:volwassenen|mensen|volwassene)\b/i,
-    /\bde\s+algemene\s+bevolking\b/i,
-    /\b(?:richtlijnen|artsen|experts?|deskundigen)\s+(?:zeggen|adviseren|raden|bevelen)\b/i,
-    /\b(?:volwassenen|mensen)\s+(?:hebben\s+)?(?:meestal|doorgaans|gewoonlijk|normaal\s+gesproken|over\s+het\s+algemeen)\s+(?:nodig|hebben)\b/i,
-    /\b(?:referentie|normaal|aanbevolen)\w*\s*(?:bereik|waarden?)\b/i,
-    /\bligt\s+(?:normaal\s+gesproken|meestal|doorgaans|gewoonlijk)\s+(?:tussen|rond|op)\b/i,
-  ], // No `\b` next to Hangul (it is an ASCII \w boundary), and the object sits
-  // between subject and verb in Korean, so each entry allows a gap where the
-  // Latin banks put \s+.
-  ko: [
-    /정상\s*범위(?:는|가|를|로|의)/,
-    /(?:참고|기준|권장)\s*(?:범위|치|값)/,
-    /(?:건강한|대부분의)\s*(?:성인|사람들?|인구)/,
-    /일반\s*인구(?:는|에서|의)/,
-    /(?:지침|가이드라인|의사들?|전문가들?)(?:은|이|에서|에서는|에 따르면)?[^.?!]{0,25}(?:권(?:장|해)|권고|제안|조언)/,
-    /(?:성인|사람들?|대부분의?\s*사람들?)(?:은|이|의)?\s*(?:보통|일반적으로|대개|평균적으로)\s*[^.?!]{0,20}(?:필요|권장|적당)/,
-    /(?:보통|일반적으로|대개)\s*[^.?!]{0,15}(?:사이|정도|범위)(?:예요|에요|입니다|이에요)/,
-  ],
-};
 
 /**
  * True when the prose cites a POPULATION norm (vs the user's own baseline).

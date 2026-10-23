@@ -22,10 +22,21 @@ import { describe, expect, it } from "vitest";
 
 import { INTEGRATION_CADENCE } from "@/lib/integrations/sync-verdict";
 import { INTEGRATION_DISPLAY_NAMES } from "@/components/settings/integrations/integration-fallback-row";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 const ROOT = path.resolve(__dirname, "../..");
 
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
+const LOCALES = [
+  "de",
+  "en",
+  "es",
+  "fr",
+  "it",
+  "pl",
+  "ko",
+  "nl",
+  "pt-BR",
+] as const;
 
 /** Every path the retired bridge occupied. */
 const REMOVED_PATHS = [
@@ -65,9 +76,9 @@ describe("moodLog integration stays removed", () => {
   });
 
   it("registers no moodlog queue, cron or handler binding", () => {
-    const registrar = readFileSync(
-      path.join(ROOT, "src/lib/jobs/reminder/register-integration-sync.ts"),
-      "utf8",
+    const registrar = readSource(
+      "src/lib/jobs/reminder/register-integration-sync.ts",
+      "export async function registerIntegrationSyncQueues",
     );
     expect(registrar).not.toContain("moodlog");
     expect(registrar).not.toContain("MoodLog");

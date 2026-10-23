@@ -131,11 +131,11 @@ export function MedicationCardHeader({
         {href ? (
           <Link
             href={href}
-            aria-label={linkLabel}
             data-slot="medication-card-header-link"
             className="focus-visible:ring-ring -m-1 min-w-0 space-y-1 rounded-md p-1 focus-visible:ring-2 focus-visible:outline-none"
           >
             {body}
+            {linkLabel ? <span className="sr-only">{linkLabel}</span> : null}
           </Link>
         ) : (
           <div className="min-w-0 space-y-1">{body}</div>

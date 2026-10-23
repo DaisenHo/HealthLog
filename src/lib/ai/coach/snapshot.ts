@@ -79,6 +79,7 @@ import {
   buildCoarseTimelineTail,
   type CoarseTimelineTail,
 } from "./snapshot-series";
+import { readCoachWorkoutRows } from "./snapshot-blocks/workouts-read";
 import { buildWorkoutsBlock } from "./snapshot-blocks/workouts-block";
 import {
   buildGlucoseBlock,
@@ -567,23 +568,7 @@ async function buildCoachSnapshotImpl(
       ? readSleepStageRows(userId, sleepRhythmCutoff)
       : null;
   const workoutRowsPromise = sources.has("workouts")
-    ? prisma.workout.findMany({
-        where: { userId, startedAt: { gte: additiveCutoff("workouts") } },
-        orderBy: { startedAt: "desc" },
-        select: {
-          sportType: true,
-          startedAt: true,
-          durationSec: true,
-          totalEnergyKcal: true,
-          totalDistanceM: true,
-          avgHeartRate: true,
-          maxHeartRate: true,
-          // v1.30.4 — needed by `pickCanonicalWorkoutRows` in the block
-          // builder to collapse a dual-source session (e.g. Apple Watch +
-          // WHOOP recording the same run) to one, matching `GET /api/workouts`.
-          source: true,
-        },
-      })
+    ? readCoachWorkoutRows(userId, additiveCutoff("workouts"))
     : null;
   // v1.17.0 — the glucose CLINICAL panel is a fixed 30-day clinical artifact,
   // identical to the one the insights panel + doctor report render. It must NOT

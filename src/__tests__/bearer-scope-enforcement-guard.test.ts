@@ -13,10 +13,13 @@
  * for that review.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import {
+  readSource,
+  readSourceText,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -33,7 +36,7 @@ function sourceFiles(): string[] {
 }
 
 function read(rel: string): string {
-  return readFileSync(join(SRC, rel), "utf8");
+  return readSourceText(join(SRC, rel));
 }
 
 function filesMatching(re: RegExp): string[] {
@@ -277,7 +280,10 @@ describe("T1 — the Bearer resolution set is frozen", () => {
   });
 
   it("the resolver exposes exactly one authorisation arm", () => {
-    const src = read("lib/auth/bearer.ts");
+    const src = readSource(
+      "src/lib/auth/bearer.ts",
+      'permissions.includes("*")',
+    );
     // One wildcard escape hatch, guarding one deny block. If a second
     // `permissions.includes("*")` short-circuit appears, the arm has forked.
     const wildcardChecks = src.match(/permissions\.includes\("\*"\)/g) ?? [];
@@ -376,7 +382,10 @@ describe("T3 — the mint sites are frozen", () => {
     // does not contradict this: what was retired is a mint at THIS path that
     // named no scope and answered for the whole API. A child path minting one
     // named scope, listed in `MINT_SITES` above, is the shape that replaced it.
-    const tokensRoute = read("app/api/tokens/route.ts");
+    const tokensRoute = readSource(
+      "src/app/api/tokens/route.ts",
+      "export const GET",
+    );
     expect(tokensRoute).not.toMatch(/export const POST/);
     expect(tokensRoute).toMatch(/export const GET/);
   });
@@ -443,12 +452,18 @@ describe("T4b — `documents:write` opens exactly two doors", () => {
     ]);
     // Within the upload file, once: the GET list beside the POST must not
     // name it.
-    const upload = read("app/api/documents/inbound/route.ts");
+    const upload = readSource(
+      "src/app/api/documents/inbound/route.ts",
+      "DOCUMENTS_WRITE_SCOPE",
+    );
     expect(
       requireAuthScopes(upload).filter((x) => x === "DOCUMENTS_WRITE_SCOPE"),
     ).toHaveLength(1);
     // And the lookup is a read of one key and nothing else: a single GET.
-    const lookup = read("app/api/documents/inbound/source/route.ts");
+    const lookup = readSource(
+      "src/app/api/documents/inbound/source/route.ts",
+      "export const GET",
+    );
     expect(
       [...lookup.matchAll(/export const (GET|POST|PUT|PATCH|DELETE)\b/g)].map(
         (m) => m[1],
@@ -470,7 +485,10 @@ describe("T4c — `workouts:write` opens exactly one door", () => {
       );
     });
     expect(declaring).toEqual(["app/api/workouts/batch/route.ts"]);
-    const batch = read("app/api/workouts/batch/route.ts");
+    const batch = readSource(
+      "src/app/api/workouts/batch/route.ts",
+      "WORKOUTS_WRITE_SCOPE",
+    );
     expect(
       requireAuthScopes(batch).filter((x) => x === "WORKOUTS_WRITE_SCOPE"),
     ).toHaveLength(1);
@@ -525,7 +543,7 @@ describe("T5 — a delegable route naming a Bearer scope is frozen", () => {
     // it and every other leg in this file stays green while a single-purpose
     // token gains delegated write — so the refusal is asserted where it lives,
     // not only through the behaviour that depends on it.
-    const src = read("lib/api-handler.ts");
+    const src = readSource("src/lib/api-handler.ts", "narrow_scope_selector");
     expect(src).toMatch(/narrow_scope_selector/);
     expect(src).toMatch(/isScopedCredential\(auth\)/);
   });

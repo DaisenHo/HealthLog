@@ -208,8 +208,45 @@ const ROUND_TRIP_TEST = "tests/integration/backup-round-trip.test.ts";
 
 const REPO_ROOT = resolve(__dirname, "../..");
 
+/**
+ * Every read below is memoised: the two-ended checks ask each declared file
+ * about each model and each of its relations, and reading the schema and the
+ * files again for every question made those checks slow enough to time out on
+ * a loaded runner.
+ */
+const sourceCache = new Map<string, string>();
+
 function read(relativePath: string): string {
-  return readFileSync(resolve(REPO_ROOT, relativePath), "utf8");
+  let text = sourceCache.get(relativePath);
+  if (text === undefined) {
+    text = readFileSync(resolve(REPO_ROOT, relativePath), "utf8");
+    sourceCache.set(relativePath, text);
+  }
+  return text;
+}
+
+const flatCache = new Map<string, string>();
+
+/** A declared file, whitespace-flattened so a call broken across lines matches. */
+function flat(relativePath: string): string {
+  let text = flatCache.get(relativePath);
+  if (text === undefined) {
+    text = read(relativePath).replace(/\s+/g, " ");
+    flatCache.set(relativePath, text);
+  }
+  return text;
+}
+
+let schemaModelBodies: Array<[string, string]> | null = null;
+
+/** Every schema model's name and body, read once. */
+function modelBodies(): Array<[string, string]> {
+  schemaModelBodies ??= [
+    ...readFileSync(SCHEMA_PATH, "utf8").matchAll(
+      /^model\s+(\w+)\s*\{([\s\S]*?)^\}/gm,
+    ),
+  ].map(([, name, body]) => [name, body]);
+  return schemaModelBodies;
 }
 
 /** `Measurement` → `measurement`, the Prisma delegate name. */
@@ -234,15 +271,19 @@ function delegateName(model: string): string {
  * route outright: the guard stayed green on all twelve checks, because the
  * cycle file was answering a question about a different table.
  */
+const parentsCache = new Map<
+  string,
+  Array<{ field: string; parent: string }>
+>();
+
 function relationParents(model: string): Array<{
   field: string;
   parent: string;
 }> {
-  const source = readFileSync(SCHEMA_PATH, "utf8");
+  const cached = parentsCache.get(model);
+  if (cached) return cached;
   const found: Array<{ field: string; parent: string }> = [];
-  for (const [, parent, body] of source.matchAll(
-    /^model\s+(\w+)\s*\{([\s\S]*?)^\}/gm,
-  )) {
+  for (const [parent, body] of modelBodies()) {
     for (const line of body.split("\n")) {
       const match = /^\s*(\w+)\s+(\w+)(\[\])?\??\s*(@|$)/.exec(line);
       if (match && match[2] === model) {
@@ -250,6 +291,7 @@ function relationParents(model: string): Array<{
       }
     }
   }
+  parentsCache.set(model, found);
   return found;
 }
 
@@ -261,6 +303,8 @@ const WRITE_RELATION_OPS = /\{\s*create\b/;
 /** Does `source` call a matching operation on `model`'s own Prisma delegate? */
 function callsDelegate(source: string, model: string, ops: RegExp): boolean {
   const delegate = delegateName(model);
+  // The expression below names the delegate; a file without it cannot match.
+  if (!source.includes(delegate)) return false;
   for (const match of source.matchAll(
     new RegExp(`\\.${delegate}\\s*\\.\\s*(\\w+)`, "g"),
   )) {
@@ -270,15 +314,19 @@ function callsDelegate(source: string, model: string, ops: RegExp): boolean {
 }
 
 /** Every model a relation field of this name points at, across the schema. */
+const targetsCache = new Map<string, Set<string>>();
+
 function targetsOfRelationField(field: string): Set<string> {
-  const source = readFileSync(SCHEMA_PATH, "utf8");
+  const cached = targetsCache.get(field);
+  if (cached) return cached;
   const targets = new Set<string>();
-  for (const [, body] of source.matchAll(/^model\s+\w+\s*\{([\s\S]*?)^\}/gm)) {
+  for (const [, body] of modelBodies()) {
     for (const line of body.split("\n")) {
       const match = /^\s*(\w+)\s+(\w+)(\[\])?\??\s*(@|$)/.exec(line);
       if (match && match[1] === field) targets.add(match[2]);
     }
   }
+  targetsCache.set(field, targets);
   return targets;
 }
 
@@ -301,10 +349,10 @@ function touches(
   relationOps: RegExp,
 ): boolean {
   return files.some((file) => {
-    // Whitespace-flattened so a call broken across lines still matches.
-    const source = read(file).replace(/\s+/g, " ");
+    const source = flat(file);
     if (callsDelegate(source, model, delegateOps)) return true;
     return relationParents(model).some(({ field, parent }) => {
+      if (!source.includes(field)) return false;
       if (
         !new RegExp(`\\b${field}\\s*:\\s*(?:${relationOps.source})`).test(
           source,
@@ -322,7 +370,7 @@ describe("every backed-up model travels both ways, or is named as debt", () => {
   it("does not count a nested relation read as a restore write", () => {
     expect(
       touches(
-        ["src/lib/export/restore-backup.ts"],
+        ["src/lib/export/measurements-restore.ts"],
         "User",
         WRITE_OPS,
         WRITE_RELATION_OPS,
@@ -565,11 +613,11 @@ describe("tables outside the schema have a backup verdict too", () => {
 
   it("carries the medication category through both ends", () => {
     const writer = readFileSync(
-      join(SRC, "lib/export/full-backup-payload.ts"),
+      join(SRC, "lib/export/medications-backup.ts"),
       "utf8",
     );
     const restore = readFileSync(
-      join(SRC, "lib/export/restore-backup.ts"),
+      join(SRC, "lib/export/medications-restore.ts"),
       "utf8",
     );
     expect(writer).toMatch(/getMedicationCategories\(/);

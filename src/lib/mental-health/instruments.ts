@@ -11,17 +11,18 @@
  *   - PHQ-9: Kroenke 2001; GAD-7: Spitzer 2006 (public-domain Pfizer grant).
  *   - WHO-5: WHO/UCN/MSD/MHE/2024.1 (© WHO 2024, CC BY-NC-SA 3.0 IGO) — raw
  *     0–25, × 4 → 0–100; "a percentage score below 50 … an indication for
- *     further assessment". Six app locales ship the WHO/PRU translations
- *     verbatim; Korean, which neither distribution carries, ships the
- *     published Kim 2010 translation instead.
+ *     further assessment". Five other app languages ship the PRU
+ *     translations WHO republishes, verbatim (sources at `WHO5_LOCALES`).
  *   - SCI: Espie et al., BMJ Open 2014;4:e004183 (© Sleepio Ltd, licensed
  *     free for non-commercial use, CC BY-NC) — 8 items, 0–4 each, total 0–32,
  *     HIGHER = better sleep; "a score of ≤16 … seems reasonable to detect
  *     possible insomnia disorder". Item text is validated in English; app
  *     locales without a validated translation present the English items.
- * This module owns the canonical NUMERIC contract; the human wording lives in
- * `messages/*.json` under `mentalHealth.items.*` (validated translations per
- * locale where they exist — re-wording invalidates the score). See
+ * This module owns the canonical NUMERIC contract. The human wording lives in
+ * `messages/*.json` under `mentalHealth.items.*` for the languages in an
+ * instrument's validated set, and in `instrument-wording.ts` as the English
+ * source every other language is shown (re-wording invalidates the score).
+ * Surfaces resolve it through `instrumentText`, never a bare `t()`. See
  * `.planning/research/screening-instruments-2026-07.md`.
  *
  * PHQ-9 item 9 (index 8) is the passive self-harm ideation screen and is the
@@ -60,12 +61,12 @@ export interface InstrumentDefinition {
   optionNamespace: string;
   optionGroups?: readonly string[];
   /**
-   * Recall-stem caption key per item under `mentalHealth.stems.` — the WHO-5
-   * and SCI items are fragments under a shared stem on the source forms, so
-   * the wizard paints the applicable stem above the question. PHQ/GAD keep
-   * their frame in the instrument description line (shipped contract).
+   * Stem key per item under `mentalHealth.stems.`: the question the source
+   * form prints above its items (the PHQ-9 / GAD-7 "Over the last 2 weeks…",
+   * the WHO-5 "Over the last two weeks …", the SCI section stems). The
+   * wizard keeps it visible above every item.
    */
-  stemKeys?: readonly string[];
+  stemKeys: readonly string[];
   /** Multiplier from item-sum to the reported total (WHO-5: × 4). */
   scoreMultiplier: number;
   /** Inclusive REPORTED total range (WHO-5: 0–100 percentage). */
@@ -99,14 +100,58 @@ export interface InstrumentDefinition {
   attribution: string;
 }
 
-/**
- * The app languages whose PHQ-9 / GAD-7 / WHO-5 item wording is bundled from
- * a published validated version. `nl` is absent on purpose: its bundle carries
- * a Dutch wording that has not yet been read against the published Dutch
- * PHQ-9, GAD-7 and WHO-5 forms, so Dutch readers get the English items plus
- * the honest note until it has.
+/*
+ * Which languages carry an instrument's own wording, and where it comes from.
+ *
+ * A language is listed only when its bundle reproduces a published version
+ * word for word: the question stem, every item, every answer option and, for
+ * the PHQ-9, the follow-up question. Each list below names its sources. A
+ * language that is not listed shows the English original with the honest
+ * note, and its bundle carries none of the instrument's keys
+ * (`instrument-wording.ts`). Adding a language means bundling its published
+ * form verbatim in the same change, with the source named here.
+ *
+ * Paper-form instructions ("mark your answer with a cross") and the
+ * row-end full stops of the printed tables are left out; nothing else is
+ * changed. The app's own copy may address the reader informally; the
+ * instruments keep the address form they were published in.
  */
-const ALL_APP_LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko"] as const;
+
+/**
+ * PHQ-9. English: the Pfizer form (phqscreeners.com). The others are the
+ * official Pfizer translations, read from the PDFs as distributed:
+ *  - de: "Gesundheitsfragebogen für Patienten (PHQ-9)", German for Germany,
+ *        the PHQ-D wording of Löwe, Spitzer, Zipfel & Herzog (Pfizer 2002).
+ *  - es: Spanish for Spain. it: Italian for Italy. pl: Polish for Poland.
+ *    (ECFS Mental Health working group mirror of the Pfizer files:
+ *    ecfs.eu/sites/default/files/general-content-files/working-groups/
+ *    Mental Health/PHQ9_<language> for <country>.pdf)
+ * Not listed: fr (the France version could not be obtained; the bundle's
+ * wording matched neither it nor the Belgian one), ko (no published Korean
+ * form could be checked), nl and pt-BR (never bundled).
+ */
+const PHQ9_LOCALES = ["en", "de", "es", "it", "pl"] as const;
+
+/**
+ * GAD-7. English: the Pfizer form. de: Löwe B et al., "Gesundheitsfragebogen
+ * für Patienten (GAD-7)", German version © Bernd Löwe 2015, Universitätsklinikum
+ * Hamburg-Eppendorf (validation: Löwe et al., Med Care 2008;46:266-274). es,
+ * fr, it, pl: the Pfizer translations for Spain, France, Italy and Poland
+ * (same ECFS mirror, GAD7_<language> for <country>.pdf). Not listed: ko, nl,
+ * pt-BR, as for the PHQ-9.
+ */
+const GAD7_LOCALES = ["en", "de", "es", "fr", "it", "pl"] as const;
+
+/**
+ * WHO-5. English: WHO/UCN/MSD/MHE/2024.1. de, es, fr, it, pl: the Psychiatric
+ * Research Unit translations (1998/1999 versions) that WHO republishes beside
+ * the 2024 English text (cdn.who.int …/five-well-being-index-(who-5)/
+ * who-5_<language>.pdf; the Spanish one via infocop.es). The Spanish sheet
+ * misprints item 4 as "descandado"; the bundle keeps "descansado". Not
+ * listed: ko (the Kim 2010 translation could not be checked against the
+ * paper), nl and pt-BR.
+ */
+const WHO5_LOCALES = ["en", "de", "es", "fr", "it", "pl"] as const;
 
 /**
  * The PHQ family is public-domain (Pfizer 2010); this is the canonical footer
@@ -136,10 +181,13 @@ const PHQ9: InstrumentDefinition = {
     { key: "modSevere", min: 15, max: 19 },
     { key: "severe", min: 20, max: 27 },
   ],
+  // The form's own question, "Over the last 2 weeks, how often have you been
+  // bothered by any of the following problems?", stands above every item.
+  stemKeys: Array(9).fill("phq9.period"),
   actionThreshold: 10,
   // Item 9 ("Thoughts that you would be better off dead…") — the safety field.
   safetyItemIndex: 8,
-  validatedItemLocales: ALL_APP_LOCALES,
+  validatedItemLocales: PHQ9_LOCALES,
   attribution: PHQ_GAD_ATTRIBUTION,
 };
 
@@ -149,7 +197,10 @@ const GAD7: InstrumentDefinition = {
   itemCount: 7,
   itemMax: 3,
   optionOrder: [0, 1, 2, 3],
-  optionNamespace: "mentalHealth.options",
+  // Its own anchors: the Italian GAD-7 words option 2 differently from the
+  // Italian PHQ-9, so the two cannot share one set.
+  optionNamespace: "mentalHealth.gad7Options",
+  stemKeys: Array(7).fill("gad7.period"),
   scoreMultiplier: 1,
   minScore: 0,
   maxScore: 21,
@@ -163,7 +214,7 @@ const GAD7: InstrumentDefinition = {
   ],
   actionThreshold: 10,
   safetyItemIndex: null,
-  validatedItemLocales: ALL_APP_LOCALES,
+  validatedItemLocales: GAD7_LOCALES,
   attribution: PHQ_GAD_ATTRIBUTION,
 };
 
@@ -195,18 +246,11 @@ const WHO5: InstrumentDefinition = {
   ],
   actionThreshold: 50,
   safetyItemIndex: null,
-  // WHO publishes official de/en/es/fr/it/pl versions — all bundled verbatim.
-  // There is no Korean one, so `ko` carries the published forward/back-
-  // translation from Kim 2010 instead, which is CC BY-NC and so
-  // redistributable. Its validation sample was community-dwelling elderly,
-  // not general adults — narrower than the other six arms.
-  validatedItemLocales: ALL_APP_LOCALES,
+  validatedItemLocales: WHO5_LOCALES,
   attribution:
     "World Health Organization. The World Health Organization-Five Well-Being " +
     "Index (WHO-5). Geneva: World Health Organization; 2024. Licence: " +
-    "CC BY-NC-SA 3.0 IGO. WHO does not endorse this application. Korean " +
-    "translation: Kim HJ, Moon YS, Son BK, Lee SK, Rho HJ, Kim DH. J Korean " +
-    "Geriatr Psychiatry 2010;14(2):90-96 (CC BY-NC 3.0).",
+    "CC BY-NC-SA 3.0 IGO. WHO does not endorse this application.",
 };
 
 /**
@@ -257,8 +301,10 @@ const SCI: InstrumentDefinition = {
   safetyItemIndex: null,
   // Validated in English (the CC BY-NC BMJ Open publication). French/Italian
   // validations exist in the literature but their item text is not openly
-  // redistributable, so every non-EN locale presents the English items with
-  // an honest note — never a self-made translation.
+  // redistributable, and no validated German version is published (a search
+  // in October 2026 found the German ISI, Gerber et al. 2016, not the SCI),
+  // so every non-EN locale presents the English items with an honest note —
+  // never a self-made translation.
   validatedItemLocales: ["en"],
   attribution:
     "Espie CA, Kyle SD, Hames P, et al. The Sleep Condition Indicator: a " +
@@ -338,7 +384,7 @@ export function optionLabelKey(
 
 /** Stem caption key (under `mentalHealth.stems.`) for an item, or null. */
 export function stemKey(id: InstrumentId, itemIndex: number): string | null {
-  return INSTRUMENTS[id].stemKeys?.[itemIndex] ?? null;
+  return INSTRUMENTS[id].stemKeys[itemIndex] ?? null;
 }
 
 /**
@@ -567,5 +613,7 @@ export const AUDIT_C_STANDARD_DRINK: Readonly<Record<string, string>> = {
   it: "Una bevanda corrisponde a una bevanda standard di circa 10 g di alcol puro, la definizione dell'OMS su cui si basano queste domande.",
   pl: "Standardowa porcja alkoholu to około 10 g czystego alkoholu, zgodnie z definicją WHO, na której opierają się te pytania.",
   nl: "Eén drankje is een standaardglas met ongeveer 10 g pure alcohol, de WHO-definitie waarop deze vragen gebaseerd zijn.",
+  "pt-BR":
+    "Uma bebida corresponde a uma dose padrão de cerca de 10 g de álcool puro, a definição da OMS na qual estas perguntas se baseiam.",
   ko: "표준 1잔: 양주잔으로 양주 1잔, 와인잔으로 와인 1잔, 막걸리 1사발이 각각 표준 1잔이다. 맥주는 캔맥주 1캔 또는 작은 병맥주 1병이며 생맥주는 500 mL가 표준 1잔이다. 소주는 1/4병이 표준 1잔에 해당한다.",
 };

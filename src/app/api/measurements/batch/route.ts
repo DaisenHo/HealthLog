@@ -67,6 +67,14 @@ import {
   type MergeCandidate,
 } from "@/lib/measurements/cross-source-merge";
 import {
+  externalKeyOf,
+  onceInBatch,
+  readStoredSampleIdentities,
+  readStoredStatsRows,
+  sampleIsStoredDuplicate,
+  statsWriteUnchanged,
+} from "@/lib/measurements/batch-stored-rows";
+import {
   lockMeasurementUser,
   reconcileExternalMeasurement,
   type MeasurementReconciliationVerdict,
@@ -80,7 +88,7 @@ import {
   BACKFILL_SYNC_TRIGGER,
   HEALTHKIT_REQUEST_SYNC_TRIGGERS,
   recordHealthKitTypeArrivals,
-  type HealthKitTypeArrival,
+  tallyHealthKitArrivals,
 } from "@/lib/integrations/healthkit-type-sync";
 import {
   classifyHourBucket,
@@ -643,6 +651,13 @@ async function postBatch(request: NextRequest): Promise<Response> {
 
   let insertedCount = 0;
   let updatedCount = 0;
+  /**
+   * `stats:` re-posts reported `updated` with nothing to write (see
+   * `isUnchangedStatsRow`). Counted in the response's `updated` like before,
+   * and in nothing that starts work.
+   */
+  let unchangedStatsCount = 0;
+  const unchangedStatsRows = new Set<Prepared>(); // #1259: not an arrival
   let duplicateCount = 0;
   let failedCount = 0;
   // v1.44 — subset of `insertedCount` written by the set-based insert.
@@ -769,82 +784,52 @@ async function postBatch(request: NextRequest): Promise<Response> {
     // before this one is reached, and then the reconciler has to decide.
     // `stats:` rows are never prefiltered (overwrite semantics), and neither
     // is a value the reconciler's own plausibility gate would refuse.
-    const externalKeyCounts = new Map<string, number>();
-    const naturalKeyCounts = new Map<string, number>();
-    const naturalKeyOf = (
-      type: unknown,
-      source: unknown,
-      measuredAt: Date,
-      sleepStage: unknown,
-    ) => `${type}::${source}::${measuredAt.getTime()}::${sleepStage ?? "null"}`;
-    for (const p of prepared) {
-      const externalKey = `${p.row.type}::${p.row.source}::${p.row.externalId}`;
-      externalKeyCounts.set(
-        externalKey,
-        (externalKeyCounts.get(externalKey) ?? 0) + 1,
-      );
-      const naturalKey = naturalKeyOf(
-        p.row.type,
-        p.row.source,
-        p.row.measuredAt as Date,
-        p.row.sleepStage,
-      );
-      naturalKeyCounts.set(
-        naturalKey,
-        (naturalKeyCounts.get(naturalKey) ?? 0) + 1,
-      );
-    }
-    const sampleExternalIds = [
+    const onceInThisBatch = onceInBatch(prepared.map((p) => p.row));
+    const existingByExternalKey = await readStoredSampleIdentities(
+      prisma,
+      user.id,
+      [
+        ...new Set(
+          prepared
+            .map((p) => p.row.externalId as string)
+            .filter((externalId) => !isStatsExternalId(externalId)),
+        ),
+      ],
+    );
+    const isExactStoredDuplicate = (p: Prepared): boolean =>
+      sampleIsStoredDuplicate(
+        existingByExternalKey.get(
+          externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+        ),
+        p.row,
+      ) &&
+      onceInThisBatch(p.row) &&
+      classifyRangeRejection(
+        p.row.type as MeasurementType,
+        p.row.value as number,
+      ) === null;
+
+    // An unchanged `stats:` re-post is reported `updated` without a write
+    // (see `batch-stored-rows.ts`), under the same once-per-batch key rule.
+    const storedStats = await readStoredStatsRows(prisma, user.id, [
       ...new Set(
         prepared
           .map((p) => p.row.externalId as string)
-          .filter((externalId) => !isStatsExternalId(externalId)),
+          .filter((externalId) => isStatsExternalId(externalId)),
       ),
-    ];
-    const existingByExternalKey = new Map<
-      string,
-      { measuredAt: Date; sleepStage: unknown }
-    >();
-    if (sampleExternalIds.length > 0) {
-      const existing = await prisma.measurement.findMany({
-        where: { userId: user.id, externalId: { in: sampleExternalIds } },
-        select: {
-          type: true,
-          source: true,
-          externalId: true,
-          measuredAt: true,
-          sleepStage: true,
-        },
-      });
-      for (const row of existing) {
-        existingByExternalKey.set(
-          `${row.type}::${row.source}::${row.externalId}`,
-          { measuredAt: row.measuredAt, sleepStage: row.sleepStage },
-        );
-      }
-    }
-    function isExactStoredDuplicate(p: Prepared): boolean {
-      const externalKey = `${p.row.type}::${p.row.source}::${p.row.externalId}`;
-      const stored = existingByExternalKey.get(externalKey);
-      if (!stored) return false;
-      const measuredAt = p.row.measuredAt as Date;
-      const naturalKey = naturalKeyOf(
-        p.row.type,
-        p.row.source,
-        measuredAt,
-        p.row.sleepStage,
+    ]);
+    const isUnchangedStatsRow = (p: Prepared): boolean =>
+      onceInThisBatch(p.row) &&
+      classifyRangeRejection(
+        p.row.type as MeasurementType,
+        p.row.value as number,
+      ) === null &&
+      statsWriteUnchanged(
+        storedStats.get(
+          externalKeyOf(p.row.type, p.row.source, p.row.externalId),
+        ),
+        desiredFor(p),
       );
-      return (
-        stored.measuredAt.getTime() === measuredAt.getTime() &&
-        (stored.sleepStage ?? null) === (p.row.sleepStage ?? null) &&
-        externalKeyCounts.get(externalKey) === 1 &&
-        naturalKeyCounts.get(naturalKey) === 1 &&
-        classifyRangeRejection(
-          p.row.type as MeasurementType,
-          p.row.value as number,
-        ) === null
-      );
-    }
 
     // v1.42 — the `folded_window` guard (`folded-window.ts`). A raw Apple
     // Health sample of a dense or mean type, old enough to have been folded,
@@ -1063,6 +1048,14 @@ async function postBatch(request: NextRequest): Promise<Response> {
         continue;
       }
 
+      if (statsRow && isUnchangedStatsRow(p)) {
+        results[p.index] = { index: p.index, status: "updated" };
+        unchangedStatsCount++;
+        unchangedStatsRows.add(p);
+        pushMergeCandidate(p);
+        continue;
+      }
+
       if (!statsRow && hasSameReadingSibling(p)) {
         results[p.index] = {
           index: p.index,
@@ -1093,16 +1086,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
         continue;
       }
 
-      const naturalKey = naturalKeyOf(
-        p.row.type,
-        p.row.source,
-        p.row.measuredAt as Date,
-        p.row.sleepStage,
-      );
-      if (
-        externalKeyCounts.get(key) === 1 &&
-        naturalKeyCounts.get(naturalKey) === 1
-      ) {
+      if (onceInThisBatch(p.row)) {
         pendingInserts.push(p);
         pushMergeCandidate(p);
         continue;
@@ -1121,6 +1105,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   let hourInsertedCount = 0;
   let hourUpdatedCount = 0;
   const hourLanded: HourBucketWrite[] = [];
+  const hourChanged = new Set<HourBucketWrite>(); // #1259: a new value
   if (hourWrites.length > 0 && accountTz) {
     const { writes, superseded } = combineHourWrites(hourWrites);
     for (const index of superseded) {
@@ -1141,12 +1126,15 @@ async function postBatch(request: NextRequest): Promise<Response> {
       );
       for (const { write, contributors } of writes) {
         const status = statuses.get(write.index) ?? "inserted";
+        // An unchanged hour still reads `updated` on the wire (#1259).
+        const wire = status === "inserted" ? "inserted" : "updated";
         for (const index of contributors) {
-          results[index] = { index, status };
+          results[index] = { index, status: wire };
           if (status === "inserted") hourInsertedCount++;
           else hourUpdatedCount++;
         }
         hourLanded.push(write);
+        if (status !== "unchanged") hourChanged.add(write);
       }
     } catch (err) {
       for (const { contributors } of writes) {
@@ -1227,33 +1215,20 @@ async function postBatch(request: NextRequest): Promise<Response> {
     const syncedAt = new Date();
     const deliveredWithoutTheApp =
       syncTrigger === "background" || syncTrigger === "push";
-    // v1.42 (#1173) — what this sync brought per type, for the per-type
-    // freshness list on the Apple Health card. Apple Health rows only, and
-    // under the same conditions as the checkpoint beside it.
-    const arrivals = new Map<MeasurementType, HealthKitTypeArrival>();
-    for (const p of prepared) {
-      if (p.row.source !== "APPLE_HEALTH") continue;
-      const status = results[p.index]?.status;
-      if (
-        status !== "inserted" &&
-        status !== "updated" &&
-        status !== "duplicate"
-      ) {
-        continue;
-      }
-      const type = p.row.type as MeasurementType;
-      const entry = arrivals.get(type) ?? { accepted: 0, newSamples: 0 };
-      entry.accepted += 1;
-      if (status !== "duplicate") entry.newSamples += 1;
-      arrivals.set(type, entry);
-    }
-    // The hours the phone posted are an arrival of their type as well.
-    for (const w of hourLanded) {
-      const entry = arrivals.get(w.type) ?? { accepted: 0, newSamples: 0 };
-      entry.accepted += 1;
-      entry.newSamples += 1;
-      arrivals.set(w.type, entry);
-    }
+    // v1.42 (#1173) — per-type arrivals for the Apple Health card, Apple
+    // Health rows and hours only, under the checkpoint's conditions. Since
+    // #1259 only a new or changed one brings something (`brought`).
+    const arrivals = tallyHealthKitArrivals([
+      ...prepared.flatMap((p) => {
+        const status = results[p.index]?.status;
+        if (p.row.source !== "APPLE_HEALTH" || !status) return [];
+        if (status === "skipped" || status === "failed") return [];
+        const unchanged = unchangedStatsRows.has(p);
+        const brought = status !== "duplicate" && !unchanged;
+        return [{ type: p.row.type as MeasurementType, brought }];
+      }),
+      ...hourLanded.map((w) => ({ type: w.type, brought: hourChanged.has(w) })),
+    ]);
     if (arrivals.size > 0) {
       await recordHealthKitTypeArrivals(prisma, {
         userId: user.id,
@@ -1311,7 +1286,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     details: {
       processed: entries.length,
       inserted: insertedCount,
-      updated: updatedCount,
+      updated: updatedCount + unchangedStatsCount,
       duplicates: duplicateCount,
       skipped: skipped.length,
       failed: failedCount,
@@ -1449,7 +1424,8 @@ async function postBatch(request: NextRequest): Promise<Response> {
     meta: {
       processed: entries.length,
       inserted: insertedCount,
-      updated: updatedCount,
+      updated: updatedCount + unchangedStatsCount,
+      stats_unchanged: unchangedStatsCount,
       duplicates: duplicateCount,
       skipped: skipped.length,
       // v1.32.1 (issue #585) — per-reason skip breakdown; see the
@@ -1497,7 +1473,17 @@ async function postBatch(request: NextRequest): Promise<Response> {
       syncTrigger === "foreground" ||
       syncTrigger === "manual" ||
       wroteManualRow;
-    invalidateUserMeasurements(user.id, evict ? { evict: true } : undefined);
+    // Every row this batch created, changed or retired is in
+    // `writtenIdentities`, so its earliest `measuredAt` bounds what changed:
+    // closed blocks of older readings (the pre-fold remainder, the day
+    // view's past history blocks) stay cached across the sync.
+    const touchedFrom = new Date(
+      Math.min(...writtenIdentities.map((w) => w.measuredAt.getTime())),
+    );
+    invalidateUserMeasurements(user.id, {
+      ...(evict ? { evict: true } : {}),
+      ...(Number.isFinite(touchedFrom.getTime()) ? { touchedFrom } : {}),
+    });
 
     // v1.37.19 — shared post-mutation tail for every distinct
     // (type, day) the batch touched. Updates participate as well as
@@ -1563,7 +1549,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   const response = apiSuccess({
     processed: entries.length,
     inserted: insertedCount + hourInsertedCount,
-    updated: updatedCount + hourUpdatedCount,
+    updated: updatedCount + unchangedStatsCount + hourUpdatedCount,
     duplicates: duplicateCount,
     failed: failedCount,
     skipped,

@@ -11,7 +11,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import { destroySessionById } from "@/lib/auth/session";
+import { destroySessionById, sessionHandle } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -25,15 +25,21 @@ export const DELETE = apiHandler(
       return apiError("Session not found", 404);
     }
 
+    // The path carries the public handle, never the row id, so "is this the
+    // caller's own session" compares handles. A Bearer caller's `session.id`
+    // is a token id, whose handle matches no session, which is the right
+    // answer for it too.
+    const self = id === sessionHandle(session.id);
+
     await auditLog("auth.session.revoke", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      details: { self: id === session.id },
+      details: { self },
     });
 
     annotate({
       action: { name: "auth.session.revoke" },
-      meta: { self: id === session.id },
+      meta: { self },
     });
 
     return apiSuccess({ revoked: true });

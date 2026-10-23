@@ -5,21 +5,8 @@ import { sendTelegramMessage } from "@/lib/telegram";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { defaultLocale, type Locale } from "@/lib/i18n/config";
+import { defaultLocale, isLocale, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
-
-function isLocale(value: string | null | undefined): value is Locale {
-  return (
-    value === "de" ||
-    value === "en" ||
-    value === "fr" ||
-    value === "es" ||
-    value === "it" ||
-    value === "pl" ||
-    value === "ko" ||
-    value === "nl"
-  );
-}
 
 /**
  * Send a test Telegram message to verify the bot token and chat ID.

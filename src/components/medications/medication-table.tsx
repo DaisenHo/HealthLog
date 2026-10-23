@@ -28,7 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MedicationStatusPill } from "@/components/medications/card-parts/medication-status-pill";
 import { useWeekdayLabel } from "@/components/medications/card-parts/medication-next-last-slot";
 import { resolveDisplayedSlotInstant } from "@/components/medications/card-parts/displayed-slot-instant";
-import { estimateRunwayDays } from "@/components/medications/detail/supply-runway";
+import { estimateRunwayDays } from "@/lib/medications/supply-runway";
 import { useMedicationIntake } from "@/components/medications/use-medication-intake";
 import { reduceCurrentWindowStatus } from "@/lib/medications/window-status";
 import { resolveNextDueDayLabel } from "@/lib/medications/next-due-day-label";
@@ -727,7 +727,6 @@ function MedicationTableRowItem({
       <TableCell className="bg-card sticky left-0 z-10">
         <Link
           href={`/medications/${medication.id}`}
-          aria-label={t("medications.openDetailPage")}
           className="focus-visible:ring-ring block min-w-0 rounded focus-visible:ring-2 focus-visible:outline-none"
         >
           <span className="text-foreground block max-w-40 truncate text-sm font-medium sm:max-w-56">
@@ -737,6 +736,7 @@ function MedicationTableRowItem({
             {formatDose(medication.dose, t)}
             {!medication.active && <> · {t("common.inactive")}</>}
           </span>
+          <span className="sr-only">{t("medications.openDetailPage")}</span>
         </Link>
       </TableCell>
       <TableCell>{statusCell}</TableCell>

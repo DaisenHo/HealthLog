@@ -216,11 +216,13 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   "/api/admin/backup/test": { kind: "adminConsole", methods: ["POST"] },
   "/api/admin/backups": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/backups/run": { kind: "adminConsole", methods: ["POST"] },
-  "/api/admin/backups/upload": { kind: "adminConsole", methods: ["POST"] },
-  // `/api/admin/backups/{id}/download` and `/api/admin/backups/{id}/restore`
-  // are published rather than exempted: both open the encrypted stored copy,
-  // and the refusal they answer when it will not open is a promise an operator
-  // needs to be able to look up. See `src/lib/openapi/routes/admin-backups.ts`.
+  // `/api/admin/backups/{id}/download`, `/api/admin/backups/{id}/restore` and
+  // `/api/admin/backups/upload` are published rather than exempted: the first
+  // two open the encrypted stored copy, and the refusal they answer when it
+  // will not open is a promise an operator needs to be able to look up; the
+  // upload refuses a file for reasons (a missing key, an unknown owner, a
+  // newer schema) an operator has to be able to look up the same way. See
+  // `src/lib/openapi/routes/admin-backups.ts`.
   "/api/admin/backups/{id}/summary": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/central-codex": {
     kind: "adminConsole",

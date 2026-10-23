@@ -31,7 +31,7 @@ vi.mock("@/components/ui/responsive-sheet", () => ({
 import { KeyboardShortcutsDialog } from "../keyboard-shortcuts-dialog";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
-primeLocales("de", "es", "fr", "it", "pl", "ko", "nl");
+primeLocales("de", "es", "fr", "it", "pl", "ko", "nl", "pt-BR");
 
 const EVERYTHING = {
   navHrefs: ["/", "/medications", "/labs", "/timeline", "/insights", "/coach"],
@@ -106,7 +106,7 @@ describe("<KeyboardShortcutsDialog>", () => {
     expect(kbd).not.toMatch(/#[0-9a-f]{3,6}|dracula|\[/i);
   });
 
-  it.each(["de", "es", "fr", "it", "pl", "ko", "nl"])(
+  it.each(["de", "es", "fr", "it", "pl", "ko", "nl", "pt-BR"])(
     "is translated in %s",
     (locale) => {
       const html = render({}, locale);

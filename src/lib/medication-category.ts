@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
 
 import type { Prisma } from "@/generated/prisma/client";
@@ -58,6 +59,7 @@ export async function resolveMedicationCategories(
 
   const rows = await client.medicationCategoryAssignment.findMany({
     where: { medicationId: { in: medicationIds } },
+    orderBy: { medicationId: "asc" },
     select: {
       medicationId: true,
       category: true,
@@ -77,6 +79,7 @@ export async function resolveMedicationCategories(
       ? []
       : await client.medicationCategoryLabel.findMany({
           where: { key: { in: customKeys } },
+          orderBy: { id: "asc" },
           select: { key: true, userId: true, labelEncrypted: true },
         });
   const labelByKey = new Map(labels.map((l) => [l.key, l]));
@@ -219,7 +222,7 @@ export async function listMedicationCategoryLabels(
 ): Promise<MedicationCategoryLabelDto[]> {
   const rows = await client.medicationCategoryLabel.findMany({
     where: { userId },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     select: {
       key: true,
       labelEncrypted: true,
@@ -254,32 +257,44 @@ export async function listMedicationCategoryLabels(
 export async function readMedicationCategoryLabelsForBackup(
   userId: string,
   client: CategoryClient = prisma,
+  options: { disasterRecovery?: boolean } = {},
 ): Promise<
   Array<{
     key: string;
-    label: string;
+    label: string | null;
+    labelEncrypted?: string;
     sortOrder: number;
     isActive: boolean;
     createdAt: string;
+    updatedAt?: string;
   }>
 > {
   const rows = await client.medicationCategoryLabel.findMany({
     where: { userId },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     select: {
       key: true,
       labelEncrypted: true,
       sortOrder: true,
       isActive: true,
       createdAt: true,
+      updatedAt: true,
     },
   });
   return rows.map((r) => ({
     key: r.key,
-    label: decryptCategoryLabel(r.labelEncrypted),
+    ...(options.disasterRecovery
+      ? {
+          label: null,
+          labelEncrypted: Buffer.from(r.labelEncrypted).toString("base64"),
+        }
+      : { label: decryptCategoryLabel(r.labelEncrypted) }),
     sortOrder: r.sortOrder,
     isActive: r.isActive,
     createdAt: r.createdAt.toISOString(),
+    ...(options.disasterRecovery
+      ? { updatedAt: r.updatedAt.toISOString() }
+      : {}),
   }));
 }
 

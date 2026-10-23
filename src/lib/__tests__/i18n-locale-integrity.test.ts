@@ -3,6 +3,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { requireFloor } from "@/__tests__/helpers/source-files";
+import { englishOnlyWordingKeys } from "@/lib/mental-health/instrument-wording";
 
 const ROOT = join(__dirname, "../../..");
 const MESSAGES_DIR = join(ROOT, "messages");
@@ -216,13 +217,25 @@ describe("i18n locale file integrity", () => {
       enArr.forEach((k) => enKeys.add(k));
       otherArr.forEach((k) => otherKeys.add(k));
 
-      const onlyInEn = [...enKeys].filter((k) => !otherKeys.has(k)).sort();
+      // The one sanctioned gap: questionnaire wording of an instrument whose
+      // validated set excludes this language. Those keys must be ABSENT —
+      // the surface shows the English source held by instrument-wording, so a
+      // translation here would be a self-made questionnaire waiting for a
+      // renderer to pick it up. The list is exact in both directions: a
+      // missing key outside it is drift, a carried key inside it fails too.
+      const englishOnly = englishOnlyWordingKeys(locale);
+      const englishOnlySet = new Set(englishOnly);
+      const onlyInEn = [...enKeys]
+        .filter((k) => !otherKeys.has(k) && !englishOnlySet.has(k))
+        .sort();
       const onlyInOther = [...otherKeys].filter((k) => !enKeys.has(k)).sort();
+      const carriedEnglishOnly = englishOnly.filter((k) => otherKeys.has(k));
 
       expect(
-        { onlyInEn, onlyInOther },
-        `Locale files drifted apart — every key in en.json must exist in ${locale}.json and vice versa.`,
-      ).toEqual({ onlyInEn: [], onlyInOther: [] });
+        { onlyInEn, onlyInOther, carriedEnglishOnly },
+        `Locale files drifted apart — every key in en.json must exist in ${locale}.json and vice versa, ` +
+          `except validated questionnaire wording, which ${locale}.json must not carry for an instrument not validated in it.`,
+      ).toEqual({ onlyInEn: [], onlyInOther: [], carriedEnglishOnly: [] });
     },
   );
 
@@ -341,6 +354,62 @@ describe("i18n locale file integrity", () => {
         todos,
         `Found TODO/FIXME/XXX/TBD placeholders in translation values:\n` +
           todos.map((s) => `  ${s}`).join("\n"),
+      ).toEqual([]);
+    },
+  );
+
+  /**
+   * Placeholder parity. `t()` replaces `{name}` tokens literally, so a
+   * translation that renames one ("{when}" for "{date}") renders the raw
+   * token, and one that drops one ("Plano limitado" for "Your {provider}
+   * plan does not include {list}") loses the information the sentence was
+   * for. Neither breaks the key-parity check above, which is how 38 of them
+   * reached a bundle unnoticed.
+   *
+   * A singular plural form (`…One`) may name the count in words instead of
+   * `{count}`, or name it where English does not.
+   */
+  function placeholderSet(value: string, singular: boolean): string {
+    const names = new Set(
+      [...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]),
+    );
+    if (singular) names.delete("count");
+    return [...names].sort().join(",");
+  }
+
+  it.each(NON_EN_LOCALES)(
+    "$locale uses exactly the English placeholders",
+    ({ locale, path }) => {
+      const enFlat: [string, string][] = [];
+      flattenValues(JSON.parse(readFileSync(EN_PATH, "utf8")), "", enFlat);
+      const other = new Map<string, string>();
+      const otherFlat: [string, string][] = [];
+      flattenValues(JSON.parse(readFileSync(path, "utf8")), "", otherFlat);
+      for (const [key, value] of otherFlat) other.set(key, value);
+
+      // A floor, so an empty or unreadable English bundle cannot pass.
+      requireFloor(
+        "English strings carrying a placeholder",
+        enFlat.filter(([, value]) => /\{\w+\}/.test(value)),
+        1000,
+      );
+      const drift = enFlat
+        .filter(([key, enValue]) => {
+          const value = other.get(key);
+          if (value === undefined) return false;
+          const singular = key.endsWith("One");
+          return (
+            placeholderSet(value, singular) !==
+            placeholderSet(enValue, singular)
+          );
+        })
+        .map(
+          ([key, enValue]) =>
+            `  ${key}: en {${placeholderSet(enValue, false)}} vs ${locale} {${placeholderSet(other.get(key) ?? "", false)}}`,
+        );
+      expect(
+        drift,
+        `Translations whose placeholders differ from English:\n${drift.join("\n")}`,
       ).toEqual([]);
     },
   );

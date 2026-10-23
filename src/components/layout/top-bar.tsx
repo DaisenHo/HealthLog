@@ -132,7 +132,6 @@ export function TopBar() {
         ) : user ? (
           <DropdownMenu>
             <DropdownMenuTrigger
-              aria-label={t("nav.userMenu")}
               // v1.4.25 — hit the WCAG 2.5.5 44 px touch-target floor on
               // mobile. The text-only py-1.5 was previously ~30 px tall.
               //
@@ -141,7 +140,8 @@ export function TopBar() {
               // the focus indicator without replacing it.
               className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 flex min-h-11 min-w-11 items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             >
-              <Avatar className="size-7">
+              <span className="sr-only">{t("nav.userMenu")}</span>
+              <Avatar className="size-7" aria-hidden="true">
                 {avatarUrl && (
                   <AvatarImage src={avatarUrl} alt={user.username} />
                 )}

@@ -152,11 +152,19 @@ function buildAnalyteNamePattern(): RegExp {
   );
 }
 
-const DERIVED_ANALYTE_NAMES = buildAnalyteNamePattern();
+let derivedAnalyteNamesCache:
+  ReturnType<typeof derivedAnalyteNamesBuild> | undefined;
+/** Built on first use, not at module load: it reads every shipped catalog. */
+function derivedAnalyteNames(): ReturnType<typeof derivedAnalyteNamesBuild> {
+  return (derivedAnalyteNamesCache ??= derivedAnalyteNamesBuild());
+}
+function derivedAnalyteNamesBuild() {
+  return buildAnalyteNamePattern();
+}
 
 /** Test seam: the guard suite pins that the derived pattern covers every locale. */
 export function derivedAnalyteNamePattern(): RegExp {
-  return DERIVED_ANALYTE_NAMES;
+  return derivedAnalyteNames();
 }
 
 /**
@@ -175,7 +183,7 @@ export function looksLikeLabDocument(text: string): boolean {
   for (const signal of LAB_SIGNALS) {
     const hit =
       signal.test(folded) ||
-      (signal === ANALYTE_SIGNAL && DERIVED_ANALYTE_NAMES.test(folded));
+      (signal === ANALYTE_SIGNAL && derivedAnalyteNames().test(folded));
     if (hit && ++hits >= 2) return true;
   }
   return false;

@@ -79,9 +79,11 @@ const WRITE_SITES: Record<string, string> = {
     "a primitive; every caller runs the tail over the verdicts' dirty identities",
   "lib/measurements/import-apple-health-export.ts":
     "the import worker refolds the import's span and re-warms every imported type",
+  "lib/measurements/import-unchanged-rows.ts":
+    "the Apple export import's natural-key rescue, inside the import; its worker runs both legs once over the whole import",
   "lib/import/health-connect/import.ts":
     "the Health Connect import worker refolds the import's span and re-warms every imported type",
-  "lib/export/restore-backup.ts":
+  "lib/export/measurements-restore.ts":
     "a restore replaces the whole record: it refolds the whole window and drops every per-user cache",
   // Value-preserving reshapes: the same readings folded into daily or hourly
   // rows. The rollups are refolded; the figures an assessment reads do not

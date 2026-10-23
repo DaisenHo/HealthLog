@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { readOperatorRow } from "@/lib/settings/operator-row";
 import { getEvent } from "@/lib/logging/context";
 import { memoizePerRequest } from "@/lib/request-cache";
 
@@ -57,16 +57,7 @@ export function loadAssistantSwitches(): Promise<AssistantFlagSet | null> {
     "assistant-flags",
     async () => {
       try {
-        const settings = await prisma.appSettings.findUnique({
-          where: { id: "singleton" },
-          select: {
-            assistantEnabled: true,
-            assistantCoachEnabled: true,
-            assistantBriefingEnabled: true,
-            assistantInsightStatusEnabled: true,
-            assistantDocumentAiEnabled: true,
-          },
-        });
+        const settings = await readOperatorRow();
         return resolveAssistantFlags({
           enabled: settings?.assistantEnabled ?? true,
           coach: settings?.assistantCoachEnabled ?? true,

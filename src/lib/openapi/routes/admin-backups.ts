@@ -1,13 +1,13 @@
 /**
  * OpenAPI route table — the backups-console routes that read a stored copy, and
- * the restore job they start.
+ * the restore job they start, and the upload that stores a copy to restore.
  *
  * Part of the OpenAPI route table; aggregated in `./index.ts`.
  *
  * Most of `/api/admin/backups/*` is deliberately unpublished: it is a
  * cookie-only console, `requireAdmin()` refuses every Bearer caller, and a
- * contract nobody can call against is a contract nobody reads. These two are
- * here for the opposite reason. Both open the encrypted stored copy (pieces in
+ * contract nobody can call against is a contract nobody reads. The two readers
+ * are here for the opposite reason. Both open the encrypted stored copy (pieces in
  * `data_backup_chunks`, or one value in `data_backups.data` for a copy written
  * before v1.39.2), and both therefore have a refusal an operator meets on
  * the day a key rotation went one step too far — the case
@@ -16,6 +16,11 @@
  * the handler happens to answer, and a promise belongs somewhere it can be
  * quoted from.
  *
+ * The upload is here for the same reason: it refuses a file the operator has
+ * in hand for reasons they have to be able to look up (a key this server does
+ * not hold, an owner that does not exist here, a newer schema), and its answer
+ * is the copy id the restore takes.
+ *
  * The restore answers 202 and runs as a background job, so the two routes that
  * report on that job are published with it: a 202 without its status route is
  * half a contract.
@@ -23,7 +28,12 @@
 import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 
-import { dataEnvelope, errorEnvelope, idempotencyKeyParameter } from "./shared";
+import {
+  dataEnvelope,
+  errorEnvelope,
+  idempotencyKeyParameter,
+  stdResponses,
+} from "./shared";
 
 const restoreRequest = z
   .object({
@@ -168,7 +178,101 @@ const notFoundResponse = {
   content: { "application/json": { schema: errorEnvelope } },
 };
 
+const uploadSummary = z
+  .object({
+    schemaVersion: z.string(),
+    userId: z.string(),
+    exportedAt: z.string(),
+  })
+  .catchall(z.number().int())
+  .meta({
+    id: "AdminBackupUploadSummary",
+    description:
+      "What the stored file holds: its `schemaVersion`, the account it was exported from (`userId`) and when (`exportedAt`), and one count per serialised class (`measurements`, `medications`, `intakeEvents`, `moodEntries`, …). The set of counts grows with the backup format; read the ones you know and show the rest generically.",
+  });
+
+const uploadStored = z
+  .object({
+    id: z.string().meta({
+      description:
+        "`DataBackup.id` of the stored copy; pass it to `POST /api/admin/backups/{id}/restore`.",
+    }),
+    valid: z.literal(true),
+    summary: uploadSummary,
+  })
+  .meta({
+    id: "AdminBackupUploadResponse",
+    description:
+      "The file was read, checked and stored as a new copy. Nothing was restored.",
+  });
+
 export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/admin/backups/upload": {
+    post: {
+      tags: ["Admin"],
+      summary: "Store an uploaded backup file as a new copy",
+      description:
+        "Reads a backup file, checks it, and stores it encrypted as a new copy beside the weekly one; it does NOT restore anything. Restoring is the separate `POST /api/admin/backups/{id}/restore`, so an operator can review what was uploaded first. The file goes up as the raw request body, plain JSON or gzip-compressed JSON (sniffed from the bytes, not the content type), up to 512 MB as sent; or, for a file up to 10 MB, as `multipart/form-data` with one `file` field. It is read as a stream, checked as it arrives, and stored in the same pass; a file that fails any check leaves nothing behind. It is refused when it is not valid JSON, fails the backup schema, was written by a newer schema version than this server reads, needs an encryption key this server does not hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds` naming them), or belongs to an account that does not exist here. Three uploads a minute per administrator. Admin session cookie required; Bearer tokens cannot reach admin endpoints. A browser session needs a fresh proof as well as a live one: a sign-in or `POST /api/auth/reproof` within the last five minutes (with a second factor, on an account that has one). Without it the answer is 401 `auth.reproof.required`, with `meta.methods` naming the proofs the account can give.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: z.record(z.string(), z.unknown()).meta({
+              description:
+                "The backup document, as `GET /api/admin/backups/{id}/download` or the account export wrote it.",
+            }),
+          },
+          "application/gzip": {
+            schema: z.string().meta({ format: "binary" }),
+          },
+          "multipart/form-data": {
+            schema: z.object({
+              file: z.string().meta({
+                format: "binary",
+                description:
+                  "The backup file, plain or gzip-compressed, up to 10 MB.",
+              }),
+            }),
+          },
+        },
+      },
+      responses: {
+        "201": {
+          description: "The file was stored as a new copy.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(uploadStored, "AdminBackupUploadEnvelope"),
+            },
+          },
+        },
+        "400": {
+          description:
+            "A `multipart/form-data` body that could not be parsed as a form. Nothing was stored.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "401": {
+          description:
+            "No session (`auth.missing`), or a session without a recent proof (`auth.reproof.required`, with `meta.methods`). A Bearer token lands here too: the admin gate reads only the session cookie.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "413": {
+          description:
+            "Too large: over 512 MB as sent (10 MB in a form), a gzip file that expands past what any backup this server wrote does, or larger than the stored-copy limit once encrypted (`meta.errorCode` = `backup.upload.too_large`, the numbers and the setting in the message). Nothing was stored.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "422": {
+          description:
+            "The file was refused and nothing was stored: no file in the request, not valid JSON or not readable as gzip, failed the backup schema (`meta.issues`), an unsupported schema version, a key this server does not hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds`), or an owner account that does not exist here.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "429": {
+          ...stdResponses["429"],
+          description:
+            "More than three uploads in a minute by this administrator. Nothing was stored. The `Retry-After` and `X-RateLimit-*` headers describe the bucket.",
+        },
+      },
+    },
+  },
   "/api/admin/backups/{id}/download": {
     get: {
       tags: ["Admin"],

@@ -14,7 +14,7 @@
  * UTC is always preserved in the database.
  */
 
-import type { Locale } from "./i18n/config";
+import { localeFromLanguageTag, type Locale } from "./i18n/config";
 import { getDateTimeFormat, getNumberFormat } from "./intl/formatter-cache";
 import { DEFAULT_TIMEZONE, isValidTimezone } from "./tz/format";
 
@@ -32,6 +32,7 @@ const INTL_LOCALE_MAP: Record<Locale, string> = {
   pl: "pl-PL",
   ko: "ko-KR",
   nl: "nl-NL",
+  "pt-BR": "pt-BR",
 };
 
 export function resolveIntlLocale(locale: Locale): string {
@@ -361,13 +362,6 @@ export function makeFormatters(
  */
 export function parseLocaleFromAcceptLanguage(header: string | null): Locale {
   if (!header) return "en";
-  const primary = header.split(",")[0]?.trim().toLowerCase() ?? "";
-  if (primary.startsWith("de")) return "de";
-  if (primary.startsWith("fr")) return "fr";
-  if (primary.startsWith("es")) return "es";
-  if (primary.startsWith("it")) return "it";
-  if (primary.startsWith("pl")) return "pl";
-  if (primary.startsWith("ko")) return "ko";
-  if (primary.startsWith("nl")) return "nl";
-  return "en";
+  const first = header.split(",")[0]?.split(";")[0];
+  return localeFromLanguageTag(first) ?? "en";
 }

@@ -31,6 +31,7 @@ import type { MeasurementType } from "@/generated/prisma/enums";
 
 import type { DayNotable } from "@/lib/day/contract";
 import { readLocalDailyStats, type DailyStats } from "@/lib/day/daily-stats";
+import { closedBlockKeyPart } from "@/lib/cache/closed-block";
 import { caches, type ServerCache } from "@/lib/cache/server-cache";
 import { prisma } from "@/lib/db";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
@@ -267,10 +268,16 @@ async function readExtremeHistory(args: {
   ) {
     const last = shiftDateKey(start, HISTORY_BLOCK_DAYS - 1);
     const open = last >= today;
+    // A closed block names the instant its readings end before, with a day
+    // of margin for a night that runs past midnight, so a sync that only
+    // touched newer readings leaves it cached (`closedBlockKeyPart`).
+    const closed = closedBlockKeyPart(
+      startOfLocalDayKey(shiftDateKey(last, 2), args.tz),
+    );
     blocks.push({
       start,
       end: open ? today : last,
-      key: `${prefix}|${start}|${open ? today : "closed"}`,
+      key: `${prefix}|${start}|${open ? today : closed}`,
     });
   }
 

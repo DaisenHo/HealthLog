@@ -34,6 +34,7 @@ import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { locales } from "@/lib/i18n/config";
 import { I18nProvider } from "@/lib/i18n/context";
 import { ApiError } from "@/lib/api/api-fetch";
 import type { AccountAccessEntry } from "@/lib/sharing/account-access-view";
@@ -285,12 +286,12 @@ describe("the managed-profile card, in the shared-access section", () => {
     }
     // The timezone control is the shared picker, which labels itself.
     expect(html).toContain('id="managed-profile-timezone"');
-    // Eight languages offered, which is the route's enum exactly.
+    // Every shipped language offered, which is the route's enum exactly.
     const options =
       /<select[^>]*data-slot="managed-profile-locale"[\s\S]*?<\/select>/
         .exec(html)?.[0]
         .match(/<option/g) ?? [];
-    expect(options).toHaveLength(8);
+    expect(options).toHaveLength(locales.length);
     // Four sex options, and the first is the empty one: null is a real answer
     // ("not recorded") rather than an absent field, and a form offering only
     // the three enum members would make it unsayable.

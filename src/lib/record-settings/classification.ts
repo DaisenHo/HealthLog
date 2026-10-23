@@ -1,7 +1,7 @@
 import {
   SETTINGS_SECTION_SLUGS,
   type SettingsSectionSlug,
-} from "@/components/settings/section-slugs";
+} from "@/lib/settings/section-slugs";
 import type {
   AccountAccessLevel,
   AccountRecordKind,

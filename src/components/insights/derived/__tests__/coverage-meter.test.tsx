@@ -79,7 +79,10 @@ describe("<CoverageMeter>", () => {
 
   it("carries an accessible summary label", () => {
     const html = render(<CoverageMeter coverage={PARTIAL} confidence={LOW} />);
-    expect(html).toContain("aria-label");
+    // The visible ratio plus the sentence, never an aria-label that drops
+    // the ratio (WCAG 2.5.3).
+    expect(html).not.toContain("aria-label");
+    expect(html).toContain('class="sr-only">3 of 5 inputs (35%)</span>');
     expect(html).toContain("3");
     expect(html).toContain("5");
   });

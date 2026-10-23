@@ -10,7 +10,17 @@ import {
   ManagedRecordSettingsForm,
 } from "../managed-record-settings-section";
 
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl"] as const;
+const LOCALES = [
+  "de",
+  "en",
+  "es",
+  "fr",
+  "it",
+  "pl",
+  "ko",
+  "nl",
+  "pt-BR",
+] as const;
 
 const render = (
   family: Parameters<typeof ManagedRecordSettingsForm>[0]["family"],

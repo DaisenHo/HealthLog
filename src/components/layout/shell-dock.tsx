@@ -80,7 +80,7 @@ export interface DockStripProps {
   expanded: boolean;
   /** The strip's visible, vertical label. */
   label: string;
-  /** The button's accessible name (what a click does). */
+  /** What a click does, as the button's tooltip. */
   actionLabel: string;
   icon: LucideIcon;
   onToggle: () => void;
@@ -124,7 +124,8 @@ export function DockStrip({
         data-slot={`${slot}-toggle`}
         aria-expanded={expanded}
         aria-controls={controls}
-        aria-label={actionLabel}
+        // Named by its visible label (WCAG 2.5.3); `aria-expanded` carries
+        // open or closed, and the tooltip spells out the action.
         title={actionLabel}
         onClick={onToggle}
         onPointerEnter={onPreload}

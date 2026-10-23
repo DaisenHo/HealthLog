@@ -116,7 +116,21 @@ export function runJob<J>(
       await signalRunFailed(queue, "handler_threw", error);
       throw error;
     }
-    if (outcome.ok) return serializeJobOutcome(outcome);
+    // The work is done by now. A fact that breaks the contract is a
+    // programming error in the handler, reported at error level and dropped
+    // from the result; failing the run over it would retry work that already
+    // succeeded (a nightly VACUUM, a full sweep).
+    if (outcome.ok) {
+      return serializeJobOutcome(outcome, {
+        onInvalidFact: (key, reason) =>
+          emitSignal({
+            action: "job.outcome.fact_invalid",
+            level: "error",
+            meta: { queue, key },
+            error: new TypeError(reason),
+          }),
+      });
+    }
 
     const failure = new JobFailure(queue, outcome.reason, outcome.cause);
     const causeMessage =

@@ -5,6 +5,7 @@
  * Server-only. The decision itself is the pure `resolveReasoning` in
  * `./resolve.ts`; this file only gathers its inputs.
  */
+import { readOperatorRow } from "@/lib/settings/operator-row";
 import { prisma } from "@/lib/db";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { memoizePerRequest } from "@/lib/request-cache";
@@ -70,10 +71,7 @@ function loadMemoisedControls(): Promise<ReasoningAdminControls> {
     "ai-reasoning-controls",
     async () => {
       try {
-        const row = await prisma.appSettings.findUnique({
-          where: { id: "singleton" },
-          select: { aiReasoningEnabled: true, aiReasoningMaxEffort: true },
-        });
+        const row = await readOperatorRow();
         return {
           enabled: row?.aiReasoningEnabled ?? true,
           maxEffort: parseReasoningMaxEffort(row?.aiReasoningMaxEffort),

@@ -1,6 +1,11 @@
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
-import { defaultLocale, locales, type Locale } from "./config";
+import {
+  defaultLocale,
+  locales,
+  localeFromLanguageTag,
+  type Locale,
+} from "./config";
 
 const LOCALE_COOKIE_NAMES = ["healthlog-locale", "userLocale"] as const;
 
@@ -24,8 +29,8 @@ function pickLocaleFromAcceptLanguage(header: string | null): Locale | null {
     .sort((a, b) => b.q - a.q);
 
   for (const { tag } of candidates) {
-    const primary = tag.split("-")[0];
-    if (isLocale(primary)) return primary;
+    const locale = localeFromLanguageTag(tag);
+    if (locale) return locale;
   }
   return null;
 }

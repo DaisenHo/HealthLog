@@ -43,6 +43,7 @@
  * score composition yields entirely. The empty-account degrade and the
  * freshness note are shared by both modes.
  */
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Moon } from "lucide-react";
 
@@ -331,12 +332,10 @@ export function TodayHero({
       {/* The ring opens the Insights overview — the destination the
           health-score card owns — so every hero ring is a door, not a
           poster. */}
-      <Link
-        href="/insights"
-        aria-label={t("daily.today.ringLink", {
+      <ScoreRingLink
+        purpose={t("daily.today.ringLink", {
           metric: t("daily.today.scoreLabel"),
         })}
-        className="focus-visible:ring-ring/50 block rounded-full focus-visible:ring-2 focus-visible:outline-none"
       >
         <ScoreRing
           score={digest.score?.value ?? null}
@@ -345,7 +344,7 @@ export function TodayHero({
           flat
           label={t("daily.today.scoreLabel")}
         />
-      </Link>
+      </ScoreRingLink>
     </div>
   );
 
@@ -563,5 +562,28 @@ export function TodayHero({
           ) : null)}
       </div>
     </section>
+  );
+}
+
+/**
+ * The hero ring as a door to the Insights overview. Named by what it shows
+ * (the score and its label) with the purpose added for screen readers, so
+ * the accessible name contains the visible text (WCAG 2.5.3).
+ */
+function ScoreRingLink({
+  purpose,
+  children,
+}: {
+  purpose: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href="/insights"
+      className="focus-visible:ring-ring/50 block rounded-full focus-visible:ring-2 focus-visible:outline-none"
+    >
+      <span className="sr-only">{purpose}</span>
+      {children}
+    </Link>
   );
 }

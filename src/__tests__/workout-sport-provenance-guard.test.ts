@@ -19,10 +19,9 @@
  * that a new ingest cannot appear without someone editing this file.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -36,7 +35,7 @@ function sourceFiles(): string[] {
 }
 
 function read(rel: string): string {
-  return readFileSync(join(SRC, rel), "utf8");
+  return readSourceText(join(SRC, rel));
 }
 
 interface ProviderIngest {
@@ -195,7 +194,7 @@ describe("T2 — the set of files writing Workout rows is frozen", () => {
     "app/api/workouts/batch/route.ts": "client-supplied enum",
     // Backup restore replays rows this app previously wrote, provenance and
     // all.
-    "lib/export/restore-backup.ts": "restore replay",
+    "lib/export/workouts-backup.ts": "restore replay",
   };
 
   it("only the registered ingests and the declared non-mappers create Workout rows", () => {

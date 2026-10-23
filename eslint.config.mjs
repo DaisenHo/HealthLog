@@ -176,6 +176,27 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+      // Layer direction: src/lib never imports src/components or src/app, and
+      // a "use client" file makes no value import of the database client,
+      // crypto, the Prisma client entry, the job queue, pg or next/headers.
+      // The files below still import upward; each says why it has not moved.
+      // A listed file that stops importing upward fails until it is removed,
+      // so the map only shrinks. See the rule header.
+      "healthlog/import-boundaries": [
+        "error",
+        {
+          allow: {
+            "src/lib/insights/metric-catalog.ts":
+              "reads SUB_PAGE_TABS, which is declared inside the client tab strip component together with its labels and order",
+            "src/lib/insights/target-adjust-context.tsx":
+              "a React provider that renders TargetEditSheet; it belongs under components but has importers across 21 insight pages",
+            "src/lib/errors/error-toast.tsx":
+              "a React toast renderer that renders ErrorIdLine; it belongs under components but is imported by most client surfaces",
+            "src/lib/module-list-prefs.ts":
+              "a client hook module that raises the shared outcome toast; it moves with the module list settings surface",
+          },
+        },
+      ],
     },
   },
   // v1.28.17 — every recharts-rendering component funnels through the

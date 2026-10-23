@@ -15,6 +15,7 @@ import { z } from "zod/v4";
 
 import { isValidTimezone } from "@/lib/tz/format";
 import { isoDateTime } from "@/lib/validations/datetime";
+import { locales } from "@/lib/i18n/config";
 
 /**
  * The record's sex, as `User.gender` already stores it.
@@ -33,7 +34,7 @@ const managedProfileGenderSchema = z.enum(["MALE", "FEMALE", "OTHER"]);
 const managedProfileFields = {
   displayName: z.string().trim().min(1).max(DISPLAY_NAME_MAX_LENGTH),
   dateOfBirth: z.iso.date().nullable(),
-  locale: z.enum(["de", "en", "es", "fr", "it", "pl", "ko", "nl"]),
+  locale: z.enum(locales),
   timezone: z
     .string()
     .min(1)

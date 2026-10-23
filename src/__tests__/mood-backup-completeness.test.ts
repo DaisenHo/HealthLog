@@ -36,15 +36,12 @@ import { join } from "node:path";
 
 import { describe, it, expect } from "vitest";
 
+import { readSource } from "./helpers/source-files";
+
 const ROOT = process.cwd();
 const SCHEMA = join(ROOT, "prisma", "schema.prisma");
-const BACKUP_BUILDER = join(
-  ROOT,
-  "src",
-  "lib",
-  "export",
-  "full-backup-payload.ts",
-);
+/** The mood domain's export half, where the selects and serialisers live. */
+const BACKUP_MODULE = "src/lib/export/mood-backup.ts";
 
 /**
  * Columns the backup is correct to omit, each with the reason. The reasons are
@@ -58,18 +55,12 @@ const EXCLUDED_MOOD_CONTEXT_COLUMNS: Record<string, string> = {
   moodEntryId:
     "re-bound to the restored parent row's id; the context rides inside its entry",
   userId: "user-scoped backup; owner is re-derived from the restoring account",
-  createdAt:
-    "the sub-row's own bookkeeping stamp; the entry carries the moment the person logged the day, and the context has nothing separate to say about when it was typed",
-  updatedAt:
-    "the sub-row's own bookkeeping stamp, moved by every write; a restore re-stamps it and nothing reads the old value",
 };
 
 const EXCLUDED_TAG_LINK_COLUMNS: Record<string, string> = {
   moodEntryId: "re-bound to the restored parent row's id, never carried",
   moodTagId:
     "the link travels by the tag's key; a source-instance id need not exist in the target catalogue",
-  createdAt:
-    "the link's own row stamp; the entry carries the moment the person logged it, and a key-only BINARY tag has nowhere to put a second one",
 };
 
 function modelBlock(schema: string, model: string): string {
@@ -175,7 +166,15 @@ function serialisedFields(source: string, variable: string): Set<string> {
 
 describe("mood backup completeness", () => {
   const schema = readFileSync(SCHEMA, "utf8");
-  const source = stripCommentLines(readFileSync(BACKUP_BUILDER, "utf8"));
+  const source = stripCommentLines(
+    readSource(BACKUP_MODULE, [
+      "const MOOD_ENTRY_BACKUP_SELECT = {",
+      "const MOOD_CONTEXT_BACKUP_SELECT = {",
+      "const MOOD_ENTRY_TAG_LINK_SELECT = {",
+      "function serialiseMoodEntry(",
+      "function serialiseMoodContext(",
+    ]),
+  );
   const models = declaredModels(schema);
 
   const entryColumns = scalarFields(modelBlock(schema, "MoodEntry"), models);

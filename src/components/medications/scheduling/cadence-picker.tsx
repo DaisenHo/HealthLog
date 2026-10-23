@@ -59,9 +59,11 @@ import {
   type CadenceSubControls,
   type CadenceValue,
   DEFAULT_SUB_CONTROLS,
+} from "./types";
+import {
   type WeekdayToken,
   WEEKDAY_TOKENS,
-} from "./types";
+} from "@/lib/medications/scheduling/weekday-tokens";
 
 export interface CadencePickerProps {
   value: CadenceValue;

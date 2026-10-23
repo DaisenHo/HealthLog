@@ -44,6 +44,7 @@ import {
   loadClarifyRecordChoices,
 } from "@/lib/ai/coach/clarify";
 import type { InventoryEntry } from "./inventory";
+import type { ScheduledDose } from "@/lib/medications/scheduled-doses";
 
 export const ASK_CLARIFICATION_TOOL_NAME = "ask_clarification";
 export const REMEMBER_FACT_TOOL_NAME = "remember_fact";
@@ -210,7 +211,7 @@ export interface DialogToolContext {
    * The person's scheduled doses and medication names, which the outbound
    * screen reads a proposed plan's text against, as it reads the answer.
    */
-  scheduleDoses?: readonly number[];
+  dosePlan?: readonly ScheduledDose[];
   medicationNames?: readonly string[];
   /**
    * A window was set for this conversation (the header pill, a deep link):
@@ -351,7 +352,7 @@ export async function runDialogTool(args: {
           userId: ctx.userId,
           conversationId: ctx.conversationId,
           locale: ctx.locale,
-          ...(ctx.scheduleDoses ? { scheduleDoses: ctx.scheduleDoses } : {}),
+          ...(ctx.dosePlan ? { dosePlan: ctx.dosePlan } : {}),
           ...(ctx.medicationNames
             ? { medicationNames: ctx.medicationNames }
             : {}),

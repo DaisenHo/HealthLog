@@ -185,7 +185,7 @@ export function ApiTokenOverviewSection() {
                 inner `overflow-x-auto` is a belt-and-suspenders guard
                 for medium viewports with extra-long permission
                 lists. */}
-            <div className="hidden overflow-x-auto md:block">
+            <div className="relative hidden overflow-x-auto md:block">
               <table className="w-full table-fixed text-sm">
                 <colgroup>
                   <col className="w-[18%]" />

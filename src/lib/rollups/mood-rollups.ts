@@ -51,10 +51,10 @@ import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { annotate } from "@/lib/logging/context";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
-import type {
+import {
   Prisma,
-  PrismaClient,
-  RollupGranularity,
+  type PrismaClient,
+  type RollupGranularity,
 } from "@/generated/prisma/client";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 
@@ -192,7 +192,11 @@ export async function recomputeUserMoodRollups(
   const granularities = opts.granularities ?? ALL_MOOD_GRANULARITIES;
   const fiveYearsAgo = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
   const from = opts.from ?? fiveYearsAgo;
-  const to = opts.to ?? new Date();
+  // A day label runs up to fourteen hours ahead of UTC (the zones east of
+  // it), so the open-ended fold reaches a day past now: bounded by now, the
+  // fold left out the reader's today between their local midnight and UTC
+  // midnight, and every read of the tier saw yesterday as the newest day.
+  const to = opts.to ?? new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   if (opts.replace) {
     // Empty the folded granularities first so the refold below is the
@@ -664,42 +668,32 @@ async function persistMoodRollupRows(
   rows: MoodRollupRow[],
 ): Promise<number> {
   if (rows.length === 0) return 0;
+  // One multi-row upsert per chunk. An upsert per bucket cost a statement for
+  // every day of the account's history on the read that refreshed the tier
+  // (the dashboard summary among them), and the count moved with the
+  // calendar. A single statement is also atomic on its own, so it is safe
+  // inside a caller's interactive transaction or outside one.
   const CHUNK = 500;
+  const computedAt = new Date();
   let touched = 0;
   for (let i = 0; i < rows.length; i += CHUNK) {
     const slice = rows.slice(i, i + CHUNK);
-    // Run each upsert sequentially through the supplied client (which
-    // may be a transactional handle). Wrapping in `$transaction` here
-    // would crash when the caller already holds an interactive
-    // transaction, so we rely on the parent caller (or atomicity of
-    // the single upsert) for crash safety. The hot path is a single
-    // row per DAY recompute, so the round-trip cost is negligible.
-    for (const row of slice) {
-      const payload = {
-        count: Number(row.count),
-        mean: row.mean ?? 0,
-        minScore: row.min_score ?? 0,
-        maxScore: row.max_score ?? 0,
-        sd: row.sd,
-        computedAt: new Date(),
-      } satisfies Prisma.MoodEntryRollupUpdateInput;
-      await client.moodEntryRollup.upsert({
-        where: {
-          userId_granularity_bucketStart: {
-            userId,
-            granularity,
-            bucketStart: row.bucket_start,
-          },
-        },
-        create: {
-          userId,
-          granularity,
-          bucketStart: row.bucket_start,
-          ...payload,
-        },
-        update: payload,
-      });
-    }
+    const values = slice.map(
+      (row) =>
+        Prisma.sql`(${userId}, ${granularity}::"measurement_rollup_granularity", ${row.bucket_start}, ${Number(row.count)}, ${row.mean ?? 0}, ${row.min_score ?? 0}, ${row.max_score ?? 0}, ${row.sd}, ${computedAt})`,
+    );
+    await client.$executeRaw`
+      INSERT INTO "mood_entry_rollups"
+        ("user_id", "granularity", "bucket_start", "count", "mean", "min_score", "max_score", "sd", "computed_at")
+      VALUES ${Prisma.join(values)}
+      ON CONFLICT ("user_id", "granularity", "bucket_start") DO UPDATE
+        SET "count"       = EXCLUDED."count",
+            "mean"        = EXCLUDED."mean",
+            "min_score"   = EXCLUDED."min_score",
+            "max_score"   = EXCLUDED."max_score",
+            "sd"          = EXCLUDED."sd",
+            "computed_at" = EXCLUDED."computed_at"
+    `;
     touched += slice.length;
   }
   return touched;

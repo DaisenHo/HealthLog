@@ -3,6 +3,26 @@ import type { Instrumentation } from "next";
 export async function register() {
   // Only start the worker on the Node.js server runtime (not Edge, not build)
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    // The event-loop monitor comes first, so the loading of the database
+    // client and of the worker graph is inside its view, and every stall it
+    // reports names the boot step that was running (`boot-steps.ts`).
+    const [{ startEventLoopLagMonitor }, { beginBootStep }] = await Promise.all(
+      [
+        import("@/lib/observability/event-loop-lag"),
+        import("@/lib/boot/boot-steps"),
+      ],
+    );
+    startEventLoopLagMonitor();
+
+    // Every locale falls back to the English message catalog, so a process
+    // without a readable `messages/en.json` cannot serve a page or a job.
+    // Refuse to start with the file named, rather than fail every request.
+    const { assertDefaultCatalogReadable } =
+      await import("@/lib/i18n/server-catalogs");
+    assertDefaultCatalogReadable();
+
+    beginBootStep("readiness_summary");
+
     // First-boot readiness summary: a human-readable block on the core secrets
     // (with the exact fix on a bad one) before any fail-closed loader throws,
     // plus a one-glance status of the optional channels. Runs for every process
@@ -18,6 +38,7 @@ export async function register() {
     // Does the configured encryption key open this database? A process whose
     // key does not refuses every API request with one clear 503 and starts
     // neither the producer nor the worker (a wrong key must never write).
+    beginBootStep("key_check");
     try {
       const [{ runBootKeyCheck }, { prisma }] = await Promise.all([
         import("@/lib/boot/key-check"),
@@ -29,6 +50,7 @@ export async function register() {
     }
 
     // Every connection is pinned to UTC; say clearly if one is not.
+    beginBootStep("time_zone_check");
     try {
       const [{ runBootTimeZoneCheck }, { prisma }] = await Promise.all([
         import("@/lib/boot/time-zone-check"),
@@ -41,6 +63,7 @@ export async function register() {
 
     // Every pulse reader follows the operator's pulse day-mean method; mirror
     // it in this process and keep the mirror current.
+    beginBootStep("pulse_method_sync");
     try {
       const { startPulseDayMeanMethodSync } =
         await import("@/lib/measurements/pulse-day-mean-method");
@@ -49,15 +72,10 @@ export async function register() {
       // Without the mirror the process keeps the default method.
     }
 
-    // Every Node process watches its own event loop — web-only
-    // containers included; a stall report from the process serving
-    // requests is the whole point.
-    const { startEventLoopLagMonitor } =
-      await import("@/lib/observability/event-loop-lag");
-    startEventLoopLagMonitor();
-
-    // The same for its heap: a trend line, and one report naming the work in
-    // flight before the heap runs out (a heap-limit crash logs nothing else).
+    // Every Node process watches its heap as it watches its event loop: a
+    // trend line, and one report naming the work in flight before the heap
+    // runs out (a heap-limit crash logs nothing else).
+    beginBootStep("monitors");
     try {
       const [{ startHttpInFlightTracking }, { startHeapMonitor }] =
         await Promise.all([
@@ -116,6 +134,7 @@ export async function register() {
       // process owns no schedules, supervision, or consumers.
       void (async () => {
         try {
+          beginBootStep("producer_start");
           const { startGlobalBossProducer } =
             await import("@/lib/jobs/boss-instance");
           const boss = await startGlobalBossProducer(process.env.DATABASE_URL);
@@ -125,6 +144,8 @@ export async function register() {
             registerShutdownHandlers(boss);
           }
           ready(boss !== null);
+          const { reportBootSteps } = await import("@/lib/boot/boot-steps");
+          await reportBootSteps();
         } catch (err) {
           ready(false);
           // Queue-backed garnishes degrade independently; never make the web
@@ -147,6 +168,7 @@ export async function register() {
       startupEvt.setBackground({ task_name: "startup" });
 
       try {
+        beginBootStep("worker_import");
         const { startReminderWorker } =
           await import("@/lib/jobs/reminder-worker");
         await startReminderWorker();

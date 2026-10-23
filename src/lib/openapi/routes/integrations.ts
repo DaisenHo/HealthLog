@@ -263,7 +263,7 @@ const appleHealthMetricFreshnessEntry = metricFreshnessEntry
       .nullable()
       .optional()
       .describe(
-        "When a live sync batch last carried this type (inserted, updated or duplicate entries all count). Null when no live sync has carried it yet: a type that so far came only from the export import, or from before v1.42. `lastSeenAt` is when the newest sample was TAKEN; this is when the server last RECEIVED the type. Omitted on the `WORKOUTS` entry, which the ledger does not cover, and on every entry when the ledger read failed.",
+        "When a live sync batch last brought a new or changed row of this type. Since v1.45 a batch that carried the type with duplicates only (an unchanged `stats:` re-post or an hour posted again with its stored value included) does not move it, nor `lastTrigger` or `lastBackgroundAt`; it moves `lastSeenDuplicateAt`. Before v1.45 duplicates counted too, so a stored value can still date from a duplicates-only batch. Null when no live sync has brought anything for it yet: a type that so far came only from the export import, or from before v1.42. `lastSeenAt` is when the newest sample was TAKEN; this is when the server last RECEIVED the type. Omitted on the `WORKOUTS` entry, which the ledger does not cover, and on every entry when the ledger read failed.",
       ),
     lastTrigger: healthKitSyncTriggerEnum
       .nullable()
@@ -275,13 +275,19 @@ const appleHealthMetricFreshnessEntry = metricFreshnessEntry
       .nullable()
       .optional()
       .describe(
-        "When a live sync batch last brought a new or updated sample of this type, as opposed to duplicates only. Null when none has. Same omission rules as `lastReceivedAt`.",
+        "When a live sync batch last brought a new or updated sample of this type, as opposed to duplicates only. Since v1.45 this moves together with `lastReceivedAt`; the two differ only on a row last written before. Null when none has. Same omission rules as `lastReceivedAt`.",
       ),
     lastBackgroundAt: isoDateTime()
       .nullable()
       .optional()
       .describe(
         'When a batch with `syncTrigger: "background"` last carried this type (since v1.42.4). A later `foreground`, `push` or `manual` batch moves `lastReceivedAt` and `lastTrigger` but leaves this standing, so opening the app does not hide an earlier background arrival. Null when the type has never arrived in the background as far as the server recorded: before v1.42.4 only the latest arrival was kept, so a type whose latest arrival then was a background one starts with that date and every other type starts null. Same omission rules as `lastReceivedAt`.',
+      ),
+    lastSeenDuplicateAt: isoDateTime()
+      .nullable()
+      .optional()
+      .describe(
+        "v1.45 — when a live sync batch last carried this type with duplicates only, nothing new or changed. Later than `lastReceivedAt` means the phone keeps sending the type but nothing new has arrived since `lastReceivedAt`. Null when no duplicates-only batch was recorded for an existing ledger row since v1.45. Same omission rules as `lastReceivedAt`; absent on older servers.",
       ),
     lastBackfillAt: isoDateTime()
       .nullable()

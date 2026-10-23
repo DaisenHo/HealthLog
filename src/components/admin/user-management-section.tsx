@@ -202,14 +202,10 @@ export function UserManagementSection() {
               ? t("admin.demoteToUser")
               : t("admin.promoteToAdmin")
         }
-        aria-label={
-          u.role === "ADMIN"
-            ? t("admin.demoteToUser")
-            : t("admin.promoteToAdmin")
-        }
       >
         <Shield className="h-3 w-3" aria-hidden="true" />
         {u.role === "ADMIN" ? t("admin.toUser") : t("admin.toAdmin")}
+        <span className="sr-only">, {u.username}</span>
       </Button>
       <Button
         variant="ghost"
@@ -226,15 +222,11 @@ export function UserManagementSection() {
             ? t("admin.mfaEnforcedOnHint")
             : t("admin.mfaEnforcedOffHint")
         }
-        aria-label={
-          u.mfaEnforced
-            ? t("admin.mfaEnforcedOnHint")
-            : t("admin.mfaEnforcedOffHint")
-        }
         aria-pressed={u.mfaEnforced}
       >
         <ShieldCheck className="h-3 w-3" aria-hidden="true" />
         {u.mfaEnforced ? t("admin.mfaEnforcedOn") : t("admin.mfaEnforcedOff")}
+        <span className="sr-only">, {u.username}</span>
       </Button>
       {/* The three icon tools travel as one group: on a phone the row wraps
           between the labelled toggles and the tools, never leaving the
@@ -356,7 +348,7 @@ export function UserManagementSection() {
               `md:block hidden` swaps it out for the card-list below at
               `< md`. Hiding the table-only wrapper (instead of just
               the cells) saves DOM weight on mobile too. */}
-            <div className="hidden overflow-x-auto md:block">
+            <div className="relative hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-muted-foreground border-b text-xs">

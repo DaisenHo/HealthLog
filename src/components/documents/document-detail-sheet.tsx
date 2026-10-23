@@ -847,10 +847,9 @@ export function DocumentDetailSheet({
                       launch.askCoach(null, undefined, false, doc.id);
                     }}
                     data-slot="document-chat-open"
-                    aria-label={t("documents.chat.openAria")}
                   >
                     <Sparkles className="size-4" aria-hidden />
-                    <span className="hidden sm:inline">
+                    <span className="sr-only sm:not-sr-only">
                       {t("documents.chat.openButton")}
                     </span>
                   </Button>

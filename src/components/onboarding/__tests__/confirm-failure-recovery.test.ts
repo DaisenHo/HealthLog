@@ -16,8 +16,6 @@
  * component tests render server-side and cannot click.
  */
 import { describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import {
   defaultOnboardingSteps,
@@ -27,6 +25,7 @@ import {
 
 import { runBaselineAttempt } from "../baseline-form";
 import { runConfirmFinish } from "../confirm-screen";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 type PassableStep = Parameters<
   Parameters<typeof runConfirmFinish>[0]["passStep"]
@@ -92,10 +91,10 @@ describe("runBaselineAttempt", () => {
   it("is the form's only way to move the pending flag", () => {
     // A second, inline `setSaving(false)` is how the flag stopped being
     // reset on one of the three exits in the first place.
-    const source = readFileSync(
-      join(process.cwd(), "src/components/onboarding/baseline-form.tsx"),
-      "utf8",
-    );
+    const source = readSource("src/components/onboarding/baseline-form.tsx", [
+      "export function BaselineForm",
+      "setSaving",
+    ]);
     expect(source).not.toContain("setSaving(false)");
     expect(source).not.toContain("setSaving(true)");
   });

@@ -318,24 +318,24 @@ export async function buildProfileBackupSection(
       // A portable export never resurrects a tombstone; a DR payload restores
       // the account exactly as it stood, deletions included.
       where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-      orderBy: { name: "asc" },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
       include: {
         // v1.37.20 — entries soft-delete now: a portable export
         // omits tombstoned readings (a restore must not resurrect them); a
         // DR payload carries them, tombstone included, like the parent.
         entries: {
           where: disasterRecovery ? {} : { deletedAt: null },
-          orderBy: { measuredAt: "asc" },
+          orderBy: [{ measuredAt: "asc" }, { id: "asc" }],
         },
       },
     }),
     prisma.healthProfileFactRevision.findMany({
       where: { userId },
-      orderBy: [{ kind: "asc" }, { validFrom: "asc" }],
+      orderBy: [{ kind: "asc" }, { validFrom: "asc" }, { id: "asc" }],
     }),
     prisma.correlationPattern.findMany({
       where: { userId },
-      orderBy: { canonicalKey: "asc" },
+      orderBy: [{ canonicalKey: "asc" }, { id: "asc" }],
     }),
   ]);
 

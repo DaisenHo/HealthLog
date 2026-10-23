@@ -14,6 +14,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import { readSource } from "@/__tests__/helpers/source-files";
 
 const ROOT = process.cwd();
 const INSIGHTS = join(ROOT, "src/app/insights");
@@ -52,7 +53,10 @@ describe("Insights add actions", () => {
   });
 
   it("the mood page has no text links into logging or the check-in", () => {
-    const source = readFileSync(join(INSIGHTS, "mood/page-client.tsx"), "utf8");
+    const source = readSource(
+      "src/app/insights/mood/page-client.tsx",
+      "<SubPageAddButton",
+    );
     expect(source).not.toMatch(/<Link\s+href="\/mood"\s+data-slot/);
     expect(source).not.toContain('href="/mental-wellbeing"');
     expect(source).not.toContain("insights.mood.mentalWellbeingLink");

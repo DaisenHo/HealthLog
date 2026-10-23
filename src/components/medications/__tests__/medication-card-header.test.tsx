@@ -121,7 +121,12 @@ describe("<MedicationCardHeader>", () => {
     );
     expect(html).toContain('data-slot="medication-card-header-link"');
     expect(html).toContain('href="/medications/med-1"');
-    expect(html).toContain('aria-label="Open medication detail page"');
+    // The link is named by what it shows, with the purpose added for
+    // screen readers (WCAG 2.5.3): no aria-label overriding the text.
+    expect(html).toContain(
+      '<span class="sr-only">Open medication detail page</span>',
+    );
+    expect(html).not.toContain('aria-label="Open medication detail page"');
     // The name + dose still ride inside the link region.
     expect(html).toContain("Ramipril");
     expect(html).toContain("5 mg");

@@ -23,6 +23,7 @@ import { buildGroundingLedger } from "@/lib/ai/coach/grounding-ledger";
 import { findUnverifiedCoachNumbersInLedger } from "@/lib/ai/coach/coach-prose-grounding";
 
 import { ACTIVITY_TEXT_MAX_CHARS, ACTIVITY_TITLE_MAX_CHARS } from "./contract";
+import type { ScheduledDose } from "@/lib/medications/scheduled-doses";
 
 export interface ActivityScreenContext {
   locale: Locale;
@@ -34,8 +35,12 @@ export interface ActivityScreenContext {
   figures: () => readonly unknown[];
   /** The person's own message: figures they stated may be repeated. */
   userMessage?: string;
-  /** Scheduled doses, which the dose screen lets through. */
-  scheduleDoses?: readonly number[];
+  /**
+   * The active medications with their doses: the dose screen trusts a
+   * continuation only at a planned dose, and the ledger counts the doses as
+   * grounded figures.
+   */
+  dosePlan?: readonly ScheduledDose[];
   /** The schedule's medication names, which count as medication nouns. */
   medicationNames?: readonly string[];
 }
@@ -61,7 +66,7 @@ function cut(text: string, max: number): string {
 function passes(text: string, ctx: ActivityScreenContext): boolean {
   try {
     if (
-      screenCoachReply(text, ctx.locale, ctx.scheduleDoses, ctx.medicationNames)
+      screenCoachReply(text, ctx.locale, ctx.dosePlan, ctx.medicationNames)
         .block
     ) {
       return false;
@@ -73,7 +78,7 @@ function passes(text: string, ctx: ActivityScreenContext): boolean {
       const ledger = buildGroundingLedger({
         toolPayloads: ctx.figures(),
         priorUserMessages: ctx.userMessage ? [ctx.userMessage] : [],
-        scheduleDoses: ctx.scheduleDoses,
+        scheduleDoses: ctx.dosePlan?.map((entry) => entry.dose),
       });
       const unverified = findUnverifiedCoachNumbersInLedger(
         text,

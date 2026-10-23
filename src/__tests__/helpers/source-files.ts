@@ -50,18 +50,87 @@
  * worktrees, each a full second copy of the tree that would double every
  * match. Every caller roots at `src/`, `e2e/` or a subtree of one.
  */
-import { readdirSync, readFileSync } from "node:fs";
-import { join, sep } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join, relative, resolve, sep } from "node:path";
+
+// ── The shared source index ────────────────────────────────────────────────
+//
+// The guards walk and read the same tree, and the guards project shares one
+// module graph per worker (`isolate: false`), so every walk and every read
+// below is memoised for the life of the worker: the tree is listed once per
+// top-level folder and each file is read once, however many guards ask. A
+// guard that walked `src/` and read every file again for each pattern it
+// tried ran for fifteen seconds; the same questions over the index take a
+// fraction of one.
+//
+// Only folders of the repository that do not change while tests run are
+// indexed (`INDEXED_ROOTS`). A walk or a read anywhere else (a temporary
+// fixture tree a test writes and rewrites) goes to the disk every time.
+
+const INDEXED_ROOTS = ["src", "e2e", "prisma"].map((dir) =>
+  resolve(process.cwd(), dir),
+);
+
+function indexedRootOf(path: string): string | null {
+  const absolute = resolve(path);
+  return (
+    INDEXED_ROOTS.find(
+      (root) => absolute === root || absolute.startsWith(`${root}${sep}`),
+    ) ?? null
+  );
+}
+
+const listingCache = new Map<string, string[]>();
+
+/** Every entry under `root`, posix-separated, sorted; memoised when indexed. */
+function listTree(root: string): string[] {
+  const absolute = resolve(root);
+  const anchor = indexedRootOf(absolute);
+  if (anchor === null) {
+    return readdirSync(absolute, { recursive: true })
+      .map((entry) => String(entry).split(sep).join("/"))
+      .sort();
+  }
+  let all = listingCache.get(anchor);
+  if (all === undefined) {
+    all = readdirSync(anchor, { recursive: true })
+      .map((entry) => String(entry).split(sep).join("/"))
+      .sort();
+    listingCache.set(anchor, all);
+  }
+  if (absolute === anchor) return all;
+  const prefix = `${relative(anchor, absolute).split(sep).join("/")}/`;
+  return all
+    .filter((rel) => rel.startsWith(prefix))
+    .map((rel) => rel.slice(prefix.length));
+}
+
+const textCache = new Map<string, string>();
+
+/**
+ * A repository file's text, read once per worker when it lies in an indexed
+ * folder. Use it in place of `readFileSync(path, "utf8")` for source the
+ * guard reads and never writes.
+ */
+export function readSourceText(path: string): string {
+  const absolute = resolve(path);
+  if (indexedRootOf(absolute) === null) return readFileSync(absolute, "utf8");
+  let text = textCache.get(absolute);
+  if (text === undefined) {
+    text = readFileSync(absolute, "utf8");
+    textCache.set(absolute, text);
+  }
+  return text;
+}
 
 export function walkSourceFiles(
   root: string,
   options: { floor: number; extensions?: readonly string[] },
 ): string[] {
   const extensions = options.extensions ?? [".ts", ".tsx"];
-  const files = readdirSync(root, { recursive: true })
-    .map((entry) => String(entry).split(sep).join("/"))
-    .filter((rel) => extensions.some((ext) => rel.endsWith(ext)))
-    .sort();
+  const files = listTree(root).filter((rel) =>
+    extensions.some((ext) => rel.endsWith(ext)),
+  );
 
   if (files.length < options.floor) {
     throw new Error(
@@ -216,7 +285,7 @@ export function scanSourceMatches(
 
   const matches: SourceMatch[] = [];
   for (const file of files) {
-    const raw = readFileSync(join(root, file), "utf8");
+    const raw = readSourceText(join(root, file));
     const source = options.stripComments ? stripComments(raw) : raw;
     for (const m of source.matchAll(pattern)) {
       const line = source.slice(0, m.index).split("\n").length;
@@ -228,4 +297,83 @@ export function scanSourceMatches(
     matches,
     options.matchFloor,
   ) as SourceMatch[];
+}
+
+/** Something a file must still contain for a read of it to mean anything. */
+export type SourceAnchor = string | RegExp;
+
+function anchorCount(text: string, anchor: SourceAnchor): number {
+  if (typeof anchor === "string") return text.split(anchor).length - 1;
+  const flags = anchor.flags.includes("g") ? anchor.flags : `${anchor.flags}g`;
+  return [...text.matchAll(new RegExp(anchor.source, flags))].length;
+}
+
+/**
+ * Read one source file by path, and prove it is still the file the guard is
+ * about.
+ *
+ * A guard that reads a fixed path and asserts that something is ABSENT
+ * (`expect(source).not.toMatch(…)`) is green on a file that has been split:
+ * the code it watched moved next door, the old path holds whatever is left,
+ * and the absence is true for the wrong reason. A missing file at least
+ * throws; a file that kept its name but lost its contents does not.
+ *
+ * So the caller names at least one anchor: a string or pattern the watched
+ * code itself carries (the function the guard is about, the call it pins).
+ * Every anchor must match at least once, or this throws and names the file,
+ * which is the moment to point the guard at the new home (or at a folder
+ * with `readSourceFolder`). `rel` is relative to the repository root.
+ */
+export function readSource(
+  rel: string,
+  anchors: SourceAnchor | readonly SourceAnchor[],
+): string {
+  const list = (Array.isArray(anchors) ? anchors : [anchors]) as SourceAnchor[];
+  if (list.length === 0) {
+    throw new Error(
+      `readSource(${rel}): name at least one anchor the watched code carries.`,
+    );
+  }
+  const path = join(process.cwd(), rel);
+  if (!existsSync(path)) {
+    throw new Error(
+      `readSource(${rel}): the file does not exist. If it was split or moved, ` +
+        `point the guard at the new location or scan the folder with ` +
+        `readSourceFolder and a floor.`,
+    );
+  }
+  const text = readSourceText(path);
+  const lost = list.filter((anchor) => anchorCount(text, anchor) === 0);
+  if (lost.length > 0) {
+    throw new Error(
+      `readSource(${rel}): the file no longer contains ${lost
+        .map(String)
+        .join(", ")}. The code this guard watches has moved; a negative ` +
+        `assertion on this file would now pass for the wrong reason.`,
+    );
+  }
+  return text;
+}
+
+/**
+ * Read every source file under a folder (relative to the repository root),
+ * with a floor on how many it found: the folder-scan form of `readSource`
+ * for a guard whose subject was split into several files. Returns
+ * `[path relative to the folder, text]` pairs, sorted.
+ */
+export function readSourceFolder(
+  relDir: string,
+  options: {
+    floor: number;
+    include?: (rel: string) => boolean;
+    extensions?: readonly string[];
+  },
+): Array<[string, string]> {
+  const root = join(process.cwd(), relDir);
+  const files = walkSourceFiles(root, {
+    floor: options.floor,
+    extensions: options.extensions,
+  }).filter(options.include ?? (() => true));
+  requireFloor(`readSourceFolder(${relDir})`, files, options.floor);
+  return files.map((rel) => [rel, readSourceText(join(root, rel))]);
 }

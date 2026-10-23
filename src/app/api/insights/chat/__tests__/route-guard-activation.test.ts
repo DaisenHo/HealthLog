@@ -128,7 +128,7 @@ vi.mock("@/lib/ai/coach/facts", () => ({
 // Guard II — the schedule read. Empty here; the schedule-gated dose rule is
 // unit-tested in the outbound-screen suite.
 vi.mock("@/lib/medications/scheduled-doses", () => ({
-  getScheduledDoseValues: vi.fn(async () => []),
+  getScheduledDosePlan: vi.fn(async () => []),
 }));
 
 const { reserveBudget, reconcileSpend } = vi.hoisted(() => ({

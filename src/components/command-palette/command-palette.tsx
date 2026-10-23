@@ -30,7 +30,7 @@ import {
   EMPTY_STATE_ACTIONS,
   type PaletteEntry,
   type PaletteGroup,
-} from "@/lib/command-palette/build-index";
+} from "@/components/command-palette/build-index";
 import { rankEntries } from "@/lib/command-palette/rank";
 import { pushRecent, readRecent } from "@/lib/command-palette/recent";
 import { scrollToAnchorWhenReady } from "@/lib/dom/scroll-to-anchor";

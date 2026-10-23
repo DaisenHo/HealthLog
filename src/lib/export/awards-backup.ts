@@ -184,12 +184,12 @@ export async function buildAwardsBackupSection(
   const [recordRows, achievementRows] = await Promise.all([
     prisma.personalRecord.findMany({
       where: { userId },
-      orderBy: { achievedAt: "asc" },
+      orderBy: [{ achievedAt: "asc" }, { id: "asc" }],
       select: PERSONAL_RECORD_BACKUP_SELECT,
     }),
     prisma.userAchievement.findMany({
       where: { userId },
-      orderBy: { unlockedAt: "asc" },
+      orderBy: [{ unlockedAt: "asc" }, { id: "asc" }],
       select: USER_ACHIEVEMENT_BACKUP_SELECT,
     }),
   ]);

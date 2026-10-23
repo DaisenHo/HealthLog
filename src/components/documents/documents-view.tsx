@@ -30,15 +30,8 @@ import {
   Wrench,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
@@ -53,6 +46,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { useUrlFilterSync } from "@/hooks/use-url-filter-sync";
+import {
+  currentUrlSearch,
+  urlStateHistory,
+  useUrlSearch,
+  writeUrlState,
+} from "@/lib/url-state";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
 import {
@@ -116,26 +115,6 @@ const BULK_VISIT_OPTIONS = 12;
 
 const DOCUMENT_QUERY_ID_PATTERN = /^[a-zA-Z0-9_-]{1,40}(?![\s\S])/;
 const DOCUMENT_SELECTION_HISTORY_KEY = "__healthlogPushedDocumentSelection";
-
-/**
- * The query string in the address bar, read at render time.
- *
- * The open sheet follows `?doc=`, and `useSearchParams` is not a faithful
- * copy of it: Next 16.4 applies the copy of a `pushState` later than the write,
- * and a Back pressed in between moves the address bar from `?doc=` to the
- * page without it while `useSearchParams` can read "no document" on both sides.
- * The sheet then saw no change and stayed open. `window.location` is never
- * behind; `popstate` re-reads it on every traversal, and every other render
- * (including the ones Next's own navigations cause) reads it afresh.
- */
-function subscribeToTraversal(onChange: () => void): () => void {
-  window.addEventListener("popstate", onChange);
-  return () => window.removeEventListener("popstate", onChange);
-}
-
-function readLocationSearch(): string {
-  return window.location.search;
-}
 
 export function documentSelectionHistoryState(
   documentId: string,
@@ -287,7 +266,6 @@ export function DocumentsView() {
   const canManageDocuments = canManageDomain("documents");
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const coachLaunch = useCoachLaunch();
 
@@ -326,8 +304,12 @@ export function DocumentsView() {
     const handle = setTimeout(() => {
       const trimmed = searchDraft.trim();
       if (trimmed === (filters.q ?? "")) return;
+      // Live filters, not the rendered ones a "Clear filters" just removed.
       applyFilters(
-        { ...filters, q: trimmed === "" ? undefined : trimmed },
+        (current) =>
+          trimmed === (current.q ?? "")
+            ? current
+            : { ...current, q: trimmed === "" ? undefined : trimmed },
         "replace",
       );
     }, 200);
@@ -356,46 +338,46 @@ export function DocumentsView() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // Every facet toggles against the live filters (`applyFilters` updater).
   const toggleKind = (kind: InboundDocumentKindValue) => {
-    const current = new Set(filters.kinds ?? []);
-    if (current.has(kind)) {
-      current.delete(kind);
-    } else {
-      current.add(kind);
-    }
-    applyFilters(
-      {
-        ...filters,
-        kinds: current.size > 0 ? [...current].sort() : undefined,
-      },
-      "push",
-    );
+    applyFilters((current) => {
+      const kinds = new Set(current.kinds ?? []);
+      if (kinds.has(kind)) kinds.delete(kind);
+      else kinds.add(kind);
+      return {
+        ...current,
+        kinds: kinds.size > 0 ? [...kinds].sort() : undefined,
+      };
+    }, "push");
   };
 
   const toggleEpisode = (episodeId: string) => {
     applyFilters(
-      {
-        ...filters,
-        episodeId: filters.episodeId === episodeId ? undefined : episodeId,
-      },
+      (current) => ({
+        ...current,
+        episodeId: current.episodeId === episodeId ? undefined : episodeId,
+      }),
       "push",
     );
   };
 
   const toggleEncounter = (encounterId: string) => {
     applyFilters(
-      {
-        ...filters,
+      (current) => ({
+        ...current,
         encounterId:
-          filters.encounterId === encounterId ? undefined : encounterId,
-      },
+          current.encounterId === encounterId ? undefined : encounterId,
+      }),
       "push",
     );
   };
 
   const toggleYear = (year: number) => {
     applyFilters(
-      { ...filters, year: filters.year === year ? undefined : year },
+      (current) => ({
+        ...current,
+        year: current.year === year ? undefined : year,
+      }),
       "push",
     );
   };
@@ -845,13 +827,11 @@ export function DocumentsView() {
   const [detailOpen, setDetailOpen] = useState(false);
   const handedOffDocumentRef = useRef<string | null>(null);
 
-  // Before hydration the server's view of the query stands in for the URL.
-  const locationSearch = useSyncExternalStore(
-    subscribeToTraversal,
-    readLocationSearch,
-    () => searchParams.toString(),
-  );
-  const rawDocParam = new URLSearchParams(locationSearch).get("doc");
+  // `?doc=` read live (`@/lib/url-state`): Next 16.4 adopts a pushState a
+  // render after the write, and a Back pressed in between left the router's
+  // copy reading "no document" on both sides, so the sheet stayed open.
+  const liveParams = useUrlSearch();
+  const rawDocParam = liveParams.get("doc");
   const docParam =
     rawDocParam !== null && DOCUMENT_QUERY_ID_PATTERN.test(rawDocParam)
       ? rawDocParam
@@ -870,12 +850,15 @@ export function DocumentsView() {
 
   const openDetail = useCallback(
     (id: string) => {
-      const href = documentSelectionHref(pathname, window.location.search, id);
+      const href = documentSelectionHref(pathname, currentUrlSearch(), id);
       if (href === null) return;
       handedOffDocumentRef.current = null;
       setDetailId(id);
       setDetailOpen(true);
-      window.history.pushState(documentSelectionHistoryState(id), "", href);
+      writeUrlState((params) => params.set("doc", id), {
+        mode: "push",
+        state: documentSelectionHistoryState(id),
+      });
     },
     [pathname],
   );
@@ -912,9 +895,9 @@ export function DocumentsView() {
     );
 
     handedOffDocumentRef.current = closeDocumentSelectionAfterCoachHandoff(
-      window.history,
+      urlStateHistory,
       pathname,
-      window.location.search,
+      currentUrlSearch(),
       docParam,
       handedOffDocumentRef.current,
       coachLaunch?.closeIntent,
@@ -940,14 +923,10 @@ export function DocumentsView() {
     // the moment the sheet re-opens or the parameter changes — which is what
     // makes re-opening within the window safe.
     const verify = window.setTimeout(() => {
-      if (!documentSelectionSurvivedClose(window.location.search, docParam)) {
+      if (!documentSelectionSurvivedClose(currentUrlSearch(), docParam)) {
         return;
       }
-      window.history.replaceState(
-        null,
-        "",
-        withoutDocumentSelectionHref(pathname, window.location.search),
-      );
+      writeUrlState((params) => params.delete("doc"));
     }, CLOSE_TRAVERSAL_GRACE_MS);
     return () => window.clearTimeout(verify);
   }, [

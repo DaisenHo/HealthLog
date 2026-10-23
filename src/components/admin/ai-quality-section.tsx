@@ -117,7 +117,7 @@ export function AiQualitySection() {
           title={t("admin.aiQuality.empty")}
         />
       ) : (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full text-sm" data-slot="ai-quality-table">
             <thead>
               <tr className="text-muted-foreground border-border border-b text-left text-xs tracking-wider uppercase">

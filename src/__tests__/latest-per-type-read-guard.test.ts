@@ -23,11 +23,14 @@
  * Comments are stripped before matching, and the planted cases prove each
  * matcher finds what it claims to.
  */
-import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { stripComments, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 /** The shared comment strip, plus SQL line comments inside template strings. */
 function stripCode(text: string): string {
@@ -98,7 +101,7 @@ describe("latest-per-type reads", () => {
 
   it("no production read keeps one row per type with DISTINCT ON", () => {
     const offenders = productionFiles().filter((file) =>
-      LATEST_PER_TYPE.test(stripCode(readFileSync(join(SRC, file), "utf8"))),
+      LATEST_PER_TYPE.test(stripCode(readSourceText(join(SRC, file)))),
     );
     expect(offenders).toEqual([]);
   });
@@ -129,9 +132,7 @@ describe("latest-per-type reads", () => {
   it("no production read groups every row for the latest per type", () => {
     const files = productionFiles();
     const grouped = files.filter((file) =>
-      /\.measurement\s*\.\s*groupBy\s*\(/.test(
-        readFileSync(join(SRC, file), "utf8"),
-      ),
+      /\.measurement\s*\.\s*groupBy\s*\(/.test(readSourceText(join(SRC, file))),
     );
     // The tree groups measurements in a dozen places; finding none means
     // the walk read the wrong tree.
@@ -139,16 +140,16 @@ describe("latest-per-type reads", () => {
     const offenders = files
       .filter((file) => !(file in GROUPBY_ALLOWED))
       .flatMap((file) =>
-        latestOnlyGroupBys(
-          stripComments(readFileSync(join(SRC, file), "utf8")),
-        ).map((arg) => `${file}: ${arg.slice(0, 100)}`),
+        latestOnlyGroupBys(stripComments(readSourceText(join(SRC, file)))).map(
+          (arg) => `${file}: ${arg.slice(0, 100)}`,
+        ),
       );
     expect(offenders).toEqual([]);
   });
 
   it("the summaries slice is built only behind its cache cell", () => {
     const callers = productionFiles().filter((file) =>
-      SLICE_BUILDER_CALL.test(stripCode(readFileSync(join(SRC, file), "utf8"))),
+      SLICE_BUILDER_CALL.test(stripCode(readSourceText(join(SRC, file)))),
     );
     expect(callers).toEqual(["lib/analytics/summaries-slice.ts"]);
   });

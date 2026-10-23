@@ -18,8 +18,10 @@
  * Server-side translation (`getServerTranslator`, `shared-resolve`) holds
  * every catalog on its own and needs no priming.
  */
-import { afterEach, vi } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
 import { settleBackgroundTasks } from "@/lib/logging/background-tasks";
+import { quarantineEntryFor } from "./tests/quarantine/quarantine";
+import { watchSwallowedMockErrors } from "./tests/support/swallowed-mock-errors";
 import { primeMessages } from "@/lib/i18n/load-locale";
 import enMessages from "./messages/en.json";
 
@@ -40,8 +42,24 @@ primeMessages("en", enMessages);
  * console, which would have thrown away a real signal and left the
  * non-determinism in place. See `src/lib/logging/background-tasks.ts`.
  */
+const checkSwallowedMockErrors = watchSwallowedMockErrors();
+
 afterEach(async () => {
   await settleBackgroundTasks();
+  // A caught "missing mock export" error fails the test it happened in
+  // (`tests/support/swallowed-mock-errors.ts`).
+  checkSwallowedMockErrors();
+});
+
+/**
+ * Skip a test on the flaky-test quarantine list until its entry expires. See
+ * `tests/quarantine/quarantine.ts` and docs/contributing/testing.md.
+ */
+beforeEach((context) => {
+  const entry = quarantineEntryFor(context.task);
+  if (entry) {
+    context.skip(`quarantined until ${entry.expires} (${entry.issue})`);
+  }
 });
 
 /**

@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { usePathname, useSearchParams } from "next/navigation";
+
+import { reportRouterSearch, writeUrlState } from "@/lib/url-state";
 import {
   Suspense,
   useCallback,
@@ -56,12 +58,7 @@ import {
   takeDayYield,
   useDayFocus,
 } from "./day-layer-controller";
-import {
-  parseDayParam,
-  shiftDateKey,
-  stripDayOf,
-  withDayHref,
-} from "./day-url";
+import { parseDayParam, shiftDateKey, stripDayOf } from "./day-url";
 import { useLongDayLabel } from "./day-label";
 import type { DayViewProps } from "./day-view";
 import { usePrefetchDay } from "./use-day";
@@ -167,12 +164,14 @@ function DayLayer() {
   // A parameter the layer cannot open leaves the URL quietly.
   useEffect(() => {
     if (raw === null || date !== null) return;
-    window.history.replaceState(
-      null,
-      "",
-      withDayHref(window.location.pathname, window.location.search, null),
-    );
+    writeUrlState((params) => params.delete(DAY_QUERY_PARAM));
   }, [raw, date]);
+  // The layer reads the router's copy of the URL; it tells the URL-state
+  // queue when that copy has caught up with a write.
+  const routerSearch = searchParams.toString();
+  useEffect(() => {
+    reportRouterSearch(routerSearch);
+  }, [routerSearch]);
 
   useEffect(() => {
     publishOpenDay(date);
@@ -238,22 +237,7 @@ function DayLayer() {
   const shortLabel = useLongDayLabel("short");
   const { t } = useTranslations();
   const titleId = useId();
-  const titleRef = useRef<HTMLHeadingElement | null>(null);
-  // Focus asked for before the day's content had loaded: the heading takes
-  // it the moment it mounts.
-  const titleFocusPending = useRef(false);
-  const attachTitle = useCallback((el: HTMLHeadingElement | null) => {
-    titleRef.current = el;
-    if (el && titleFocusPending.current) {
-      titleFocusPending.current = false;
-      el.focus({ preventScroll: true });
-    }
-  }, []);
-  const focusTitle = useCallback(() => {
-    const el = titleRef.current;
-    if (el) el.focus({ preventScroll: true });
-    else titleFocusPending.current = true;
-  }, []);
+  const { attachTitle, focusTitle, cancelTitleFocus } = useTitleFocus();
   const panelRef = useRef<HTMLElement>(null);
   const stripRef = useRef<HTMLButtonElement>(null);
   // Set by a fold (the strip, its shortcut): focus then lands on the strip,
@@ -297,11 +281,7 @@ function DayLayer() {
     // Read again, not from the render: a Back on this page has just closed it.
     if (!readDayOpen(owner)) return;
     restoring.current = true;
-    window.history.replaceState(
-      null,
-      "",
-      withDayHref(window.location.pathname, window.location.search, railDay),
-    );
+    writeUrlState((params) => params.set(DAY_QUERY_PARAM, railDay));
   }, [shell, raw, leftOpen, railDay, owner]);
 
   // What the polite region says: the day that just opened or was stepped to.
@@ -320,6 +300,7 @@ function DayLayer() {
       restoring.current = false;
       return;
     }
+    cancelTitleFocus();
     if (before !== null && shell === "docked") {
       // Collapsed for a neighbouring panel: focus stays where it was, and the
       // day counts as folded by the person, who opened the other panel.
@@ -343,7 +324,7 @@ function DayLayer() {
       }
     }
     collapsing.current = false;
-  }, [date, shell, owner, focusTitle]);
+  }, [date, shell, owner, focusTitle, cancelTitleFocus]);
 
   const onStep = useCallback(
     (delta: number) => {
@@ -609,6 +590,43 @@ function DockedTitle({
   tabIndex?: number;
 }) {
   return <h2 ref={ref} {...props} />;
+}
+
+/**
+ * Focus for the day's heading: at once when it is there, or the moment it
+ * mounts when the day's content was still loading. A waiting request is
+ * honoured only while focus is still where it was when the request was made:
+ * once the person has moved on (the Coach's input took focus on load, then
+ * they opened the conversations), a heading that mounts late must not pull
+ * focus back to a day that is about to fold away. It also ends with the day
+ * (`cancelTitleFocus`) and never lands inside a panel already inert.
+ */
+function useTitleFocus() {
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
+  const pending = useRef(false);
+  const requestedFrom = useRef<Element | null>(null);
+  const attachTitle = useCallback((el: HTMLHeadingElement | null) => {
+    titleRef.current = el;
+    if (el && pending.current) {
+      pending.current = false;
+      const active = document.activeElement;
+      const stayed = active === requestedFrom.current || active === null;
+      if (stayed && !el.closest("[inert]")) el.focus({ preventScroll: true });
+    }
+  }, []);
+  const focusTitle = useCallback(() => {
+    const el = titleRef.current;
+    if (el) {
+      el.focus({ preventScroll: true });
+      return;
+    }
+    pending.current = true;
+    requestedFrom.current = document.activeElement;
+  }, []);
+  const cancelTitleFocus = useCallback(() => {
+    pending.current = false;
+  }, []);
+  return { attachTitle, focusTitle, cancelTitleFocus };
 }
 
 /**

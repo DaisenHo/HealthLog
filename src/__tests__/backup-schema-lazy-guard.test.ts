@@ -9,6 +9,13 @@
  *
  * The one static importer allowed is the OpenAPI registry, which only the
  * spec generator loads.
+ *
+ * The schema is composed from one slice per domain (`<domain>-backup-schema.ts`
+ * beside the domain's export and restore, the shared primitives in
+ * `backup-schema-kit.ts`). A slice builds its part of the 12 MB the moment it
+ * is evaluated, so the same rule holds for every slice: it is reached through
+ * `src/lib/validations/backup.ts` and from other slices, and from nothing
+ * else, however its domain module is used.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -37,27 +44,54 @@ const STATIC_IMPORT =
   /^import\s+(type\s+)?([^;]*?)\s+from\s+["']@\/lib\/validations\/backup["']/gm;
 const DYNAMIC_IMPORT = /import\(\s*["']@\/lib\/validations\/backup["']\s*\)/g;
 
+/** `import … from` a schema slice or the kit, capturing what precedes it. */
+const SLICE_IMPORT =
+  /^import\s+(type\s+)?([^;]*?)\s+from\s+["']@\/lib\/(?:export\/[\w-]+-backup-schema|export\/backup-schema-kit|cycle\/backup-schema)["']/gm;
+
+/** A slice module itself, by its path under `src/`. */
+function isSlice(rel: string): boolean {
+  return (
+    /^lib\/export\/[\w-]+-backup-schema\.ts$/.test(rel) ||
+    rel === "lib/export/backup-schema-kit.ts" ||
+    rel === "lib/cycle/backup-schema.ts"
+  );
+}
+
+function isTypeOnly(match: RegExpMatchArray): boolean {
+  return (
+    match[1] !== undefined ||
+    (/^\{[^}]*\}$/.test(match[2]) &&
+      match[2]
+        .slice(1, -1)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .every((s) => s.startsWith("type ")))
+  );
+}
+
 describe("the backup payload schema loads on first use", () => {
   const files = sourceFiles(ROOT);
   const staticValueImporters: string[] = [];
   let dynamicImports = 0;
   let typeImports = 0;
 
+  const sliceFiles: string[] = [];
+  const sliceValueImporters: string[] = [];
+  let slicesComposed = 0;
+
   for (const file of files) {
     const rel = relative(ROOT, file);
-    if (rel === "lib/validations/backup.ts") continue;
     const text = readFileSync(file, "utf8");
+    if (isSlice(rel)) sliceFiles.push(rel);
+    for (const match of text.matchAll(SLICE_IMPORT)) {
+      if (isTypeOnly(match)) continue;
+      if (rel === "lib/validations/backup.ts") slicesComposed++;
+      else if (!isSlice(rel)) sliceValueImporters.push(rel);
+    }
+    if (rel === "lib/validations/backup.ts") continue;
     for (const match of text.matchAll(STATIC_IMPORT)) {
-      const typeOnly =
-        match[1] !== undefined ||
-        (/^\{[^}]*\}$/.test(match[2]) &&
-          match[2]
-            .slice(1, -1)
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-            .every((s) => s.startsWith("type ")));
-      if (typeOnly) typeImports++;
+      if (isTypeOnly(match)) typeImports++;
       else if (!ALLOWED_STATIC.has(rel)) staticValueImporters.push(rel);
     }
     dynamicImports += [...text.matchAll(DYNAMIC_IMPORT)].length;
@@ -65,6 +99,15 @@ describe("the backup payload schema loads on first use", () => {
 
   it("has no static value import outside the OpenAPI registry", () => {
     expect(staticValueImporters).toEqual([]);
+  });
+
+  it("reaches no schema slice except through the payload schema", () => {
+    expect(sliceValueImporters).toEqual([]);
+  });
+
+  it("finds the slices and their composition (no vacuous pass)", () => {
+    expect(sliceFiles.length).toBeGreaterThanOrEqual(29);
+    expect(slicesComposed).toBeGreaterThanOrEqual(28);
   });
 
   it("finds the loaders it guards (an empty match set would pass vacuously)", () => {

@@ -195,12 +195,12 @@ export async function buildSensitiveBackupSection(
   const [assessmentRows, receiptRows] = await Promise.all([
     prisma.mentalHealthAssessment.findMany({
       where: { userId },
-      orderBy: { takenAt: "asc" },
+      orderBy: [{ takenAt: "asc" }, { id: "asc" }],
       select: MENTAL_HEALTH_BACKUP_SELECT,
     }),
     prisma.consentReceipt.findMany({
       where: { userId },
-      orderBy: { signedAt: "asc" },
+      orderBy: [{ signedAt: "asc" }, { id: "asc" }],
       select: CONSENT_RECEIPT_BACKUP_SELECT,
     }),
   ]);

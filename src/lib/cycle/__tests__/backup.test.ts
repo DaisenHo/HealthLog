@@ -92,8 +92,16 @@ describe("buildCycleBackupSection disaster-recovery mode", () => {
             updatedAt,
             // One symptom the person put a number on, one they did not.
             symptomLinks: [
-              { severity: 4, symptom: { key: "cramps" } },
-              { severity: null, symptom: { key: "fatigue" } },
+              {
+                severity: 4,
+                symptom: { key: "cramps" },
+                createdAt: new Date("2026-04-10T07:00:00.000Z"),
+              },
+              {
+                severity: null,
+                symptom: { key: "fatigue" },
+                createdAt: new Date("2026-04-10T07:00:00.000Z"),
+              },
             ],
           },
         ]),
@@ -171,6 +179,11 @@ describe("buildCycleBackupSection disaster-recovery mode", () => {
       // Only the rated link is listed. An unrated one is left out rather than
       // written as a zero, so the file says "never rated" and not "rated none".
       symptomSeverities: [{ key: "cramps", severity: 4 }],
+      // When each link was written, every link, disaster recovery only.
+      symptomLinkCreatedAt: [
+        { key: "cramps", createdAt: "2026-04-10T07:00:00.000Z" },
+        { key: "fatigue", createdAt: "2026-04-10T07:00:00.000Z" },
+      ],
     });
   });
 });

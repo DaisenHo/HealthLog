@@ -14,9 +14,10 @@
  * stress is six days old. One of those may back a present-tense sentence and
  * the other may not.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { extractFeatures } from "@/lib/insights/features";
+import { ensureUserMoodRollupsFresh } from "@/lib/rollups/mood-rollups";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
@@ -266,5 +267,42 @@ describe("level-A blocks reach the feature set with their own ages", () => {
     expect(features.mood?.scale).toBe(
       "1=LAUSIG, 2=SCHLECHT, 3=OKAY, 4=GUT, 5=SUPER_GUT",
     );
+  });
+});
+
+/**
+ * The block's ages are calendar days in the reader's zone, whatever the hour.
+ * The rollup tier pins a day's point to its local midnight, and the ages were
+ * elapsed hours rounded to days: from noon on, this morning's entry read as a
+ * day old. The clock is pinned to the edges of the Berlin day, on both sides
+ * of noon, with the rollup tier built so the read takes that path. The days
+ * are in the past: the database clock is not pinned, and the rollup tier
+ * leaves out rows from its future.
+ */
+describe("the mood block's ages hold at every hour of the day", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it.each([
+    "2026-10-14T22:05:00.000Z", // 00:05 in Berlin
+    "2026-10-15T09:59:00.000Z", // 11:59
+    "2026-10-15T10:01:00.000Z", // 12:01
+    "2026-10-15T19:30:00.000Z", // 21:30, the hour the CI run failed at
+    "2026-10-15T21:55:00.000Z", // 23:55
+    "2026-03-29T00:30:00.000Z", // 01:30 on the morning the clocks go forward
+  ])("today is 0 days old at %s", async (instant) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(instant));
+    await seedUser();
+    await seedEntry(3, { mood: "OKAY", score: 3, a1: 5 });
+    await seedEntry(0, { mood: "GUT", score: 4, a1: 7 });
+    await ensureUserMoodRollupsFresh(USER);
+
+    const features = await extractFeatures(USER, false);
+
+    expect(features.mood?.coverage.newestDaysAgo).toBe(0);
+    expect(features.mood?.coverage.oldestDaysAgo).toBe(3);
+    expect(features.mood?.coverage.spanDays).toBe(3);
   });
 });

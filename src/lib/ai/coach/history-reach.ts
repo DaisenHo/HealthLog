@@ -5,8 +5,8 @@
  * Before it became a limit, the saved window only seeded the snapshot and the default of
  * each tool call; every tool accepted its own `window` up to `allTime`, the
  * availability probe reported out-of-window history with counts and means,
- * and several snapshot blocks read fixed windows (labs 12 months, glucose
- * panel 30 days, correlations 180 days) whatever the setting said. The
+ * and several snapshot blocks read fixed windows (glucose panel 30 days,
+ * correlations 180 days) whatever the setting said. The
  * setting is now enforced everywhere the Coach reads: the snapshot, every
  * tool, the probe, the inventory and the fixed windows. Each reader takes a
  * `CoachHistoryReach` and either clamps its window to it (`clampWindow`,
@@ -163,8 +163,17 @@ export const COACH_DAILY_DETAIL_DAYS = 365;
 /** How far back an all-time table reaches, as monthly values. */
 export const COACH_ALL_TIME_TABLE_DAYS = 3_650;
 
-/** Months of lab results the Coach reads (`labs-snapshot.ts`). */
-export const COACH_LABS_LOOKBACK_MONTHS = 12;
+// Lab results are not held to a window of their own (#1263). Without a limit
+// the snapshot carries the latest value of the most recently measured
+// markers; a read for one named marker adds its previous results in full and
+// older ones summarised per year (`labs-snapshot.ts`). The two numbers the
+// sentence states are pinned to that module's constants by the test.
+
+/** Earlier results a named-marker read lists in full (`LAB_HISTORY_RECENT_POINTS`). */
+export const COACH_LAB_RECENT_POINTS = 5;
+
+/** Years of per-year lab summaries before years are only counted (`LAB_HISTORY_MAX_YEARS`). */
+export const COACH_LAB_HISTORY_YEARS = 10;
 
 /** The i18n key and parameters describing one lookback option. */
 export function lookbackText(window: CoachDefaultWindow): {
@@ -174,13 +183,17 @@ export function lookbackText(window: CoachDefaultWindow): {
 } {
   const days = HISTORY_REACH_DAYS[window];
   if (days === null) {
+    const dailyMonths = Math.round(COACH_DAILY_DETAIL_DAYS / 30.4);
+    // The option names what "no limit" actually reads (#1263): the dense
+    // readings in daily detail for a year, the lab results further back.
     return {
-      optionParams: {},
+      optionParams: { months: dailyMonths },
       detailKey: "detailAll",
       detailParams: {
-        dailyMonths: Math.round(COACH_DAILY_DETAIL_DAYS / 30.4),
+        dailyMonths,
         years: Math.round(COACH_ALL_TIME_TABLE_DAYS / 365),
-        labMonths: COACH_LABS_LOOKBACK_MONTHS,
+        labRecent: COACH_LAB_RECENT_POINTS,
+        labYears: COACH_LAB_HISTORY_YEARS,
       },
     };
   }

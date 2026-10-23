@@ -130,7 +130,7 @@ describe("screenCoachReply — a drug-named dose change", () => {
     const d = screenCoachReply(
       "Increase your metformin to 2000 mg daily.",
       "en",
-      [1000],
+      [{ name: "Metformin", dose: 1000 }],
     );
     expect(d.block).toBe(true);
     expect(d.reason).toBe("dose_prescription");
@@ -140,7 +140,7 @@ describe("screenCoachReply — a drug-named dose change", () => {
     const d = screenCoachReply(
       "Your log shows you take 1000 mg twice daily.",
       "en",
-      [1000],
+      [{ name: "Metformin", dose: 1000 }],
     );
     expect(d.block).toBe(false);
   });
