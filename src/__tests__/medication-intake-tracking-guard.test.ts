@@ -63,7 +63,7 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
   "app/api/export/route.ts": "export of the recorded history",
   "lib/export/medications-backup.ts": "backup of the recorded history",
   "app/api/sync/state/route.ts": "sync watermarks, no rate",
-  "app/api/sync/changes/route.ts":
+  "lib/sync/changes/read-rows.ts":
     "delta feed mirroring the recorded rows to a paired client, no rate",
   "lib/jobs/measurement-tombstone-cleanup.ts": "tombstone purge",
   "lib/ai/coach/tools/availability.ts":
