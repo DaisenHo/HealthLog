@@ -47,9 +47,10 @@ const E2E = join(process.cwd(), "e2e");
 /**
  * The `@critical` tests found in `e2e/*.spec.ts`. Pinned at the real count:
  * the set is the release gate, so a journey that loses its tag is a change
- * somebody should see here.
+ * somebody should see here. It counts title literals in the source, so a
+ * title written once inside a loop counts once however many tests it names.
  */
-const CRITICAL_TEST_FLOOR = 13;
+const CRITICAL_TEST_FLOOR = 14;
 
 /** A test whose title literal carries the tag, however the call is spelled. */
 const CRITICAL_TEST =
