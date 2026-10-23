@@ -233,7 +233,7 @@ const PINNED_AFFORDANCES: Record<
   "src/components/measurement-reminders/vorsorge-dashboard-card.tsx": {
     CheckCircle2: 2,
   },
-  "src/components/measurement-reminders/vorsorge-section.tsx": {
+  "src/components/measurement-reminders/checkups/checkup-card.tsx": {
     CheckCircle2: 2,
     "text-success": 1,
   },

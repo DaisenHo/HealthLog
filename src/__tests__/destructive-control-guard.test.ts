@@ -448,7 +448,10 @@ const REGISTRY: DestructiveEntry[] = [
   {
     file: "hooks/use-measurement-reminders.ts",
     destroys: "a checkup or measurement reminder with its schedule",
-    triggers: ["components/measurement-reminders/vorsorge-section.tsx"],
+    triggers: [
+      "components/measurement-reminders/vorsorge-section.tsx",
+      "components/measurement-reminders/checkups/checkup-card.tsx",
+    ],
     recovery: "tombstoned-no-restore",
     confirm: ["AlertDialog"],
   },

@@ -260,7 +260,7 @@ const RAW_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
     why: "`makeDayKeyFormatter` — the per-row bucketing key. Its fields are read back through `formatToParts` and reassembled as `YYYY-MM-DD`.",
   },
   {
-    file: "src/components/measurement-reminders/vorsorge-section.tsx",
+    file: "src/components/measurement-reminders/checkups/postpone-sheet.tsx",
     why: "The ISO day the postpone request writes to the API. A wire value, and the wire format is ISO whatever the reader prefers.",
   },
   {
