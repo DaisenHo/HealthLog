@@ -58,4 +58,3 @@ export { NutrientDailyBarChart } from "./nutrient-daily-bar-chart";
 export { WorkoutHrChart } from "./workout-hr-chart";
 export { WorkoutElevationChart } from "./workout-elevation-chart";
 export { CoachResultChart } from "@/components/insights/coach-panel/result-chart";
-export { TopicSideBySideChart } from "@/components/topics/topic-side-by-side-chart";

@@ -21,8 +21,6 @@ import { isSurfaceVisible } from "@/lib/modules/surface";
 import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavModules } from "@/hooks/use-nav-modules";
-import { usePreviewFeatures } from "@/hooks/use-preview-features";
-import { PreviewBadge } from "@/components/topics/preview-badge";
 import { useMounted } from "@/hooks/use-mounted";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
@@ -44,8 +42,6 @@ interface NavLink {
   href: string;
   tKey: string;
   icon: LucideIcon;
-  /** A preview entry; its tile carries the Beta badge. */
-  preview?: string;
 }
 
 // v1.12.x — iOS-parity bottom bar (additive middle-path).
@@ -115,7 +111,6 @@ export function BottomNav() {
   // The Coach entry follows the `coach` AI capability (a Coach that cannot
   // answer is not offered); the sidebar reads the same map.
   const navModules = useNavModules();
-  const previews = usePreviewFeatures();
   const moreHub = useMemo<ReadonlyArray<NavLink>>(
     () =>
       mobileMoreHubDestinations({
@@ -123,9 +118,8 @@ export function BottomNav() {
         mounted,
         sharedRecord,
         sections,
-        previews,
       }),
-    [navModules, mounted, sharedRecord, sections, previews],
+    [navModules, mounted, sharedRecord, sections],
   );
 
   // Every slot but Home asks two things: does sharing cover it, and does its
@@ -295,72 +289,52 @@ export function BottomNav() {
               second line instead of clipping the last character at the tile
               edge. */}
           <div className="grid grid-cols-2 gap-2 px-3 pt-4 pb-4">
-            {moreHub.map((item) => (
-              <MoreHubTile
-                key={item.href}
-                item={item}
-                active={isActiveLink(item.href)}
-                onNavigate={() => setMoreOpen(false)}
-              />
-            ))}
+            {moreHub.map((item) => {
+              const isActive = isActiveLink(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMoreOpen(false)}
+                  aria-current={isActive ? "page" : undefined}
+                  // v1.12 — `min-h-14` matches the capture-picker tiles so
+                  // the equivalent tappable rows share one height at this
+                  // tier (and the larger row is a more comfortable target).
+                  // v1.22.1 — trim the inner padding/gap (`px-3`, `gap-2.5`)
+                  // to hand the label more horizontal room without changing
+                  // the shared tile height.
+                  className={cn(
+                    "border-border flex min-h-14 items-center gap-2.5 rounded-lg border px-3 py-3 transition-colors",
+                    isActive
+                      ? "text-primary bg-primary/5"
+                      : "text-foreground hover:bg-accent/40",
+                  )}
+                >
+                  <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                  {/* v1.18.10 — show the FULL label, never an ellipsis
+                      that hides meaning. The W7 `truncate` clipped long words
+                      ("Benachrichtigungen" → "Benachrichtigun…"); the goal is a
+                      readable label, not a balanced tile. Shrink the type to
+                      `text-xs` so long single-word locales (de/es/fr/it) fit on
+                      one line where they can, and allow a 2-line `line-clamp-2`
+                      fallback (with `[overflow-wrap:anywhere]` so a long word
+                      breaks rather than overflowing) for the rare label that
+                      still cannot fit one line. `min-w-0` lets the flex child
+                      shrink below its content width. v1.22.1 — with the wider
+                      text area above, "Benachrichtigungen" wraps fully inside
+                      two lines down to a 320 px viewport. */}
+                  <span
+                    className="line-clamp-2 min-w-0 text-xs leading-tight font-medium [overflow-wrap:anywhere]"
+                    title={t(item.tKey)}
+                  >
+                    {t(item.tKey)}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </SheetContent>
       </Sheet>
     </>
-  );
-}
-
-/** One destination tile in the More sheet. */
-function MoreHubTile({
-  item,
-  active,
-  onNavigate,
-}: {
-  item: NavLink;
-  active: boolean;
-  onNavigate: () => void;
-}) {
-  const { t } = useTranslations();
-  return (
-    <Link
-      href={item.href}
-      onClick={onNavigate}
-      aria-current={active ? "page" : undefined}
-      // v1.12 — `min-h-14` matches the capture-picker tiles so
-      // the equivalent tappable rows share one height at this
-      // tier (and the larger row is a more comfortable target).
-      // v1.22.1 — trim the inner padding/gap (`px-3`, `gap-2.5`)
-      // to hand the label more horizontal room without changing
-      // the shared tile height.
-      className={cn(
-        "border-border flex min-h-14 items-center gap-2.5 rounded-lg border px-3 py-3 transition-colors",
-        active
-          ? "text-primary bg-primary/5"
-          : "text-foreground hover:bg-accent/40",
-      )}
-    >
-      <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-      {/* v1.18.10 — show the FULL label, never an ellipsis
-          that hides meaning. The W7 `truncate` clipped long words
-          ("Benachrichtigungen" → "Benachrichtigun…"); the goal is a
-          readable label, not a balanced tile. Shrink the type to
-          `text-xs` so long single-word locales (de/es/fr/it) fit on
-          one line where they can, and allow a 2-line `line-clamp-2`
-          fallback (with `[overflow-wrap:anywhere]` so a long word
-          breaks rather than overflowing) for the rare label that
-          still cannot fit one line. `min-w-0` lets the flex child
-          shrink below its content width. v1.22.1 — with the wider
-          text area above, "Benachrichtigungen" wraps fully inside
-          two lines down to a 320 px viewport. */}
-      <span
-        className="line-clamp-2 min-w-0 text-xs leading-tight font-medium [overflow-wrap:anywhere]"
-        title={t(item.tKey)}
-      >
-        {t(item.tKey)}
-      </span>
-      {item.preview ? (
-        <PreviewBadge label={t("nav.previewBadge")} className="ml-auto" />
-      ) : null}
-    </Link>
   );
 }

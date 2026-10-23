@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 523,
-  "total": 5494,
+  "count": 524,
+  "total": 5495,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -273,6 +273,7 @@
     "components/medications/__tests__/use-medication-intake.test.ts": 1,
     "components/medications/detail/efficacy/__tests__/change-at-start-summary.test.tsx": 1,
     "components/mood/__tests__/mood-list-url-sync.test.tsx": 1,
+    "components/settings/__tests__/settings-shell.test.tsx": 1,
     "components/settings/integrations/__tests__/dawarich-card.test.tsx": 1,
     "components/timeline/__tests__/medication-rows.test.ts": 1,
     "lib/__tests__/acting-account-resolver.test.ts": 5,

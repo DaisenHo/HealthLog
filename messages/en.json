@@ -510,9 +510,7 @@
     "documents": "Documents",
     "vaccinations": "Vaccinations",
     "mentalWellbeing": "Mental wellbeing",
-    "timeline": "Timeline",
-    "topics": "Topics",
-    "previewBadge": "Beta"
+    "timeline": "Timeline"
   },
   "auth": {
     "login": "Sign in",
@@ -6145,10 +6143,6 @@
       "access": {
         "title": "Shared access",
         "subtitle": "Who can open your health record, and whose you can open."
-      },
-      "preview": {
-        "title": "Preview features",
-        "subtitle": "Try what is not finished yet. Everything here stays off until you switch it on."
       }
     },
     "profile": "Profile",
@@ -7634,17 +7628,6 @@
     "passkeyRemovedToast": "Passkey removed.",
     "integrationDisconnected": "{provider} disconnected.",
     "integrationDisconnectFailed": "Could not disconnect {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Topics",
-        "description": "Adds a Topics area that brings related signals together, beside your Insights pages.",
-        "detail": "Eight topics, from heart to cycle, show your signals side by side, how they move together and links into the single-metric pages you already use. Your Insights pages, navigation and links stay exactly as they are. Everything is computed from your own values, without AI. Switching it off removes the entry and deletes nothing.",
-        "savedOn": "Topics preview switched on.",
-        "savedOff": "Topics preview switched off.",
-        "open": "Open Topics"
-      },
-      "loadError": "Could not load your preview settings."
-    },
     "timezoneSaved": "Timezone saved.",
     "moduleState": {
       "on": "On",
@@ -13781,172 +13764,6 @@
       "asNeeded": "As needed",
       "startsOn": "Start",
       "endsOn": "End"
-    }
-  },
-  "topics": {
-    "overview": {
-      "title": "Topics",
-      "description": "Related signals brought together from your own values; open one to see them side by side.",
-      "emptyTitle": "Nothing to bring together yet",
-      "emptyDescription": "Topics appear once there are readings for them, from a device, an import or your own entries.",
-      "notRecorded": "Nothing recorded yet for: {topics}.",
-      "hiddenByModule": "Hidden because the module is off: {topics}.",
-      "modulesLink": "Change modules in Settings"
-    },
-    "detail": {
-      "back": "All topics"
-    },
-    "loadError": "Could not load the topics.",
-    "previewNote": "This is a preview. It may change between releases, and your single-metric pages stay as they are.",
-    "recorded": "Signals recorded: {count} of {total}",
-    "tone": {
-      "steady": "Steady",
-      "watch": "Worth a look",
-      "learning": "Learning"
-    },
-    "summary": {
-      "outsideAbove": "{signal} is above your usual range.",
-      "outsideBelow": "{signal} is below your usual range.",
-      "labs": "{count} of {total} lab values sit inside their reference range.",
-      "cycleDay": "Cycle day {day}.",
-      "steadyAll": "Everything recorded sits inside your usual range.",
-      "steadySome": "{count} of {total} signals sit inside your usual range; the others are still being learned.",
-      "learning": "Still learning your usual range. A week of readings is enough.",
-      "empty": "Nothing recorded yet."
-    },
-    "headline": {
-      "labsValue": "{count}/{total}",
-      "labsUnit": "in range",
-      "cycleDay": "Day {day}"
-    },
-    "signals": {
-      "mood": "Mood"
-    },
-    "units": {
-      "moodScale": "of 5"
-    },
-    "names": {
-      "heart": {
-        "title": "Heart",
-        "description": "Resting heart rate, heart-rate variability and cardio fitness, with the sleep and training that move them."
-      },
-      "body": {
-        "title": "Body",
-        "description": "Weight and body composition over time."
-      },
-      "bloodPressure": {
-        "title": "Blood pressure",
-        "description": "Systolic, diastolic and pulse, with the sleep and activity around them."
-      },
-      "sleep": {
-        "title": "Sleep",
-        "description": "Time asleep and the signals measured at night."
-      },
-      "activity": {
-        "title": "Activity & training",
-        "description": "Steps, exercise minutes, active energy and training load."
-      },
-      "metabolism": {
-        "title": "Metabolism & labs",
-        "description": "Blood glucose and your lab values, with each marker's trend."
-      },
-      "mind": {
-        "title": "Mind",
-        "description": "Mood and screener check-ins beside sleep and activity."
-      },
-      "cycle": {
-        "title": "Cycle",
-        "description": "Your cycle with the temperature and resting heart rate that follow it."
-      }
-    },
-    "sources": {
-      "heart": "These come from a watch, ring or chest strap, from Apple Health or Health Connect, or from your own entries.",
-      "body": "These come from a smart scale, an import or your own entries.",
-      "bloodPressure": "These come from a blood pressure monitor, an import or your own entries.",
-      "sleep": "These come from a watch or ring, from Apple Health or Health Connect, or from your own entries.",
-      "activity": "These come from a phone, watch or ring, or from Apple Health or Health Connect.",
-      "metabolism": "Glucose comes from a meter, a sensor import or your own entries; lab values from a lab report or your own entries.",
-      "mind": "These come from mood entries and the check-ins on the mental wellbeing page.",
-      "cycle": "These come from your cycle log and a wrist temperature sensor."
-    },
-    "today": {
-      "title": "Today",
-      "usual": "Usual {low}–{high}",
-      "learning": "Usual range still being learned",
-      "asOf": "As of {date}",
-      "details": "Details"
-    },
-    "state": {
-      "within": "Within",
-      "above": "Above usual",
-      "below": "Below usual",
-      "learning": "Learning"
-    },
-    "chart": {
-      "title": "Side by side",
-      "legend": "Shaded: your usual range.",
-      "label": "{signals} over the selected period, one row each."
-    },
-    "range": {
-      "label": "Period",
-      "7d": "7d",
-      "30d": "30d",
-      "90d": "90d",
-      "1y": "1y"
-    },
-    "relationships": {
-      "title": "How they move together",
-      "insufficient": "{x} and {y}: {count} of {required} paired days so far.",
-      "noClearLink": "No clear link between {x} and {y} over {count} paired days.",
-      "splitHigher": "When {x} was under {threshold}, {y} was {amount} higher than on other days.",
-      "splitLower": "When {x} was under {threshold}, {y} was {amount} lower than on other days.",
-      "splitDays": "Days under: {below}. Other days: {other}.",
-      "correlationSameDayHigher": "When {x} runs higher, {y} tends to be higher too (r = {r}).",
-      "correlationSameDayLower": "When {x} runs higher, {y} tends to be lower (r = {r}).",
-      "correlationNextDayHigher": "When {x} runs higher, {y} the next day tends to be higher (r = {r}).",
-      "correlationNextDayLower": "When {x} runs higher, {y} the next day tends to be lower (r = {r}).",
-      "pairedDays": "Paired days: {count}",
-      "footnote": "Shown once two signals overlap on at least 14 days. A pattern, not a cause.",
-      "scatterCaption": "Each dot is one day: {x} across, {y} up."
-    },
-    "trends": {
-      "title": "Trends",
-      "window": "90 days, weekly means",
-      "insufficient": "Needs 14 days, {count} so far"
-    },
-    "labs": {
-      "title": "Lab values",
-      "above": "Above range",
-      "below": "Below range",
-      "trendsTitle": "Trends",
-      "trendNeeds": "A trend needs three values spanning a year. Not there yet: {markers}."
-    },
-    "screeners": {
-      "title": "Check-ins",
-      "none": "No screener check-ins yet.",
-      "checkIns": "Check-ins: {count}",
-      "improved": "Better than the first",
-      "worsened": "Worse than the first",
-      "within_threshold": "Within the usual wobble",
-      "single": "One check-in so far",
-      "open": "Open mental wellbeing"
-    },
-    "cycle": {
-      "title": "Cycle",
-      "today": "Cycle day {day}.",
-      "todayWithPhase": "Cycle day {day}, {phase} phase.",
-      "average": "Average cycle length: {days} days.",
-      "needs": "An average needs two logged period starts; there are {count} so far.",
-      "lengths": "Recent cycles, in days: {lengths}",
-      "open": "Open the cycle page"
-    },
-    "links": {
-      "title": "Single-metric pages",
-      "workouts": "Workouts"
-    },
-    "missing": {
-      "title": "Not recorded yet: {signals}.",
-      "connect": "Connect a source"
     }
   }
 }

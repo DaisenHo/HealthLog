@@ -27,18 +27,11 @@ import {
   visibleUtilityDestinations,
 } from "@/components/layout/nav-model";
 import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
-import {
-  RAIL_LIST_GAP,
-  RAIL_SHORT_PY,
-  railRowClass,
-  SidebarNavItem,
-} from "@/components/layout/sidebar-rail";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { useAuth, useLogout } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useNavModules } from "@/hooks/use-nav-modules";
-import { usePreviewFeatures } from "@/hooks/use-preview-features";
 import { useMounted } from "@/hooks/use-mounted";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTheme } from "@/components/providers";
@@ -335,6 +328,45 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   );
 }
 
+/**
+ * Height-based density for the rail. A 13-inch laptop at 100 % zoom leaves
+ * the browser roughly 700–860 px, and the full destination list plus the
+ * footer rows did not fit: the list scrolled, and on a classic-scrollbar
+ * platform (Windows) the rail grew a native scrollbar with arrow buttons.
+ * On short windows the rows close their gaps first, then step their height
+ * down; tall windows keep the roomy default. Desktop-only by construction —
+ * the rail is hidden below `md`, so the phone layout never sees these steps.
+ *
+ * Steps (rows are full-width, so the click target is the whole row):
+ * - default: 40 px rows, 4 px apart
+ * - max-height 940 px: gaps close (40 px pitch), list and user padding tighten
+ * - max-height 820 px: 36 px rows
+ * - max-height 740 px: 32 px rows — the one step under 40 px, taken only
+ *   where the alternative is rows hidden behind a scroll edge
+ */
+// Disjoint height ranges, not nested max-heights: two arbitrary media
+// variants on one property cascade in stylesheet order, not by how narrow
+// the query is, so a nested pair let the 36 px step win on a 720 px window.
+// The height steps apply to a mouse only. Under a finger (a touch tablet)
+// the rows keep the 44 px touch floor and the list scrolls behind its fades
+// instead. A phone held sideways never sees the rail: it keeps the phone
+// shell (`shell-mobile`).
+const RAIL_ROW_HEIGHT =
+  "min-h-10 pointer-coarse:min-h-11 [@media(hover:hover)_and_(pointer:fine)_and_(740px<height<=820px)]:min-h-9 [@media(hover:hover)_and_(pointer:fine)_and_(height<=740px)]:min-h-8";
+const RAIL_LIST_GAP = "space-y-1 [@media(max-height:940px)]:space-y-0";
+const RAIL_SHORT_PY = "[@media(max-height:940px)]:py-1.5";
+
+/** Rail row, collapsed (icon only) or expanded (icon + label). */
+function railRowClass(collapsed: boolean): string {
+  return cn(
+    "flex items-center rounded-lg transition-colors",
+    RAIL_ROW_HEIGHT,
+    collapsed
+      ? "justify-center px-2.5"
+      : "gap-3 px-3 py-1.5 text-sm font-medium",
+  );
+}
+
 /** Height of the fade at a scroll edge that has more content beyond it. */
 const RAIL_FADE = "1.5rem";
 
@@ -493,17 +525,9 @@ export function SidebarNav() {
   // The Coach entry follows the `coach` AI capability, like every other
   // Coach entry point; the rest of the map is `modules` unchanged.
   const navModules = useNavModules();
-  const previews = usePreviewFeatures();
   const visibleNavItems = useMemo(
-    () =>
-      visibleNavDestinations(
-        navModules,
-        mounted,
-        sharedRecord,
-        sections,
-        previews,
-      ),
-    [navModules, mounted, sharedRecord, sections, previews],
+    () => visibleNavDestinations(navModules, mounted, sharedRecord, sections),
+    [navModules, mounted, sharedRecord, sections],
   );
   // Collapsed = the user's stored choice, or — with no stored choice — a
   // viewport default: tablet widths (md–lg, e.g. an iPad held upright)
@@ -733,21 +757,59 @@ export function SidebarNav() {
             }}
           >
             <div className={RAIL_LIST_GAP}>
-              {visibleNavItems.map((item) => (
-                <SidebarNavItem
-                  key={item.href}
-                  item={item}
-                  label={t(item.tKey)}
-                  badge={item.preview ? t("nav.previewBadge") : null}
-                  active={isNavDestinationActive(
-                    item.href,
-                    pathname,
-                    visibleNavItems,
-                  )}
-                  collapsed={collapsed}
-                  intent={item.href === "/medications" ? medsIntent : undefined}
-                />
-              ))}
+              {visibleNavItems.map((item) => {
+                const isActive = isNavDestinationActive(
+                  item.href,
+                  pathname,
+                  visibleNavItems,
+                );
+                const label = t(item.tKey);
+
+                if (collapsed) {
+                  return (
+                    <Tooltip key={item.href}>
+                      <TooltipTrigger asChild>
+                        <Link
+                          href={item.href}
+                          aria-current={isActive ? "page" : undefined}
+                          data-tour-id={item.tourId}
+                          {...(item.href === "/medications" ? medsIntent : {})}
+                          className={cn(
+                            railRowClass(true),
+                            isActive
+                              ? "bg-primary/10 text-primary"
+                              : "text-foreground hover:bg-accent",
+                          )}
+                        >
+                          <item.icon className="h-4 w-4" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" sideOffset={8}>
+                        {label}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    data-tour-id={item.tourId}
+                    {...(item.href === "/medications" ? medsIntent : {})}
+                    className={cn(
+                      railRowClass(false),
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-foreground hover:bg-accent",
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {label}
+                  </Link>
+                );
+              })}
             </div>
           </nav>
 
