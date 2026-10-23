@@ -8,7 +8,6 @@ import {
   FlaskConical,
   History,
   Home,
-  Layers,
   Lightbulb,
   MessagesSquare,
   Pill,
@@ -30,10 +29,6 @@ import {
   type SettingsRecordContext,
 } from "@/lib/record-settings/classification";
 import { isSharedRecordPathPresentable } from "@/lib/navigation/shared-record";
-import type {
-  PreviewFeatureKey,
-  PreviewFeatures,
-} from "@/lib/settings/preview-features";
 import type { ShareDomain } from "@/lib/sharing/scope";
 
 /**
@@ -83,14 +78,6 @@ export interface NavDestination {
   sharedRecord?: boolean;
   /** A record-only view, intentionally absent from the actor's own nav. */
   sharedRecordOnly?: boolean;
-  /**
-   * A preview the person switches on for themselves (Settings >
-   * System > Preview features). The entry exists only while that flag is on
-   * for the person reading, carries a Beta badge, and leads the phone's More
-   * hub so a freshly switched-on preview is found. Fail-closed: hidden until
-   * the account payload has said yes.
-   */
-  preview?: PreviewFeatureKey;
 }
 
 /**
@@ -263,21 +250,6 @@ export const NAV_DESTINATIONS: ReadonlyArray<NavDestination> = [
     icon: Lightbulb,
     tourId: "nav-insights",
   },
-  // Topics (preview): overview pages that bring related signals
-  // together and link into the single-metric Insights pages, which stay
-  // exactly as they are. Directly below Insights in the sidebar; on a phone it
-  // lands in the More hub (first), never in the bottom bar. Only while the
-  // person reading switched the preview on. A record read across sections,
-  // like the timeline: a delegate holding the whole record sees it (with their
-  // own preview on), a scoped grant never does.
-  {
-    href: "/topics",
-    sharedRecord: true,
-    tKey: "nav.topics",
-    icon: Layers,
-    tourId: "nav-topics",
-    preview: "topics",
-  },
   // v1.17.1 — the Coach finally gets a single labeled nav home. It
   // was reachable from seven scattered entry points (FAB, hero CTA, empty
   // states, per-metric icons …) but nowhere in the nav, so a new user
@@ -405,11 +377,7 @@ function isNavDestinationVisible(
   mounted = true,
   sharedRecord = false,
   sections: readonly ShareDomain[] | null = null,
-  previews: PreviewFeatures | null = null,
 ): boolean {
-  // A preview entry exists only once the payload has said the person reading
-  // switched it on: fail-closed before mount and while the payload is absent.
-  if (d.preview && (!mounted || previews?.[d.preview] !== true)) return false;
   if (
     sharedRecord &&
     (d.sharedRecord !== true ||
@@ -472,17 +440,9 @@ export function visibleNavDestinations(
   mounted = true,
   sharedRecord = false,
   sections: readonly ShareDomain[] | null = null,
-  previews: PreviewFeatures | null = null,
 ): NavDestination[] {
   return NAV_DESTINATIONS.filter((d) =>
-    isNavDestinationVisible(
-      d,
-      modules,
-      mounted,
-      sharedRecord,
-      sections,
-      previews,
-    ),
+    isNavDestinationVisible(d, modules, mounted, sharedRecord, sections),
   );
 }
 
@@ -503,8 +463,6 @@ export interface MobileMoreHubEntry {
   href: string;
   tKey: string;
   icon: LucideIcon;
-  /** Set for a preview entry, which the tile marks with a Beta badge. */
-  preview?: PreviewFeatureKey;
 }
 
 /**
@@ -525,28 +483,15 @@ export function mobileMoreHubDestinations(opts: {
   sharedRecord?: boolean;
   /** Server-resolved scope for the active shared record. */
   sections?: readonly ShareDomain[] | null;
-  /** The person's own preview opt-ins; absent hides every preview. */
-  previews?: PreviewFeatures | null;
 }): MobileMoreHubEntry[] {
-  const entries = visibleNavDestinations(
+  return visibleNavDestinations(
     opts.modules,
     opts.mounted ?? true,
     opts.sharedRecord ?? false,
     opts.sections ?? null,
-    opts.previews ?? null,
   )
     .filter((d) => !BOTTOM_NAV_PRIMARY_SLOT_HREFS.includes(d.href))
-    .map((d) => ({
-      href: d.href,
-      tKey: d.tKey,
-      icon: d.icon,
-      ...(d.preview ? { preview: d.preview } : {}),
-    }));
-  // A preview someone just switched on leads the hub, where it is found; the
-  // rest keep model order. `Array.prototype.sort` is stable.
-  return entries.sort(
-    (a, b) => Number(b.preview !== undefined) - Number(a.preview !== undefined),
-  );
+    .map((d) => ({ href: d.href, tKey: d.tKey, icon: d.icon }));
 }
 
 /**

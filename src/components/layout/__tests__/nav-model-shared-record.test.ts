@@ -105,29 +105,11 @@ describe("the destination list under a switch", () => {
   });
 
   it("changes nothing for a session in its own record", () => {
-    const own = visibleNavDestinations(ALL_MODULES, true, false, null, {
-      topics: true,
-    }).map((d) => d.href);
+    const own = visibleNavDestinations(ALL_MODULES, true).map((d) => d.href);
     expect(own).toEqual(
       NAV_DESTINATIONS.filter((d) => !d.sharedRecordOnly).map((d) => d.href),
     );
     expect(own).not.toContain("/profile");
-  });
-
-  it("offers Topics inside a whole-record share only with the viewer's own preview on", () => {
-    const share = (previews: { topics: boolean } | null) =>
-      visibleNavDestinations(ALL_MODULES, true, true, null, previews).map(
-        (d) => d.href,
-      );
-    expect(share({ topics: true })).toContain("/topics");
-    expect(share({ topics: false })).not.toContain("/topics");
-    expect(share(null)).not.toContain("/topics");
-    // A grant scoped to sections never opens a page that lays them side by side.
-    expect(
-      visibleNavDestinations(ALL_MODULES, true, true, ["measurements"], {
-        topics: true,
-      }).map((d) => d.href),
-    ).not.toContain("/topics");
   });
 
   it("offers the read-only profile summary only inside a shared record", () => {

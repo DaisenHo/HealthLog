@@ -124,10 +124,6 @@ const LOADERS: Record<
     import("@/components/settings/privacy-section").then(
       (m) => m.PrivacySection,
     ),
-  preview: () =>
-    import("@/components/settings/preview-section").then(
-      (m) => m.PreviewSection,
-    ),
 };
 
 const SECTIONS: Record<SettingsSectionSlug, ComponentType<SectionProps>> = {
@@ -162,7 +158,6 @@ const SECTIONS: Record<SettingsSectionSlug, ComponentType<SectionProps>> = {
   export: dynamic(LOADERS.export, { loading: () => <SectionLoading /> }),
   advanced: dynamic(LOADERS.advanced, { loading: () => <SectionLoading /> }),
   privacy: dynamic(LOADERS.privacy, { loading: () => <SectionLoading /> }),
-  preview: dynamic(LOADERS.preview, { loading: () => <SectionLoading /> }),
 };
 
 /**

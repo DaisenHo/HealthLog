@@ -29,7 +29,6 @@ import {
 } from "@/components/layout/nav-model";
 import { useAuth } from "@/hooks/use-auth";
 import { useNavModules } from "@/hooks/use-nav-modules";
-import { usePreviewFeatures } from "@/hooks/use-preview-features";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
   createShortcutReader,
@@ -104,7 +103,6 @@ export function openCapturePicker(): void {
 function useShortcutOffer(): ShortcutOffer & { canCapture: boolean } {
   const { user } = useAuth();
   const navModules = useNavModules();
-  const previews = usePreviewFeatures();
   const capabilities = useRecordCapabilities();
   const { inSharedRecord, sections, recordKind, level } = capabilities;
   const manageableDomains = user?.accountAccess?.active?.manageableDomains;
@@ -113,14 +111,10 @@ function useShortcutOffer(): ShortcutOffer & { canCapture: boolean } {
       .length > 0;
   const navHrefs = useMemo(
     () =>
-      visibleNavDestinations(
-        navModules,
-        true,
-        inSharedRecord,
-        sections,
-        previews,
-      ).map((d) => d.href),
-    [navModules, inSharedRecord, sections, previews],
+      visibleNavDestinations(navModules, true, inSharedRecord, sections).map(
+        (d) => d.href,
+      ),
+    [navModules, inSharedRecord, sections],
   );
   const settingsHref = useMemo(
     () =>

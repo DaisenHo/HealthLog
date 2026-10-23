@@ -54,8 +54,6 @@ const HISTORICAL_SETTINGS_PATHS: readonly string[] = [
   "/settings/export",
   "/settings/advanced",
   "/settings/privacy",
-  // Preview features (Settings > System).
-  "/settings/preview",
   "/settings/about",
   // The per-module personalisation slugs before the layout hub.
   "/settings/dashboard",

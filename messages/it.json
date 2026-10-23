@@ -510,9 +510,7 @@
     "documents": "Documenti",
     "vaccinations": "Vaccinazioni",
     "mentalWellbeing": "Benessere mentale",
-    "timeline": "Cronologia",
-    "topics": "Temi",
-    "previewBadge": "Beta"
+    "timeline": "Cronologia"
   },
   "auth": {
     "login": "Accedi",
@@ -6145,10 +6143,6 @@
       "access": {
         "title": "Accesso condiviso",
         "subtitle": "Chi può aprire la tua cartella sanitaria e quale puoi aprire tu."
-      },
-      "preview": {
-        "title": "Funzioni in anteprima",
-        "subtitle": "Prova ciò che non è ancora finito. Tutto qui resta spento finché non lo attivi."
       }
     },
     "profile": "Profilo",
@@ -7634,17 +7628,6 @@
     "passkeyRemovedToast": "Passkey rimossa.",
     "integrationDisconnected": "{provider} disconnesso.",
     "integrationDisconnectFailed": "Impossibile disconnettere {provider}.",
-    "preview": {
-      "topics": {
-        "title": "Temi",
-        "description": "Aggiunge un'area Temi che raccoglie valori collegati, accanto alle tue pagine Insights.",
-        "detail": "Otto temi, dal cuore al ciclo, mostrano i tuoi valori affiancati, come si muovono insieme e collegamenti alle pagine per metrica che già usi. Le tue pagine Insights, la navigazione e i link restano esattamente come sono. Tutto è calcolato dai tuoi valori, senza IA. Disattivarla toglie la voce e non cancella nulla.",
-        "savedOn": "Anteprima Temi attivata.",
-        "savedOff": "Anteprima Temi disattivata.",
-        "open": "Apri Temi"
-      },
-      "loadError": "Impossibile caricare le impostazioni delle anteprime."
-    },
     "timezoneSaved": "Fuso orario salvato.",
     "moduleState": {
       "on": "Attivo",
@@ -13781,172 +13764,6 @@
       "asNeeded": "Al bisogno",
       "startsOn": "Inizio",
       "endsOn": "Fine"
-    }
-  },
-  "topics": {
-    "overview": {
-      "title": "Temi",
-      "description": "Valori collegati, raccolti dai tuoi dati; apri un tema per vederli affiancati.",
-      "emptyTitle": "Ancora niente da raccogliere",
-      "emptyDescription": "I temi compaiono appena ci sono valori per loro: da un dispositivo, da un'importazione o inseriti da te.",
-      "notRecorded": "Ancora nessun valore per: {topics}.",
-      "hiddenByModule": "Nascosti perché il modulo è spento: {topics}.",
-      "modulesLink": "Cambia i moduli nelle impostazioni"
-    },
-    "detail": {
-      "back": "Tutti i temi"
-    },
-    "loadError": "Impossibile caricare i temi.",
-    "previewNote": "Questa è un'anteprima. Può cambiare tra una versione e l'altra, e le tue pagine per metrica restano come sono.",
-    "recorded": "Valori registrati: {count} di {total}",
-    "tone": {
-      "steady": "Stabile",
-      "watch": "Da guardare",
-      "learning": "In apprendimento"
-    },
-    "summary": {
-      "outsideAbove": "{signal} è sopra il tuo intervallo abituale.",
-      "outsideBelow": "{signal} è sotto il tuo intervallo abituale.",
-      "labs": "{count} esami su {total} rientrano nel loro intervallo di riferimento.",
-      "cycleDay": "Giorno {day} del ciclo.",
-      "steadyAll": "Tutto ciò che è registrato rientra nel tuo intervallo abituale.",
-      "steadySome": "{count} valori su {total} rientrano nel tuo intervallo abituale; gli altri sono ancora in apprendimento.",
-      "learning": "Il tuo intervallo abituale è ancora in apprendimento. Basta una settimana di valori.",
-      "empty": "Ancora niente di registrato."
-    },
-    "headline": {
-      "labsValue": "{count}/{total}",
-      "labsUnit": "nell'intervallo",
-      "cycleDay": "Giorno {day}"
-    },
-    "signals": {
-      "mood": "Umore"
-    },
-    "units": {
-      "moodScale": "su 5"
-    },
-    "names": {
-      "heart": {
-        "title": "Cuore",
-        "description": "Frequenza cardiaca a riposo, variabilità e forma cardio, con il sonno e l'allenamento che le influenzano."
-      },
-      "body": {
-        "title": "Corpo",
-        "description": "Peso e composizione corporea nel tempo."
-      },
-      "bloodPressure": {
-        "title": "Pressione arteriosa",
-        "description": "Sistolica, diastolica e polso, con il sonno e l'attività intorno."
-      },
-      "sleep": {
-        "title": "Sonno",
-        "description": "Tempo di sonno e i valori misurati di notte."
-      },
-      "activity": {
-        "title": "Attività e allenamento",
-        "description": "Passi, minuti di esercizio, energia attiva e carico di allenamento."
-      },
-      "metabolism": {
-        "title": "Metabolismo ed esami",
-        "description": "Glicemia e i tuoi esami, con l'andamento di ogni marcatore."
-      },
-      "mind": {
-        "title": "Mente",
-        "description": "Umore e questionari accanto a sonno e attività."
-      },
-      "cycle": {
-        "title": "Ciclo",
-        "description": "Il tuo ciclo con la temperatura e la frequenza cardiaca a riposo che lo seguono."
-      }
-    },
-    "sources": {
-      "heart": "Questi valori arrivano da un orologio, un anello o una fascia toracica, da Apple Salute o Health Connect, o dai tuoi inserimenti.",
-      "body": "Questi valori arrivano da una bilancia smart, da un'importazione o dai tuoi inserimenti.",
-      "bloodPressure": "Questi valori arrivano da un misuratore di pressione, da un'importazione o dai tuoi inserimenti.",
-      "sleep": "Questi valori arrivano da un orologio o un anello, da Apple Salute o Health Connect, o dai tuoi inserimenti.",
-      "activity": "Questi valori arrivano da telefono, orologio o anello, o da Apple Salute o Health Connect.",
-      "metabolism": "La glicemia arriva da un glucometro, da un'importazione del sensore o dai tuoi inserimenti; gli esami da un referto o dai tuoi inserimenti.",
-      "mind": "Questi valori arrivano dalle tue registrazioni dell'umore e dai questionari della pagina Benessere mentale.",
-      "cycle": "Questi valori arrivano dal tuo diario del ciclo e da un sensore di temperatura al polso."
-    },
-    "today": {
-      "title": "Oggi",
-      "usual": "Abituale {low}–{high}",
-      "learning": "Intervallo abituale ancora in apprendimento",
-      "asOf": "Al {date}",
-      "details": "Dettagli"
-    },
-    "state": {
-      "within": "Nell'intervallo",
-      "above": "Sopra il solito",
-      "below": "Sotto il solito",
-      "learning": "In apprendimento"
-    },
-    "chart": {
-      "title": "Affiancati",
-      "legend": "Area ombreggiata: il tuo intervallo abituale.",
-      "label": "{signals} nel periodo scelto, una riga ciascuno."
-    },
-    "range": {
-      "label": "Periodo",
-      "7d": "7 g",
-      "30d": "30 g",
-      "90d": "90 g",
-      "1y": "1 a"
-    },
-    "relationships": {
-      "title": "Come si muovono insieme",
-      "insufficient": "{x} e {y}: finora {count} giorni abbinati su {required}.",
-      "noClearLink": "Nessun legame chiaro tra {x} e {y} su {count} giorni abbinati.",
-      "splitHigher": "Quando {x} era sotto {threshold}, {y} era più alto di {amount} rispetto agli altri giorni.",
-      "splitLower": "Quando {x} era sotto {threshold}, {y} era più basso di {amount} rispetto agli altri giorni.",
-      "splitDays": "Giorni sotto: {below}. Altri giorni: {other}.",
-      "correlationSameDayHigher": "Quando {x} è più alto, anche {y} tende a esserlo (r = {r}).",
-      "correlationSameDayLower": "Quando {x} è più alto, {y} tende a essere più basso (r = {r}).",
-      "correlationNextDayHigher": "Quando {x} è più alto, il giorno dopo {y} tende a essere più alto (r = {r}).",
-      "correlationNextDayLower": "Quando {x} è più alto, il giorno dopo {y} tende a essere più basso (r = {r}).",
-      "pairedDays": "Giorni abbinati: {count}",
-      "footnote": "Compare quando due valori si sovrappongono per almeno 14 giorni. Uno schema, non una causa.",
-      "scatterCaption": "Ogni punto è un giorno: {x} in orizzontale, {y} in verticale."
-    },
-    "trends": {
-      "title": "Andamenti",
-      "window": "90 giorni, medie settimanali",
-      "insufficient": "Servono 14 giorni, finora {count}"
-    },
-    "labs": {
-      "title": "Esami",
-      "above": "Sopra l'intervallo",
-      "below": "Sotto l'intervallo",
-      "trendsTitle": "Andamenti",
-      "trendNeeds": "Un andamento richiede tre valori nell'arco di almeno un anno. Non ancora: {markers}."
-    },
-    "screeners": {
-      "title": "Questionari",
-      "none": "Ancora nessun questionario compilato.",
-      "checkIns": "Compilati: {count}",
-      "improved": "Meglio della prima volta",
-      "worsened": "Peggio della prima volta",
-      "within_threshold": "Entro la variazione abituale",
-      "single": "Compilato una volta finora",
-      "open": "Apri Benessere mentale"
-    },
-    "cycle": {
-      "title": "Ciclo",
-      "today": "Giorno {day} del ciclo.",
-      "todayWithPhase": "Giorno {day} del ciclo, fase {phase}.",
-      "average": "Durata media del ciclo: {days} giorni.",
-      "needs": "Una media richiede due inizi di mestruazione registrati; finora sono {count}.",
-      "lengths": "Ultimi cicli, in giorni: {lengths}",
-      "open": "Apri la pagina del ciclo"
-    },
-    "links": {
-      "title": "Pagine per metrica",
-      "workouts": "Allenamenti"
-    },
-    "missing": {
-      "title": "Non ancora registrato: {signals}.",
-      "connect": "Collega una fonte"
     }
   }
 }
