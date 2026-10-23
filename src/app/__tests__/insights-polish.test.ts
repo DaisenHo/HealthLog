@@ -213,8 +213,9 @@ describe("v1.4.22 W5 reconcile (Code-H2) — BD-Zielbereich tile compareDelta us
   });
 
   it("ships priorMonth + priorYear pcts in the analytics envelope", () => {
+    // The default body is built outside the route.
     const ROUTE_SRC = readFileSync(
-      join(ROOT, "src/app/api/analytics/route.ts"),
+      join(ROOT, "src/lib/analytics/response/default-body.ts"),
       "utf8",
     );
     expect(ROUTE_SRC).toContain("bpInTargetPctPriorMonth");
