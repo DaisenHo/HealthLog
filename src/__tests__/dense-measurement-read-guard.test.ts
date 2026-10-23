@@ -74,6 +74,9 @@ const SCOPED_DIRS = [
   "lib/medications/delete-medication.ts",
   "lib/medications/record-intake/",
   "lib/medications/list-intake-events.ts",
+  "lib/medications/intake-today.ts",
+  "lib/medications/intake-compliance.ts",
+  "lib/medications/update-intake-status/",
 ];
 
 /** Types a device writes at sampling rate rather than a few times a day. */

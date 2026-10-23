@@ -257,6 +257,10 @@ const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
   "app/api/medications/[id]/intake/route.ts": [
     "lib/medications/record-intake/record-intake.ts",
   ],
+  "app/api/medications/intake/route.ts": [
+    "lib/medications/update-intake-status/admission.ts",
+    "lib/medications/update-intake-status/update-intake-status.ts",
+  ],
 };
 
 function handlerAuditActions(file: string): string[] {
