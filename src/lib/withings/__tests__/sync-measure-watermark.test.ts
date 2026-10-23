@@ -74,7 +74,7 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   };
 });
 
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -253,11 +253,11 @@ describe("syncUserMeasurements — watermark hold on hard row failure (F4)", () 
     expect(recordSyncFailure).not.toHaveBeenCalled();
   });
 
-  // Watched red: with the `invalidateUserMeasurements(userId)` call removed
-  // from the sync tail this fails — the pre-fix tail evicted only the
-  // dashboard snapshot, so correlations / analytics / targets / derived
-  // served pre-sync bodies until their TTL lapsed after every hourly sync
-  // (the correlations route documents the invariant this restores).
+  // Without the cache leg of the shared write tail this fails: an earlier
+  // tail evicted only the dashboard snapshot, so correlations, analytics,
+  // targets and derived served pre-sync bodies until their TTL lapsed after
+  // every hourly sync. The caches are marked stale back to the earliest
+  // reading the sync wrote, so closed blocks of older readings survive.
   it("marks the per-user measurement caches stale when rows landed", async () => {
     vi.mocked(fetchMeasurements).mockResolvedValue([
       {
@@ -273,6 +273,7 @@ describe("syncUserMeasurements — watermark hold on hard row failure (F4)", () 
       await import("@/lib/cache/invalidate");
     expect(vi.mocked(invalidateUserMeasurements)).toHaveBeenCalledWith(
       "user-1",
+      { touchedFrom: new Date("2026-05-16T08:00:00Z") },
     );
   });
 });

@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 403,
-  "total": 144691,
+  "count": 402,
+  "total": 144428,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -324,12 +324,11 @@
     "lib/export/vaccinations-backup.ts :: restoreVaccinationsData": 216,
     "lib/export/visits-backup.ts :: restoreVisitsData": 261,
     "lib/fhir/build-bundle.ts :: buildFhirDocumentBundle": 363,
-    "lib/fitbit/sync-core.ts :: upsertFitbitMeasurements": 370,
+    "lib/fitbit/sync-core.ts :: upsertFitbitMeasurements": 356,
     "lib/gamification/achievements-result.ts :: buildAchievementsResult": 586,
     "lib/google-health/client.ts :: forEachDataPointPage": 288,
     "lib/google-health/client.ts :: forEachDataPointPage > walk": 223,
-    "lib/google-health/sync-core.ts :: upsertGoogleHealthMeasurements": 463,
-    "lib/google-health/sync.ts :: runGoogleHealthSyncCycle": 203,
+    "lib/google-health/sync-core.ts :: upsertGoogleHealthMeasurements": 453,
     "lib/illness/correlation.ts :: computeIllnessCorrelation": 233,
     "lib/import/labs-csv.ts :: importLabsCsv": 309,
     "lib/import/labs-csv.ts :: importLabsCsv > flush": 231,
@@ -404,7 +403,7 @@
     "lib/withings/sync-activity.ts :: syncUserActivity": 377,
     "lib/withings/sync-ecg.ts :: syncUserEcg": 202,
     "lib/withings/sync-sleep.ts :: syncUserSleep": 414,
-    "lib/withings/sync.ts :: syncUserMeasurements": 373,
+    "lib/withings/sync.ts :: syncUserMeasurements": 337,
     "proxy.ts :: proxy": 499
   }
 }
