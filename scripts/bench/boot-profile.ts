@@ -30,12 +30,13 @@
  *
  * Output: `<out>.json` and `<out>.md`.
  */
-import { execSync, spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -232,7 +233,7 @@ async function main(): Promise<void> {
       // A snapshot is finished when the process answers again.
       await fetch(`http://127.0.0.1:${PORT}/api/health`).catch(() => undefined);
       const moved = join(work, "idle.heapsnapshot");
-      execSync(`mv ${JSON.stringify(file)} ${JSON.stringify(moved)}`);
+      renameSync(file, moved);
       console.log("summarising heap snapshot");
       heap = summariseHeap(moved, {
         "parsed locale catalogs": ["common", "apiErrors", "doctorReport"],
@@ -270,7 +271,9 @@ async function main(): Promise<void> {
 
   let commit = "unknown";
   try {
-    commit = execSync("git rev-parse --short HEAD").toString().trim();
+    commit = execFileSync("git", ["rev-parse", "--short", "HEAD"])
+      .toString()
+      .trim();
   } catch {
     // not a checkout
   }
