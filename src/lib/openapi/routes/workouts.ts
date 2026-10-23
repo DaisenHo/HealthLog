@@ -187,15 +187,18 @@ const workoutRouteGeometry = z
     geometry: z.unknown(),
     sampleTimestamps: z
       .array(
-        z.object({
-          t: isoDateTime(),
-          speedMs: z.number().optional(),
-          hr: z.number().int().optional(),
-        }),
+        z.union([
+          isoDateTime(),
+          z.object({
+            t: isoDateTime(),
+            speedMs: z.number().optional(),
+            hr: z.number().int().optional(),
+          }),
+        ]),
       )
       .nullable()
       .describe(
-        "One entry per geometry point, as the track was ingested: its instant and, where recorded, speed (m/s) and heart rate (bpm).",
+        "One entry per geometry point, as the track was stored: a bare instant, or (from the workout batch and the Apple Health export) an object with its instant and, where recorded, speed (m/s) and heart rate (bpm).",
       ),
   })
   .meta({ id: "WorkoutRouteGeometry" });
