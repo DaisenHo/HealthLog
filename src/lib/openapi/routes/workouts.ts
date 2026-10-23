@@ -185,7 +185,18 @@ const workoutListResponse = z
 const workoutRouteGeometry = z
   .object({
     geometry: z.unknown(),
-    sampleTimestamps: z.array(z.string()).nullable(),
+    sampleTimestamps: z
+      .array(
+        z.object({
+          t: isoDateTime(),
+          speedMs: z.number().optional(),
+          hr: z.number().int().optional(),
+        }),
+      )
+      .nullable()
+      .describe(
+        "One entry per geometry point, as the track was ingested: its instant and, where recorded, speed (m/s) and heart rate (bpm).",
+      ),
   })
   .meta({ id: "WorkoutRouteGeometry" });
 
