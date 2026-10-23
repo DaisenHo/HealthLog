@@ -256,7 +256,7 @@ const RAW_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
     why: "The same key shape for `today`, compared against those buckets. A comparison, not a label.",
   },
   {
-    file: "src/components/charts/health-chart.tsx",
+    file: "src/components/charts/health-chart/series-math.ts",
     why: "`makeDayKeyFormatter` — the per-row bucketing key. Its fields are read back through `formatToParts` and reassembled as `YYYY-MM-DD`.",
   },
   {
