@@ -35,11 +35,6 @@ export function authGuardModules(): Array<[string, string]> {
   ) as Array<[string, string]>;
 }
 
-/** Paths (relative to `src/`) of the guard modules plus the wrapper. */
-export function authLayerFiles(): string[] {
-  return [API_HANDLER, ...authGuardModules().map(([rel]) => rel)].sort();
-}
-
 function declares(text: string, name: string): boolean {
   return new RegExp(`(^|\\n)(export )?(async )?function ${name}\\s*[(<]`).test(
     text,
