@@ -312,7 +312,7 @@ describe("workout route geometry never reaches an AI path", () => {
     /\breadRouteGeometry\s*\(|\bencryptRouteGeometry\s*\(|\bgeometryEncrypted\b|\bgeometry\s*:\s*true\b/;
 
   const ROUTE_READERS: Record<string, string> = {
-    "app/api/workouts/[id]/route.ts":
+    "lib/workouts/detail.ts":
       "The workout detail read: serves the track to the person's own map.",
     "lib/workouts/batch-ingest/write.ts":
       "The workout batch ingest's write: stores a kept track (opt-in), sealed.",
