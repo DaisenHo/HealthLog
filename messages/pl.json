@@ -435,7 +435,8 @@
       "autocorrelation": "silna zależność od poprzedniego dnia, więc zakresy mogą nadal być zbyt wąskie",
       "window": "analizowano od {from} do {to}, może to wykraczać poza okres raportu",
       "windowLine": "Analizowano od {from} do {to}. Ten okres może wykraczać poza okres raportu."
-    }
+    },
+    "screenerUnvalidated": "{label}: {count} z {total} wyników uzyskano w tłumaczeniu niezwalidowanym naukowo; należy traktować je orientacyjnie."
   },
   "errorBoundary": {
     "title": "Coś poszło nie tak",

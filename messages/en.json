@@ -435,7 +435,8 @@
       "autocorrelation": "strong day-to-day carry-over, so the ranges may still be too narrow",
       "window": "analysed {from} to {to}, which can reach beyond the report period",
       "windowLine": "Analysed {from} to {to}. This window can reach beyond the report period."
-    }
+    },
+    "screenerUnvalidated": "{label}: {count} of {total} results were answered in a translation that has not been scientifically validated; treat them as orientation."
   },
   "errorBoundary": {
     "title": "Something went wrong",

@@ -435,7 +435,8 @@
       "autocorrelation": "sterke afhankelijkheid van de vorige dag, dus de bereiken kunnen nog te smal zijn",
       "window": "geanalyseerd van {from} tot {to}, dit kan buiten de rapportperiode vallen",
       "windowLine": "Geanalyseerd van {from} tot {to}. Deze periode kan buiten de rapportperiode vallen."
-    }
+    },
+    "screenerUnvalidated": "{label}: {count} van {total} uitkomsten zijn beantwoord in een niet wetenschappelijk gevalideerde vertaling; zie ze als een indicatie."
   },
   "errorBoundary": {
     "title": "Er is iets misgegaan",

@@ -11,6 +11,7 @@ import { MEASUREMENT_TYPE_LABEL_KEYS } from "../measurements/type-label-keys";
 import type { DoctorReportData } from "../doctor-report-data";
 import { computeGlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
 import { getServerTranslator } from "../i18n/server-translator";
+import { reportMeasurementLabelKey } from "../report-selection/catalogue";
 
 async function extractText(bytes: Uint8Array): Promise<string> {
   const parser = new PDFParse({ data: bytes });
@@ -249,6 +250,47 @@ describe("renderDoctorReportPdfBytes", () => {
     expect(text).toContain("5.5 mmol/L");
     expect(text).toContain("6.0 mmol/L");
     expect(text).not.toContain("mg/dL");
+  });
+
+  it("marks a screener total answered in an unvalidated translation and says how many", async () => {
+    const data = makeData({
+      stats: {
+        ...makeData().stats,
+        SCI_SCORE: { avg: 18, min: 14, max: 22, count: 3, latest: 20 },
+        PHQ9_SCORE: { avg: 6, min: 4, max: 8, count: 2, latest: 4 },
+      },
+      screenerUnvalidatedTranslations: { SCI_SCORE: 2 },
+    });
+    const { t } = getServerTranslator("en");
+    const bytes = renderDoctorReportPdfBytes(data, {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
+      t,
+      locale: "en",
+      now: FIXED_NOW,
+    });
+    const text = (await extractText(bytes)).replace(/\s+/g, " ");
+    const sci = t(reportMeasurementLabelKey("SCI_SCORE"));
+    expect(text).toContain(`${sci} *`);
+    expect(text).toContain("2 of 3 results were answered in a translation");
+    // The PHQ-9 row, all answered in validated wording, carries no mark.
+    const phq = t(reportMeasurementLabelKey("PHQ9_SCORE"));
+    expect(text).not.toContain(`${phq} *`);
+  });
+
+  it("prints no translation note when every total was answered in validated wording", async () => {
+    const bytes = renderDoctorReportPdfBytes(
+      makeData({ screenerUnvalidatedTranslations: null }),
+      {
+        timeFormat: "AUTO",
+        dateFormat: "AUTO",
+        t: getServerTranslator("en").t,
+        locale: "en",
+        now: FIXED_NOW,
+      },
+    );
+    const text = (await extractText(bytes)).replace(/\s+/g, " ");
+    expect(text).not.toContain("not been scientifically validated");
   });
 
   it("omits the sleep vitals row when there are no sleep stats", async () => {

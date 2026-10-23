@@ -236,6 +236,13 @@ export interface DoctorReportData {
    * user has no computed scores in the window (the renderer + FHIR builder
    * then skip the section). Optional so pre-v1.10 fixtures still typecheck.
    */
+  /**
+   * Per screener score type (`PHQ9_SCORE`, `SCI_SCORE`, …), how many
+   * of the window's results were answered in a translation that has not been
+   * validated. The renderers note them beside the type's row, so a clinician
+   * reads those totals as orientation. Null (or absent) when there are none.
+   */
+  screenerUnvalidatedTranslations?: Record<string, number> | null;
   wellnessScores?: Array<{
     /** The score MeasurementType (RECOVERY_SCORE / STRESS_SCORE / STRAIN_SCORE). */
     type: string;

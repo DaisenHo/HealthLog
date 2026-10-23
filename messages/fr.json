@@ -435,7 +435,8 @@
       "autocorrelation": "forte dépendance à la veille, les plages peuvent donc rester trop étroites",
       "window": "analysé du {from} au {to}, ce qui peut dépasser la période du rapport",
       "windowLine": "Analysé du {from} au {to}. Cette fenêtre peut dépasser la période du rapport."
-    }
+    },
+    "screenerUnvalidated": "{label} : {count} résultat(s) sur {total} ont été obtenus avec une traduction non validée scientifiquement ; à considérer comme une indication."
   },
   "errorBoundary": {
     "title": "Une erreur est survenue",

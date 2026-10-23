@@ -42,7 +42,6 @@ import {
 import { MEASUREMENT_LEAF_IDS } from "@/lib/report-selection/catalogue";
 import type { ReportSelection } from "@/lib/report-selection/selection";
 import {
-  WELLNESS_SCORE_REPORT_TYPES,
   type CollectDoctorReportOptions,
   type DoctorReportData,
   type DoctorReportMood,
@@ -54,7 +53,7 @@ import {
   collapseMeasurementsToCanonical,
   minMaxOf,
   sanitisePracticeName,
-  summariseCanonicalRecovery,
+  summariseWellnessScores,
 } from "@/lib/doctor-report-helpers";
 import {
   excludedMeasurementTypes,
@@ -81,6 +80,7 @@ import {
 } from "./clinical-records";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
 import { readingsMean } from "@/lib/measurements/day-mean";
+import { loadScreenerUnvalidatedTranslations } from "./screener-translations";
 
 const DENSE_REPORT_RAW_WINDOW_DAYS = 90;
 
@@ -620,33 +620,22 @@ export async function collectDoctorReportData(
       })
     : null;
 
-  // The wellness summary is filtered to the same score leaves the stats carry,
-  // so it cannot disagree with them. RECOVERY_SCORE carries both the native row
-  // and the computed proxy for one day; resolve to the canonical row so the PDF
-  // reads the SAME value the tile shows.
-  const wellnessScoreSummaries = WELLNESS_SCORE_REPORT_TYPES.flatMap((type) => {
-    if (!gate.admits(type)) return [];
-    if (type === "RECOVERY_SCORE") {
-      const summary = summariseCanonicalRecovery(measurements, reportTz);
-      return summary ? [summary] : [];
-    }
-    const s = stats[type];
-    const rows = byType[type];
-    if (!s || !rows || rows.length === 0) return [];
-    return [
-      {
-        type,
-        latest: Math.round(s.latest),
-        avg: Math.round(s.avg),
-        min: Math.round(s.min),
-        max: Math.round(s.max),
-        count: s.count,
-        latestAt: rows[rows.length - 1].measuredAt,
-      },
-    ];
+  // The wellness summary reads the same score leaves the stats carry.
+  const wellnessScores = summariseWellnessScores({
+    admits: (type) => gate.admits(type),
+    stats,
+    byType,
+    measurements,
+    timezone: reportTz,
   });
-  const wellnessScores =
-    wellnessScoreSummaries.length > 0 ? wellnessScoreSummaries : null;
+  // Screener totals answered in an unvalidated translation, per score type.
+  const screenerUnvalidatedTranslations =
+    await loadScreenerUnvalidatedTranslations(
+      userId,
+      filteredStats,
+      start,
+      end,
+    );
 
   // Each remaining structured block: read only when its leaf was chosen.
   const [
@@ -787,6 +776,7 @@ export async function collectDoctorReportData(
     mood,
     glp1,
     wellnessScores,
+    screenerUnvalidatedTranslations,
     cycle,
     labResults,
     illnessEpisodes,

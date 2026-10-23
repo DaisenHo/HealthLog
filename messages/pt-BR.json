@@ -435,7 +435,8 @@
       "autocorrelation": "forte arrasto de um dia para o outro, então as faixas ainda podem estar estreitas demais",
       "window": "analisado de {from} a {to}, o que pode ir além do período do relatório",
       "windowLine": "Analisado de {from} a {to}. Esta janela pode ir além do período do relatório."
-    }
+    },
+    "screenerUnvalidated": "{label}: {count} de {total} resultados foram respondidos em uma tradução não validada cientificamente; considere-os como orientação."
   },
   "errorBoundary": {
     "title": "Algo deu errado",

@@ -10,7 +10,9 @@
  *     `unvalidated_translation`;
  *   - the switch records `original_en`;
  *   - English records `validated` whatever the switch says.
- * The PHQ-9 crisis signpost answers item 9 the same way in every wording.
+ * The PHQ-9 crisis signpost answers item 9 the same way in every wording,
+ * and the doctor report counts the totals answered in an unvalidated
+ * translation per score type, so its renderers can mark them.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -19,6 +21,8 @@ import {
   POST as createAssessment,
 } from "@/app/api/mental-health/assessments/route";
 import { GET as readAssessment } from "@/app/api/mental-health/assessments/[id]/route";
+import { collectDoctorReportData } from "@/lib/doctor-report-data";
+import { selectionFromLeaves } from "@/lib/report-selection/selection";
 
 import { callRoute } from "../kit/call-route";
 import { makeSession, makeUser, type SessionFixture } from "../kit/factories";
@@ -179,5 +183,41 @@ describe("the wording a check-in records", () => {
     });
     expect(result.status).toBe(422);
     expect(await getPrismaClient().mentalHealthAssessment.count()).toBe(0);
+  });
+});
+
+describe("the doctor report", () => {
+  it("counts the screener totals answered in an unvalidated translation, per score type", async () => {
+    await submit({ instrument: "SCI", items: SCI, locale: "nl" });
+    await submit({ instrument: "SCI", items: SCI, locale: "nl" });
+    await submit({
+      instrument: "SCI",
+      items: SCI,
+      locale: "nl",
+      englishOriginal: true,
+    });
+    await submit({ instrument: "PHQ9", items: PHQ9_ITEM9, locale: "nl" });
+
+    const now = Date.now();
+    const range = {
+      start: new Date(now - 7 * 86_400_000),
+      end: new Date(now + 60_000),
+      days: 8,
+    };
+    const report = await collectDoctorReportData(
+      session.userId,
+      range,
+      selectionFromLeaves(["SCI_SCORE", "PHQ9_SCORE"]),
+    );
+    expect(report.stats.SCI_SCORE?.count).toBe(3);
+    expect(report.screenerUnvalidatedTranslations).toEqual({ SCI_SCORE: 2 });
+
+    // Without the screener leaves the table is not asked at all.
+    const withoutScreeners = await collectDoctorReportData(
+      session.userId,
+      range,
+      selectionFromLeaves(["WEIGHT"]),
+    );
+    expect(withoutScreeners.screenerUnvalidatedTranslations).toBeNull();
   });
 });

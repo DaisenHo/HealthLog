@@ -435,7 +435,8 @@
       "autocorrelation": "전날 값에 크게 좌우되므로 범위가 여전히 너무 좁을 수 있음",
       "window": "{from}부터 {to}까지 분석, 보고 기간을 넘어설 수 있음",
       "windowLine": "{from}부터 {to}까지 분석했습니다. 이 기간은 보고 기간을 넘어설 수 있습니다."
-    }
+    },
+    "screenerUnvalidated": "{label}: {total}개 결과 중 {count}개는 과학적으로 검증되지 않은 번역으로 응답했습니다. 참고용으로만 보십시오."
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",

@@ -435,7 +435,8 @@
       "autocorrelation": "starke Abhängigkeit vom Vortag, die Bereiche können daher noch zu eng sein",
       "window": "ausgewertet {from} bis {to}, das kann über den Berichtszeitraum hinausreichen",
       "windowLine": "Ausgewertet {from} bis {to}. Dieser Zeitraum kann über den Berichtszeitraum hinausreichen."
-    }
+    },
+    "screenerUnvalidated": "{label}: {count} von {total} Ergebnissen wurden in einer nicht wissenschaftlich validierten Übersetzung beantwortet; sie dienen der Orientierung."
   },
   "errorBoundary": {
     "title": "Da ist etwas schiefgelaufen",

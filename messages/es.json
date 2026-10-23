@@ -435,7 +435,8 @@
       "autocorrelation": "fuerte dependencia del día anterior, así que los rangos pueden seguir siendo demasiado estrechos",
       "window": "analizado del {from} al {to}, puede ir más allá del periodo del informe",
       "windowLine": "Analizado del {from} al {to}. Este intervalo puede ir más allá del periodo del informe."
-    }
+    },
+    "screenerUnvalidated": "{label}: {count} de {total} resultados se respondieron con una traducción no validada científicamente; deben tomarse como orientación."
   },
   "errorBoundary": {
     "title": "Algo ha salido mal",
