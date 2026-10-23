@@ -434,6 +434,7 @@ function callsSymbol(rel: string, symbol: string): boolean {
  * cannot outlive the delegation it describes.
  */
 const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
+  "app/api/medications/route.ts": ["lib/medications/create-medication.ts"],
   "app/api/medications/[id]/intake/[eventId]/route.ts": [
     "lib/medications/update-intake-event.ts",
     "lib/medications/delete-intake-event.ts",
