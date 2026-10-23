@@ -6,15 +6,14 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import en from "../../../../messages/en.json";
 import nl from "../../../../messages/nl.json";
-import { WORDING } from "@/lib/mental-health/wording";
 import { seedQuestionnaireWording } from "@/__tests__/helpers/questionnaire-wording";
 
 /**
- * Mental-wellbeing surface redesign (v1.25.3). The SSR-only convention
- * (`renderToStaticMarkup`, `environment: "node"`, no `@testing-library/react`)
- * means clicks can't be driven here — the wizard's advance/back grammar is
- * pinned in `check-in-nav.test.ts`. These tests pin the SSR-observable
- * contracts: the disclaimer renders ONLY on the landing (never while testing),
+ * Mental-wellbeing surface redesign (v1.25.3). The check-in wizard itself is
+ * driven in a real browser by `check-in-wizard.browser.test.tsx` (steps,
+ * keys, review, follow-up, the unvalidated-translation note, the posted
+ * body); its step arithmetic is pinned in `check-in-nav.test.ts`. These tests
+ * pin the rendered contracts of the rest of the surface: the disclaimer renders ONLY on the landing (never while testing),
  * a positive item-9 surfaces the crisis card, and (v1.27.9) the landing is
  * intro + instrument cards only — the dated history + trend chart live in the
  * per-instrument detail a card click opens, pinned to one instrument.
@@ -73,52 +72,6 @@ describe("landing chrome (v1.25.5 — disclaimer + heading removed)", () => {
     expect(html).toContain("sr-only");
     // …and the lead description still introduces the screeners.
     expect(html).toContain(mh.pageDescription);
-  });
-
-  it("does NOT render any disclaimer inside the check-in wizard", () => {
-    const html = withProviders(
-      <CheckInWizard
-        instrument="PHQ9"
-        onSubmit={() => {}}
-        onBack={() => {}}
-        isPending={false}
-        isError={false}
-      />,
-    );
-    expect(html).not.toContain('data-slot="mental-health-disclaimer"');
-    // …but the standardized instrument explanation IS shown.
-    expect(html).toContain(mh.instrumentDescription.phq9);
-  });
-});
-
-describe("check-in wizard scaffolding (v1.27.6 — questions only)", () => {
-  const html = withProviders(
-    <CheckInWizard
-      instrument="PHQ9"
-      onSubmit={() => {}}
-      onBack={() => {}}
-      isPending={false}
-      isError={false}
-    />,
-  );
-
-  it("no longer renders the question-overview strip", () => {
-    expect(html).not.toContain('data-slot="wizard-stepper"');
-  });
-
-  it("no longer renders the review recap or the functional follow-up", () => {
-    expect(html).not.toContain("You have answered");
-    expect(html).not.toContain('data-slot="check-in-submit"');
-  });
-
-  it("opens on the first question with the Back/Next footer", () => {
-    expect(html).toContain(WORDING.PHQ9.en.items[0]);
-    expect(html).toContain('data-slot="check-in-back"');
-    expect(html).toContain('data-slot="check-in-next"');
-    // Back is disabled on the first step.
-    expect(html).toMatch(
-      /data-slot="check-in-back"[^>]*disabled|disabled[^>]*data-slot="check-in-back"/,
-    );
   });
 });
 
@@ -241,49 +194,6 @@ describe("WHO-5 / SCI on the same infrastructure (v1.27.9)", () => {
     // The landing stays lean: no rhythm-hint paragraph between the header
     // and the cards (removed on maintainer review of v1.27.10).
     expect(html).not.toContain("Rhythmus");
-  });
-
-  it("WHO-5 wizard opens on item 1 with the six-point scale in source order and the recall stem", () => {
-    const html = withProviders(
-      <CheckInWizard
-        instrument="WHO5"
-        onSubmit={() => {}}
-        onBack={() => {}}
-        isPending={false}
-        isError={false}
-      />,
-    );
-    expect(html).toContain(WORDING.WHO5.en.items[0]);
-    expect(html).toContain('data-slot="check-in-stem"');
-    expect(html).toContain(WORDING.WHO5.en.stems.period);
-    // Six anchors, 5 → 0 (the WHO form leads with "All of the time").
-    for (const v of [5, 4, 3, 2, 1, 0]) {
-      expect(html).toContain(WORDING.WHO5.en.anchors.all[v]);
-    }
-    // English items are the validated wording for en — no translation note.
-    expect(html).not.toContain('data-slot="check-in-unvalidated-note"');
-    expect(html).not.toContain('data-slot="check-in-wording-toggle"');
-    // No functional follow-up outside the PHQ-9: 5 steps total.
-    expect(html).toContain("Question 1 of 5");
-  });
-
-  it("SCI wizard opens on item 1 with the item-specific duration anchors and section stem", () => {
-    const html = withProviders(
-      <CheckInWizard
-        instrument="SCI"
-        onSubmit={() => {}}
-        onBack={() => {}}
-        isPending={false}
-        isError={false}
-      />,
-    );
-    expect(html).toContain(WORDING.SCI.en.items[0]);
-    expect(html).toContain(WORDING.SCI.en.stems.night);
-    // Item 1 carries the sleep-latency time ranges, 4 → 0.
-    for (const v of [4, 3, 2, 1, 0]) {
-      expect(html).toContain(WORDING.SCI.en.anchors.duration[v]);
-    }
-    expect(html).toContain("Question 1 of 8");
   });
 
   it("shows the gentle PHQ-9 pointer on a WHO-5 total of 50 or below", () => {
@@ -530,53 +440,26 @@ describe("questionnaires in the reader's language", () => {
     );
   }
 
-  function wizard(instrument: "PHQ9" | "SCI") {
-    return (
-      <CheckInWizard
-        instrument={instrument}
-        onSubmit={() => {}}
-        onBack={() => {}}
-        isPending={false}
-        isError={false}
-      />
-    );
-  }
-
+  // Kept here rather than in the browser suite: the frame before the
+  // language's chunk arrives is the one a server render always paints, and a
+  // browser loads the chunk before a test can look.
   it("holds the step's place while the language's text loads", () => {
     const html = renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>
         <I18nProvider initialLocale="nl" initialMessages={nl}>
-          {wizard("SCI")}
+          <CheckInWizard
+            instrument="SCI"
+            onSubmit={() => {}}
+            onBack={() => {}}
+            isPending={false}
+            isError={false}
+          />
         </I18nProvider>
       </QueryClientProvider>,
     );
     expect(html).toContain('data-slot="check-in-loading"');
     expect(html).not.toContain('data-slot="check-in-question"');
     expect(html).not.toContain('data-slot="check-in-unvalidated-note"');
-  });
-
-  it("the PHQ-9 in Dutch is the validated Dutch form, with no note and no switch", () => {
-    const html = renderIn("nl", wizard("PHQ9"));
-    const dutch = WORDING.PHQ9.nl;
-    expect(html).toContain(dutch.stems.period);
-    expect(html).toContain(dutch.items[0]);
-    for (const v of [0, 1, 2, 3]) expect(html).toContain(dutch.anchors.all[v]);
-    expect(html).not.toContain(WORDING.PHQ9.en.items[0]);
-    expect(html).not.toContain('data-slot="check-in-unvalidated-note"');
-    expect(html).not.toContain('data-slot="check-in-wording-toggle"');
-  });
-
-  it("the SCI in Dutch shows the translation under the note, with the switch to the English original", () => {
-    const html = renderIn("nl", wizard("SCI"));
-    const dutch = WORDING.SCI.nl;
-    expect(dutch.validated).toBe(false);
-    expect(html).toContain(dutch.stems.night);
-    expect(html).toContain(dutch.items[0]);
-    expect(html).not.toContain(WORDING.SCI.en.items[0]);
-    expect(html).toContain('data-slot="check-in-unvalidated-note"');
-    expect(html).toContain(nl.mentalHealth.wording.unvalidatedNote);
-    expect(html).toContain('data-slot="check-in-wording-toggle"');
-    expect(html).toContain(nl.mentalHealth.wording.showOriginal);
   });
 
   it("the result and the history mark an unvalidated translation, and only that", () => {
