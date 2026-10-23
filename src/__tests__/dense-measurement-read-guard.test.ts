@@ -106,7 +106,7 @@ const ALLOWED: Record<string, string> = {
     "Same 30-day clinical glucose panel as the coach snapshot (per-reading metrics), grouped by meal context.",
   "lib/analytics/score/reader.ts::{ in: types":
     "Health-score inputs: steps (drained to one row per day nightly), sleep, waist, weight, blood pressure, fasting glucose only.",
-  'app/api/analytics/route.ts::"BLOOD_GLUCOSE"':
+  'lib/analytics/response/glucose.ts::"BLOOD_GLUCOSE"':
     "The 30-day per-context glucose summary, the same window and bound as the dashboard and coach glucose panels: at a sensor's fixed rate, below 45 000 rows.",
   "lib/measurements/batch-ingest/write-measurements.ts::p.row.type as MeasurementType":
     "Cross-source merge probe: one ±tolerance window around each posted reading's instant, so the rows found are bounded by the batch size.",
