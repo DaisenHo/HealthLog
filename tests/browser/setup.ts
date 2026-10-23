@@ -8,13 +8,14 @@
  * - The EN catalog, the fallback floor of every `t()` chain, loaded through
  *   the production loader. `renderWithApp` loads any other locale it is
  *   asked for.
- * - After every test: the real `fetch` and the page's starting address come
- *   back, so a stub or a URL write never reaches the next test. Rendered
+ * - After every test: the real `fetch`, the real clock, the page's starting
+ *   address and an empty `localStorage` come back, so a stub, a pinned date,
+ *   a URL write or a remembered preference never reaches the next test. Rendered
  *   trees are unmounted by `vitest-browser-react` itself.
  */
 import "@/app/globals.css";
 
-import { afterEach, beforeAll, beforeEach } from "vitest";
+import { afterEach, beforeAll, beforeEach, vi } from "vitest";
 
 import { loadMessages } from "@/lib/i18n/load-locale";
 
@@ -33,5 +34,7 @@ beforeEach(() => {
 
 afterEach(() => {
   restoreFetch();
+  vi.useRealTimers();
   restoreAddress();
+  window.localStorage.clear();
 });

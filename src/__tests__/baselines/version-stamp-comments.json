@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2949,
-  "total": 10293,
+  "count": 2948,
+  "total": 10292,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1122,7 +1122,6 @@
     "components/measurement-reminders/vorsorge-dashboard-card.tsx": 2,
     "components/measurement-reminders/vorsorge-section.tsx": 26,
     "components/measurement-reminders/vorsorge-settings.tsx": 2,
-    "components/measurements/__tests__/measurement-form-unit-label.test.tsx": 1,
     "components/measurements/__tests__/measurement-list-apple-health-badge.test.tsx": 4,
     "components/measurements/__tests__/measurement-list-bp-badge.test.tsx": 3,
     "components/measurements/__tests__/measurement-list-empty.test.tsx": 1,
