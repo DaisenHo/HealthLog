@@ -350,8 +350,13 @@ const REGISTRY: DestructiveEntry[] = [
 
   // ── Measurements, mood, labs, illness — the undo-and-restore surfaces ────
   {
-    file: "components/measurements/measurement-list.tsx",
+    file: "components/measurements/list/use-measurement-list-data.ts",
     destroys: "one measurement, or every selected measurement",
+    triggers: [
+      "components/measurements/measurement-list.tsx",
+      "components/measurements/list/row-actions.tsx",
+      "components/measurements/list/measurement-edit-sheet.tsx",
+    ],
     recovery: "restorable",
     confirm: ["DeleteButton", "SelectionActionBar", "AlertDialog"],
   },

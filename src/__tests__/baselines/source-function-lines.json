@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 408,
-  "total": 143009,
+  "count": 405,
+  "total": 140971,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -180,9 +180,6 @@
     "components/measurement-reminders/vorsorge-section.tsx :: VorsorgeCard": 635,
     "components/measurement-reminders/vorsorge-section.tsx :: VorsorgeSection": 618,
     "components/measurements/measurement-form.tsx :: MeasurementForm": 500,
-    "components/measurements/measurement-list.tsx :: MeasurementList": 1586,
-    "components/measurements/measurement-list.tsx :: MeasurementList > data.measurements.map(arg)": 223,
-    "components/measurements/measurement-list.tsx :: MeasurementList > data.measurements.map(arg) #2": 229,
     "components/medications/detail/efficacy/efficacy-chart.tsx :: EfficacyChart": 361,
     "components/medications/detail/medication-detail-tabs.tsx :: MedicationDetailTabs": 771,
     "components/medications/dose-history-add-dialog.tsx :: LedgerAddDialog": 223,

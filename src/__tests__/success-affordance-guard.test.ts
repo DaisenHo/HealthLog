@@ -233,7 +233,9 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 1,
   },
   "src/components/measurements/measurement-form.tsx": { "toast.success": 1 },
-  "src/components/measurements/measurement-list.tsx": { "toast.success": 3 },
+  "src/components/measurements/list/use-measurement-list-data.ts": {
+    "toast.success": 3,
+  },
   "src/components/medications/card-parts/medication-status-pill.tsx": {
     "text-success": 1,
   },
