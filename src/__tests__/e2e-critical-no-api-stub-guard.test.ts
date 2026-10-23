@@ -49,7 +49,7 @@ const E2E = join(process.cwd(), "e2e");
  * the set is the release gate, so a journey that loses its tag is a change
  * somebody should see here.
  */
-const CRITICAL_TEST_FLOOR = 10;
+const CRITICAL_TEST_FLOOR = 11;
 
 /** A test whose title literal carries the tag, however the call is spelled. */
 const CRITICAL_TEST =
