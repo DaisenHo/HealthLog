@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/api-response";
-import {
-  generateMoodStatusForUser,
-  resolveMoodStatusLocale,
-} from "@/lib/insights/mood-status";
+import { generateMoodStatusForUser } from "@/lib/insights/mood-status";
+import { normalizeLocale as resolveMoodStatusLocale } from "@/lib/insights/status-shared";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";

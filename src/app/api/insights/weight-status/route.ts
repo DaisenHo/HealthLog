@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/api-response";
-import {
-  generateWeightStatusForUser,
-  resolveWeightStatusLocale,
-} from "@/lib/insights/weight-status";
+import { generateWeightStatusForUser } from "@/lib/insights/weight-status";
+import { normalizeLocale as resolveWeightStatusLocale } from "@/lib/insights/status-shared";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
