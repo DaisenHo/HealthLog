@@ -171,3 +171,159 @@ test.describe("mental-health check-in, every instrument", () => {
     });
   }
 });
+
+/**
+ * The questionnaires in the reader's language. Where a validated translation
+ * exists the form shows it and nothing else; where the text is HealthLog's
+ * own translation it carries the note and the one-tap switch to the English
+ * original, and the result says it was answered in an unvalidated
+ * translation. Which cells are unvalidated is pinned by
+ * `instrument-wording.test.ts`; this journey proves the surface follows it.
+ */
+const UNVALIDATED: Record<string, readonly Case["id"][]> = {
+  de: ["SCI"],
+  nl: ["SCI"],
+  ko: ["SCI"],
+  "pt-BR": ["WHO5", "SCI"],
+};
+
+function caseOf(id: Case["id"]): Case {
+  const found = CASES.find((c) => c.id === id);
+  if (!found) throw new Error(`no case for ${id}`);
+  return found;
+}
+
+async function openInLocale(page: Page, locale: string) {
+  await page.context().addCookies([
+    {
+      name: "healthlog-locale",
+      value: locale,
+      url: process.env.E2E_BASE_URL ?? "http://localhost:3000",
+    },
+  ]);
+  await page.goto("/mental-wellbeing");
+}
+
+async function answerAll(page: Page, c: Case, position: number) {
+  const wizard = page.locator(
+    `[data-slot="mental-health-check-in"][data-instrument="${c.id}"]`,
+  );
+  for (let step = 1; step <= c.items; step++) {
+    const current = wizard.locator(
+      `[data-slot="check-in-step"][data-step="${step}"]`,
+    );
+    await expect(current).toBeVisible();
+    await current
+      .locator('[role="radio"]')
+      .nth(position - 1)
+      .click();
+  }
+  if (c.followUp) {
+    await wizard.locator('[data-slot="check-in-next"]').click();
+  }
+  await expect(wizard.locator('[data-slot="check-in-review"]')).toBeVisible();
+  await wizard.locator('[data-slot="check-in-submit"]').click();
+  const result = page.locator(
+    `[data-slot="mental-health-result"][data-instrument="${c.id}"]`,
+  );
+  await expect(result).toBeVisible();
+  return result;
+}
+
+test.describe("mental-health check-in, in the reader's language", () => {
+  test.use({ storageState: STORAGE_STATE_PATH });
+
+  for (const [locale, unvalidated] of Object.entries(UNVALIDATED)) {
+    test(`${locale}: the note and the switch appear only on an unvalidated translation`, async ({
+      page,
+    }) => {
+      test.setTimeout(120_000);
+      await openInLocale(page, locale);
+      await expect(page.locator("html")).toHaveAttribute("lang", locale);
+
+      for (const c of CASES) {
+        await page
+          .locator(`[data-slot="instrument-card"][data-instrument="${c.id}"]`)
+          .locator('[data-slot="instrument-card-start"]')
+          .click();
+        const wizard = page.locator(
+          `[data-slot="mental-health-check-in"][data-instrument="${c.id}"]`,
+        );
+        await expect(
+          wizard.locator('[data-slot="check-in-step"][data-step="1"]'),
+        ).toBeVisible();
+        const expected = unvalidated.includes(c.id) ? 1 : 0;
+        await expect(
+          wizard.locator('[data-slot="check-in-unvalidated-note"]'),
+        ).toHaveCount(expected);
+        await expect(
+          wizard.locator('[data-slot="check-in-wording-toggle"]'),
+        ).toHaveCount(expected);
+        await expect(
+          wizard.locator('[data-slot="check-in-question"]'),
+        ).toHaveAttribute("lang", locale);
+        if (expected === 1)
+          await expectNoSeriousViolations(page, `${locale} ${c.id}`);
+        await wizard.locator('[data-slot="check-in-back-to-landing"]').click();
+      }
+
+      // An unvalidated translation answered as shown: the result says so.
+      const sci = caseOf("SCI");
+      await page
+        .locator('[data-slot="instrument-card"][data-instrument="SCI"]')
+        .locator('[data-slot="instrument-card-start"]')
+        .click();
+      const result = await answerAll(page, sci, 2);
+      await expect(
+        result.locator('[data-slot="result-wording-note"]'),
+      ).toBeVisible();
+      await expectNoSeriousViolations(page, `${locale} SCI result`);
+    });
+  }
+
+  test("nl: the switch shows the English original, and the result records it", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await openInLocale(page, "nl");
+    await page
+      .locator('[data-slot="instrument-card"][data-instrument="SCI"]')
+      .locator('[data-slot="instrument-card-start"]')
+      .click();
+    const wizard = page.locator(
+      '[data-slot="mental-health-check-in"][data-instrument="SCI"]',
+    );
+    const question = wizard.locator('[data-slot="check-in-question"]');
+    const translated = await question.textContent();
+    const toggle = wizard.locator('[data-slot="check-in-wording-toggle"]');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("data-showing", "original_en");
+    await expect(question).toHaveAttribute("lang", "en");
+    await expect(question).not.toHaveText(translated ?? "");
+    const sci = caseOf("SCI");
+    const result = await answerAll(page, sci, 1);
+    await expect(
+      result.locator('[data-slot="result-wording-note"]'),
+    ).toHaveCount(0);
+  });
+
+  test("pt-BR: PHQ-9 item 9 above zero leads the result with the crisis card", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    await openInLocale(page, "pt-BR");
+    await page
+      .locator('[data-slot="instrument-card"][data-instrument="PHQ9"]')
+      .locator('[data-slot="instrument-card-start"]')
+      .click();
+    const phq = caseOf("PHQ9");
+    // Position 2 is "Vários dias" (value 1) on every item, item 9 included.
+    const result = await answerAll(page, phq, 2);
+    await expect(
+      result.locator('[data-slot="mental-health-crisis-card"]'),
+    ).toBeVisible();
+    await expect(
+      result.locator('[data-slot="result-wording-note"]'),
+    ).toHaveCount(0);
+  });
+});
