@@ -21,7 +21,7 @@ import {
 } from "@/lib/integrations/page-walk";
 import { syncUserFitbit } from "@/lib/fitbit/sync";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
-import { FITBIT_BACKFILL_QUEUE } from "./../fitbit/jobs/queues";
+import { FITBIT_BACKFILL_QUEUE } from "./queues";
 
 export interface FitbitBackfillPayload {
   userId: string;

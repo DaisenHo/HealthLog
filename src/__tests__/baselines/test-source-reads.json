@@ -320,7 +320,7 @@
     "lib/jobs/__tests__/data-arrival-provider-isolation.test.ts": 1,
     "lib/jobs/__tests__/data-arrival-queue.test.ts": 1,
     "lib/jobs/__tests__/data-backup-send-policy.test.ts": 1,
-    "lib/jobs/__tests__/fitbit-queues.test.ts": 1,
+    "lib/fitbit/jobs/__tests__/queues.test.ts": 1,
     "lib/jobs/__tests__/geo-backfill.test.ts": 1,
     "lib/jobs/__tests__/geolite2-fetch-queue.test.ts": 1,
     "lib/jobs/__tests__/google-health-queues.test.ts": 1,

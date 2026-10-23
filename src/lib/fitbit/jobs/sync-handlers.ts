@@ -11,8 +11,8 @@ import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { runFitbitPollCohort } from "@/lib/fitbit/sync";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
-import { cleanupExpiredFitbitOAuthStates } from "@/lib/jobs/fitbit-oauth-state-cleanup";
-import { getWorkerPrisma } from "./shared";
+import { cleanupExpiredFitbitOAuthStates } from "./oauth-state-cleanup";
+import { getWorkerPrisma } from "@/lib/jobs/reminder/shared";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 /**

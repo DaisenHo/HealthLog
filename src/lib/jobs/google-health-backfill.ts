@@ -1,7 +1,7 @@
 /**
  * v1.26.0 — pg-boss queue + boot-time self-converging backfill for newly
  * connected Google Health accounts. Modelled on the Fitbit / WHOOP backfill
- * (`src/lib/jobs/fitbit-backfill.ts`): a discovery query enqueues one job per
+ * (`src/lib/fitbit/jobs/backfill.ts`): a discovery query enqueues one job per
  * connection that has NOT yet been backfilled, and the pass is idempotent
  * across reboots (the predicate `backfill_completed_at IS NULL` drops a
  * connection once its backfill finishes).

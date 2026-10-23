@@ -33,8 +33,7 @@ export const FITBIT_JOBS: readonly JobDefinition[] = [
     queue: FITBIT_SYNC_QUEUE,
     cron: FITBIT_SYNC_CRON,
     work: { localConcurrency: 1 },
-    load: async () =>
-      (await import("@/lib/jobs/reminder/fitbit-sync")).handleFitbitSync,
+    load: async () => (await import("./sync-handlers")).handleFitbitSync,
   }),
   // The source queue keeps the per-connection singleton and forwards
   // admitted work to the shared drain.
@@ -72,8 +71,7 @@ export const FITBIT_JOBS: readonly JobDefinition[] = [
     scheduleOptions: cronIsTheRetry,
     work: { localConcurrency: 1 },
     load: async () =>
-      (await import("@/lib/jobs/reminder/fitbit-sync"))
-        .handleFitbitOAuthStateCleanup,
+      (await import("./sync-handlers")).handleFitbitOAuthStateCleanup,
   }),
 ];
 
@@ -82,16 +80,14 @@ export const FITBIT_BOOT_DISCOVERY: readonly BootDiscovery[] = [
   {
     name: "fitbit-backfill",
     run: async () =>
-      (
-        await import("@/lib/jobs/fitbit-backfill")
-      ).enqueueBootTimeFitbitBackfill(bootStaggerSecondsFor("fitbit-backfill")),
+      (await import("./backfill")).enqueueBootTimeFitbitBackfill(
+        bootStaggerSecondsFor("fitbit-backfill"),
+      ),
   },
   {
     name: "fitbit-sleep-repair",
     run: async () =>
-      (
-        await import("@/lib/jobs/fitbit-sleep-repair")
-      ).enqueueBootTimeFitbitSleepRepair(
+      (await import("./sleep-repair")).enqueueBootTimeFitbitSleepRepair(
         bootStaggerSecondsFor("fitbit-sleep-repair"),
       ),
   },

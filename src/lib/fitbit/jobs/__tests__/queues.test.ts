@@ -29,7 +29,7 @@ import { INTEGRATION_BACKFILL_ADMISSION_QUEUE } from "@/lib/jobs/integration-bac
 import {
   handleFitbitOAuthStateCleanup,
   handleFitbitSync,
-} from "@/lib/jobs/reminder/fitbit-sync";
+} from "@/lib/fitbit/jobs/sync-handlers";
 import { cronIsTheRetry } from "@/lib/jobs/reminder/registrar-shared";
 import {
   discoveryOf,
@@ -40,7 +40,7 @@ import {
 } from "@/lib/jobs/registry/__tests__/registry-helpers";
 
 const handlerSource = readFileSync(
-  join(__dirname, "..", "reminder", "fitbit-sync.ts"),
+  join(__dirname, "..", "sync-handlers.ts"),
   "utf8",
 );
 

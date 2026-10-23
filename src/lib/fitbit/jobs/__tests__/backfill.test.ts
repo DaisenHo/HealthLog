@@ -42,7 +42,7 @@ vi.mock("@/lib/logging/context", () => ({
 import {
   enqueueBootTimeFitbitBackfill,
   runFitbitBackfillForUser,
-} from "../fitbit-backfill";
+} from "@/lib/fitbit/jobs/backfill";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 beforeEach(() => {

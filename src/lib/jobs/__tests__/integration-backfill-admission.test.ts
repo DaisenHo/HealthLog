@@ -20,8 +20,8 @@ vi.mock("@/lib/jobs/whoop-backfill", async (importOriginal) => ({
   enqueueBootTimeWhoopBackfill: async (stagger: number) =>
     recordStagger("whoop-backfill", stagger),
 }));
-vi.mock("@/lib/jobs/fitbit-backfill", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/jobs/fitbit-backfill")>()),
+vi.mock("@/lib/fitbit/jobs/backfill", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/fitbit/jobs/backfill")>()),
   enqueueBootTimeFitbitBackfill: async (stagger: number) =>
     recordStagger("fitbit-backfill", stagger),
 }));
@@ -58,8 +58,8 @@ vi.mock("@/lib/jobs/strava-backfill", async (importOriginal) => ({
   enqueueBootTimeStravaBackfill: async (stagger: number) =>
     recordStagger("strava-backfill", stagger),
 }));
-vi.mock("@/lib/jobs/fitbit-sleep-repair", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/jobs/fitbit-sleep-repair")>()),
+vi.mock("@/lib/fitbit/jobs/sleep-repair", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/fitbit/jobs/sleep-repair")>()),
   enqueueBootTimeFitbitSleepRepair: async (stagger: number) =>
     recordStagger("fitbit-sleep-repair", stagger),
 }));
@@ -105,13 +105,13 @@ import { WHOOP_BACKFILL_QUEUE } from "../whoop-backfill-queue";
 
 const providerSources = [
   "whoop-backfill.ts",
-  "fitbit-backfill.ts",
+  "../fitbit/jobs/backfill.ts",
   "google-health-backfill.ts",
   "google-health-sleep-repair.ts",
   "sleep-timeline-backfill.ts",
   "lab-biomarker-backfill.ts",
   "strava-backfill.ts",
-  "fitbit-sleep-repair.ts",
+  "../fitbit/jobs/sleep-repair.ts",
   "oura-backfill.ts",
 ].map((file) => readFileSync(join(__dirname, "..", file), "utf8"));
 

@@ -46,7 +46,7 @@ import {
 } from "@/lib/fitbit/sync-core";
 import { syncUserSleep } from "@/lib/fitbit/sync-sleep";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
-import { FITBIT_SLEEP_REPAIR_QUEUE } from "./../fitbit/jobs/queues";
+import { FITBIT_SLEEP_REPAIR_QUEUE } from "./queues";
 
 export interface FitbitSleepRepairPayload {
   userId: string;

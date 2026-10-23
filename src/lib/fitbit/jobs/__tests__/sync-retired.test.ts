@@ -21,7 +21,7 @@ vi.mock("@/lib/jobs/reminder-satisfy", () => ({
   enqueueReminderSatisfy: vi.fn(async () => {}),
 }));
 
-import { handleFitbitSync } from "../reminder/fitbit-sync";
+import { handleFitbitSync } from "@/lib/fitbit/jobs/sync-handlers";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 describe("handleFitbitSync", () => {

@@ -76,7 +76,7 @@ import {
 import {
   enqueueBootTimeFitbitSleepRepair,
   runFitbitSleepRepairForUser,
-} from "../fitbit-sleep-repair";
+} from "@/lib/fitbit/jobs/sleep-repair";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
 
 beforeEach(() => {
