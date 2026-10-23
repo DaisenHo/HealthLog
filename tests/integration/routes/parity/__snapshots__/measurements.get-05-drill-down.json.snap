@@ -14,7 +14,6 @@
           "source": "APPLE_HEALTH",
           "measuredAt": "2026-10-13T12:00:00.000Z",
           "notes": null,
-          "notesEncrypted": null,
           "externalId": "stats:HKQuantityTypeIdentifierStepCount:2026-10-13",
           "externalSourceVersion": null,
           "aggregationProvenance": "HEALTHKIT_STATISTICS",
