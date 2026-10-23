@@ -121,11 +121,6 @@ const SELF_CONTEXT_AI_SECTIONS = [
   "COACH_FOCUS",
 ] as const satisfies readonly HealthProfileAiSection[];
 
-/** Pg-boss queue + cron — imported by the reminder worker's bootstrap. */
-export const COACH_NUDGE_QUEUE = "coach-nudge";
-/** 05:15 Europe/Berlin — after the 04:45–04:55 score crons settled. */
-export const COACH_NUDGE_CRON = "15 5 * * *";
-
 /**
  * Frequency cap default: one nudge per user per rolling week. v1.16.5 —
  * the per-user `nudgeFrequency` pref ("weekly" | "biweekly") can widen

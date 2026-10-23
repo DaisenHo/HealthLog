@@ -40,6 +40,13 @@ const TAIL_VIA_PREFIX = "runs afterMeasurementMutation via ";
 const TAIL_VIA = (file: string) => `${TAIL_VIA_PREFIX}${file}`;
 
 /**
+ * Runs the provider write step (`integrations/sync-kit/after-write.ts`),
+ * which is `afterMeasurementMutation` plus the arrivals and, where asked, the
+ * dashboard snapshot.
+ */
+const PROVIDER_TAIL = "runs afterProviderWrite";
+
+/**
  * Every file with a measurement write, and how it keeps the two readers
  * current. A file listed here must still contain a write (a stale entry
  * fails too).
@@ -66,17 +73,13 @@ const WRITE_SITES: Record<string, string> = {
   // Retiring the equivalent-distance rows earlier Oura syncs wrote.
   "lib/oura/retire-distance.ts": TAIL,
   // Integration syncs: each collects the (type, day) pairs it touched and
-  // runs both legs itself at the end of the sync.
-  "lib/fitbit/sync-core.ts":
-    "refolds the touched days and re-warms the touched types at the end of the upsert",
-  "lib/google-health/sync-core.ts":
-    "refolds the touched days and re-warms the touched types at the end of the upsert",
-  "lib/nightscout/sync.ts":
-    "refolds the touched days and re-warms the touched types at the end of the sync",
+  // runs the provider write step over them.
+  "lib/fitbit/sync-core.ts": PROVIDER_TAIL,
+  "lib/google-health/sync-core.ts": PROVIDER_TAIL,
+  "lib/nightscout/sync.ts": PROVIDER_TAIL,
+  "lib/withings/sync.ts": PROVIDER_TAIL,
   "lib/oura/sync-heart-rate.ts":
     "collects the days each heart-rate page touched; refolds them and re-warms the type once per window",
-  "lib/withings/sync.ts":
-    "refolds the touched days and re-warms the touched types at the end of the sync",
   "lib/withings/sync-activity.ts":
     "refolds the touched days (and the day a moved row left) and re-warms the touched types",
   "lib/withings/sync-ecg.ts":
@@ -165,10 +168,15 @@ describe("measurement write tail", () => {
   });
 
   it("the files that claim the shared tail call it", () => {
-    const missing = Object.entries(WRITE_SITES)
-      .filter(
-        ([, reason]) => reason === TAIL || reason.startsWith(TAIL_VIA_PREFIX),
-      )
+    const claims = Object.entries(WRITE_SITES).filter(
+      ([, reason]) => reason === TAIL || reason.startsWith(TAIL_VIA_PREFIX),
+    );
+    // Both shapes are in use; a set that lost either would check nothing.
+    expect(claims.filter(([, r]) => r === TAIL).length).toBeGreaterThan(5);
+    expect(
+      claims.filter(([, r]) => r.startsWith(TAIL_VIA_PREFIX)).length,
+    ).toBeGreaterThan(0);
+    const missing = claims
       .map(([file, reason]) =>
         reason.startsWith(TAIL_VIA_PREFIX)
           ? reason.slice(TAIL_VIA_PREFIX.length)
@@ -180,6 +188,18 @@ describe("measurement write tail", () => {
             readFileSync(join(SRC, file), "utf8"),
           ),
       );
+    expect(missing).toEqual([]);
+  });
+
+  it("the files that claim the provider write step call it", () => {
+    const claimed = Object.entries(WRITE_SITES)
+      .filter(([, reason]) => reason === PROVIDER_TAIL)
+      .map(([file]) => file);
+    expect(claimed.length).toBeGreaterThan(0);
+    const missing = claimed.filter(
+      (file) =>
+        !/afterProviderWrite\s*\(/.test(readFileSync(join(SRC, file), "utf8")),
+    );
     expect(missing).toEqual([]);
   });
 

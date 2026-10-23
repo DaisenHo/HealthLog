@@ -33,7 +33,12 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import type { MeasurementType, Prisma } from "@/generated/prisma/client";
-import { WHOOP_RECOVERY_FIELD_TAGS } from "./client";
+import { WHOOP_RECOVERY_FIELD_TAGS } from "./map";
+import {
+  WHOOP_RECOVERY_SYNC_QUEUE,
+  WHOOP_SLEEP_SYNC_QUEUE,
+  WHOOP_WORKOUT_SYNC_QUEUE,
+} from "@/lib/jobs/integration-poll-queues";
 
 /**
  * Maximum age of a webhook timestamp before it is treated as a replay. Five
@@ -48,9 +53,9 @@ const WHOOP_SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
  * webhook (poll-only) so it is intentionally absent.
  */
 const WHOOP_RESOURCE_QUEUE: Record<string, string> = {
-  recovery: "whoop-recovery-sync",
-  sleep: "whoop-sleep-sync",
-  workout: "whoop-workout-sync",
+  recovery: WHOOP_RECOVERY_SYNC_QUEUE,
+  sleep: WHOOP_SLEEP_SYNC_QUEUE,
+  workout: WHOOP_WORKOUT_SYNC_QUEUE,
 };
 
 /**

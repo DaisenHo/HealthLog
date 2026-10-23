@@ -27,16 +27,7 @@ import {
   DENSE_INTRADAY_RETENTION_DAYS,
   DENSE_INTRADAY_FOLD_SOURCES,
 } from "@/lib/measurements/dense-intraday-retention";
-
-export const DENSE_INTRADAY_RETENTION_QUEUE = "dense-intraday-retention";
-
-/**
- * Serial concurrency — the drain walks every out-of-window per-sample
- * dense-tier row for a user and writes a transaction per day;
- * concurrency-1 keeps it from crowding the request pool, matching the
- * mean-consolidation + step-consolidation convention.
- */
-export const DENSE_INTRADAY_RETENTION_CONCURRENCY = 1;
+import { DENSE_INTRADAY_RETENTION_QUEUE } from "./dense-intraday-retention-queue";
 
 /**
  * Daily at 03:50 Europe/Berlin — inside the existing 03:xx maintenance

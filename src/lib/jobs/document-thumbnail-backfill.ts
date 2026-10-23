@@ -30,11 +30,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueDocumentThumbnail } from "@/lib/jobs/document-thumbnail";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
-
-export const DOCUMENT_THUMBNAIL_BACKFILL_QUEUE = "document-thumbnail-backfill";
-
-/** Serial concurrency — cheap discovery + fan-out enqueues. */
-export const DOCUMENT_THUMBNAIL_BACKFILL_CONCURRENCY = 1;
+import { DOCUMENT_THUMBNAIL_BACKFILL_QUEUE } from "./document-thumbnail-backfill-queue";
 
 /** Discovery page size (id-only). */
 const PAGE_SIZE = 100;

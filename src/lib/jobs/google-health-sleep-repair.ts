@@ -37,15 +37,7 @@ import {
   GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS,
   withGoogleHealthSyncLock,
 } from "@/lib/google-health/sync-lock";
-
-export const GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE = "google-health-sleep-repair";
-
-/**
- * Serial concurrency — a repair walks the full sleep history for one account
- * and is rate-bounded by Google's per-app quota; concurrency-1 keeps it from
- * crowding the request pool, matching `GOOGLE_HEALTH_BACKFILL_CONCURRENCY`.
- */
-export const GOOGLE_HEALTH_SLEEP_REPAIR_CONCURRENCY = 1;
+import { GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE } from "./google-health-sleep-repair-queue";
 
 export interface GoogleHealthSleepRepairPayload {
   userId: string;

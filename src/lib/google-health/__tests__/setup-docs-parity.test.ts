@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { GOOGLE_HEALTH_CORE_SCOPES } from "../client";
+import { GOOGLE_HEALTH_CORE_SCOPES } from "@/lib/google-health/oauth";
 import {
   INTEGRATION_DOCS_BASE,
   integrationDocsHref,

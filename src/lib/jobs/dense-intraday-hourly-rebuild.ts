@@ -34,16 +34,7 @@ import {
   DENSE_INTRADAY_RETENTION_TYPES,
 } from "@/lib/measurements/dense-intraday-retention";
 import { runDenseIntradayHourlyRebuild } from "@/lib/measurements/dense-intraday-hourly-rebuild";
-
-export const DENSE_INTRADAY_HOURLY_REBUILD_QUEUE =
-  "dense-intraday-hourly-rebuild";
-
-/**
- * Serial concurrency — a rebuild walks every folded day for one account
- * with a transaction per day; concurrency-1 keeps it from crowding the
- * request pool, matching the retention drain's convention.
- */
-export const DENSE_INTRADAY_HOURLY_REBUILD_CONCURRENCY = 1;
+import { DENSE_INTRADAY_HOURLY_REBUILD_QUEUE } from "./dense-intraday-hourly-rebuild-queue";
 
 /**
  * Boot-discovery jobs start only after this delay (seconds). The rebuild
