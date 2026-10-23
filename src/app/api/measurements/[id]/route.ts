@@ -8,9 +8,9 @@ import {
   apiError,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import {
   updateMeasurementSchema,
   USER_CORRECTABLE_MEASUREMENT_SOURCES,
@@ -75,40 +75,35 @@ export const PUT = apiHandler(
       return apiError("Measurement not found", 404);
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    // v1.4.43 — measurement edit hot path; multi-issue 422 +
+    // audit breadcrumb keyed `measurements.update.validation-failed`.
+    const parsed = await parseJsonBody(request, updateMeasurementSchema, {
       maxBytes: 64 * 1024,
+      action: "measurements.update.validation-failed",
+      countIssues: true,
+      meta: { measurement_id: id },
+      onInvalid: (error) => {
+        // v1.4.49 — strip `message` from the audit-ledger row; the
+        // update schema carries free-text `notes`.
+        const auditIssues = sanitiseZodIssues(error.issues, {
+          stripValuesFromMessage: true,
+        });
+        // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
+        // .create`, because that helper is the only writer that stamps
+        // `actorUserId`. Filed under the resolved record either way; without
+        // the stamp a manager's malformed payload would read as the owner's own.
+        void auditLog("measurements.update.validation-failed", {
+          userId: user.id,
+          details: {
+            issues: auditIssues,
+            measurementId: id,
+          },
+        }).catch(() => {
+          /* swallow — 422 response is the contract */
+        });
+      },
     });
-
-    if (jsonError) return jsonError;
-    const parsed = updateMeasurementSchema.safeParse(body);
-    if (!parsed.success) {
-      // v1.4.43 — measurement edit hot path; multi-issue 422 +
-      // audit breadcrumb keyed `measurements.update.validation-failed`.
-      const issues = sanitiseZodIssues(parsed.error.issues);
-      annotate({
-        action: { name: "measurements.update.validation-failed" },
-        meta: { issue_count: issues.length, measurement_id: id },
-      });
-      // v1.4.49 — strip `message` from the audit-ledger row; the
-      // update schema carries free-text `notes`.
-      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-        stripValuesFromMessage: true,
-      });
-      // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
-      // .create`, because that helper is the only writer that stamps
-      // `actorUserId`. Filed under the resolved record either way; without the
-      // stamp a manager's malformed payload would read as the owner's own.
-      void auditLog("measurements.update.validation-failed", {
-        userId: user.id,
-        details: {
-          issues: auditIssues,
-          measurementId: id,
-        },
-      }).catch(() => {
-        /* swallow — 422 response is the contract */
-      });
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
 
     const data = parsed.data;
 

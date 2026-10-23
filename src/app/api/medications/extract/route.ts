@@ -55,12 +55,8 @@ import type { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { assertAiEgress } from "@/lib/ai/capabilities/egress";
@@ -164,18 +160,16 @@ async function handleExtract(request: NextRequest): Promise<Response> {
   const userId = auth.user.id;
 
   // Body parse + Zod validation.
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const validated = await parseJsonBody(request, requestSchema, {
     maxBytes: 16 * 1024,
+    onInvalid: (error) => {
+      annotate({
+        action: { name: "medications.extract.invalid" },
+        meta: { issues: error.issues.length },
+      });
+    },
   });
-  if (jsonError) return jsonError;
-  const validated = requestSchema.safeParse(body);
-  if (!validated.success) {
-    annotate({
-      action: { name: "medications.extract.invalid" },
-      meta: { issues: validated.error.issues.length },
-    });
-    return returnAllZodIssues(validated.error);
-  }
+  if (!validated.ok) return validated.error;
 
   const { text, locale, today: todayOverride } = validated.data;
 
