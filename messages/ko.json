@@ -510,7 +510,9 @@
     "documents": "문서",
     "vaccinations": "예방접종",
     "mentalWellbeing": "정신 건강",
-    "timeline": "타임라인"
+    "timeline": "타임라인",
+    "topics": "주제",
+    "previewBadge": "베타"
   },
   "auth": {
     "login": "로그인",
@@ -6143,6 +6145,10 @@
       "access": {
         "title": "공유 접근",
         "subtitle": "내 건강 기록을 누가 열 수 있고, 내가 누구의 기록을 열 수 있는지예요."
+      },
+      "preview": {
+        "title": "미리 보기 기능",
+        "subtitle": "아직 완성되지 않은 기능을 써 보세요. 여기 있는 기능은 직접 켜기 전까지 꺼져 있습니다."
       }
     },
     "profile": "프로필",
@@ -7628,6 +7634,17 @@
     "passkeyRemovedToast": "패스키를 삭제했어요.",
     "integrationDisconnected": "{provider} 연결을 해제했어요.",
     "integrationDisconnectFailed": "{provider} 연결을 해제하지 못했어요.",
+    "preview": {
+      "topics": {
+        "title": "주제",
+        "description": "관련된 수치를 한데 모은 주제 영역을 인사이트 페이지 옆에 추가합니다.",
+        "detail": "심장부터 주기까지 여덟 가지 주제가 수치를 나란히 보여 주고, 함께 어떻게 움직이는지와 이미 쓰고 있는 개별 지표 페이지로 가는 링크를 보여 줍니다. 인사이트 페이지, 내비게이션, 링크는 그대로 유지됩니다. 모든 계산은 AI 없이 본인의 수치로 합니다. 끄면 메뉴 항목만 사라지고 아무것도 삭제되지 않습니다.",
+        "savedOn": "주제 미리 보기를 켰습니다.",
+        "savedOff": "주제 미리 보기를 껐습니다.",
+        "open": "주제 열기"
+      },
+      "loadError": "미리 보기 설정을 불러오지 못했습니다."
+    },
     "timezoneSaved": "시간대를 저장했습니다.",
     "moduleState": {
       "on": "켜짐",
@@ -13764,6 +13781,172 @@
       "asNeeded": "필요시",
       "startsOn": "시작",
       "endsOn": "종료"
+    }
+  },
+  "topics": {
+    "overview": {
+      "title": "주제",
+      "description": "본인의 수치에서 관련 지표를 모았습니다. 주제를 열면 나란히 볼 수 있습니다.",
+      "emptyTitle": "아직 모을 수치가 없습니다",
+      "emptyDescription": "기기, 가져오기 또는 직접 입력으로 수치가 생기면 주제가 나타납니다.",
+      "notRecorded": "아직 기록이 없는 주제: {topics}.",
+      "hiddenByModule": "모듈이 꺼져 있어 숨김: {topics}.",
+      "modulesLink": "설정에서 모듈 변경"
+    },
+    "detail": {
+      "back": "모든 주제"
+    },
+    "loadError": "주제를 불러오지 못했습니다.",
+    "previewNote": "미리 보기 기능입니다. 버전마다 바뀔 수 있으며, 개별 지표 페이지는 그대로입니다.",
+    "recorded": "기록된 지표: {total}개 중 {count}개",
+    "tone": {
+      "steady": "안정적",
+      "watch": "살펴볼 만함",
+      "learning": "학습 중"
+    },
+    "summary": {
+      "outsideAbove": "{signal}이(가) 평소 범위보다 높습니다.",
+      "outsideBelow": "{signal}이(가) 평소 범위보다 낮습니다.",
+      "labs": "검사 수치 {total}개 중 {count}개가 참고 범위 안에 있습니다.",
+      "cycleDay": "주기 {day}일째.",
+      "steadyAll": "기록된 모든 수치가 평소 범위 안에 있습니다.",
+      "steadySome": "{total}개 중 {count}개 지표가 평소 범위 안에 있으며, 나머지는 아직 학습 중입니다.",
+      "learning": "평소 범위를 아직 학습 중입니다. 일주일 치 기록이면 충분합니다.",
+      "empty": "아직 기록이 없습니다."
+    },
+    "headline": {
+      "labsValue": "{count}/{total}",
+      "labsUnit": "범위 내",
+      "cycleDay": "{day}일째"
+    },
+    "signals": {
+      "mood": "기분"
+    },
+    "units": {
+      "moodScale": "/ 5"
+    },
+    "names": {
+      "heart": {
+        "title": "심장",
+        "description": "안정 시 심박수, 심박 변이도, 심폐 체력과 이에 영향을 주는 수면과 운동."
+      },
+      "body": {
+        "title": "신체",
+        "description": "시간에 따른 체중과 체성분."
+      },
+      "bloodPressure": {
+        "title": "혈압",
+        "description": "수축기, 이완기 혈압과 맥박, 그리고 주변의 수면과 활동."
+      },
+      "sleep": {
+        "title": "수면",
+        "description": "수면 시간과 밤에 측정되는 수치."
+      },
+      "activity": {
+        "title": "활동 및 운동",
+        "description": "걸음 수, 운동 시간, 활동 에너지와 훈련 부하."
+      },
+      "metabolism": {
+        "title": "대사 및 검사",
+        "description": "혈당과 검사 수치, 그리고 각 지표의 추세."
+      },
+      "mind": {
+        "title": "마음",
+        "description": "수면과 활동 옆에 놓인 기분과 설문."
+      },
+      "cycle": {
+        "title": "주기",
+        "description": "주기와 이를 따라 변하는 체온, 안정 시 심박수."
+      }
+    },
+    "sources": {
+      "heart": "이 수치는 워치, 링, 가슴 스트랩, Apple 건강 또는 Health Connect, 직접 입력에서 옵니다.",
+      "body": "이 수치는 스마트 체중계, 가져오기 또는 직접 입력에서 옵니다.",
+      "bloodPressure": "이 수치는 혈압계, 가져오기 또는 직접 입력에서 옵니다.",
+      "sleep": "이 수치는 워치나 링, Apple 건강 또는 Health Connect, 직접 입력에서 옵니다.",
+      "activity": "이 수치는 휴대폰, 워치, 링 또는 Apple 건강이나 Health Connect에서 옵니다.",
+      "metabolism": "혈당은 혈당 측정기, 센서 가져오기 또는 직접 입력에서, 검사 수치는 검사 보고서나 직접 입력에서 옵니다.",
+      "mind": "이 수치는 기분 기록과 정신 건강 페이지의 설문에서 옵니다.",
+      "cycle": "이 수치는 주기 기록과 손목 온도 센서에서 옵니다."
+    },
+    "today": {
+      "title": "오늘",
+      "usual": "평소 {low}–{high}",
+      "learning": "평소 범위 학습 중",
+      "asOf": "{date} 기준",
+      "details": "자세히"
+    },
+    "state": {
+      "within": "범위 내",
+      "above": "평소보다 높음",
+      "below": "평소보다 낮음",
+      "learning": "학습 중"
+    },
+    "chart": {
+      "title": "나란히 보기",
+      "legend": "음영: 평소 범위.",
+      "label": "선택한 기간의 {signals}, 지표마다 한 줄."
+    },
+    "range": {
+      "label": "기간",
+      "7d": "7일",
+      "30d": "30일",
+      "90d": "90일",
+      "1y": "1년"
+    },
+    "relationships": {
+      "title": "함께 움직이는 방식",
+      "insufficient": "{x}와(과) {y}: 지금까지 {required}일 중 {count}일이 겹칩니다.",
+      "noClearLink": "겹치는 {count}일 동안 {x}와(과) {y} 사이에 뚜렷한 관계가 없습니다.",
+      "splitHigher": "{x}이(가) {threshold} 미만일 때 {y}이(가) 다른 날보다 {amount} 높았습니다.",
+      "splitLower": "{x}이(가) {threshold} 미만일 때 {y}이(가) 다른 날보다 {amount} 낮았습니다.",
+      "splitDays": "미만인 날: {below}. 다른 날: {other}.",
+      "correlationSameDayHigher": "{x}이(가) 높을수록 {y}도 높은 경향이 있습니다 (r = {r}).",
+      "correlationSameDayLower": "{x}이(가) 높을수록 {y}은(는) 낮은 경향이 있습니다 (r = {r}).",
+      "correlationNextDayHigher": "{x}이(가) 높으면 다음 날 {y}도 높은 경향이 있습니다 (r = {r}).",
+      "correlationNextDayLower": "{x}이(가) 높으면 다음 날 {y}은(는) 낮은 경향이 있습니다 (r = {r}).",
+      "pairedDays": "겹치는 날: {count}",
+      "footnote": "두 지표가 14일 이상 겹치면 표시됩니다. 패턴일 뿐 원인이 아닙니다.",
+      "scatterCaption": "점 하나가 하루입니다. 가로는 {x}, 세로는 {y}."
+    },
+    "trends": {
+      "title": "추세",
+      "window": "90일, 주간 평균",
+      "insufficient": "14일이 필요합니다. 지금까지 {count}일"
+    },
+    "labs": {
+      "title": "검사 수치",
+      "above": "범위 초과",
+      "below": "범위 미만",
+      "trendsTitle": "추세",
+      "trendNeeds": "추세에는 1년 이상에 걸친 수치 세 개가 필요합니다. 아직 부족: {markers}."
+    },
+    "screeners": {
+      "title": "설문",
+      "none": "아직 작성한 설문이 없습니다.",
+      "checkIns": "작성 횟수: {count}",
+      "improved": "처음보다 좋아짐",
+      "worsened": "처음보다 나빠짐",
+      "within_threshold": "평소 변동 범위 내",
+      "single": "지금까지 한 번 작성",
+      "open": "정신 건강 열기"
+    },
+    "cycle": {
+      "title": "주기",
+      "today": "주기 {day}일째.",
+      "todayWithPhase": "주기 {day}일째, {phase}.",
+      "average": "평균 주기 길이: {days}일.",
+      "needs": "평균을 내려면 생리 시작일 기록이 두 번 필요합니다. 지금까지 {count}번입니다.",
+      "lengths": "최근 주기(일): {lengths}",
+      "open": "주기 페이지 열기"
+    },
+    "links": {
+      "title": "개별 지표 페이지",
+      "workouts": "운동"
+    },
+    "missing": {
+      "title": "아직 기록되지 않음: {signals}.",
+      "connect": "데이터 소스 연결"
     }
   }
 }

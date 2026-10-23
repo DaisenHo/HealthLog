@@ -98,6 +98,7 @@ export const SETTINGS_DESTINATION_INVENTORY = {
   export: PERSONAL,
   advanced: PERSONAL,
   privacy: PERSONAL,
+  preview: PERSONAL,
   about: PERSONAL,
 } as const satisfies Record<
   SettingsSectionSlug,

@@ -44,6 +44,7 @@
 import { apiSuccess } from "@/lib/api-response";
 import { apiHandler, requireActorAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { resolvePreviewFeatures } from "@/lib/settings/preview-features";
 import { setOnboardingPendingCookie } from "@/lib/auth/session";
 import { syncMfaEnrollCookie } from "@/lib/auth/mfa-enrollment";
 import { buildAvatarUrl } from "@/lib/avatar";
@@ -92,6 +93,21 @@ const SERVER_FEATURES = {
   biomarkerMerge: true,
   lifeCircumstances: true,
 } as const;
+
+/**
+ * v1.7.0 — patient-identity fields for the health-record export. The KVNR is
+ * stored encrypted; decrypt fail-soft so a key-rotation gap on one row never
+ * 500s the whole profile fetch (the field just reads null and the user
+ * re-enters it).
+ */
+function decryptInsuranceNumber(encrypted: string | null): string | null {
+  if (!encrypted) return null;
+  try {
+    return decrypt(encrypted);
+  } catch {
+    return null;
+  }
+}
 
 export const GET = apiHandler(async () => {
   const auth = await requireActorAuth();
@@ -238,10 +254,11 @@ export const GET = apiHandler(async () => {
     }),
     // The encrypted insurance number is not on the per-request user
     // (`SESSION_USER_SELECT`); it is read here, for the one response that
-    // shows it.
+    // shows it. The preview opt-ins ride the same point read of the caller's
+    // own row.
     prisma.user.findUnique({
       where: { id: user.id },
-      select: { insuranceNumberEncrypted: true },
+      select: { insuranceNumberEncrypted: true, previewFeaturesJson: true },
     }),
   ]);
 
@@ -289,18 +306,9 @@ export const GET = apiHandler(async () => {
     sectionsOpen(sections, "cycle") &&
     isCycleEnabled(record?.gender ?? null, cycleProfile);
 
-  // v1.7.0 — patient-identity fields for the health-record export. The
-  // KVNR is stored encrypted; decrypt fail-soft so a key-rotation gap on
-  // one row never 500s the whole profile fetch (the field just reads
-  // null and the user re-enters it).
-  let insuranceNumber: string | null = null;
-  if (identity?.insuranceNumberEncrypted) {
-    try {
-      insuranceNumber = decrypt(identity.insuranceNumberEncrypted);
-    } catch {
-      insuranceNumber = null;
-    }
-  }
+  const insuranceNumber = decryptInsuranceNumber(
+    identity?.insuranceNumberEncrypted ?? null,
+  );
 
   return apiSuccess({
     id: user.id,
@@ -447,6 +455,12 @@ export const GET = apiHandler(async () => {
     // `offIsReal` whether the lowest option is a real off or "Minimal", and
     // `source` which layer decided. Clients never recompute it.
     coachReasoning,
+    // The caller's own preview opt-ins (Settings > System > Preview
+    // features), resolved: every flag present, off unless switched on. The
+    // navigation offers the Topics entry from `topics`. The ACTOR's, like the
+    // Coach preferences above, so it does not move under a switch: a preview is
+    // chrome of the person reading, never a property of the record on screen.
+    previewFeatures: resolvePreviewFeatures(identity?.previewFeaturesJson),
     // v1.36.0 — account sharing, resolved. `accounts` is the switcher's menu,
     // `active` is the record this session is inside (null when it is in its
     // own), `canSwitch` and per-entry `canWrite` are the booleans the UI binds

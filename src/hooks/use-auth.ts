@@ -24,6 +24,10 @@ import { storeTimezone } from "@/lib/timezone-mirror";
 import type { ModuleKey } from "@/lib/modules/registry";
 import type { AiCapabilities } from "@/lib/ai/capabilities/types";
 import type { CoachReasoningState } from "@/lib/ai/reasoning/resolve";
+import {
+  resolvePreviewFeatures,
+  type PreviewFeatures,
+} from "@/lib/settings/preview-features";
 import type { ModuleAccessState } from "@/lib/sharing/module-disclosure";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import type { TourProgress } from "@/lib/onboarding/tour-progress";
@@ -255,6 +259,14 @@ export interface AuthUser {
    */
   coachReasoning?: CoachReasoningState | null;
   /**
+   * The person's own preview opt-ins, resolved on the server: every
+   * flag present, off unless switched on in Settings > System > Preview
+   * features. Read through `usePreviewFeature`. Optional so existing
+   * fixtures stay valid; `fetchMe` coerces an absent block (an older server)
+   * to every flag off.
+   */
+  previewFeatures?: PreviewFeatures;
+  /**
    * v1.36.0 — account sharing, resolved server-side. `accounts` is the
    * switcher's menu, `active` is the record this browser is inside (null when
    * it is in its own), `canSwitch` and per-entry `canWrite` are booleans to
@@ -477,6 +489,8 @@ export async function fetchMe(): Promise<AuthUser> {
       data.coachReasoning && typeof data.coachReasoning === "object"
         ? data.coachReasoning
         : null,
+    // An older server publishes no opt-ins; every preview stays off.
+    previewFeatures: resolvePreviewFeatures(data.previewFeatures),
     accountAccess,
     accountAccessStatus,
   };

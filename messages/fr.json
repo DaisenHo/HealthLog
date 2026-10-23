@@ -510,7 +510,9 @@
     "documents": "Documents",
     "vaccinations": "Vaccinations",
     "mentalWellbeing": "Bien-être mental",
-    "timeline": "Chronologie"
+    "timeline": "Chronologie",
+    "topics": "Thèmes",
+    "previewBadge": "Bêta"
   },
   "auth": {
     "login": "Se connecter",
@@ -6143,6 +6145,10 @@
       "access": {
         "title": "Accès partagé",
         "subtitle": "Qui peut ouvrir votre dossier de santé, et lequel vous pouvez ouvrir."
+      },
+      "preview": {
+        "title": "Fonctions en avant-première",
+        "subtitle": "Essayez ce qui n'est pas encore terminé. Tout reste désactivé ici jusqu'à ce que vous l'activiez."
       }
     },
     "profile": "Profil",
@@ -7628,6 +7634,17 @@
     "passkeyRemovedToast": "Passkey supprimée.",
     "integrationDisconnected": "{provider} déconnecté.",
     "integrationDisconnectFailed": "Impossible de déconnecter {provider}.",
+    "preview": {
+      "topics": {
+        "title": "Thèmes",
+        "description": "Ajoute un espace Thèmes qui rassemble les mesures liées, à côté de vos pages Insights.",
+        "detail": "Huit thèmes, du cœur au cycle, montrent vos mesures côte à côte, la façon dont elles évoluent ensemble et des liens vers les pages par mesure que vous utilisez déjà. Vos pages Insights, la navigation et les liens restent exactement tels quels. Tout est calculé à partir de vos propres valeurs, sans IA. Désactiver retire l'entrée et ne supprime rien.",
+        "savedOn": "Aperçu Thèmes activé.",
+        "savedOff": "Aperçu Thèmes désactivé.",
+        "open": "Ouvrir Thèmes"
+      },
+      "loadError": "Impossible de charger vos réglages d'avant-première."
+    },
     "timezoneSaved": "Fuseau horaire enregistré.",
     "moduleState": {
       "on": "Activé",
@@ -13764,6 +13781,172 @@
       "asNeeded": "Si besoin",
       "startsOn": "Début",
       "endsOn": "Fin"
+    }
+  },
+  "topics": {
+    "overview": {
+      "title": "Thèmes",
+      "description": "Des mesures liées, rassemblées à partir de vos propres valeurs ; ouvrez un thème pour les voir côte à côte.",
+      "emptyTitle": "Rien à rassembler pour l'instant",
+      "emptyDescription": "Les thèmes apparaissent dès qu'il y a des mesures pour eux : d'un appareil, d'un import ou saisies par vous.",
+      "notRecorded": "Rien d'enregistré pour l'instant : {topics}.",
+      "hiddenByModule": "Masqués car le module est désactivé : {topics}.",
+      "modulesLink": "Modifier les modules dans les réglages"
+    },
+    "detail": {
+      "back": "Tous les thèmes"
+    },
+    "loadError": "Impossible de charger les thèmes.",
+    "previewNote": "Ceci est un aperçu. Il peut changer d'une version à l'autre, et vos pages par mesure restent telles quelles.",
+    "recorded": "Mesures enregistrées : {count} sur {total}",
+    "tone": {
+      "steady": "Stable",
+      "watch": "À regarder",
+      "learning": "En apprentissage"
+    },
+    "summary": {
+      "outsideAbove": "{signal} est au-dessus de votre plage habituelle.",
+      "outsideBelow": "{signal} est en dessous de votre plage habituelle.",
+      "labs": "{count} analyses sur {total} se situent dans leur plage de référence.",
+      "cycleDay": "Jour {day} du cycle.",
+      "steadyAll": "Tout ce qui est enregistré se situe dans votre plage habituelle.",
+      "steadySome": "{count} mesures sur {total} se situent dans votre plage habituelle ; les autres sont encore en apprentissage.",
+      "learning": "Votre plage habituelle est encore en apprentissage. Une semaine de mesures suffit.",
+      "empty": "Rien d'enregistré pour l'instant."
+    },
+    "headline": {
+      "labsValue": "{count}/{total}",
+      "labsUnit": "dans la plage",
+      "cycleDay": "Jour {day}"
+    },
+    "signals": {
+      "mood": "Humeur"
+    },
+    "units": {
+      "moodScale": "sur 5"
+    },
+    "names": {
+      "heart": {
+        "title": "Cœur",
+        "description": "Fréquence cardiaque au repos, variabilité et condition cardio, avec le sommeil et l'entraînement qui les font varier."
+      },
+      "body": {
+        "title": "Corps",
+        "description": "Poids et composition corporelle dans le temps."
+      },
+      "bloodPressure": {
+        "title": "Tension artérielle",
+        "description": "Systolique, diastolique et pouls, avec le sommeil et l'activité autour."
+      },
+      "sleep": {
+        "title": "Sommeil",
+        "description": "Temps de sommeil et mesures prises la nuit."
+      },
+      "activity": {
+        "title": "Activité et entraînement",
+        "description": "Pas, minutes d'exercice, énergie active et charge d'entraînement."
+      },
+      "metabolism": {
+        "title": "Métabolisme et analyses",
+        "description": "Glycémie et vos analyses, avec la tendance de chaque marqueur."
+      },
+      "mind": {
+        "title": "Psychisme",
+        "description": "Humeur et questionnaires à côté du sommeil et de l'activité."
+      },
+      "cycle": {
+        "title": "Cycle",
+        "description": "Votre cycle avec la température et la fréquence cardiaque au repos qui le suivent."
+      }
+    },
+    "sources": {
+      "heart": "Ces valeurs viennent d'une montre, d'une bague ou d'une ceinture thoracique, d'Apple Santé ou de Health Connect, ou de vos saisies.",
+      "body": "Ces valeurs viennent d'une balance connectée, d'un import ou de vos saisies.",
+      "bloodPressure": "Ces valeurs viennent d'un tensiomètre, d'un import ou de vos saisies.",
+      "sleep": "Ces valeurs viennent d'une montre ou d'une bague, d'Apple Santé ou de Health Connect, ou de vos saisies.",
+      "activity": "Ces valeurs viennent d'un téléphone, d'une montre ou d'une bague, ou d'Apple Santé ou de Health Connect.",
+      "metabolism": "La glycémie vient d'un lecteur, d'un import de capteur ou de vos saisies ; les analyses d'un compte rendu de laboratoire ou de vos saisies.",
+      "mind": "Ces valeurs viennent de vos saisies d'humeur et des questionnaires de la page Bien-être mental.",
+      "cycle": "Ces valeurs viennent de votre journal de cycle et d'un capteur de température au poignet."
+    },
+    "today": {
+      "title": "Aujourd'hui",
+      "usual": "Habituel {low}–{high}",
+      "learning": "Plage habituelle encore en apprentissage",
+      "asOf": "Au {date}",
+      "details": "Détails"
+    },
+    "state": {
+      "within": "Dans la plage",
+      "above": "Au-dessus",
+      "below": "En dessous",
+      "learning": "En apprentissage"
+    },
+    "chart": {
+      "title": "Côte à côte",
+      "legend": "Zone ombrée : votre plage habituelle.",
+      "label": "{signals} sur la période choisie, une ligne chacune."
+    },
+    "range": {
+      "label": "Période",
+      "7d": "7 j",
+      "30d": "30 j",
+      "90d": "90 j",
+      "1y": "1 a"
+    },
+    "relationships": {
+      "title": "Comment elles évoluent ensemble",
+      "insufficient": "{x} et {y} : {count} jours communs sur {required} pour l'instant.",
+      "noClearLink": "Pas de lien net entre {x} et {y} sur {count} jours communs.",
+      "splitHigher": "Quand {x} était sous {threshold}, {y} était plus élevé de {amount} que les autres jours.",
+      "splitLower": "Quand {x} était sous {threshold}, {y} était plus bas de {amount} que les autres jours.",
+      "splitDays": "Jours en dessous : {below}. Autres jours : {other}.",
+      "correlationSameDayHigher": "Quand {x} est plus élevé, {y} tend à l'être aussi (r = {r}).",
+      "correlationSameDayLower": "Quand {x} est plus élevé, {y} tend à être plus bas (r = {r}).",
+      "correlationNextDayHigher": "Quand {x} est plus élevé, {y} tend à être plus élevé le lendemain (r = {r}).",
+      "correlationNextDayLower": "Quand {x} est plus élevé, {y} tend à être plus bas le lendemain (r = {r}).",
+      "pairedDays": "Jours communs : {count}",
+      "footnote": "Affiché dès que deux mesures se recoupent sur au moins 14 jours. Une tendance, pas une cause.",
+      "scatterCaption": "Chaque point est un jour : {x} en abscisse, {y} en ordonnée."
+    },
+    "trends": {
+      "title": "Tendances",
+      "window": "90 jours, moyennes hebdomadaires",
+      "insufficient": "Il faut 14 jours, {count} pour l'instant"
+    },
+    "labs": {
+      "title": "Analyses",
+      "above": "Au-dessus de la plage",
+      "below": "En dessous de la plage",
+      "trendsTitle": "Tendances",
+      "trendNeeds": "Une tendance demande trois valeurs sur au moins un an. Pas encore : {markers}."
+    },
+    "screeners": {
+      "title": "Questionnaires",
+      "none": "Aucun questionnaire rempli pour l'instant.",
+      "checkIns": "Remplis : {count}",
+      "improved": "Mieux que la première fois",
+      "worsened": "Moins bien que la première fois",
+      "within_threshold": "Dans la variation habituelle",
+      "single": "Rempli une fois pour l'instant",
+      "open": "Ouvrir Bien-être mental"
+    },
+    "cycle": {
+      "title": "Cycle",
+      "today": "Jour {day} du cycle.",
+      "todayWithPhase": "Jour {day} du cycle, phase {phase}.",
+      "average": "Durée moyenne du cycle : {days} jours.",
+      "needs": "Une moyenne demande deux débuts de règles enregistrés ; il y en a {count} pour l'instant.",
+      "lengths": "Derniers cycles, en jours : {lengths}",
+      "open": "Ouvrir la page Cycle"
+    },
+    "links": {
+      "title": "Pages par mesure",
+      "workouts": "Entraînements"
+    },
+    "missing": {
+      "title": "Pas encore enregistré : {signals}.",
+      "connect": "Connecter une source"
     }
   }
 }

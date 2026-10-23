@@ -44,6 +44,7 @@ import {
 } from "@/lib/validations/managed-profile-handover";
 import { onboardingStateResource } from "./onboarding";
 import { aiAccountBlock, moduleAccessMap } from "./profile";
+import { previewFeaturesSchema } from "./settings";
 import {
   dataEnvelope,
   errorEnvelope,
@@ -562,6 +563,11 @@ const accountPayload = z
     ai: aiAccountBlock,
     // v1.41 — enumerated for the reason `ai` is: the settings decide on it.
     coachReasoning: coachReasoningBlock,
+    // Enumerated because the navigation decides on it: the Topics
+    // entry exists only while the person reading has switched it on. The
+    // caller's own opt-in, never the record's, so it does not move under a
+    // switch. The same object `GET /api/settings/preview-features` answers.
+    previewFeatures: previewFeaturesSchema,
     recordSession: recordSessionState.nullable(),
     // Enumerated because a client DECIDES on it rather than displays it: the
     // medication surface hides the server-side reminder switch when

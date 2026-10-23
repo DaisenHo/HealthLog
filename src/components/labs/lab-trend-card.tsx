@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
+import { labTrendLines } from "./lab-trend-lines";
 import type { BiomarkerTrendDto } from "./types";
 
 /**
@@ -27,44 +28,12 @@ export function LabTrendCard({
   const fmt = useFormatters();
   if (!trend || trend.status !== "ok") return null;
 
-  const digits = Math.abs(trend.slopePerYear) >= 10 ? 0 : 2;
-  const per = (v: number) => fmt.number(Math.abs(v), digits);
-  const direction =
-    trend.slopePerYear > 0
-      ? "rising"
-      : trend.slopePerYear < 0
-        ? "falling"
-        : "flat";
-  const slopeLine = t(`labs.trend.slope.${direction}`, {
-    amount: per(trend.slopePerYear),
+  const { slope: slopeLine, projection: projectionLine } = labTrendLines(
+    trend,
     unit,
-    n: trend.n,
-    since: fmt.dateShortSmartCalendar(trend.firstAt),
-  });
-  const projectionLine =
-    trend.projection === "exits" && trend.exitDate
-      ? t(`labs.trend.projection.exits.${trend.exitBound ?? "high"}`, {
-          date: fmt.dateShortSmartCalendar(trend.exitDate),
-        })
-      : trend.projection === "no_band"
-        ? null
-        : trend.projection === "stale"
-          ? t("labs.trend.projection.stale", {
-              date: fmt.dateShortSmartCalendar(trend.lastAt),
-            })
-          : trend.projection === "beyond_horizon"
-            ? t(
-                trend.horizonCapped
-                  ? "labs.trend.projection.beyond_horizon_capped"
-                  : "labs.trend.projection.beyond_horizon",
-                {
-                  years: fmt.number(
-                    trend.horizonYears,
-                    trend.horizonCapped ? 0 : 1,
-                  ),
-                },
-              )
-            : t(`labs.trend.projection.${trend.projection}`);
+    t,
+    fmt,
+  );
 
   return (
     <Card data-slot="lab-trend">

@@ -26,6 +26,7 @@ import {
   CloudSun,
   Download,
   FileHeart,
+  FlaskConical,
   Gauge,
   Info,
   KeyRound,
@@ -274,6 +275,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     group: "data",
   },
   // ── System ──
+  {
+    slug: "preview",
+    titleKey: "settings.sections.preview.title",
+    icon: FlaskConical,
+    group: "system",
+  },
   {
     slug: "about",
     titleKey: "settings.sections.about.title",

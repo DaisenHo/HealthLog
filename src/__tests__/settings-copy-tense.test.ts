@@ -3,8 +3,9 @@
  *
  * The workout-route switch is off for new accounts, which is what its detail
  * says rather than "off by default": an account that already held tracks at
- * the upgrade started with it on (migration 0434). (The Topics preview switch
- * this file also held is unlisted until its pages ship, and its copy with it.)
+ * the upgrade started with it on (migration 0434). The Topics preview switch
+ * this file also held describes pages that now exist, so its copy is in the
+ * present tense like every other switch.
  */
 import { describe, expect, it } from "vitest";
 

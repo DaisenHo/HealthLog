@@ -58,6 +58,7 @@ const SETTINGS_ROUTES = [
   "/settings/api",
   "/settings/mcp",
   "/settings/advanced",
+  "/settings/preview",
   "/settings/about",
 ] as const;
 

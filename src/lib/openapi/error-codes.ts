@@ -452,6 +452,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "tokens.measurements.ceiling_reached",
       "tokens.workouts.ceiling_reached",
     ],
+    topics: ["topics.not_available", "topics.not_found", "topics.preview_off"],
     vaccination: [
       "vaccination.booster-invalid",
       "vaccination.booster-no-antigen",
