@@ -8,10 +8,14 @@
  * (`TILE_CAPABLE_WIDGET_IDS`) and from the dashboard's own render code, and
  * holds every tile against the sub-page registry.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
+import { readSource } from "@/__tests__/helpers/source-files";
+import { STRIP_TILES } from "@/components/dashboard/tiles/strip-tiles";
 
 import {
   TILE_CAPABLE_WIDGET_IDS,
@@ -73,15 +77,18 @@ const NON_MEASUREMENT_DESTINATION: Partial<
  */
 const NO_DESTINATION: Partial<Record<TileCapableWidgetId, string>> = {};
 
-/** Tile ids the dashboard pushes into its strip, read from the render code. */
+/**
+ * Card ids the strip tiles paint, read from the registry's card definitions:
+ * a template id (one card per glucose bucket) comes back as its prefix and a
+ * `*`.
+ */
 function renderedTileIds(): string[] {
-  const source = readFileSync(
-    path.join(ROOT, "src/app/page-client.tsx"),
-    "utf8",
+  const source = readSource(
+    "src/components/dashboard/tiles/strip-tiles.tsx",
+    "STRIP_TILES",
   );
   const ids: string[] = [];
-  const pattern =
-    /trendCards\.push\(\{\s*id:\s*(?:"([^"]+)"|`([^`$]+)\$\{[^`]*`)/g;
+  const pattern = /\bid:\s*(?:"([^"]+)"|`([^`$]+)\$\{[^`]*`)/g;
   for (const match of source.matchAll(pattern)) {
     ids.push(match[1] ?? `${match[2]}*`);
   }
@@ -95,6 +102,11 @@ describe("dashboard tile destinations", () => {
   });
 
   it("knows every tile the dashboard renders, and renders every known tile", () => {
+    // The registry names each tile's widget; every tile-capable widget has a
+    // tile, and every card a tile paints maps back to a known widget.
+    expect(STRIP_TILES.map((tile) => tile.widget).sort()).toEqual(
+      [...TILE_CAPABLE_WIDGET_IDS].sort(),
+    );
     const rendered = renderedTileIds();
     const widgets = new Set<string>();
     for (const id of rendered) {
@@ -107,10 +119,7 @@ describe("dashboard tile destinations", () => {
   });
 
   it("routes the dashboard's tile links through this map and no other", () => {
-    const source = readFileSync(
-      path.join(ROOT, "src/app/page-client.tsx"),
-      "utf8",
-    );
+    const source = dashboardSource();
     expect(source).toMatch(/dashboardTileHref\(entry\.id,/);
     expect(source).not.toMatch(/"\/insights\/[a-z-]+"/);
   });

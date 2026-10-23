@@ -346,7 +346,10 @@ const V143_FIELDS: ResolvedFieldEntry[] = [
     field: "GET /api/dashboard/snapshot tiles.directions",
     props: ["insights/schemas.ts#directions"],
     readers: [
-      { file: "src/app/page-client.tsx", pattern: /tiles\.directions/ },
+      {
+        file: "src/components/dashboard/tiles/tile-context.ts",
+        pattern: /tiles\.directions/,
+      },
     ],
   },
   {
