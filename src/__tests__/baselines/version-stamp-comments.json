@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2911,
-  "total": 9689,
+  "total": 9688,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -243,7 +243,7 @@
     "app/api/documents/inbound/[id]/summary/route.ts": 2,
     "app/api/documents/inbound/[id]/thumbnail/route.ts": 1,
     "app/api/documents/inbound/reindex/route.ts": 1,
-    "app/api/documents/inbound/route.ts": 3,
+    "app/api/documents/inbound/route.ts": 2,
     "app/api/documents/inbound/usage/route.ts": 1,
     "app/api/environment/backfill/__tests__/route.test.ts": 1,
     "app/api/environment/route.ts": 1,
