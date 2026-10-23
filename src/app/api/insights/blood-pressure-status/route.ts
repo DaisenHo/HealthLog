@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/api-response";
-import {
-  generateBloodPressureStatusForUser,
-  resolveBloodPressureStatusLocale,
-} from "@/lib/insights/blood-pressure-status";
+import { generateBloodPressureStatusForUser } from "@/lib/insights/blood-pressure-status";
+import { normalizeLocale as resolveBloodPressureStatusLocale } from "@/lib/insights/status-shared";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
