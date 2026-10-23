@@ -22,12 +22,27 @@ import { mockPopulatedInsights } from "./utils/mock-populated-insights";
 
 test.use({ storageState: STORAGE_STATE_PATH });
 
-async function resetDocumentsLayout(page: Page): Promise<void> {
+async function putDocumentsLayout(
+  page: Page,
+  arrangement: "stacked" | "flow",
+): Promise<void> {
   const res = await page.request.put("/api/documents/inbound/layout", {
-    data: { version: 1, view: "cards", arrangement: "stacked" },
+    data: { version: 1, view: "cards", arrangement },
   });
   expect(res.status()).toBe(200);
 }
+
+/** The journey starts from the stacked arrangement so the flip is visible. */
+const resetDocumentsLayout = (page: Page) =>
+  putDocumentsLayout(page, "stacked");
+
+/**
+ * The account is shared with `documents.spec.ts`, which reads the default
+ * (flowing) arrangement, so the journey hands the account back on the
+ * default rather than on the state it started from.
+ */
+const restoreDefaultDocumentsLayout = (page: Page) =>
+  putDocumentsLayout(page, "flow");
 
 test.describe("documents", () => {
   test.beforeAll(async () => {
@@ -87,7 +102,7 @@ test.describe("documents", () => {
       ).toHaveAttribute("data-arrangement", "flow");
       await second.close();
     } finally {
-      await resetDocumentsLayout(page);
+      await restoreDefaultDocumentsLayout(page);
     }
   });
 
