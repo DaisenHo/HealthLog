@@ -57,7 +57,13 @@ vi.mock("@/lib/integrations/oauth-refresh", () => ({
 vi.mock("../credentials", () => ({
   getUserFitbitCredentials: vi.fn(async () => null),
 }));
-vi.mock("../client", () => ({ refreshAccessToken: vi.fn() }));
+vi.mock("../oauth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../oauth")>();
+  return {
+    ...actual,
+    fitbitOAuth: { ...actual.fitbitOAuth, refresh: vi.fn() },
+  };
+});
 
 import { upsertFitbitMeasurements } from "../sync-core";
 

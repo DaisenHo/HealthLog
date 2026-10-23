@@ -2,12 +2,10 @@
  * WHOOP API v2 client for OAuth and data fetching.
  * Docs: https://developer.whoop.com (re-verify at build — the space moves).
  *
- * Mirrors the Withings client structure (`src/lib/withings/client.ts`):
- * hand-rolled fetch over `safeFetch` (no SDK), an OAuth handshake
- * (`getAuthorizationUrl` / `exchangeCode` / `refreshAccessToken`), typed
- * collection fetchers with `next_token` pagination, and a single
- * source-of-truth field→Measurement mapping (`WHOOP_FIELD_MAP`, kept in sync
- * with `src/lib/whoop/mapping.md`).
+ * Hand-rolled fetch over `safeFetch` (no SDK): typed collection fetchers with
+ * `next_token` pagination, and a single source-of-truth field→Measurement
+ * mapping (`WHOOP_FIELD_MAP`, kept in sync with `src/lib/whoop/mapping.md`).
+ * The OAuth handshake is `./oauth.ts`.
  *
  * v2 only — v1 was removed 2025-10-01. Sleep / workout / recovery ids are
  * UUID strings; cycle id is int64. Token TTL 3600 s; refresh tokens ROTATE
@@ -19,137 +17,13 @@ import { getEvent } from "@/lib/logging/context";
 import { safeFetch } from "@/lib/safe-fetch";
 import { reconstructContiguousSleepTimeline } from "@/lib/sleep/reconstruct-timeline";
 import { WhoopApiError, classifyWhoopResponse } from "./response-classifier";
-import { envOr, envValue } from "@/lib/env";
 import { importValue } from "@/lib/integrations/import-value";
 import { walkPages } from "@/lib/integrations/page-walk";
 
 const WHOOP_API_BASE = "https://api.prod.whoop.com/developer";
-const WHOOP_OAUTH_AUTH_URL = "https://api.prod.whoop.com/oauth/oauth2/auth";
-const WHOOP_OAUTH_TOKEN_URL = "https://api.prod.whoop.com/oauth/oauth2/token";
 
 /** WHOOP collection reads cap `limit` at 25. */
 export const WHOOP_PAGE_LIMIT = 25;
-
-export interface WhoopCredentials {
-  clientId: string;
-  clientSecret: string;
-}
-
-export function getWhoopRedirectUri(): string {
-  // An empty or blank value counts as unset: the compose whitelist
-  // materialises the var as an empty string when unset, which must still fall
-  // through to the derived URI.
-  return envOr(
-    "WHOOP_REDIRECT_URI",
-    `${envValue("NEXT_PUBLIC_APP_URL")}/api/whoop/callback`,
-  );
-}
-
-/**
- * OAuth scopes HealthLog requests (space-separated on the wire). `offline` is
- * mandatory to receive a refresh token; the rest are read-only collection
- * scopes. Request all so the user grants once and every sync resource is
- * covered.
- */
-export const WHOOP_OAUTH_SCOPE =
-  "offline read:recovery read:sleep read:workout read:cycles read:profile read:body_measurement" as const;
-
-/**
- * Generate the WHOOP OAuth authorization URL (a browser redirect, not a
- * fetch). `state` is the opaque CSRF nonce minted by `oauth-state.ts`.
- */
-export function getAuthorizationUrl(
-  state: string,
-  creds: WhoopCredentials,
-): string {
-  const params = new URLSearchParams({
-    response_type: "code",
-    client_id: creds.clientId,
-    redirect_uri: getWhoopRedirectUri(),
-    scope: WHOOP_OAUTH_SCOPE,
-    state,
-  });
-  return `${WHOOP_OAUTH_AUTH_URL}?${params}`;
-}
-
-export interface WhoopTokenResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  scope?: string;
-  token_type?: string;
-}
-
-async function postToken(
-  params: URLSearchParams,
-  verb: string,
-): Promise<WhoopTokenResponse> {
-  const start = performance.now();
-  const res = await safeFetch(WHOOP_OAUTH_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
-
-  const json = await res.json().catch(() => null);
-  const verdict = classifyWhoopResponse(res.status);
-  getEvent()?.addExternalCall({
-    service: "whoop",
-    method: verb,
-    duration_ms: Math.round(performance.now() - start),
-    status: res.status,
-    error: verdict.classification === "success" ? undefined : verdict.reason,
-  });
-  if (verdict.classification !== "success") {
-    throw new WhoopApiError({
-      verb,
-      classification: verdict.classification,
-      httpStatus: verdict.httpStatus,
-      reason: verdict.reason,
-      upstreamError: typeof json?.error === "string" ? json.error : undefined,
-    });
-  }
-  return json as WhoopTokenResponse;
-}
-
-/** Exchange an authorization code for the initial token pair. */
-export async function exchangeCode(
-  code: string,
-  creds: WhoopCredentials,
-): Promise<WhoopTokenResponse> {
-  return postToken(
-    new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      client_id: creds.clientId,
-      client_secret: creds.clientSecret,
-      redirect_uri: getWhoopRedirectUri(),
-    }),
-    "exchangeCode",
-  );
-}
-
-/**
- * Refresh an expired access token. WHOOP rotates the refresh token on every
- * use — the caller MUST persist the returned `refresh_token`, not just the
- * access token. `scope` must include `offline` (re-sent here per the WHOOP
- * spec) for the rotation to return a fresh refresh token.
- */
-export async function refreshAccessToken(
-  refreshToken: string,
-  creds: WhoopCredentials,
-): Promise<WhoopTokenResponse> {
-  return postToken(
-    new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: creds.clientId,
-      client_secret: creds.clientSecret,
-      scope: "offline",
-    }),
-    "refreshAccessToken",
-  );
-}
 
 // ─── Collection envelopes (v2) ─────────────────────────────────
 

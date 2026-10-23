@@ -1,14 +1,12 @@
 /**
- * v1.17.0 — Polar AccessLink v3 client for OAuth + data fetching.
+ * Polar AccessLink v3 client: user registration, collection reads, mappers.
  * Docs: https://www.polar.com/accesslink-api/ (re-verify at build).
  * Envelope shapes + windows below verified against the live AccessLink swagger
  * (`accesslink-api/swagger.yaml`) on 2026-07-24; a body that no longer matches
  * emits a `polar.envelope.drift` breadcrumb rather than silently reading empty.
  *
- * Mirrors the WHOOP client structure (`src/lib/whoop/client.ts`): hand-rolled
- * fetch over `safeFetch` (no SDK), an OAuth handshake, typed collection
- * fetchers, and per-resource field→Measurement mappers (self-documenting; there
- * is no separate reference constant).
+ * Hand-rolled fetch over `safeFetch` (no SDK): typed collection fetchers and
+ * per-resource field→Measurement mappers. The OAuth handshake is `./oauth.ts`.
  *
  * Polar specifics that differ from WHOOP:
  *   - The token endpoint uses HTTP Basic auth (`base64(client_id:client_secret)`)
@@ -31,124 +29,9 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { WorkoutSportType } from "@/lib/validations/workout";
 import { PolarApiError, classifyPolarResponse } from "./response-classifier";
 import { mapPolarSportType } from "./sport-map";
-import { envOr, envValue } from "@/lib/env";
 import { importValue } from "@/lib/integrations/import-value";
 
 const POLAR_API_BASE = "https://www.polaraccesslink.com";
-const POLAR_OAUTH_AUTH_URL = "https://flow.polar.com/oauth2/authorization";
-const POLAR_OAUTH_TOKEN_URL = "https://polarremote.com/v2/oauth2/token";
-
-export interface PolarCredentials {
-  clientId: string;
-  clientSecret: string;
-}
-
-/** Resolve the env-configured shared OAuth credentials. This is the fallback
- * the per-user BYO-key resolver (`getPolarClientCredentials`) drops to when a
- * user has not stored their own AccessLink app id/secret. Returns null when
- * unconfigured so the connect route can surface a clean "integration disabled"
- * message. */
-export function getPolarCredentials(): PolarCredentials | null {
-  const clientId = process.env.POLAR_CLIENT_ID;
-  const clientSecret = process.env.POLAR_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
-  return { clientId, clientSecret };
-}
-
-export function getPolarRedirectUri(): string {
-  // An empty or blank value counts as unset: the compose whitelist
-  // materialises an unset var as an empty string, which must still fall
-  // through to the derived URI.
-  return envOr(
-    "POLAR_REDIRECT_URI",
-    `${envValue("NEXT_PUBLIC_APP_URL")}/api/polar/callback`,
-  );
-}
-
-/**
- * Polar OAuth scope. `accesslink.read_all` grants every read collection so the
- * user consents once. Space-separated on the wire.
- */
-export const POLAR_OAUTH_SCOPE = "accesslink.read_all" as const;
-
-/** Build the browser-redirect authorization URL. `state` is the signed nonce. */
-export function getAuthorizationUrl(
-  state: string,
-  creds: PolarCredentials,
-): string {
-  const params = new URLSearchParams({
-    response_type: "code",
-    client_id: creds.clientId,
-    redirect_uri: getPolarRedirectUri(),
-    scope: POLAR_OAUTH_SCOPE,
-    state,
-  });
-  return `${POLAR_OAUTH_AUTH_URL}?${params}`;
-}
-
-export interface PolarTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in?: number;
-  x_user_id: number;
-}
-
-function basicAuthHeader(creds: PolarCredentials): string {
-  const raw = `${creds.clientId}:${creds.clientSecret}`;
-  return `Basic ${Buffer.from(raw).toString("base64")}`;
-}
-
-/** Exchange an authorization code for the access token + `x_user_id`. */
-export async function exchangeCode(
-  code: string,
-  creds: PolarCredentials,
-): Promise<PolarTokenResponse> {
-  const start = performance.now();
-  const res = await safeFetch(POLAR_OAUTH_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      Authorization: basicAuthHeader(creds),
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-    },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      redirect_uri: getPolarRedirectUri(),
-    }).toString(),
-  });
-  const json = await res.json().catch(() => null);
-  const verdict = classifyPolarResponse(res.status);
-  getEvent()?.addExternalCall({
-    service: "polar",
-    method: "exchangeCode",
-    duration_ms: Math.round(performance.now() - start),
-    status: res.status,
-    error: verdict.classification === "success" ? undefined : verdict.reason,
-  });
-  if (verdict.classification !== "success") {
-    throw new PolarApiError({
-      verb: "exchangeCode",
-      classification: verdict.classification,
-      httpStatus: verdict.httpStatus,
-      reason: verdict.reason,
-      upstreamError: typeof json?.error === "string" ? json.error : undefined,
-    });
-  }
-  // A 2xx with an empty or non-JSON body (captive portal, gateway 200, 204)
-  // leaves `json` null. Casting it straight to the token type handed callers a
-  // null they then dereferenced, surfacing an unclassified TypeError instead of
-  // a handled integration error. Narrow explicitly and classify as transient.
-  if (json === null || typeof json !== "object") {
-    throw new PolarApiError({
-      verb: "exchangeCode",
-      classification: "transient",
-      httpStatus: res.status,
-      reason: "empty_token_body",
-    });
-  }
-  return json as PolarTokenResponse;
-}
 
 /**
  * Register the user with the Polar app (`POST /v3/users`). Required once before

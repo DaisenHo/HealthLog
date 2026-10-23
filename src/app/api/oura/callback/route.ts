@@ -6,11 +6,8 @@ import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
-import {
-  exchangeCode,
-  fetchOuraAccountId,
-  isAcceptedOuraIssuer,
-} from "@/lib/oura/client";
+import { fetchOuraAccountId } from "@/lib/oura/client";
+import { exchangeOuraCode, isAcceptedOuraIssuer } from "@/lib/oura/oauth";
 import {
   ALREADY_LINKED_REASON,
   accountLinkedElsewhere,
@@ -137,7 +134,7 @@ async function completeCallback(
     const creds = await getOuraClientCredentials(userId);
     if (!creds) return ERR("nocreds");
 
-    const tokens = await exchangeCode(code, creds, iss);
+    const tokens = await exchangeOuraCode(code, creds, iss);
 
     // One Oura account, one record: a guardian signed in to their own Oura
     // account must not attach it to the profile they manage.

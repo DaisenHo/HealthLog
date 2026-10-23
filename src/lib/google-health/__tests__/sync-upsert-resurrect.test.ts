@@ -45,9 +45,12 @@ vi.mock("@/lib/insights/comprehensive-generate", () => ({
 vi.mock("../credentials", () => ({
   getUserGoogleHealthCredentials: vi.fn(async () => null),
 }));
-vi.mock("../client", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../client")>();
-  return { ...actual, refreshAccessToken: vi.fn() };
+vi.mock("../oauth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../oauth")>();
+  return {
+    ...actual,
+    googleHealthOAuth: { ...actual.googleHealthOAuth, refresh: vi.fn() },
+  };
 });
 
 import { upsertGoogleHealthMeasurements } from "../sync-core";

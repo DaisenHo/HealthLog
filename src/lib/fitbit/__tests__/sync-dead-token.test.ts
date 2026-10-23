@@ -70,7 +70,9 @@ vi.mock("@/lib/logging/context", () => ({
 vi.mock("../credentials", () => ({
   getUserFitbitCredentials: getUserFitbitCredentialsMock,
 }));
-vi.mock("../client", () => ({ refreshAccessToken: refreshAccessTokenMock }));
+vi.mock("../oauth", () => ({
+  fitbitOAuth: { refresh: refreshAccessTokenMock },
+}));
 
 vi.mock("../sync-metrics", () => ({ syncUserMetrics: resourceFake }));
 vi.mock("../sync-activity", () => ({ syncUserActivity: resourceFake }));

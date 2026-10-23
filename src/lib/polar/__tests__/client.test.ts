@@ -7,16 +7,11 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import {
-  POLAR_OAUTH_SCOPE,
-  exchangeCode,
   fetchActivities,
   fetchCardioLoads,
   fetchNightlyRecharges,
   fetchSleeps,
   fetchSpo2,
-  getAuthorizationUrl,
-  getPolarCredentials,
-  getPolarRedirectUri,
   mapActivity,
   mapCardioLoad,
   mapNightlyRecharge,
@@ -29,7 +24,9 @@ import {
   type PolarSleep,
   type PolarSpo2,
 } from "../client";
+import { POLAR_OAUTH_SCOPE, getPolarCredentials } from "@/lib/polar/oauth";
 import { PolarApiError } from "../response-classifier";
+import { polarOAuth } from "../oauth";
 
 const CREDS = { clientId: "cid", clientSecret: "csecret" };
 
@@ -82,7 +79,7 @@ describe("getPolarCredentials", () => {
 
 describe("getAuthorizationUrl", () => {
   it("builds the Polar authorize URL with scope + state", () => {
-    const url = getAuthorizationUrl("signed-state", CREDS);
+    const url = polarOAuth.authorizationUrl("signed-state", CREDS);
     expect(url).toContain("flow.polar.com/oauth2/authorization");
     expect(url).toContain("response_type=code");
     expect(url).toContain("scope=accesslink.read_all");
@@ -93,13 +90,13 @@ describe("getAuthorizationUrl", () => {
 
 describe("getPolarRedirectUri", () => {
   it("derives from app URL when override absent", () => {
-    expect(getPolarRedirectUri()).toBe(
+    expect(polarOAuth.redirectUri()).toBe(
       "https://app.example/api/polar/callback",
     );
   });
   it("honours the explicit override", () => {
     process.env.POLAR_REDIRECT_URI = "https://custom/cb";
-    expect(getPolarRedirectUri()).toBe("https://custom/cb");
+    expect(polarOAuth.redirectUri()).toBe("https://custom/cb");
   });
 });
 
@@ -111,7 +108,7 @@ describe("exchangeCode", () => {
         body: { access_token: "tok", token_type: "bearer", x_user_id: 42 },
       },
     ]);
-    const tok = await exchangeCode("code123", CREDS);
+    const tok = await polarOAuth.exchange("code123", CREDS);
     expect(tok.access_token).toBe("tok");
     expect(tok.x_user_id).toBe(42);
     expect(fetchMock.mock.calls[0]![0]).toBe(
@@ -130,7 +127,7 @@ describe("exchangeCode", () => {
 
   it("throws a classified PolarApiError on a 401", async () => {
     installFetchMock([{ status: 401, body: { error: "invalid_grant" } }]);
-    await expect(exchangeCode("bad", CREDS)).rejects.toBeInstanceOf(
+    await expect(polarOAuth.exchange("bad", CREDS)).rejects.toBeInstanceOf(
       PolarApiError,
     );
   });
@@ -140,7 +137,7 @@ describe("exchangeCode", () => {
   // TypeError. It must surface as a classified transient integration error.
   it("classifies a 2xx with an empty body instead of casting null", async () => {
     installFetchMock([{ status: 200, body: null }]);
-    await expect(exchangeCode("code", CREDS)).rejects.toMatchObject({
+    await expect(polarOAuth.exchange("code", CREDS)).rejects.toMatchObject({
       classification: "transient",
       reason: "empty_token_body",
     });

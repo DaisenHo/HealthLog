@@ -37,9 +37,13 @@ vi.mock("@/lib/crypto", () => ({
 vi.mock("../client", () => ({
   WITHINGS_MEASTYPES: [1, 9, 10, 11],
   fetchMeasurements: vi.fn(),
-  refreshAccessToken: vi.fn(),
   subscribeWebhook: vi.fn(),
 }));
+
+vi.mock("../oauth", async (orig) => {
+  const actual = await orig<typeof import("../oauth")>();
+  return { ...actual, withingsOAuth: { refresh: vi.fn() } };
+});
 
 vi.mock("../credentials", () => ({
   getUserWithingsCredentials: vi.fn(async () => ({
@@ -88,7 +92,8 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { fetchMeasurements, refreshAccessToken } from "../client";
+import { fetchMeasurements } from "../client";
+import { withingsOAuth } from "../oauth";
 import {
   recordSyncFailure,
   recordSyncSuccess,
@@ -149,7 +154,7 @@ describe("getValidToken — serialized rotating refresh", () => {
 
     expect(result?.accessToken).toBe("winner-access");
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
-    expect(refreshAccessToken).not.toHaveBeenCalled();
+    expect(withingsOAuth.refresh).not.toHaveBeenCalled();
     expect(prisma.$transaction).toHaveBeenCalledWith(
       expect.any(Function),
       expect.objectContaining({

@@ -9,7 +9,7 @@ import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
-import { exchangeCode } from "@/lib/strava/client";
+import { stravaOAuth } from "@/lib/strava/oauth";
 import { getStravaClientCredentials } from "@/lib/strava/credentials";
 import {
   oauthStateCookieName,
@@ -114,7 +114,7 @@ async function completeCallback(
     const creds = await getStravaClientCredentials(userId);
     if (!creds) return ERR("nocreds");
 
-    const tokens = await exchangeCode(code, creds);
+    const tokens = await stravaOAuth.exchange(code, creds);
 
     const athleteId =
       typeof tokens.athlete?.id === "number" ? String(tokens.athlete.id) : null;

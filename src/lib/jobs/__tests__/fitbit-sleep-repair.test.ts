@@ -59,7 +59,13 @@ vi.mock("@/lib/integrations/oauth-refresh", () => ({
 vi.mock("@/lib/fitbit/credentials", () => ({
   getUserFitbitCredentials: vi.fn(async () => null),
 }));
-vi.mock("@/lib/fitbit/client", () => ({ refreshAccessToken: vi.fn() }));
+vi.mock("@/lib/fitbit/oauth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/fitbit/oauth")>();
+  return {
+    ...actual,
+    fitbitOAuth: { ...actual.fitbitOAuth, refresh: vi.fn() },
+  };
+});
 
 import {
   FITBIT_BACKFILL_DAYS,

@@ -55,11 +55,14 @@ vi.mock("@/lib/crypto", () => ({
   decrypt: (s: string) => s.replace(/^enc\(|\)$/g, ""),
 }));
 
-vi.mock("../client", async (orig) => {
-  const actual = await orig<typeof import("../client")>();
+vi.mock("../oauth", async (orig) => {
+  const actual = await orig<typeof import("../oauth")>();
   return {
     ...actual,
-    refreshAccessToken: (...a: unknown[]) => refreshAccessTokenMock(...a),
+    fitbitOAuth: {
+      ...actual.fitbitOAuth,
+      refresh: (...a: unknown[]) => refreshAccessTokenMock(...a),
+    },
   };
 });
 

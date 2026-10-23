@@ -57,8 +57,11 @@
       },
       "empty_body": {
         "error": {
-          "name": "SyntaxError",
-          "message": "Unexpected end of JSON input"
+          "name": "WithingsApiError",
+          "message": "Withings token error: ?",
+          "classification": "transient",
+          "reason": "no_status_field",
+          "verb": "token"
         },
         "requests": [
           {
@@ -79,7 +82,20 @@
             "body": null
           }
         ],
-        "events": [],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "no_status_field"
+              }
+            ]
+          }
+        ],
         "unansweredScript": 0
       },
       "invalid_grant": {
@@ -260,8 +276,11 @@
       },
       "outage": {
         "error": {
-          "name": "SyntaxError",
-          "message": "Unexpected token '<', \"<html>unav\"... is not valid JSON"
+          "name": "WithingsApiError",
+          "message": "Withings token error: ?",
+          "classification": "transient",
+          "reason": "http_503",
+          "verb": "token"
         },
         "requests": [
           {
@@ -282,7 +301,20 @@
             "body": null
           }
         ],
-        "events": [],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
         "unansweredScript": 0
       }
     },
@@ -331,8 +363,11 @@
       },
       "empty_body": {
         "error": {
-          "name": "SyntaxError",
-          "message": "Unexpected end of JSON input"
+          "name": "WithingsApiError",
+          "message": "Withings refresh error: ?",
+          "classification": "transient",
+          "reason": "no_status_field",
+          "verb": "refresh"
         },
         "requests": [
           {
@@ -352,7 +387,20 @@
             "body": null
           }
         ],
-        "events": [],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "no_status_field"
+              }
+            ]
+          }
+        ],
         "unansweredScript": 0
       },
       "invalid_grant": {
@@ -529,8 +577,11 @@
       },
       "outage": {
         "error": {
-          "name": "SyntaxError",
-          "message": "Unexpected token '<', \"<html>unav\"... is not valid JSON"
+          "name": "WithingsApiError",
+          "message": "Withings refresh error: ?",
+          "classification": "transient",
+          "reason": "http_503",
+          "verb": "refresh"
         },
         "requests": [
           {
@@ -550,7 +601,20 @@
             "body": null
           }
         ],
-        "events": [],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
         "unansweredScript": 0
       }
     }
@@ -610,7 +674,15 @@
         "unansweredScript": 0
       },
       "empty_body": {
-        "result": null,
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP exchangeCode error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "exchangeCode",
+          "vendor": "WHOOP"
+        },
         "requests": [
           {
             "method": "POST",
@@ -911,7 +983,15 @@
         "unansweredScript": 0
       },
       "empty_body": {
-        "result": null,
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP refreshAccessToken error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "refreshAccessToken",
+          "vendor": "WHOOP"
+        },
         "requests": [
           {
             "method": "POST",
@@ -1226,7 +1306,15 @@
         "unansweredScript": 0
       },
       "empty_body": {
-        "result": null,
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava exchangeCode error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "exchangeCode",
+          "vendor": "Strava"
+        },
         "requests": [
           {
             "method": "POST",
@@ -1528,7 +1616,15 @@
         "unansweredScript": 0
       },
       "empty_body": {
-        "result": null,
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava refreshAccessToken error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "refreshAccessToken",
+          "vendor": "Strava"
+        },
         "requests": [
           {
             "method": "POST",
@@ -3345,7 +3441,15 @@
         "unansweredScript": 0
       },
       "empty_body": {
-        "result": null,
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth exchangeCode error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "exchangeCode",
+          "vendor": "GoogleHealth"
+        },
         "requests": [
           {
             "method": "POST",
@@ -3651,7 +3755,15 @@
         "unansweredScript": 0
       },
       "empty_body": {
-        "result": null,
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth refreshAccessToken error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "refreshAccessToken",
+          "vendor": "GoogleHealth"
+        },
         "requests": [
           {
             "method": "POST",

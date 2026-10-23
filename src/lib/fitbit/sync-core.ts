@@ -20,7 +20,7 @@ import {
   collapseToTypeDayKeys,
   recomputeBucketsForKeys,
 } from "@/lib/rollups/measurement-rollups";
-import { refreshAccessToken } from "./client";
+import { fitbitOAuth } from "./oauth";
 import { isFitbitRetired } from "./retirement";
 import { getUserFitbitCredentials } from "./credentials";
 import { FitbitApiError, classifyFitbitError } from "./response-classifier";
@@ -115,7 +115,7 @@ export async function getValidToken(
         return null;
       }
 
-      const newTokens = await refreshAccessToken(refreshToken, creds);
+      const newTokens = await fitbitOAuth.refresh(refreshToken, creds);
       const expiresAt = new Date(Date.now() + newTokens.expires_in * 1000);
 
       // Classic Fitbit ROTATES refresh tokens: the refresh response carries a

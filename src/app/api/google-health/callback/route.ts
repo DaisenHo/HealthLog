@@ -10,11 +10,11 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
 import {
-  exchangeCode,
   fetchProfile,
   resolveGoogleHealthUserId,
-  getGoogleHealthScopeString,
 } from "@/lib/google-health/client";
+import { googleHealthOAuth } from "@/lib/google-health/oauth";
+import { getGoogleHealthScopeString } from "@/lib/google-health/oauth";
 import { getUserGoogleHealthCredentials } from "@/lib/google-health/credentials";
 import { GOOGLE_HEALTH_OAUTH_STATE_COOKIE } from "@/lib/google-health/oauth-state";
 import { GOOGLE_HEALTH_BACKFILL_QUEUE } from "@/lib/jobs/google-health-backfill-queue";
@@ -162,14 +162,14 @@ export const GET = apiHandler(async (request: NextRequest) => {
         return ERR("nocreds");
       }
 
-      const tokens = await exchangeCode(code, consumed.codeVerifier, creds);
+      const tokens = await googleHealthOAuth.exchange(code, creds, {
+        codeVerifier: consumed.codeVerifier,
+      });
 
-      // The initial code exchange MUST return a refresh token (the connect route
-      // forces `prompt=consent` + `access_type=offline`). If Google ever omits
-      // it, refuse to persist — a stored empty refresh token silently bricks
-      // every future token refresh (the refresh POST then 400s and the
-      // connection dies the moment the access token expires). Error out cleanly
-      // so the user re-consents rather than landing a dead connection.
+      // The exchange must return a refresh token (the connect route forces
+      // `prompt=consent` and `access_type=offline`). A stored empty one would
+      // fail every later refresh, so the person re-consents instead of landing
+      // a connection that dies with its first access token.
       if (!tokens.refresh_token) {
         getEvent()?.addWarning(
           `google-health callback: token response carried no refresh_token for user ${recordUserId}`,

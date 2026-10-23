@@ -148,7 +148,13 @@ vi.mock("../client", async (importOriginal) => {
     fetchDailyCyclePhases: fetchCyclePhasesMock,
     fetchWorkouts: fetchWorkoutsMock,
     forEachHeartRatePage: heartRatePagesMock,
-    refreshAccessToken: refreshMock,
+  };
+});
+vi.mock("../oauth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../oauth")>();
+  return {
+    ...actual,
+    ouraOAuth: { ...actual.ouraOAuth, refresh: refreshMock },
   };
 });
 

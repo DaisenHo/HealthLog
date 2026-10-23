@@ -84,9 +84,12 @@ vi.mock("@/lib/logging/context", () => ({
 vi.mock("../credentials", () => ({
   getUserWhoopCredentials: getUserWhoopCredentialsMock,
 }));
-vi.mock("../client", async (orig) => {
-  const actual = await orig<typeof import("../client")>();
-  return { ...actual, refreshAccessToken: refreshAccessTokenMock };
+vi.mock("../oauth", async (orig) => {
+  const actual = await orig<typeof import("../oauth")>();
+  return {
+    ...actual,
+    whoopOAuth: { ...actual.whoopOAuth, refresh: refreshAccessTokenMock },
+  };
 });
 
 // Each resource resolves the token first (the ledger-registration seam).

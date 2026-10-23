@@ -1,11 +1,10 @@
 /**
- * v1.28.x — Strava API v3 client for OAuth + activity fetching.
+ * Strava API v3 client: activity reads.
  * Docs: https://developers.strava.com/docs/reference/ (re-verify at build).
  *
- * Mirrors the WHOOP / Polar / Oura client structure: hand-rolled fetch over
- * `safeFetch` (no vendor SDK), an OAuth handshake (`getAuthorizationUrl` /
- * `exchangeCode` / `refreshAccessToken`), typed collection fetchers, and a
- * single field → `Workout` mapper.
+ * Hand-rolled fetch over `safeFetch` (no vendor SDK): typed collection
+ * fetchers and a single field → `Workout` mapper. The OAuth handshake is
+ * `./oauth.ts`.
  *
  * Strava specifics:
  *   - It is a WORKOUT source only — the API is activity-centric and exposes no
@@ -25,173 +24,11 @@ import { getEvent } from "@/lib/logging/context";
 import { safeFetch } from "@/lib/safe-fetch";
 import { parseRetryAfterMs } from "@/lib/integrations/oauth-kit/retry-after";
 import type { Prisma } from "@/generated/prisma/client";
-import {
-  StravaApiError,
-  classifyStravaResponse,
-  stravaFaultSummary,
-} from "./response-classifier";
+import { StravaApiError, classifyStravaResponse } from "./response-classifier";
 import { mapStravaSportType } from "./sport-map";
 import type { WorkoutSportType } from "@/lib/validations/workout";
-import { envOr, envValue } from "@/lib/env";
 
 const STRAVA_API_BASE = "https://www.strava.com/api/v3";
-const STRAVA_OAUTH_AUTH_URL = "https://www.strava.com/oauth/authorize";
-const STRAVA_OAUTH_TOKEN_URL = "https://www.strava.com/oauth/token";
-const STRAVA_DEAUTHORIZE_URL = "https://www.strava.com/oauth/deauthorize";
-
-export interface StravaCredentials {
-  clientId: string;
-  clientSecret: string;
-}
-
-/**
- * Env-configured shared OAuth credentials — the FALLBACK app used when a user
- * has not registered their own BYO Strava client id/secret. The per-user
- * resolver `getStravaClientCredentials` (DB-first) is the primary path and
- * calls this only when no per-user pair is stored.
- */
-export function getStravaCredentials(): StravaCredentials | null {
-  const clientId = process.env.STRAVA_CLIENT_ID;
-  const clientSecret = process.env.STRAVA_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
-  return { clientId, clientSecret };
-}
-
-export function getStravaRedirectUri(): string {
-  // An empty or blank value counts as unset: the compose whitelist
-  // materialises an unset var as an empty string, which must still fall
-  // through to the derived URI.
-  return envOr(
-    "STRAVA_REDIRECT_URI",
-    `${envValue("NEXT_PUBLIC_APP_URL")}/api/strava/callback`,
-  );
-}
-
-/**
- * Strava OAuth scope. `activity:read_all` reads every activity including those
- * marked "only me" (`activity:read` omits private ones). Comma-separated on the
- * wire per Strava's authorization endpoint.
- */
-export const STRAVA_OAUTH_SCOPE = "activity:read_all" as const;
-
-export function getAuthorizationUrl(
-  state: string,
-  creds: StravaCredentials,
-): string {
-  const params = new URLSearchParams({
-    client_id: creds.clientId,
-    response_type: "code",
-    redirect_uri: getStravaRedirectUri(),
-    approval_prompt: "auto",
-    scope: STRAVA_OAUTH_SCOPE,
-    state,
-  });
-  return `${STRAVA_OAUTH_AUTH_URL}?${params}`;
-}
-
-/** Strava's `SummaryAthlete` — only the numeric id is retained (the granted
- * account pin + webhook fan-out key). */
-export interface StravaAthlete {
-  id?: number | null;
-}
-
-export interface StravaTokenResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_at?: number;
-  expires_in?: number;
-  token_type?: string;
-  athlete?: StravaAthlete | null;
-}
-
-async function postToken(
-  params: URLSearchParams,
-  verb: string,
-): Promise<StravaTokenResponse> {
-  const start = performance.now();
-  const res = await safeFetch(STRAVA_OAUTH_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
-    },
-    body: params.toString(),
-  });
-  const json = await res.json().catch(() => null);
-  const verdict = classifyStravaResponse(res.status);
-  getEvent()?.addExternalCall({
-    service: "strava",
-    method: verb,
-    duration_ms: Math.round(performance.now() - start),
-    status: res.status,
-    error: verdict.classification === "success" ? undefined : verdict.reason,
-  });
-  if (verdict.classification !== "success") {
-    throw new StravaApiError({
-      verb,
-      classification: verdict.classification,
-      httpStatus: verdict.httpStatus,
-      reason: verdict.reason,
-      // Strava's `Fault`, reduced to the resource it names; the classifier
-      // tells a dead refresh token from a misconfigured app by it.
-      upstreamError: stravaFaultSummary(json),
-    });
-  }
-  return json as StravaTokenResponse;
-}
-
-export async function exchangeCode(
-  code: string,
-  creds: StravaCredentials,
-): Promise<StravaTokenResponse> {
-  return postToken(
-    new URLSearchParams({
-      client_id: creds.clientId,
-      client_secret: creds.clientSecret,
-      code,
-      grant_type: "authorization_code",
-    }),
-    "exchangeCode",
-  );
-}
-
-export async function refreshAccessToken(
-  refreshToken: string,
-  creds: StravaCredentials,
-): Promise<StravaTokenResponse> {
-  return postToken(
-    new URLSearchParams({
-      client_id: creds.clientId,
-      client_secret: creds.clientSecret,
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-    }),
-    "refreshAccessToken",
-  );
-}
-
-/**
- * Best-effort deauthorize at Strava on disconnect. Failure is swallowed by the
- * caller — the local grant is cleared regardless, so a Strava-side outage never
- * strands the user with a card that refuses to disconnect.
- */
-export async function deauthorize(accessToken: string): Promise<void> {
-  const start = performance.now();
-  const res = await safeFetch(STRAVA_DEAUTHORIZE_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/json",
-    },
-  });
-  getEvent()?.addExternalCall({
-    service: "strava",
-    method: "deauthorize",
-    duration_ms: Math.round(performance.now() - start),
-    status: res.status,
-    error: res.ok ? undefined : `http_${res.status}`,
-  });
-}
 
 // ─── Activity reads (v3) ───────────────────────────────────────
 

@@ -167,90 +167,92 @@ interface ProviderUnderTest {
  * file that follows the clients' API; the golden does not.
  */
 async function providers(): Promise<Record<string, ProviderUnderTest>> {
-  const withings = await import("@/lib/withings/client");
-  const whoop = await import("@/lib/whoop/client");
-  const strava = await import("@/lib/strava/client");
-  const oura = await import("@/lib/oura/client");
-  const polar = await import("@/lib/polar/client");
-  const google = await import("@/lib/google-health/client");
-  const fitbit = await import("@/lib/fitbit/client");
+  const { withingsOAuth } = await import("@/lib/withings/oauth");
+  const { whoopOAuth } = await import("@/lib/whoop/oauth");
+  const { stravaOAuth } = await import("@/lib/strava/oauth");
+  const { ouraOAuth, exchangeOuraCode } = await import("@/lib/oura/oauth");
+  const { polarOAuth } = await import("@/lib/polar/oauth");
+  const { googleHealthOAuth } = await import("@/lib/google-health/oauth");
+  const { fitbitOAuth } = await import("@/lib/fitbit/oauth");
   const MOI = "https://moi.ouraring.com/oauth/v2/ext/oauth-anonymous";
+  const pkce = { codeVerifier: VERIFIER };
   return {
     withings: {
       answers: WITHINGS_ANSWERS,
-      redirectUri: withings.getWithingsRedirectUri,
-      authorize: () => withings.getAuthorizationUrl(STATE, CREDS),
-      exchange: () => withings.exchangeCode("code-1", CREDS),
-      refresh: () => withings.refreshAccessToken("refresh-0", CREDS),
+      redirectUri: withingsOAuth.redirectUri,
+      authorize: () => withingsOAuth.authorizationUrl(STATE, CREDS),
+      exchange: () => withingsOAuth.exchange("code-1", CREDS),
+      refresh: () => withingsOAuth.refresh("refresh-0", CREDS),
     },
     whoop: {
       answers: STANDARD_ANSWERS,
-      redirectUri: whoop.getWhoopRedirectUri,
-      authorize: () => whoop.getAuthorizationUrl(STATE, CREDS),
-      exchange: () => whoop.exchangeCode("code-1", CREDS),
-      refresh: () => whoop.refreshAccessToken("refresh-0", CREDS),
+      redirectUri: whoopOAuth.redirectUri,
+      authorize: () => whoopOAuth.authorizationUrl(STATE, CREDS),
+      exchange: () => whoopOAuth.exchange("code-1", CREDS),
+      refresh: () => whoopOAuth.refresh("refresh-0", CREDS),
     },
     strava: {
       answers: STANDARD_ANSWERS,
-      redirectUri: strava.getStravaRedirectUri,
-      authorize: () => strava.getAuthorizationUrl(STATE, CREDS),
-      exchange: () => strava.exchangeCode("code-1", CREDS),
-      refresh: () => strava.refreshAccessToken("refresh-0", CREDS),
+      redirectUri: stravaOAuth.redirectUri,
+      authorize: () => stravaOAuth.authorizationUrl(STATE, CREDS),
+      exchange: () => stravaOAuth.exchange("code-1", CREDS),
+      refresh: () => stravaOAuth.refresh("refresh-0", CREDS),
       extra: {
         deauthorize_ok: {
           answers: [json(200, { access_token: "access-1" })],
-          call: () => strava.deauthorize("access-1"),
+          call: () => stravaOAuth.deauthorize("access-1"),
         },
         deauthorize_refused: {
           answers: [json(401, { message: "Authorization Error" })],
-          call: () => strava.deauthorize("access-1"),
+          call: () => stravaOAuth.deauthorize("access-1"),
         },
       },
     },
     oura: {
       answers: STANDARD_ANSWERS,
-      redirectUri: oura.getOuraRedirectUri,
-      authorize: () => oura.getAuthorizationUrl(STATE, CREDS),
-      exchange: () => oura.exchangeCode("code-1", CREDS),
-      refresh: () => oura.refreshAccessToken("refresh-0", CREDS),
+      redirectUri: ouraOAuth.redirectUri,
+      authorize: () => ouraOAuth.authorizationUrl(STATE, CREDS),
+      exchange: () => exchangeOuraCode("code-1", CREDS),
+      refresh: () => ouraOAuth.refresh("refresh-0", CREDS),
       extra: {
         exchange_from_moi_refused: {
           answers: [json(400, { error: "invalid_grant" })],
-          call: () => oura.exchangeCode("code-1", CREDS, MOI),
+          call: () => exchangeOuraCode("code-1", CREDS, MOI),
         },
         exchange_legacy_fallback: {
           answers: [json(400, { error: "invalid_request" }), json(200, TOKEN)],
-          call: () => oura.exchangeCode("code-1", CREDS, null),
+          call: () => exchangeOuraCode("code-1", CREDS, null),
         },
         exchange_both_refused: {
           answers: [
             json(401, { error: "invalid_client" }),
             json(400, { error: "invalid_grant" }),
           ],
-          call: () => oura.exchangeCode("code-1", CREDS),
+          call: () => exchangeOuraCode("code-1", CREDS),
         },
         refresh_legacy_fallback: {
           answers: [json(404, { error: "not_found" }), json(200, TOKEN)],
-          call: () => oura.refreshAccessToken("refresh-0", CREDS),
+          call: () => ouraOAuth.refresh("refresh-0", CREDS),
         },
         refresh_outage_no_fallback: {
           answers: [{ status: 502, body: "" }],
-          call: () => oura.refreshAccessToken("refresh-0", CREDS),
+          call: () => ouraOAuth.refresh("refresh-0", CREDS),
         },
       },
     },
     polar: {
       answers: STANDARD_ANSWERS,
-      redirectUri: polar.getPolarRedirectUri,
-      authorize: () => polar.getAuthorizationUrl(STATE, CREDS),
-      exchange: () => polar.exchangeCode("code-1", CREDS),
+      redirectUri: polarOAuth.redirectUri,
+      authorize: () => polarOAuth.authorizationUrl(STATE, CREDS),
+      exchange: () => polarOAuth.exchange("code-1", CREDS),
     },
     "google-health": {
       answers: STANDARD_ANSWERS,
-      redirectUri: google.getGoogleHealthRedirectUri,
-      authorize: () => google.getAuthorizationUrl(STATE, CREDS, CHALLENGE),
-      exchange: () => google.exchangeCode("code-1", VERIFIER, CREDS),
-      refresh: () => google.refreshAccessToken("refresh-0", CREDS),
+      redirectUri: googleHealthOAuth.redirectUri,
+      authorize: () =>
+        googleHealthOAuth.authorizationUrl(STATE, CREDS, CHALLENGE),
+      exchange: () => googleHealthOAuth.exchange("code-1", CREDS, pkce),
+      refresh: () => googleHealthOAuth.refresh("refresh-0", CREDS),
     },
     fitbit: {
       answers: {
@@ -264,10 +266,10 @@ async function providers(): Promise<Record<string, ProviderUnderTest>> {
           }),
         ],
       },
-      redirectUri: fitbit.getFitbitRedirectUri,
-      authorize: () => fitbit.getAuthorizationUrl(STATE, CREDS, CHALLENGE),
-      exchange: () => fitbit.exchangeCode("code-1", VERIFIER, CREDS),
-      refresh: () => fitbit.refreshAccessToken("refresh-0", CREDS),
+      redirectUri: fitbitOAuth.redirectUri,
+      authorize: () => fitbitOAuth.authorizationUrl(STATE, CREDS, CHALLENGE),
+      exchange: () => fitbitOAuth.exchange("code-1", CREDS, pkce),
+      refresh: () => fitbitOAuth.refresh("refresh-0", CREDS),
     },
   };
 }
