@@ -35,6 +35,10 @@ export const CRITICAL_JOURNEYS = [
   "labs",
   "wellbeing",
   "settings",
+  // The fresh account a full backup is imported into. The backup journey
+  // runs in the desktop project only (`playwright.config.ts` says why), so
+  // only the desktop account of this pair is ever written.
+  "restore",
 ] as const;
 
 export type CriticalJourney = (typeof CRITICAL_JOURNEYS)[number];
@@ -172,5 +176,78 @@ export async function resetCriticalAccount(
 export async function clearLoginBuckets(): Promise<void> {
   await withPool(async (pool) => {
     await pool.query(`DELETE FROM rate_limits WHERE key LIKE 'auth:%'`);
+  });
+}
+
+/**
+ * Delete a critical account and create it again, empty, under the same id,
+ * username and password. The backup journey restores a person's file into
+ * the account the way the runbook brings one back on a new host, where the
+ * file names its owner by id; a browser cannot delete and recreate a row
+ * under a chosen id, so this is the fixture's act, not the journey's.
+ */
+export async function recreateCriticalAccount(
+  account: CriticalAccount,
+): Promise<void> {
+  await withPool(async (pool) => {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const res = await client.query<{
+        id: string;
+        password_hash: string;
+        module_preferences_json: unknown;
+      }>(
+        `SELECT id, password_hash, module_preferences_json
+         FROM users WHERE username = $1`,
+        [account.username],
+      );
+      const row = res.rows[0];
+      if (!row) {
+        throw new Error(`[critical-fixture] ${account.username} not seeded`);
+      }
+      await client.query("DELETE FROM users WHERE id = $1", [row.id]);
+      await client.query(
+        `INSERT INTO users
+          (id, username, email, password_hash, role, created_at, updated_at,
+           onboarding_completed_at, onboarding_tour_completed,
+           module_preferences_json)
+         VALUES ($1, $2, $3, $4, 'USER', NOW(), NOW(), NOW(), true, $5::jsonb)`,
+        [
+          row.id,
+          account.username,
+          account.email,
+          row.password_hash,
+          JSON.stringify(row.module_preferences_json),
+        ],
+      );
+      await client.query("COMMIT");
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    } finally {
+      client.release();
+    }
+  });
+}
+
+/** How many measurements and mood entries a critical account holds. */
+export async function accountRowCounts(
+  account: CriticalAccount,
+): Promise<{ measurements: number; moodEntries: number }> {
+  return withPool(async (pool) => {
+    const res = await pool.query<{ measurements: string; mood: string }>(
+      `SELECT
+         (SELECT count(*) FROM measurements m
+            JOIN users u ON u.id = m.user_id WHERE u.username = $1)
+           AS measurements,
+         (SELECT count(*) FROM mood_entries e
+            JOIN users u ON u.id = e.user_id WHERE u.username = $1) AS mood`,
+      [account.username],
+    );
+    return {
+      measurements: Number(res.rows[0]?.measurements ?? 0),
+      moodEntries: Number(res.rows[0]?.mood ?? 0),
+    };
   });
 }

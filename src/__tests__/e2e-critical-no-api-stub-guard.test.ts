@@ -50,7 +50,7 @@ const E2E = join(process.cwd(), "e2e");
  * somebody should see here. It counts title literals in the source, so a
  * title written once inside a loop counts once however many tests it names.
  */
-const CRITICAL_TEST_FLOOR = 15;
+const CRITICAL_TEST_FLOOR = 16;
 
 /** A test whose title literal carries the tag, however the call is spelled. */
 const CRITICAL_TEST =
