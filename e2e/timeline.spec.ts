@@ -332,6 +332,11 @@ test("value lines: quarterly means, gaps kept, short ones bridged, as many as th
     );
   expect(dots).toHaveLength(15);
   await page.keyboard.press("Escape");
+  // The menu closes on an exit animation and only then hands focus back to
+  // its trigger, which scrolls the page to the toolbar. Measured before
+  // that, the scroll to the last row below was undone a moment later.
+  await expect(options).toHaveCount(0);
+  await expect(trigger).toBeFocused();
   await expect
     .poll(() => log.timelineQueries.at(-1)?.get("values")?.split(",").length)
     .toBe(15);

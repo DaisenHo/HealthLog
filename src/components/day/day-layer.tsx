@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { usePathname, useSearchParams } from "next/navigation";
+
+import { reportRouterSearch, writeUrlState } from "@/lib/url-state";
 import {
   Suspense,
   useCallback,
@@ -56,12 +58,7 @@ import {
   takeDayYield,
   useDayFocus,
 } from "./day-layer-controller";
-import {
-  parseDayParam,
-  shiftDateKey,
-  stripDayOf,
-  withDayHref,
-} from "./day-url";
+import { parseDayParam, shiftDateKey, stripDayOf } from "./day-url";
 import { useLongDayLabel } from "./day-label";
 import type { DayViewProps } from "./day-view";
 import { usePrefetchDay } from "./use-day";
@@ -167,12 +164,14 @@ function DayLayer() {
   // A parameter the layer cannot open leaves the URL quietly.
   useEffect(() => {
     if (raw === null || date !== null) return;
-    window.history.replaceState(
-      null,
-      "",
-      withDayHref(window.location.pathname, window.location.search, null),
-    );
+    writeUrlState((params) => params.delete(DAY_QUERY_PARAM));
   }, [raw, date]);
+  // The layer reads the router's copy of the URL; it tells the URL-state
+  // queue when that copy has caught up with a write.
+  const routerSearch = searchParams.toString();
+  useEffect(() => {
+    reportRouterSearch(routerSearch);
+  }, [routerSearch]);
 
   useEffect(() => {
     publishOpenDay(date);
@@ -282,11 +281,7 @@ function DayLayer() {
     // Read again, not from the render: a Back on this page has just closed it.
     if (!readDayOpen(owner)) return;
     restoring.current = true;
-    window.history.replaceState(
-      null,
-      "",
-      withDayHref(window.location.pathname, window.location.search, railDay),
-    );
+    writeUrlState((params) => params.set(DAY_QUERY_PARAM, railDay));
   }, [shell, raw, leftOpen, railDay, owner]);
 
   // What the polite region says: the day that just opened or was stepped to.

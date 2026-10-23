@@ -197,7 +197,7 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
   // through the router, so a filtered view survives navigation, reload and
   // back/forward.
   // v1.15.13 — management-list source filter + optional date range.
-  const { filters, applyFilters } = useUrlFilterSync({
+  const { filters, applyFilters, patchFilters } = useUrlFilterSync({
     parse: parseMoodListSearchParams,
     serialise: moodListFiltersToSearch,
   });
@@ -298,25 +298,25 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
   // vault's chips); the committed date bounds replace — a from/to pair set in
   // one sitting should not cost two Back presses.
   const setMoodFilter = (value: string) => {
-    applyFilters({ ...filters, mood: value === "ALL" ? undefined : value });
+    patchFilters({ mood: value === "ALL" ? undefined : value });
     setPage(1);
     clearSelection();
   };
 
   const setSourceFilter = (value: string) => {
-    applyFilters({ ...filters, source: value === "ALL" ? undefined : value });
+    patchFilters({ source: value === "ALL" ? undefined : value });
     setPage(1);
     clearSelection();
   };
 
   const setFromDay = (value: string) => {
-    applyFilters({ ...filters, fromDay: value || undefined }, "replace");
+    patchFilters({ fromDay: value || undefined }, "replace");
     setPage(1);
     clearSelection();
   };
 
   const setToDay = (value: string) => {
-    applyFilters({ ...filters, toDay: value || undefined }, "replace");
+    patchFilters({ toDay: value || undefined }, "replace");
     setPage(1);
     clearSelection();
   };

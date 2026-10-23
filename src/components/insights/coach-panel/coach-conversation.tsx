@@ -68,6 +68,7 @@ import {
   useSendCoachMessage,
 } from "./use-coach";
 import { translateOrNull } from "@/lib/i18n/translate-code";
+import { currentUrlSearch, writeUrlHref } from "@/lib/url-state";
 
 /**
  * v1.12.0 (Coach v2 #6) — shared chat surface for both the Coach drawer
@@ -371,9 +372,8 @@ export function CoachConversation({
   // a shared tab) lands on it. The drawer has no URL of its own.
   function syncPageUrl(conversationId: string | null) {
     if (surface !== "page" || typeof window === "undefined") return;
-    const href = coachPageHref(conversationId, window.location.search);
-    if (window.location.pathname + window.location.search === href) return;
-    window.history.replaceState(window.history.state, "", href);
+    const href = coachPageHref(conversationId, currentUrlSearch());
+    writeUrlHref(href, { state: "keep" });
   }
 
   const send = useSendCoachMessage({

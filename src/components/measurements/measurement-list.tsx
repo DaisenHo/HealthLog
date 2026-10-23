@@ -411,7 +411,7 @@ export function MeasurementList({
   // v1.8.5 — when `lockedType` is set the list is pinned to that metric, the
   // type selector is hidden, and the URL belongs to the insights subpage —
   // the remaining filters stay in component memory (`syncToUrl: false`).
-  const { filters, applyFilters } = useUrlFilterSync({
+  const { filters, applyFilters, patchFilters } = useUrlFilterSync({
     parse: parseMeasurementListSearchParams,
     serialise: measurementListFiltersToSearch,
     syncToUrl: lockedType === undefined,
@@ -505,25 +505,25 @@ export function MeasurementList({
   // vault's chips); the committed date bounds replace — a from/to pair set in
   // one sitting should not cost two Back presses.
   const setTypeFilter = (value: string) => {
-    applyFilters({ ...filters, type: value === "ALL" ? undefined : value });
+    patchFilters({ type: value === "ALL" ? undefined : value });
     setPage(1);
     clearSelection();
   };
 
   const setSourceFilter = (value: string) => {
-    applyFilters({ ...filters, source: value === "ALL" ? undefined : value });
+    patchFilters({ source: value === "ALL" ? undefined : value });
     setPage(1);
     clearSelection();
   };
 
   const setFromDay = (value: string) => {
-    applyFilters({ ...filters, fromDay: value || undefined }, "replace");
+    patchFilters({ fromDay: value || undefined }, "replace");
     setPage(1);
     clearSelection();
   };
 
   const setToDay = (value: string) => {
-    applyFilters({ ...filters, toDay: value || undefined }, "replace");
+    patchFilters({ toDay: value || undefined }, "replace");
     setPage(1);
     clearSelection();
   };
@@ -553,10 +553,10 @@ export function MeasurementList({
       ) {
         return;
       }
-      applyFilters({ ...filters, valueMin: min, valueMax: max }, "replace");
+      patchFilters({ valueMin: min, valueMax: max }, "replace");
     }, 200);
     return () => clearTimeout(handle);
-  }, [valueDraft, filters, applyFilters]);
+  }, [valueDraft, filters, patchFilters]);
 
   const goToPage = (updater: (p: number) => number) => {
     setPage(updater);

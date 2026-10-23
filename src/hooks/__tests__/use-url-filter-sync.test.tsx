@@ -6,7 +6,7 @@
  * request), an empty filter set restores the bare pathname, and
  * `syncToUrl: false` detaches the state from the URL entirely.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 let mockSearch = "";
@@ -19,6 +19,13 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { useUrlFilterSync } from "../use-url-filter-sync";
+import {
+  installUrlStateBrowser,
+  type UrlStateBrowser,
+} from "@/__tests__/helpers/url-state-browser";
+
+let browser: UrlStateBrowser = installUrlStateBrowser("/");
+afterEach(() => browser.uninstall());
 
 interface ProbeFilters {
   type?: string;
@@ -61,6 +68,11 @@ function mount(search: string, syncToUrl?: boolean): ProbeResult {
   }
   renderToStaticMarkup(<Probe />);
   if (!captured.current) throw new Error("probe did not render");
+  // The live address the writes start from (`@/lib/url-state`).
+  browser.uninstall();
+  browser = installUrlStateBrowser(
+    search ? `/measurements?${search}` : "/measurements",
+  );
   return captured.current;
 }
 
@@ -78,32 +90,28 @@ describe("useUrlFilterSync", () => {
   it("writes a filter change to the URL via push by default", () => {
     const { applyFilters } = mount("");
     applyFilters({ type: "WEIGHT" });
-    expect(pushMock).toHaveBeenCalledWith("/measurements?type=WEIGHT", {
-      scroll: false,
-    });
-    expect(replaceMock).not.toHaveBeenCalled();
+    expect(browser.push).toHaveBeenCalledWith("/measurements?type=WEIGHT");
+    expect(browser.replace).not.toHaveBeenCalled();
   });
 
   it("writes via replace when asked (high-frequency input)", () => {
     const { applyFilters } = mount("");
     applyFilters({ source: "MANUAL" }, "replace");
-    expect(replaceMock).toHaveBeenCalledWith("/measurements?source=MANUAL", {
-      scroll: false,
-    });
-    expect(pushMock).not.toHaveBeenCalled();
+    expect(browser.replace).toHaveBeenCalledWith("/measurements?source=MANUAL");
+    expect(browser.push).not.toHaveBeenCalled();
   });
 
   it("restores the bare pathname when every facet clears", () => {
     const { applyFilters } = mount("type=WEIGHT");
     applyFilters({});
-    expect(pushMock).toHaveBeenCalledWith("/measurements", { scroll: false });
+    expect(browser.push).toHaveBeenCalledWith("/measurements");
   });
 
   it("syncToUrl: false ignores the URL and never navigates", () => {
     const { filters, applyFilters } = mount("type=WEIGHT", false);
     expect(filters).toEqual({});
     applyFilters({ type: "PULSE" });
-    expect(pushMock).not.toHaveBeenCalled();
-    expect(replaceMock).not.toHaveBeenCalled();
+    expect(browser.push).not.toHaveBeenCalled();
+    expect(browser.replace).not.toHaveBeenCalled();
   });
 });

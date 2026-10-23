@@ -39,6 +39,7 @@ import { useAuth } from "@/hooks/use-auth";
 import type { IntegrationCallbackUrls } from "@/lib/integrations/callback-urls";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import { dropParams, writeUrlState } from "@/lib/url-state";
 
 /**
  * The Withings OAuth callback (`/api/withings/callback`) redirects back
@@ -246,10 +247,7 @@ export function ConnectionsPanel({
     if (!withingsOauthOutcome) return;
     // Scrub the one-shot params so a reload / bookmark doesn't replay
     // the toast.
-    const url = new URL(window.location.href);
-    url.searchParams.delete("withings");
-    url.searchParams.delete("reason");
-    router.replace(`${url.pathname}${url.search}`, { scroll: false });
+    writeUrlState(dropParams("withings", "reason"), { afterPaint: true });
     if (withingsOauthOutcome.kind === "connected") {
       toast.success(t("settings.withingsOauthConnected"));
       queryClient.invalidateQueries({ queryKey: queryKeys.withings() });
@@ -282,10 +280,7 @@ export function ConnectionsPanel({
   useEffect(() => {
     if (!oauthOutcome) return;
     const { provider } = oauthOutcome;
-    const url = new URL(window.location.href);
-    url.searchParams.delete(provider);
-    url.searchParams.delete("reason");
-    router.replace(`${url.pathname}${url.search}`, { scroll: false });
+    writeUrlState(dropParams(provider, "reason"), { afterPaint: true });
     if (oauthOutcome.kind === "connected") {
       toast.success(t(`settings.${provider}OauthConnected`));
       // Polar/Oura own a per-card status query; WHOOP/Fitbit read off the

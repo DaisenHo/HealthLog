@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
+import { reportRouterSearch, resetUrlStateForTests } from "@/lib/url-state";
+
 /**
  * The history contract of the day layer, against a small stand-in for the
  * browser's session history:
@@ -27,6 +29,10 @@ function installFakeBrowser(initialUrl: string) {
     get search() {
       return new URL(entries[index]!.url, "http://x").search;
     },
+    hash: "",
+    get href() {
+      return new URL(entries[index]!.url, "http://x").href;
+    },
   };
   const history = {
     get state() {
@@ -48,11 +54,31 @@ function installFakeBrowser(initialUrl: string) {
     },
   };
   const g = globalThis as unknown as Record<string, unknown>;
-  g.window = { location, history };
+  g.window = {
+    location,
+    history,
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent() {
+      return true;
+    },
+  };
   g.document = { activeElement: null, body: {} };
+  // Next adopts each write a render later; the URL-state queue holds the
+  // next write until it has. Reading the address bar stands for the router
+  // catching up with every write made so far.
+  const catchUp = () => {
+    for (let i = 0; i < 10; i++) reportRouterSearch(location.search);
+  };
   return {
-    current: () => entries[index]!.url,
-    length: () => entries.length,
+    current: () => {
+      catchUp();
+      return entries[index]!.url;
+    },
+    length: () => {
+      catchUp();
+      return entries.length;
+    },
   };
 }
 
@@ -61,6 +87,7 @@ let browser: ReturnType<typeof installFakeBrowser>;
 const TODAY = "2026-01-10";
 
 beforeEach(() => {
+  resetUrlStateForTests();
   browser = installFakeBrowser("/insights/blood-pressure?range=90");
 });
 
