@@ -129,6 +129,15 @@ export default defineConfig({
             ),
           },
         },
+        // Next's client modules (`next/link` among them) read
+        // `process.env.*`, which Next's own bundler inlines at build time.
+        // A page has no `process`; this inlines an environment with no
+        // public variables set, as a build without any would.
+        define: {
+          "process.env": JSON.stringify({
+            NODE_ENV: process.env.NODE_ENV ?? "test",
+          }),
+        },
         // Pre-bundle every dependency the browser files reach before the
         // first one loads. Discovered late, a dependency makes Vite re-bundle
         // and reload the page mid-run, which fails the file that was
