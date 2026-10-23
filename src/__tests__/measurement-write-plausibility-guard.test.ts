@@ -73,7 +73,10 @@ const WRITERS: Record<string, Disposition> = {
     kind: "upstream",
     validatedIn: "lib/validations/measurement.ts",
   },
-  "app/api/import/route.ts": { kind: "validator" },
+  "lib/import/json/measurements.ts": {
+    kind: "upstream",
+    validatedIn: "app/api/import/route.ts",
+  },
   // The batch ingest's set-based insert writes rows that already passed
   // `validateMeasurementRange` per entry in its first pass; everything else
   // goes through the reconciler, which gates itself.
@@ -88,7 +91,7 @@ const WRITERS: Record<string, Disposition> = {
   // insert after `validateMeasurementRange`; day totals through the gated
   // reconcile seam.
   "lib/import/health-connect/import.ts": { kind: "validator" },
-  "app/api/import/csv/route.ts": {
+  "lib/import/csv-write.ts": {
     kind: "upstream",
     validatedIn: "lib/import/csv-measurements.ts",
   },

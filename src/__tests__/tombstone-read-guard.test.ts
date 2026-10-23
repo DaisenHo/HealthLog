@@ -53,6 +53,8 @@ const ALLOWED: Record<string, string> = {
     "Withholds medication texts from the recall trail; a deleted fact still withholds, which errs toward saying less.",
   "coachFact@lib/ai/coach/memory/remember.ts":
     "Answer-once check on the message that proposed the fact, inside its lock.",
+  "moodEntry@lib/mood/bulk-ingest.ts":
+    "Write path, not analysis: resolves the row that won a raced external-id upsert, which owns the key whether or not it is deleted.",
 };
 
 function stripComments(text: string): string {

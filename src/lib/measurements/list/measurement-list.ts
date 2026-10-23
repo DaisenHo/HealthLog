@@ -28,7 +28,38 @@ import {
 import { dayGroupedListResponse } from "@/lib/measurements/list/day-grouped";
 import { sleepListResponse } from "@/lib/measurements/list/sleep-list";
 import { resolveStoredTimezone, resolveUserTimezone } from "@/lib/tz/resolver";
-import type { MeasurementType } from "@/generated/prisma/client";
+import type { MeasurementType, Prisma } from "@/generated/prisma/client";
+
+/**
+ * The columns a measurement row answers with (`MeasurementResource`), plus
+ * the sealed note `shapeMeasurementNotes` decrypts onto `notes` and drops.
+ * Named column by column so a column added to the model reaches the wire
+ * only when someone adds it here.
+ */
+const MEASUREMENT_WIRE_SELECT = {
+  id: true,
+  userId: true,
+  type: true,
+  value: true,
+  valueMin: true,
+  valueMax: true,
+  unit: true,
+  source: true,
+  measuredAt: true,
+  notes: true,
+  notesEncrypted: true,
+  externalId: true,
+  externalSourceVersion: true,
+  aggregationProvenance: true,
+  glucoseContext: true,
+  sleepStage: true,
+  rhythmClassification: true,
+  deviceType: true,
+  syncVersion: true,
+  deletedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const satisfies Prisma.MeasurementSelect;
 
 type ListQuery = z.output<typeof listMeasurementsSchema>;
 type ListUser = { id: string; timezone: string | null };
@@ -162,13 +193,16 @@ async function drillDownResponse(
     // returning 422 when a caller asks for more). `limit` is read straight
     // through because the validator has already clamped it.
     take: limit,
+    select: MEASUREMENT_WIRE_SELECT,
   });
   annotate({
     action: { name: "measurement.list" },
     meta: { total: samples.length, type, dayKey, mode: "drill-down" },
   });
   return apiSuccess({
-    measurements: samples,
+    // The same row shape as the plain page: the note decrypted onto `notes`,
+    // the ciphertext never on the wire.
+    measurements: samples.map(shapeMeasurementNotes),
     meta: { total: samples.length, limit, offset: 0, dayKey },
   });
 }

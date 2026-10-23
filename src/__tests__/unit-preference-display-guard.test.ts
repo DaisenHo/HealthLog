@@ -253,6 +253,8 @@ const WIDE_SWEEP_ROOTS = [
   "lib/jobs/",
   "lib/targets/",
   "lib/daily/",
+  // The series route's readers, moved out of `app/` with their unit tokens.
+  "lib/measurements/series/",
 ];
 
 const UNIT_LITERAL_PATTERNS: readonly RegExp[] = [
@@ -359,7 +361,7 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     lines: 1,
     reason: "the legacy export endpoint's canonical storage-unit contract",
   },
-  "app/api/measurements/series/route.ts": {
+  "lib/measurements/series/kinds.ts": {
     lines: 4,
     reason:
       "canonical wire units; glucose is overridden to the reader's unit per request",
@@ -512,7 +514,7 @@ const READER_UNIT_PRODUCERS = [
   "lib/ai/prompts/weight.ts",
   "lib/insights/features-units.ts",
   "lib/insights/comprehensive-generate.ts",
-  "app/api/insights/generate/route.ts",
+  "lib/insights/briefing-request/features.ts",
   "lib/insights/weight-status.ts",
   "lib/insights/metric-status.ts",
   "lib/insights/narrative/period-narrative.ts",

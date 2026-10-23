@@ -76,7 +76,7 @@ import type { ShareScope } from "@/lib/sharing/scope";
 
 import { ADMITTED_MUTATING_HANDLERS } from "../../tests/fixtures/v137/sharing-matrix";
 import { API_HANDLER, guardModuleOf } from "./helpers/auth-guards";
-import { readSourceText } from "./helpers/source-files";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -435,6 +435,17 @@ function callsSymbol(rel: string, symbol: string): boolean {
  */
 const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
   "app/api/medications/route.ts": ["lib/medications/create-medication.ts"],
+  "app/api/medications/[id]/route.ts": [
+    "lib/medications/update-medication/update-medication.ts",
+    "lib/medications/delete-medication.ts",
+  ],
+  "app/api/medications/[id]/intake/route.ts": [
+    "lib/medications/record-intake/record-intake.ts",
+  ],
+  "app/api/medications/intake/route.ts": [
+    "lib/medications/update-intake-status/admission.ts",
+    "lib/medications/update-intake-status/update-intake-status.ts",
+  ],
   "app/api/medications/[id]/intake/[eventId]/route.ts": [
     "lib/medications/update-intake-event.ts",
     "lib/medications/delete-intake-event.ts",
@@ -3305,15 +3316,30 @@ describe("(g) the MANAGE route set is frozen", () => {
     // and refreshes no token. Credential policy belongs inside every resolver
     // and presence helper so a delegate or managed system job cannot select a
     // personal BYOK key or custom base URL first.
+    // The route hands its body to the overview modules, so the leg reads the
+    // route and every one of them: the probe is called among them, and no
+    // resolver is called by any.
+    const comprehensiveModules = [
+      "app/api/insights/comprehensive/route.ts",
+      ...walkSourceFiles(join(SRC, "lib/insights/comprehensive-overview"), {
+        floor: 5,
+      }).map((f) => `lib/insights/comprehensive-overview/${f}`),
+    ];
+    expect(read(comprehensiveModules[0])).toContain(
+      '"@/lib/insights/comprehensive-overview/overview"',
+    );
     expect(
-      callsSymbol(
-        "app/api/insights/comprehensive/route.ts",
-        "probeProviderPresence",
-      ),
+      comprehensiveModules.some((m) => callsSymbol(m, "probeProviderPresence")),
     ).toBe(true);
-    expect(
-      callsSymbol("app/api/insights/comprehensive/route.ts", "resolveProvider"),
-    ).toBe(false);
+    for (const m of comprehensiveModules) {
+      for (const name of [
+        "resolveProvider",
+        "resolveProviderChain",
+        "probeProviderChain",
+      ]) {
+        expect(callsSymbol(m, name), `${m} calls ${name}`).toBe(false);
+      }
+    }
     for (const name of [
       "resolveProvider",
       "resolveProviderChain",

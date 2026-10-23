@@ -12654,6 +12654,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: The request body is over 16 KB. Nothing was generated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422":
           description: No AI provider can serve the `briefing` capability (`meta.errorCode` = `ai.provider.none`, `meta.reason` =
             `no_provider`), or the provider answered something that was not valid JSON (`meta.errorCode` =
@@ -12668,6 +12674,13 @@ paths:
             hourly limit of generations for this account. `insights.generate.budgetExceeded`: the DAY's token ceiling
             refused the reservation before any provider was contacted — retry tomorrow, not in an hour. No code, with
             provider wording: the upstream provider rate-limited every hop of the chain."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "502":
+          description: The generated briefing did not pass the outbound safety screen and was discarded (`meta.errorCode` =
+            `insights.generate.outboundScreened`). Regenerating may succeed.
           content:
             application/json:
               schema:
@@ -19188,6 +19201,13 @@ paths:
                 $ref: "#/components/schemas/DocumentUploadEnvelope"
         "401": *a1
         "403": *a9
+        "404":
+          description: An `episodeIds` or `encounterIds` id is not a live episode or visit of the caller
+            (`documents.inbound.episodeNotFound` / `documents.inbound.encounterNotFound`). Nothing was stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "409":
           description: The same bytes are already stored under 20 other import source ids (`documents.inbound.sourceAliasLimit`).
             Nothing was stored or remembered.
@@ -50492,8 +50512,28 @@ components:
           anyOf:
             - type: array
               items:
-                type: string
+                anyOf:
+                  - type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  - type: object
+                    properties:
+                      t:
+                        type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                      speedMs:
+                        type: number
+                      hr:
+                        type: integer
+                        minimum: -9007199254740991
+                        maximum: 9007199254740991
+                    required:
+                      - t
+                    additionalProperties: false
             - type: "null"
+          description: "One entry per geometry point, as the track was stored: a bare instant, or (from the workout batch and the
+            Apple Health export) an object with its instant and, where recorded, speed (m/s) and heart rate (bpm)."
       required:
         - geometry
         - sampleTimestamps
@@ -78976,6 +79016,15 @@ components:
           properties:
             requestId:
               type: string
+            duplicate:
+              description: "Present on a 200: the bytes or the source key were already stored, and `data` is the existing row (or the
+                receipt)."
+              type: boolean
+              const: true
+            deleted:
+              description: Present with `duplicate` when the source key belongs to a document the owner deleted. Nothing was stored.
+              type: boolean
+              const: true
           additionalProperties: false
       required:
         - data

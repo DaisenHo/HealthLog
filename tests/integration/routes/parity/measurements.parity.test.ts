@@ -378,17 +378,10 @@ describe("GET /api/measurements parity", () => {
 
   it("the list modes", async () => {
     await get("get-04-sleep", { type: "SLEEP_DURATION" });
-    // The drill-down answers the stored rows as they are, `notesEncrypted`
-    // included, which the contract does not declare (the other list modes
-    // strip it). Pinned as it is; this walk records behaviour, it does not
-    // change it.
-    await get(
-      "get-05-drill-down",
-      { type: "ACTIVITY_STEPS", dayKey: "2026-10-13" },
-      {
-        skip: "the drill-down returns notesEncrypted, which the contract omits",
-      },
-    );
+    await get("get-05-drill-down", {
+      type: "ACTIVITY_STEPS",
+      dayKey: "2026-10-13",
+    });
     await get("get-06-day-grouped", { type: "ACTIVITY_STEPS", groupBy: "day" });
     await get("get-07-rollup-series", {
       type: "ACTIVITY_STEPS",

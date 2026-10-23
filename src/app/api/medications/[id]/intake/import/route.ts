@@ -105,7 +105,7 @@ export const POST = apiHandler(
 
     const { id } = await params;
     // v1.5.5 — route ownership through the shared helper so the
-    // 404 leak shape stays identical across every `[id]/**` handler.
+    // 404 leak shape stays identical across every `[id]` handler.
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 

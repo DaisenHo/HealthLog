@@ -362,7 +362,7 @@ const V143_FIELDS: ResolvedFieldEntry[] = [
       sameResolver: {
         pattern: VERDICT_RESOLVER,
         files: [
-          "src/app/api/dashboard/summary/route.ts",
+          "src/lib/dashboard/summary/cards.ts",
           "src/lib/dashboard/snapshot.ts",
         ],
       },
@@ -410,7 +410,7 @@ const V143_FIELDS: ResolvedFieldEntry[] = [
       sameResolver: {
         pattern: VERDICT_RESOLVER,
         files: [
-          "src/app/api/measurements/series/route.ts",
+          "src/lib/measurements/series/read-series.ts",
           "src/lib/dashboard/snapshot.ts",
         ],
       },

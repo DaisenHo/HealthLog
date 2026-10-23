@@ -365,7 +365,7 @@ describe("the intake idempotency key is never read across users", () => {
     const found = intakeQueriesFilteringOnTheKey();
     expect(found.length).toBeGreaterThanOrEqual(6);
     expect(found.map((f) => f.file)).toContain(
-      "app/api/medications/intake/bulk/route.ts",
+      "lib/medications/intake-bulk/entry-write.ts",
     );
   });
 
@@ -402,14 +402,21 @@ describe("the batch surfaces refuse per entry, never whole-batch", () => {
       "lib/measurements/batch-ingest/prepare.ts",
       "lib/measurements/batch-ingest/ingest.ts",
     ],
-    "app/api/mood-entries/bulk/route.ts": [],
-    "app/api/medications/intake/bulk/route.ts": [],
+    "app/api/mood-entries/bulk/route.ts": ["lib/mood/bulk-ingest.ts"],
+    "app/api/medications/intake/bulk/route.ts": [
+      "lib/medications/intake-bulk/entry.ts",
+      "lib/medications/intake-bulk/ingest.ts",
+    ],
     "app/api/workouts/batch/route.ts": [
       "lib/workouts/batch-ingest/entries.ts",
       "lib/workouts/batch-ingest/ingest.ts",
     ],
     "app/api/cycle/day-logs/bulk/route.ts": [],
-    "app/api/import/route.ts": [],
+    "app/api/import/route.ts": [
+      "lib/import/json/measurements.ts",
+      "lib/import/json/mood.ts",
+      "lib/import/json/run.ts",
+    ],
   };
   const BATCH_ROUTES = Object.keys(BATCH_SURFACES);
 
