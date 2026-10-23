@@ -316,7 +316,8 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["ConfirmButton"],
   },
   {
-    file: "components/settings/dashboard-layout-section.tsx",
+    file: "components/settings/dashboard-layout/use-dashboard-layout-draft.ts",
+    triggers: ["components/settings/dashboard-layout-section.tsx"],
     destroys:
       "the dashboard arrangement: tile order, hidden tiles, ring choice",
     recovery: "permanent",
@@ -350,8 +351,13 @@ const REGISTRY: DestructiveEntry[] = [
 
   // ── Measurements, mood, labs, illness — the undo-and-restore surfaces ────
   {
-    file: "components/measurements/measurement-list.tsx",
+    file: "components/measurements/list/use-measurement-list-data.ts",
     destroys: "one measurement, or every selected measurement",
+    triggers: [
+      "components/measurements/measurement-list.tsx",
+      "components/measurements/list/row-actions.tsx",
+      "components/measurements/list/measurement-edit-sheet.tsx",
+    ],
     recovery: "restorable",
     confirm: ["DeleteButton", "SelectionActionBar", "AlertDialog"],
   },
@@ -442,7 +448,10 @@ const REGISTRY: DestructiveEntry[] = [
   {
     file: "hooks/use-measurement-reminders.ts",
     destroys: "a checkup or measurement reminder with its schedule",
-    triggers: ["components/measurement-reminders/vorsorge-section.tsx"],
+    triggers: [
+      "components/measurement-reminders/vorsorge-section.tsx",
+      "components/measurement-reminders/checkups/checkup-card.tsx",
+    ],
     recovery: "tombstoned-no-restore",
     confirm: ["AlertDialog"],
   },
@@ -519,8 +528,9 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
-    file: "components/medications/dose-history-ledger.tsx",
+    file: "components/medications/dose-history/use-dose-history-ledger.ts",
     destroys: "one intake event",
+    triggers: ["components/medications/dose-history/ledger-confirms.tsx"],
     recovery: "tombstoned-no-restore",
     confirm: ["AlertDialog"],
   },
@@ -588,8 +598,9 @@ const REGISTRY: DestructiveEntry[] = [
 
   // ── Documents ───────────────────────────────────────────────────────────
   {
-    file: "components/documents/document-detail-sheet.tsx",
+    file: "components/documents/detail/use-document-detail.ts",
     destroys: "one document in the vault",
+    triggers: ["components/documents/detail/detail-sections.tsx"],
     recovery: "restorable",
     confirm: [],
     unconfirmed: [
@@ -601,9 +612,10 @@ const REGISTRY: DestructiveEntry[] = [
     ],
   },
   {
-    file: "components/documents/documents-view.tsx",
+    file: "components/documents/vault/use-vault-bulk.ts",
     destroys: "every selected document, or one document from a focused card",
     triggers: [
+      "components/documents/documents-view.tsx",
       "components/documents/document-bulk-bar.tsx",
       "components/documents/document-card.tsx",
     ],

@@ -85,6 +85,9 @@ const HEIGHT_CONTROL = join(
 function sweptFiles(): string[] {
   return [
     join(SRC, "app", "page-client.tsx"),
+    ...walkSourceFiles(join(SRC, "components", "dashboard", "tiles"), {
+      floor: 5,
+    }).map((rel) => join(SRC, "components", "dashboard", "tiles", rel)),
     ...walkSourceFiles(SRC, { floor: 700, extensions: [".tsx"] })
       .filter(
         (rel) => rel.startsWith("app/insights/") && rel.endsWith("/page.tsx"),
@@ -295,9 +298,14 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     reason:
       "input parsing: canonical units of the entry table, replaced by the transform's unit at render and inverted on save",
   },
-  "components/measurements/measurement-list.tsx": {
-    lines: 2,
+  "components/measurements/list/use-measurement-edit.ts": {
+    lines: 1,
     reason: "input parsing: the inline edit inverts an mmol/L entry to mg/dL",
+  },
+  "components/measurements/list/use-measurement-row-display.ts": {
+    lines: 1,
+    reason:
+      "input parsing: decides whether the inline edit's input is in mmol/L and so needs inverting",
   },
   "components/settings/import-panel/import-examples.ts": {
     lines: 3,

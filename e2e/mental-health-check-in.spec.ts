@@ -2,6 +2,11 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "./setup/test";
 
+import {
+  criticalAccount,
+  criticalStorageState,
+  resetCriticalAccount,
+} from "./setup/critical-fixture";
 import { STORAGE_STATE_PATH } from "./setup/global-setup";
 
 /**
@@ -37,9 +42,16 @@ const CASES: readonly Case[] = [
 
 async function expectNoSeriousViolations(page: Page, label: string) {
   // The pointer rests where the last tap landed; a hover tint under it is
-  // not what the screen shows at rest.
+  // not what the screen shows at rest. Moving it away starts the tint's
+  // transition back, so the scan waits for every transition to settle rather
+  // than for a guessed number of milliseconds. Transitions only: a spinner's
+  // or a skeleton's endless animation would never settle.
   await page.mouse.move(0, 0);
-  await page.waitForTimeout(300);
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every((a) => !(a instanceof CSSTransition) || a.playState !== "running"),
+  );
   const results = await new AxeBuilder({ page })
     .include(
       '[data-slot="mental-health-check-in"], [data-slot="mental-health-result"]',
@@ -345,4 +357,178 @@ test.describe("mental-health check-in, in the reader's language", () => {
       result.locator('[data-slot="result-wording-note"]'),
     ).toHaveCount(0);
   });
+});
+
+/**
+ * A WHO-5 check-in, word for word, in German and in Brazilian Portuguese,
+ * on the wellbeing journey's own account (one per project,
+ * `critical-fixture.ts`) against the real server.
+ *
+ * The journeys above anchor on data attributes so they read the same in every
+ * language; this one reads the words. The German text is the validated WHO
+ * translation, which the form has to reproduce exactly; the Brazilian one is
+ * HealthLog's own and has to say so. Either way the stored assessment records
+ * the language and the kind of wording it was answered in, and the score the
+ * server computed is the one on screen.
+ *
+ * The strings are written out here rather than imported from
+ * `src/lib/mental-health/wording/`: a test that read the expected text from
+ * the module it checks would pass on any edit to that module.
+ */
+const WHO5_WORDING = {
+  de: {
+    validated: true,
+    progress: "Frage 1 von 5",
+    stem: "In den letzten zwei Wochen …",
+    first: "… war ich froh und guter Laune",
+    last: "… war mein Alltag voller Dinge, die mich interessieren",
+    // In the order the form prints them, best first.
+    anchors: [
+      "Die ganze Zeit",
+      "Meistens",
+      "Etwas mehr als die Hälfte der Zeit",
+      "Etwas weniger als die Hälfte der Zeit",
+      "Ab und zu",
+      "Zu keinem Zeitpunkt",
+    ],
+  },
+  "pt-BR": {
+    validated: false,
+    progress: "Pergunta 1 de 5",
+    stem: "Nas últimas duas semanas …",
+    first: "Eu me senti alegre e de bom humor",
+    last: "Meu dia a dia foi preenchido com coisas que me interessam",
+    anchors: [
+      "O tempo todo",
+      "A maior parte do tempo",
+      "Mais da metade do tempo",
+      "Menos da metade do tempo",
+      "Algumas vezes",
+      "Em nenhum momento",
+    ],
+  },
+} as const;
+
+/** The account's stored assessments, as the list route answers them. */
+async function storedAssessments(page: Page): Promise<
+  Array<{
+    instrument: string;
+    locale: string;
+    wording: string | null;
+    totalScore: number;
+  }>
+> {
+  const res = await page.request.get("/api/mental-health/assessments");
+  expect(res.status()).toBe(200);
+  const { data } = (await res.json()) as {
+    data: {
+      assessments: Array<{
+        instrument: string;
+        locale: string;
+        wording: string | null;
+        totalScore: number;
+      }>;
+    };
+  };
+  return data.assessments.map(
+    ({ instrument, locale, wording, totalScore }) => ({
+      instrument,
+      locale,
+      wording,
+      totalScore,
+    }),
+  );
+}
+
+test.describe("WHO-5 check-in, word for word", () => {
+  test.use({ storageState: criticalStorageState("wellbeing") });
+  // Both locales write to the one account of the project, and each test
+  // empties it first; in order, so neither empties the other's mid-run.
+  test.describe.configure({ mode: "default" });
+
+  test.beforeEach(async ({}, testInfo) => {
+    // Fixture hygiene: what a previous run or a retry left on the account.
+    await resetCriticalAccount(criticalAccount("wellbeing", testInfo), [
+      "DELETE FROM mental_health_assessments WHERE user_id = $1",
+    ]);
+  });
+
+  for (const [locale, words] of Object.entries(WHO5_WORDING)) {
+    test(`${locale}: the form reads the ${words.validated ? "validated" : "HealthLog"} translation and the result is stored in it @critical`, async ({
+      page,
+    }) => {
+      test.setTimeout(90_000);
+      await openInLocale(page, locale);
+      await expect(page.locator("html")).toHaveAttribute("lang", locale);
+      await page
+        .locator('[data-slot="instrument-card"][data-instrument="WHO5"]')
+        .locator('[data-slot="instrument-card-start"]')
+        .click();
+
+      const wizard = page.locator(
+        '[data-slot="mental-health-check-in"][data-instrument="WHO5"]',
+      );
+      const step = (n: number) =>
+        wizard.locator(`[data-slot="check-in-step"][data-step="${n}"]`);
+
+      await expect(step(1)).toBeVisible();
+      await expect(
+        wizard.locator('[data-slot="check-in-progress"]'),
+      ).toContainText(words.progress);
+      await expect(step(1).locator('[data-slot="check-in-stem"]')).toHaveText(
+        words.stem,
+      );
+      await expect(
+        step(1).locator('[data-slot="check-in-question"]'),
+      ).toHaveText(words.first);
+      await expect(step(1).locator('[role="radio"]')).toHaveText([
+        ...words.anchors,
+      ]);
+      await expect(
+        wizard.locator('[data-slot="check-in-unvalidated-note"]'),
+      ).toHaveCount(words.validated ? 0 : 1);
+
+      // "Meistens" / "A maior parte do tempo" (value 4) on every item.
+      for (let n = 1; n <= 5; n++) {
+        await expect(step(n)).toBeVisible();
+        if (n === 5) {
+          await expect(
+            step(n).locator('[data-slot="check-in-question"]'),
+          ).toHaveText(words.last);
+        }
+        await step(n).getByRole("radio", { name: words.anchors[1] }).click();
+      }
+
+      await expect(
+        wizard.locator('[data-slot="check-in-review"]'),
+      ).toBeVisible();
+      const created = page.waitForResponse(
+        (res) =>
+          new URL(res.url()).pathname === "/api/mental-health/assessments" &&
+          res.request().method() === "POST",
+      );
+      await wizard.locator('[data-slot="check-in-submit"]').click();
+      expect((await created).status()).toBe(201);
+
+      // Five items at 4, times WHO-5's multiplier of 4.
+      const result = page.locator(
+        '[data-slot="mental-health-result"][data-instrument="WHO5"]',
+      );
+      await expect(result.locator('[data-slot="result-score"]')).toContainText(
+        "80",
+      );
+      await expect(
+        result.locator('[data-slot="result-wording-note"]'),
+      ).toHaveCount(words.validated ? 0 : 1);
+
+      expect(await storedAssessments(page)).toEqual([
+        {
+          instrument: "WHO5",
+          locale,
+          wording: words.validated ? "validated" : "unvalidated_translation",
+          totalScore: 80,
+        },
+      ]);
+    });
+  }
 });

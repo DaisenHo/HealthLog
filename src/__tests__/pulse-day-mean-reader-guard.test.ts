@@ -141,7 +141,7 @@ const TS_READERS: Record<string, Entry> = {
     exempt:
       "means several readings of a type the day route sends one by one (weight, blood pressure, glucose); pulse arrives as one server-side day value (`dayValueShape` in lib/day/values.ts)",
   },
-  "components/charts/health-chart.tsx": {
+  "components/charts/health-chart/series-math.ts": {
     exempt:
       "a rolling average over the points the chart draws: display smoothing, not a stated figure",
   },

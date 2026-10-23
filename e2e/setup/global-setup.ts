@@ -33,6 +33,7 @@ import {
 } from "@playwright/test";
 import pg from "pg";
 
+import { allCriticalAccounts, FORM_SIGN_IN_JOURNEYS } from "./critical-fixture";
 import { seedDayDoorsRecord } from "./day-doors-fixture";
 import { seedMobileRoutesRecord } from "./mobile-routes-fixture";
 
@@ -1539,6 +1540,49 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       [cuid(), now, E2E_BACKUP_ADMIN.username, E2E_BACKUP_DELEGATE.username],
     );
 
+    // ── the @critical journeys' accounts ─────────────────────────────────
+    //
+    // One per journey and per project; `critical-fixture.ts` says why. Every
+    // module a journey reaches is switched on (wellbeing and labs are opt-in),
+    // and the passkeys the sign-in journey registers go with the row's reset,
+    // so a re-run registers into an empty list rather than beside the last
+    // run's credential.
+    for (const account of allCriticalAccounts()) {
+      await pool.query(
+        `INSERT INTO users
+          (id, username, email, password_hash, role, created_at, updated_at,
+           onboarding_completed_at, onboarding_tour_completed,
+           module_preferences_json)
+         VALUES ($1, $2, $3, $4, 'USER', $5, $5, $5, true, $6::jsonb)
+         ON CONFLICT (username) DO UPDATE SET
+           email = EXCLUDED.email,
+           password_hash = EXCLUDED.password_hash,
+           updated_at = EXCLUDED.updated_at,
+           onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+           onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+           module_preferences_json = EXCLUDED.module_preferences_json,
+           totp_confirmed_at = NULL`,
+        [
+          cuid(),
+          account.username,
+          account.email,
+          await hashPassword(account.password),
+          now,
+          JSON.stringify({
+            mood: true,
+            labs: true,
+            mentalHealth: true,
+            medications: true,
+          }),
+        ],
+      );
+      await pool.query(
+        `DELETE FROM passkeys
+         WHERE user_id = (SELECT id FROM users WHERE username = $1)`,
+        [account.username],
+      );
+    }
+
     // Console (instead of structured logging) is intentional here —
     // global-setup runs outside the app's logging context, and the
     // line is useful when debugging a CI failure where the seed didn't
@@ -1708,6 +1752,13 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       `UPDATE users SET totp_confirmed_at = $2 WHERE username = $1`,
       [E2E_SETUP_CHILD.username, now],
     );
+
+    // The @critical journeys' jars. The sign-in journey signs in through the
+    // form in every test, so its account gets none.
+    for (const account of allCriticalAccounts()) {
+      if (FORM_SIGN_IN_JOURNEYS.has(account.journey)) continue;
+      await capture(account, account.storageStatePath);
+    }
   } finally {
     await pool.end();
   }

@@ -214,6 +214,9 @@ const eslintConfig = defineConfig([
       "src/components/charts/chart-runtime.ts",
       "src/components/admin/host-metrics-chart.tsx",
       "src/components/charts/health-chart.tsx",
+      // HealthChart's plot layers, imported by health-chart.tsx alone, so
+      // they sit inside the same chart-runtime graph.
+      "src/components/charts/health-chart/chart-layers.tsx",
       "src/components/charts/medication-compliance-chart.tsx",
       "src/components/charts/mood-chart.tsx",
       "src/components/charts/nutrient-daily-bar-chart.tsx",
