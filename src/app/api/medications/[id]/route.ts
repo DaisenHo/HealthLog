@@ -9,13 +9,8 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { updateMedicationSchema } from "@/lib/validations/medication";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import {
@@ -372,16 +367,10 @@ export const PUT = apiHandler(
       return apiError("Medication not found", 404);
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, updateMedicationSchema, {
       maxBytes: 64 * 1024,
     });
-
-    if (jsonError) return jsonError;
-    const parsed = updateMedicationSchema.safeParse(body);
-    if (!parsed.success) {
-      // v1.4.43 — multi-issue 422.
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
 
     // ── v1.39.1 (#1033) — a record-only schedule is only replaced knowingly ──
     //

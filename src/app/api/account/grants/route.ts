@@ -54,13 +54,8 @@ import {
   requireRecentProof,
   MFA_STEP_UP_MAX_AGE_SECONDS,
 } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { getAuditLogRetentionDays } from "@/lib/jobs/audit-log-cleanup";
@@ -163,17 +158,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Too many invitations, try again later", 429);
   }
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, inviteGrantSchema, {
     maxBytes: 8 * 1024,
+    errorCode: "sharing.invite.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = inviteGrantSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "sharing.invite.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { identifier, expiresAt, access, scope } = parsed.data;
 

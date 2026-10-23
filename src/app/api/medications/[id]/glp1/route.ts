@@ -18,13 +18,8 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { glp1PostBodySchema } from "@/lib/validations/medication";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
@@ -283,16 +278,10 @@ async function postGlp1Update(
     });
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, glp1PostBodySchema, {
     maxBytes: 64 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = glp1PostBodySchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — multi-issue 422.
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const ip = getClientIp(request);
 

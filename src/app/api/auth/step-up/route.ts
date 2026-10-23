@@ -30,14 +30,8 @@
  */
 import { NextRequest } from "next/server";
 import { apiHandler, requireBearerAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  apiValidationError,
-  getClientIp,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
@@ -110,19 +104,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, stepUpMintSchema, {
     maxBytes: 64 * 1024,
+    message: "Invalid request",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = stepUpMintSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiValidationError(
-      "Invalid request",
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-    );
-  }
+  if (!parsed.ok) return parsed.error;
 
   const method: StepUpMethod = parsed.data.method;
   // The shared verifier: the same challenge ownership and ceremony checks, and

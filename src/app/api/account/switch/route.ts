@@ -55,13 +55,8 @@ import {
   requireActorAuth,
   SharingAccessDeniedError,
 } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -83,17 +78,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, switchAccountSchema, {
     maxBytes: 4 * 1024,
+    errorCode: "sharing.switch.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = switchAccountSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "sharing.switch.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { accountId, expectedEpoch } = parsed.data;
   const ip = getClientIp(request);

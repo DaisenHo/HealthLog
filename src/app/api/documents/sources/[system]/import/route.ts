@@ -36,13 +36,8 @@ import { Buffer } from "node:buffer";
 import { NextRequest, NextResponse } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiValidationError,
-  getClientIp,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { getAiCapability } from "@/lib/ai/capabilities/gate";
 import { prisma } from "@/lib/db";
 import {
@@ -176,18 +171,11 @@ export const POST = apiHandler(
     if (system instanceof Response) return system;
     const userId = auth.user.id;
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, documentSourceImportSchema, {
       maxBytes: 4 * 1024,
+      message: "Invalid import request",
     });
-    if (jsonError) return jsonError;
-    const parsed = documentSourceImportSchema.safeParse(body);
-    if (!parsed.success) {
-      return apiValidationError(
-        "Invalid import request",
-        sanitiseZodIssues(parsed.error.issues),
-        422,
-      );
-    }
+    if (!parsed.ok) return parsed.error;
     const { sourceId, kind, link } = parsed.data;
     // Only an id this system could have issued goes into a request path.
     if (!isSourceDocumentId(system, sourceId)) {
