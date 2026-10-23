@@ -35,6 +35,17 @@ export async function register() {
       // A readiness summary must never break boot.
     }
 
+    // The admin notice for a host whose login-IP lookups leave it. The geo
+    // resolver evaluates it on its first public-IP lookup; it holds a slot
+    // rather than importing the notification layer (see the notice module).
+    try {
+      const { registerOfflineGeoNotice } =
+        await import("@/lib/notifications/offline-geo-notice");
+      registerOfflineGeoNotice();
+    } catch {
+      // Without it the lookups still resolve; only the notice is missing.
+    }
+
     // Does the configured encryption key open this database? A process whose
     // key does not refuses every API request with one clear 503 and starts
     // neither the producer nor the worker (a wrong key must never write).
