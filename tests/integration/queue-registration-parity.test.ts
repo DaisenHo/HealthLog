@@ -71,21 +71,8 @@ function recordingBoss(real: PgBoss): PgBoss {
 }
 
 async function registerEveryQueue(target: PgBoss): Promise<void> {
-  const [integration, status, rollup, reminders, maintenance] =
-    await Promise.all([
-      import("@/lib/jobs/reminder/register-integration-sync"),
-      import("@/lib/jobs/reminder/register-status"),
-      import("@/lib/jobs/reminder/register-rollup"),
-      import("@/lib/jobs/reminder/register-reminders"),
-      import("@/lib/jobs/reminder/register-maintenance"),
-    ]);
-  returned.push(
-    ...(await integration.registerIntegrationSyncQueues(target)),
-    ...(await status.registerStatusQueues(target)),
-    ...(await rollup.registerRollupQueues(target)),
-    ...(await reminders.registerReminderQueues(target)),
-    ...(await maintenance.registerMaintenanceQueues(target)),
-  );
+  const { registerAllJobGroups } = await import("@/lib/jobs/registry/index");
+  returned.push(...(await registerAllJobGroups(target)));
 }
 
 beforeAll(async () => {
@@ -141,5 +128,19 @@ describe("queue registration", () => {
     // A floor, so an empty registration cannot pass by matching an empty
     // golden.
     expect(returned.length).toBeGreaterThan(100);
+  });
+
+  it("loads a function for every handler it declares", async () => {
+    // A handler module loads on its queue's first job; a broken import would
+    // otherwise surface only when that job arrives in production.
+    const { allJobDefinitions } = await import("@/lib/jobs/registry/index");
+    const definitions = allJobDefinitions();
+    expect(definitions.length).toBe(returned.length);
+    const unloaded: string[] = [];
+    for (const definition of definitions) {
+      const handler = await definition.load({ boss });
+      if (typeof handler !== "function") unloaded.push(definition.queue);
+    }
+    expect(unloaded).toEqual([]);
   });
 });

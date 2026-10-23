@@ -17,7 +17,7 @@ import {
 } from "@/lib/google-health/client";
 import { getUserGoogleHealthCredentials } from "@/lib/google-health/credentials";
 import { GOOGLE_HEALTH_OAUTH_STATE_COOKIE } from "@/lib/google-health/oauth-state";
-import { GOOGLE_HEALTH_BACKFILL_QUEUE } from "@/lib/jobs/google-health-backfill";
+import { GOOGLE_HEALTH_BACKFILL_QUEUE } from "@/lib/jobs/google-health-backfill-queue";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";

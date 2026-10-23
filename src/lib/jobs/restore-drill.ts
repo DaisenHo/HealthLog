@@ -48,24 +48,7 @@ import { reportWorkerError } from "@/lib/jobs/report-worker-error";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
-
-export const RESTORE_DRILL_QUEUE = "data-restore-drill";
-export const RESTORE_DRILL_CRON = "11 4 1 * *";
-
-/**
- * Four hours, the off-host upload's own window: the drill downloads and
- * stream-parses every object that upload wrote in one night.
- */
-export const RESTORE_DRILL_EXPIRE_SECONDS = 4 * 60 * 60;
-
-/**
- * What the monthly schedule sends with: the expiry above and no retry
- * (`retryLimit: 0`, the maintenance schedules' `cronIsTheRetry`).
- */
-export const RESTORE_DRILL_SEND_OPTIONS = {
-  expireInSeconds: RESTORE_DRILL_EXPIRE_SECONDS,
-  retryLimit: 0,
-} as const;
+import { RESTORE_DRILL_QUEUE } from "./restore-drill-queue";
 
 /**
  * A drill run that finds the newest backup older than this is reported

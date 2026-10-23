@@ -31,10 +31,6 @@ import { resolveModuleMap } from "@/lib/modules/gate";
 import { buildAchievementsResult } from "@/lib/gamification/achievements-result";
 import { getWorkerPrisma } from "./reminder/shared";
 
-export const ACHIEVEMENT_UNLOCK_SWEEP_QUEUE = "achievement-unlock-sweep";
-
-export const ACHIEVEMENT_UNLOCK_SWEEP_CRON = "25 4 * * *";
-
 export interface AchievementUnlockSweepPayload {
   triggeredAt: string;
 }

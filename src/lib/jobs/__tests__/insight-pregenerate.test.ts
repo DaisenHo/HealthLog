@@ -1,5 +1,5 @@
 /**
- * v1.7.0 — unit tests for the nightly insight pre-generation cron.
+ * Unit tests for the nightly insight pre-generation cron.
  *
  * Covers:
  *   - the discovery query selects stale-cache users who kept AI analysis
@@ -14,12 +14,10 @@
  *   - the warm pass is single-locale + refill-only (v1.16.8);
  *   - the forced single-user warm is idempotent (freshness re-check),
  *     backs off after a failure, and is capped per day (v1.16.8);
- *   - the queue is registered in `allQueues` AND scheduled in
- *     reminder-worker.ts (the v1.4.37 W10 unregistered-queue catch).
+ *   - the worker registry declares the queue, schedules its cron and binds
+ *     its handler (the unregistered-queue catch).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
 
 const checkRateLimit = vi.fn();
 const getAssistantFlags = vi.fn();
@@ -128,8 +126,18 @@ import {
   PREGENERATE_STALE_MS,
   FORCE_WARM_DAILY_LIMIT,
   INSIGHT_PREGENERATE_QUEUE,
-  INSIGHT_PREGENERATE_CRON,
 } from "../insight-pregenerate";
+import {
+  INSIGHT_PREGENERATE_CRON,
+  INSIGHT_PREGENERATE_EXPIRE_SECONDS,
+} from "../insight-pregenerate-shared";
+import { handleInsightPregenerateJob } from "../reminder/insights-handlers";
+import { insightRetryOptions } from "../reminder/registrar-shared";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "../registry/__tests__/registry-helpers";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 
 function makePrisma(
@@ -1402,29 +1410,22 @@ describe("forceWarmUser — on-demand single-user warm (v1.8.7.1)", () => {
 });
 
 describe("queue registration", () => {
-  // v1.18.1 — the insight-pregenerate wiring moved out of the 2143-LOC
-  // reminder-worker boot file into the status registrar. The dead-queue guard
-  // follows the wiring there.
-  const workerSrc = fs.readFileSync(
-    path.resolve(__dirname, "../reminder/register-status.ts"),
-    "utf8",
-  );
-
-  it("registers the queue name in the allQueues createQueue loop", () => {
-    const match = workerSrc.match(/const allQueues\s*=\s*\[([\s\S]*?)\];/);
-    expect(match).not.toBeNull();
-    expect(match![1]).toMatch(/\bINSIGHT_PREGENERATE_QUEUE\b/);
+  it("declares the queue in the status group", () => {
+    expect(groupOf(INSIGHT_PREGENERATE_QUEUE).name).toBe("status");
   });
 
-  it("schedules the cron in the schedules table (with retry policy)", () => {
-    expect(workerSrc).toMatch(
-      /\[\s*INSIGHT_PREGENERATE_QUEUE\s*,\s*INSIGHT_PREGENERATE_CRON\s*,\s*\{\s*\.\.\.insightRetryOptions\s*,\s*expireInSeconds:\s*INSIGHT_PREGENERATE_EXPIRE_SECONDS\s*,?\s*\}\s*,?\s*\]/,
-    );
+  it("schedules the cron with the retry policy", () => {
+    const job = jobOf(INSIGHT_PREGENERATE_QUEUE);
+    expect(job.cron).toBe(INSIGHT_PREGENERATE_CRON);
+    expect(job.scheduleOptions).toEqual({
+      ...insightRetryOptions,
+      expireInSeconds: INSIGHT_PREGENERATE_EXPIRE_SECONDS,
+    });
   });
 
-  it("registers a createAndWork handler for the queue", () => {
-    expect(workerSrc).toMatch(
-      /createAndWork[\s\S]{0,80}INSIGHT_PREGENERATE_QUEUE/,
+  it("binds the pre-generation handler to the queue", async () => {
+    expect(await loadedHandler(INSIGHT_PREGENERATE_QUEUE)).toBe(
+      handleInsightPregenerateJob,
     );
   });
 

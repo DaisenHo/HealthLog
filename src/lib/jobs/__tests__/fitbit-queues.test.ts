@@ -1,12 +1,12 @@
 /**
- * v1.12.0 — pg-boss queue registration for the Fitbit / Google Health sync layer.
+ * pg-boss queue registration for the Fitbit sync layer.
  *
- * The reminder-worker imports heavy infrastructure (pg-boss, Prisma adapter,
- * notification dispatchers, …) so we don't boot the whole worker here. Instead we
- * read the source as text and assert the queue constants + cron schedules +
- * handler wiring + allQueues + boot-enqueue are present — the fast guard that
- * catches the v1.4.37 dead-queue class (a queue declared but never registered in
- * `allQueues`, which silently never drains).
+ * Reads the worker registry instead of booting the worker: every Fitbit queue
+ * is declared in the integration-sync group with its cron and handler, the
+ * full-history queues forward to the shared admission lane, and the boot
+ * discovery offers the backfill and the sleep repair again. This is the fast
+ * guard for the dead-queue class (a queue declared but never registered,
+ * which silently never drains).
  *
  * Fitbit is poll-only at launch (no webhook — Pub/Sub deferred), so a single
  * hourly `fitbit-sync` queue drives the per-user `syncUserFitbit` driver across
@@ -17,81 +17,101 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-// v1.18.1 — the queue wiring + boot discovery moved out of the 2143-LOC
-// reminder-worker boot file into domain registrars; the Fitbit queues live in
-// the integration-sync registrar. The dead-queue guard follows the wiring there
-// (the handler module is still concatenated for the import-routine assertions).
-const REGISTRAR_PATH = join(
-  __dirname,
-  "..",
-  "reminder",
-  "register-integration-sync.ts",
-);
-const source =
-  readFileSync(REGISTRAR_PATH, "utf8") +
-  readFileSync(join(__dirname, "..", "reminder", "fitbit-sync.ts"), "utf8");
+import {
+  FITBIT_BACKFILL_QUEUE,
+  FITBIT_OAUTH_STATE_CLEANUP_CRON,
+  FITBIT_OAUTH_STATE_CLEANUP_QUEUE,
+  FITBIT_SLEEP_REPAIR_QUEUE,
+  FITBIT_SYNC_CRON,
+  FITBIT_SYNC_QUEUE,
+} from "@/lib/fitbit/jobs/queues";
+import { INTEGRATION_BACKFILL_ADMISSION_QUEUE } from "@/lib/jobs/integration-backfill-admission";
+import {
+  handleFitbitOAuthStateCleanup,
+  handleFitbitSync,
+} from "@/lib/jobs/reminder/fitbit-sync";
+import { cronIsTheRetry } from "@/lib/jobs/reminder/registrar-shared";
+import {
+  discoveryOf,
+  groupOf,
+  jobOf,
+  loadedHandler,
+  recordingBoss,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
 
-const FITBIT_QUEUE_CONSTS = [
-  "FITBIT_SYNC_QUEUE",
-  "FITBIT_BACKFILL_QUEUE",
-  "FITBIT_SLEEP_REPAIR_QUEUE",
-  "FITBIT_OAUTH_STATE_CLEANUP_QUEUE",
+const handlerSource = readFileSync(
+  join(__dirname, "..", "reminder", "fitbit-sync.ts"),
+  "utf8",
+);
+
+const FITBIT_QUEUES = [
+  FITBIT_SYNC_QUEUE,
+  FITBIT_BACKFILL_QUEUE,
+  FITBIT_SLEEP_REPAIR_QUEUE,
+  FITBIT_OAUTH_STATE_CLEANUP_QUEUE,
 ] as const;
 
-describe("reminder-worker — Fitbit sync queues", () => {
+/** The admission sends the source queue's handler makes for one job. */
+async function forwardOneJob(queue: string) {
+  const { boss, sends } = recordingBoss();
+  const handler = await jobOf(queue).load({ boss });
+  await handler([
+    {
+      id: "j1",
+      name: queue,
+      data: { userId: "u1" },
+      expireInSeconds: 60,
+      heartbeatSeconds: null,
+      retryCount: 0,
+      signal: new AbortController().signal,
+    },
+  ]);
+  return sends;
+}
+
+describe("Fitbit sync queues", () => {
   it("declares the Fitbit sync + oauth-state-cleanup queue constants", () => {
-    expect(source).toMatch(/FITBIT_SYNC_QUEUE\s*=\s*["']fitbit-sync["']/);
-    expect(source).toMatch(
-      /FITBIT_OAUTH_STATE_CLEANUP_QUEUE\s*=\s*["']fitbit-oauth-state-cleanup["']/,
-    );
+    expect(FITBIT_SYNC_QUEUE).toBe("fitbit-sync");
+    expect(FITBIT_OAUTH_STATE_CLEANUP_QUEUE).toBe("fitbit-oauth-state-cleanup");
   });
 
-  it("registers EVERY Fitbit queue in allQueues (v1.4.37 dead-queue guard)", () => {
-    const block = /const allQueues = \[([\s\S]*?)\];/.exec(source);
-    expect(block).not.toBeNull();
-    const body = block![1]!;
-    for (const q of FITBIT_QUEUE_CONSTS) {
-      expect(body).toContain(q);
+  it("declares EVERY Fitbit queue in the integration-sync group", () => {
+    for (const q of FITBIT_QUEUES) {
+      expect(groupOf(q).name).toBe("integration_sync");
     }
   });
 
   it("schedules the hourly poll cron + the daily oauth-state sweep", () => {
-    expect(source).toMatch(/\[FITBIT_SYNC_QUEUE,\s*FITBIT_SYNC_CRON\]/);
-    expect(source).toMatch(
-      /\[\s*FITBIT_OAUTH_STATE_CLEANUP_QUEUE,\s*FITBIT_OAUTH_STATE_CLEANUP_CRON,\s*cronIsTheRetry,?\s*\]/,
-    );
+    expect(jobOf(FITBIT_SYNC_QUEUE).cron).toBe(FITBIT_SYNC_CRON);
+    expect(jobOf(FITBIT_SYNC_QUEUE).scheduleOptions).toBeUndefined();
+    const sweep = jobOf(FITBIT_OAUTH_STATE_CLEANUP_QUEUE);
+    expect(sweep.cron).toBe(FITBIT_OAUTH_STATE_CLEANUP_CRON);
+    expect(sweep.scheduleOptions).toBe(cronIsTheRetry);
   });
 
-  it("registers a createAndWork handler for every Fitbit queue", () => {
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,160}FITBIT_SYNC_QUEUE[\s\S]{0,160}handleFitbitSync/,
+  it("binds a handler for every Fitbit queue", async () => {
+    expect(await loadedHandler(FITBIT_SYNC_QUEUE)).toBe(handleFitbitSync);
+    expect(await loadedHandler(FITBIT_OAUTH_STATE_CLEANUP_QUEUE)).toBe(
+      handleFitbitOAuthStateCleanup,
     );
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,200}FITBIT_BACKFILL_QUEUE[\s\S]{0,260}enqueueIntegrationBackfillAdmission/,
-    );
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,200}FITBIT_SLEEP_REPAIR_QUEUE[\s\S]{0,260}enqueueIntegrationBackfillAdmission/,
-    );
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,160}FITBIT_OAUTH_STATE_CLEANUP_QUEUE[\s\S]{0,160}handleFitbitOAuthStateCleanup/,
-    );
+    for (const [queue, kind] of [
+      [FITBIT_BACKFILL_QUEUE, "fitbit-backfill"],
+      [FITBIT_SLEEP_REPAIR_QUEUE, "fitbit-sleep-repair"],
+    ] as const) {
+      const sends = await forwardOneJob(queue);
+      expect(sends).toHaveLength(1);
+      expect(sends[0]!.queue).toBe(INTEGRATION_BACKFILL_ADMISSION_QUEUE);
+      expect(sends[0]!.data).toMatchObject({ kind, data: { userId: "u1" } });
+    }
   });
 
-  it("wires the self-converging Fitbit backfill boot discovery", () => {
-    expect(source).toMatch(
-      /enqueueBootTimeFitbitBackfill\(\s*bootStaggerSecondsFor\("fitbit-backfill"\)/,
-    );
+  it("wires the self-converging backfill and the one-shot sleep-repair boot discovery", () => {
+    const passes = discoveryOf("integration_sync");
+    expect(passes).toContain("fitbit-backfill");
+    expect(passes).toContain("fitbit-sleep-repair");
   });
 
-  it("wires the one-shot Fitbit sleep-repair boot discovery", () => {
-    expect(source).toMatch(
-      /enqueueBootTimeFitbitSleepRepair\(\s*bootStaggerSecondsFor\("fitbit-sleep-repair"\)/,
-    );
-    expect(source).toMatch(/from\s*["']@\/lib\/jobs\/fitbit-sleep-repair["']/);
-  });
-
-  it("imports the Fitbit sync driver + backfill exports", () => {
-    expect(source).toMatch(/from\s*["']@\/lib\/fitbit\/sync["']/);
-    expect(source).toMatch(/from\s*["']@\/lib\/jobs\/fitbit-backfill["']/);
+  it("imports the Fitbit sync driver into the handler module", () => {
+    expect(handlerSource).toMatch(/from\s*["']@\/lib\/fitbit\/sync["']/);
   });
 });

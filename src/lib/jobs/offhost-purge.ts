@@ -46,10 +46,7 @@ import { reportWorkerError } from "@/lib/jobs/report-worker-error";
 import { getWorkerPrisma } from "@/lib/jobs/reminder/shared";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { logCaught } from "@/lib/logging/signal";
-
-export const OFFHOST_PURGE_QUEUE = "offhost-backup-purge";
-/** 03:40, after the nightly upload (02:30) has had its hour. */
-export const OFFHOST_PURGE_CRON = "40 3 * * *";
+import { OFFHOST_PURGE_QUEUE } from "./offhost-purge-queue";
 
 export type OffhostPurgeReason =
   "account_deleted" | "data_wiped" | "managed_profile_deleted";

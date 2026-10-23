@@ -40,15 +40,7 @@ import {
   syncUserSleep as syncWithingsSleep,
 } from "@/lib/withings/sync-sleep";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
-
-export const SLEEP_TIMELINE_BACKFILL_QUEUE = "sleep-timeline-backfill";
-
-/**
- * Serial concurrency — a pass deletes a source's sleep rows then walks a
- * re-sync that is rate-bounded by the upstream API cap. Concurrency-1 keeps it
- * from crowding the request pool, matching the other backfill queues.
- */
-export const SLEEP_TIMELINE_BACKFILL_CONCURRENCY = 1;
+import { SLEEP_TIMELINE_BACKFILL_QUEUE } from "./sleep-timeline-backfill-queue";
 
 export type SleepTimelineProvider = "WHOOP" | "WITHINGS";
 

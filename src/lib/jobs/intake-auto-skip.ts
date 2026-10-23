@@ -73,15 +73,6 @@ import {
 } from "@/lib/medications/scheduling/live-era";
 import { INTAKE_AUTO_TAKE_LOOKBACK_MS } from "@/lib/jobs/intake-auto-take";
 
-export const INTAKE_AUTO_SKIP_QUEUE = "intake-auto-skip";
-
-/**
- * Cron schedule. Hourly at :05 so the tick doesn't collide with the
- * top-of-the-hour reminder-check (:00) or the rollup fold (:30)
- * cadences. Europe/Berlin matches the rest of the worker's schedules.
- */
-export const INTAKE_AUTO_SKIP_CRON = "5 * * * *";
-
 /**
  * Grace floor before auto-skip kicks in. 24 h matches the spec and
  * the user's real-world cadence (late entries up to a full day after

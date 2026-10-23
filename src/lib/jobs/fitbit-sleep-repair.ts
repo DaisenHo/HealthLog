@@ -46,15 +46,7 @@ import {
 } from "@/lib/fitbit/sync-core";
 import { syncUserSleep } from "@/lib/fitbit/sync-sleep";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
-
-export const FITBIT_SLEEP_REPAIR_QUEUE = "fitbit-sleep-repair";
-
-/**
- * Serial concurrency — a repair walks a year of sleep history for one account
- * in 30-day requests against the tight per-user budget; concurrency-1 keeps it
- * from crowding the request pool, matching `FITBIT_BACKFILL_CONCURRENCY`.
- */
-export const FITBIT_SLEEP_REPAIR_CONCURRENCY = 1;
+import { FITBIT_SLEEP_REPAIR_QUEUE } from "./../fitbit/jobs/queues";
 
 export interface FitbitSleepRepairPayload {
   userId: string;

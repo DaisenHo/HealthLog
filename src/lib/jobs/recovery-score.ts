@@ -24,16 +24,6 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { persistRecoveryScore } from "@/lib/insights/recovery-score";
 import { runScoreBatch } from "@/lib/insights/score-row";
 
-export const RECOVERY_SCORE_QUEUE = "recovery-score-compute";
-
-/**
- * Daily at 04:45 Europe/Berlin — inside the existing 03:xx–04:xx maintenance
- * window, after the cumulative drain (03:45) + the daily-mean consolidation
- * and the insight pre-generation (04:30) so the nightly signals it reads are
- * already folded into the rollup tier by the time it runs.
- */
-export const RECOVERY_SCORE_CRON = "45 4 * * *";
-
 /**
  * Per-run user cap. A nightly fan-out across every user could starve the
  * pool; the discovery query is ordered so users with the most recent vital

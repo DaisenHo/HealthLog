@@ -27,10 +27,8 @@ import { markReconnected } from "@/lib/integrations/status";
 import { OURA_SYNC_QUEUE } from "@/lib/jobs/integration-poll-queues";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
-import {
-  OURA_BACKFILL_QUEUE,
-  type OuraBackfillPayload,
-} from "@/lib/jobs/oura-backfill";
+import { type OuraBackfillPayload } from "@/lib/jobs/oura-backfill";
+import { OURA_BACKFILL_QUEUE } from "@/lib/jobs/oura-backfill-queue";
 import { NextRequest, NextResponse } from "next/server";
 
 /**

@@ -30,11 +30,7 @@ import {
 import { daysBetweenDateKeys, shiftDateKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { DAWARICH_SYNC_MAX_DAYS } from "@/lib/validations/dawarich";
-
-export const DAWARICH_SYNC_QUEUE = "dawarich-sync";
-
-/** Daily 03:20 Europe/Berlin, after the night's environment fetch. */
-export const DAWARICH_SYNC_CRON = "20 3 * * *";
+import { DAWARICH_SYNC_QUEUE } from "./dawarich-sync-queue";
 
 /** The nightly window: yesterday and the six days before it. */
 const NIGHTLY_WINDOW_DAYS = 7;

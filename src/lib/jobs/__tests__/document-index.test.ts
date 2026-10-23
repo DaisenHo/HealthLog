@@ -15,11 +15,8 @@ vi.mock("@/lib/documents/auto-stage-labs", () => ({
   maybeAutoStageLabFacts: vi.fn().mockResolvedValue(undefined),
 }));
 
-import {
-  DOCUMENT_INDEX_QUEUE,
-  enqueueDocumentIndex,
-  runDocumentIndex,
-} from "../document-index";
+import { enqueueDocumentIndex, runDocumentIndex } from "../document-index";
+import { DOCUMENT_INDEX_QUEUE } from "../document-index-queue";
 import { indexDocumentContent } from "@/lib/documents/index-document";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { maybeAutoStageLabFacts } from "@/lib/documents/auto-stage-labs";

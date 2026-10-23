@@ -68,11 +68,7 @@ import {
   withoutDenied,
   type OuraBackfillProgress,
 } from "@/lib/oura/backfill-progress";
-
-export const OURA_BACKFILL_QUEUE = "oura-backfill";
-
-/** One account at a time; the shared lane bounds the instance. */
-export const OURA_BACKFILL_CONCURRENCY = 1;
+import { OURA_BACKFILL_QUEUE } from "./oura-backfill-queue";
 
 /**
  * One slice: five minutes of walking, then the account is let go and the

@@ -67,8 +67,7 @@ import {
   findCompactionTombstones,
 } from "@/lib/measurements/folded-window";
 import { prisma as defaultPrisma } from "@/lib/db";
-
-export const COMPACTION_TOMBSTONE_PURGE_QUEUE = "compaction-tombstone-purge";
+import { COMPACTION_TOMBSTONE_PURGE_QUEUE } from "./compaction-tombstone-purge-queue";
 
 /** One key for every send, so a queued run absorbs a second boot's send. */
 export const COMPACTION_TOMBSTONE_PURGE_SINGLETON_KEY =

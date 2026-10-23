@@ -21,15 +21,7 @@ import {
 } from "@/lib/integrations/page-walk";
 import { syncUserFitbit } from "@/lib/fitbit/sync";
 import { isFitbitRetired } from "@/lib/fitbit/retirement";
-
-export const FITBIT_BACKFILL_QUEUE = "fitbit-backfill";
-
-/**
- * Serial concurrency — a backfill walks years of history for one account and is
- * rate-bounded by Google's per-app quota; concurrency-1 keeps it from crowding
- * the request pool, matching `WHOOP_BACKFILL_CONCURRENCY`.
- */
-export const FITBIT_BACKFILL_CONCURRENCY = 1;
+import { FITBIT_BACKFILL_QUEUE } from "./../fitbit/jobs/queues";
 
 export interface FitbitBackfillPayload {
   userId: string;

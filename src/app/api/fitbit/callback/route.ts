@@ -15,7 +15,7 @@ import {
 } from "@/lib/fitbit/client";
 import { getUserFitbitCredentials } from "@/lib/fitbit/credentials";
 import { FITBIT_OAUTH_STATE_COOKIE } from "@/lib/fitbit/oauth-state";
-import { FITBIT_BACKFILL_QUEUE } from "@/lib/jobs/fitbit-backfill";
+import { FITBIT_BACKFILL_QUEUE } from "@/lib/fitbit/jobs/queues";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";

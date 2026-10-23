@@ -86,15 +86,6 @@ import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
-/** Pg-boss queue + cron — imported by the reminder worker's bootstrap. */
-export const MEDICATION_LOW_STOCK_QUEUE = "medication-low-stock";
-/**
- * 09:00 Europe/Berlin — a supply alert is an errand prompt ("order a
- * refill"), not a night signal; it fires once daily at a time the user
- * can act on it.
- */
-export const MEDICATION_LOW_STOCK_CRON = "0 9 * * *";
-
 /**
  * An as-needed medication warns when this many doses or fewer are left: no
  * cadence says how many days that is, so the floor is a dose count.

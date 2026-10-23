@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 410,
-  "total": 147795,
+  "count": 403,
+  "total": 144626,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -368,13 +368,6 @@
     "lib/jobs/reaction-line.ts :: runReactionLine": 337,
     "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck": 619,
     "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck > withBackgroundEvent(arg)": 614,
-    "lib/jobs/reminder/register-integration-sync.ts :: enqueueIntegrationSyncBootDiscovery": 224,
-    "lib/jobs/reminder/register-integration-sync.ts :: registerIntegrationSyncQueues": 320,
-    "lib/jobs/reminder/register-maintenance.ts :: enqueueMaintenanceBootDiscovery": 232,
-    "lib/jobs/reminder/register-maintenance.ts :: registerMaintenanceQueues": 997,
-    "lib/jobs/reminder/register-rollup.ts :: enqueueRollupBootDiscovery": 238,
-    "lib/jobs/reminder/register-rollup.ts :: registerRollupQueues": 616,
-    "lib/jobs/reminder/register-status.ts :: registerStatusQueues": 542,
     "lib/jobs/workout-insight-generate.ts :: runWorkoutInsightGenerate": 324,
     "lib/labs/biomarker-merge.ts :: runMerge": 254,
     "lib/labs/ocr-extract.ts :: runOcrExtraction": 207,

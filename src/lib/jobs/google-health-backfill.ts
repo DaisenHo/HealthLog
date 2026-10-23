@@ -44,15 +44,7 @@ import {
 import { reportJobProgress } from "@/lib/jobs/job-observer";
 import { LANE_YIELD_DELAY_SECONDS, laneWanted } from "@/lib/jobs/heavy-lane";
 import { GOOGLE_HEALTH_COLLECTION_KEYS } from "@/lib/google-health/collection-keys";
-
-export const GOOGLE_HEALTH_BACKFILL_QUEUE = "google-health-backfill";
-
-/**
- * Serial concurrency — a backfill walks years of history for one account and is
- * rate-bounded by Google's per-app quota; concurrency-1 keeps it from crowding
- * the request pool, matching `FITBIT_BACKFILL_CONCURRENCY`.
- */
-export const GOOGLE_HEALTH_BACKFILL_CONCURRENCY = 1;
+import { GOOGLE_HEALTH_BACKFILL_QUEUE } from "./google-health-backfill-queue";
 
 /**
  * One slice of a backfill: how long it walks and how many pages it reads

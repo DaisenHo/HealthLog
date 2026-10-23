@@ -32,10 +32,10 @@ import {
 import { readBackupPassActivity } from "@/lib/jobs/backup-pass-attempts";
 import { summariseBackupSchedule } from "@/lib/jobs/backup-schedule-status";
 import {
-  OFFHOST_BACKUP_QUEUE,
   offhostBackupConfigured,
   probeOffhostLifecycle,
 } from "@/lib/jobs/offhost-backup";
+import { OFFHOST_BACKUP_QUEUE } from "@/lib/jobs/offhost-backup-queue";
 import {
   classifyOffhostBackup,
   OFFHOST_BACKUP_PERIOD_HOURS,

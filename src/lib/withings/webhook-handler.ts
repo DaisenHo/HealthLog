@@ -31,6 +31,10 @@ import { getClientIp, safeJson } from "@/lib/api-response";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueWithingsEcgSync } from "@/lib/jobs/withings-ecg-queue";
+import {
+  WITHINGS_ACTIVITY_QUEUE,
+  WITHINGS_SLEEP_QUEUE,
+} from "@/lib/jobs/integration-poll-queues";
 
 /**
  * v1.4.25 — appli categories that have their own sync routine
@@ -41,8 +45,6 @@ import { enqueueWithingsEcgSync } from "@/lib/jobs/withings-ecg-queue";
  */
 const WITHINGS_ACTIVITY_APPLI = 16;
 const WITHINGS_SLEEP_APPLI = 44;
-const WITHINGS_ACTIVITY_QUEUE = "withings-activity-sync";
-const WITHINGS_SLEEP_QUEUE = "withings-sleep-sync";
 
 /**
  * Constant-time comparison helper. Returns false unless both inputs have

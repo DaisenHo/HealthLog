@@ -18,7 +18,7 @@ import {
 } from "@/lib/oauth/signed-state";
 import { runOAuthCallbackOnce } from "@/lib/oauth/callback-claim";
 import { markReconnected } from "@/lib/integrations/status";
-import { STRAVA_BACKFILL_QUEUE } from "@/lib/jobs/strava-backfill";
+import { STRAVA_BACKFILL_QUEUE } from "@/lib/jobs/strava-backfill-queue";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { NextRequest, NextResponse } from "next/server";
 

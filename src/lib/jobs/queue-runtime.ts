@@ -6,7 +6,7 @@
  * it, and it does not stop the handler, so a job that legitimately needs longer
  * ends up running twice beside itself. No queue policy prevents that: the
  * policies constrain job rows, and an expired row is no longer active. Every
- * queue bound with `createAndWork` is therefore declared here as one of:
+ * queue the worker registry declares is therefore declared here as one of:
  *
  *   - `short`: a job cannot come near fifteen minutes (one account's bounded
  *     window, one document, a forwarder, a bounded delete). It relies on the
@@ -28,15 +28,15 @@
 import { INTEGRATION_BACKFILL_EXPIRE_SECONDS } from "@/lib/jobs/integration-backfill-admission";
 import { NIGHTLY_INSIGHT_PASS_EXPIRE_SECONDS } from "@/lib/jobs/reminder/registrar-shared";
 import { INSIGHT_PREGENERATE_EXPIRE_SECONDS } from "@/lib/jobs/insight-pregenerate-shared";
-import { PERIOD_NARRATIVE_EXPIRE_SECONDS } from "@/lib/jobs/period-narrative-shared";
+import { PERIOD_NARRATIVE_EXPIRE_SECONDS } from "@/lib/jobs/period-narrative-queue";
 import { PR_DETECTION_EXPIRE_SECONDS } from "@/lib/jobs/pr-detection";
 import { ENCRYPTION_KEY_ROTATE_EXPIRE_SECONDS } from "@/lib/jobs/encryption-key-rotate";
 import { CONTENT_INDEX_BACKFILL_EXPIRE_SECONDS } from "@/lib/jobs/document-content-index-backfill";
 import { DOCUMENT_AI_RUN_EXPIRE_SECONDS } from "@/lib/jobs/document-ai-run";
 import { DATA_BACKUP_SEND_OPTIONS } from "@/lib/jobs/data-backup-policy";
-import { OFFHOST_BACKUP_EXPIRE_SECONDS } from "@/lib/jobs/offhost-backup";
+import { OFFHOST_BACKUP_EXPIRE_SECONDS } from "@/lib/jobs/offhost-backup-queue";
 import { BACKUP_RESTORE_EXPIRE_SECONDS } from "@/lib/jobs/backup-restore";
-import { RESTORE_DRILL_EXPIRE_SECONDS } from "@/lib/jobs/restore-drill";
+import { RESTORE_DRILL_EXPIRE_SECONDS } from "@/lib/jobs/restore-drill-queue";
 import { APPLE_HEALTH_IMPORT_SEND_OPTIONS } from "@/lib/jobs/apple-health-import-worker";
 import { MEDICATION_INTAKE_IMPORT_SEND_OPTIONS } from "@/lib/jobs/medication-intake-import";
 import { HEALTH_CONNECT_IMPORT_SEND_OPTIONS } from "@/lib/jobs/health-connect-import-worker";
@@ -47,8 +47,8 @@ import { ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS } from "@/lib/rollups/measurement-r
 /** pg-boss's default job expiry, in seconds. */
 export const DEFAULT_JOB_EXPIRE_SECONDS = 15 * 60;
 
-/** Where a check lives: `binding` is the `createAndWork` call itself. */
-export type SourceSite = "binding" | { file: string; fn: string };
+/** Where a check lives: a function (or const) in a file under `src/`. */
+export type SourceSite = { file: string; fn: string };
 
 export type QueueRuntime =
   | { runtime: "short"; why: string }
@@ -64,8 +64,9 @@ export type QueueRuntime =
       /** Where the handler stops on the job's budget, or `oneShot`. */
       stop: SourceSite | { oneShot: string };
       /**
-       * What keeps a second run from working beside this one: `lockedPass`
-       * at the binding, or a marker in the named function.
+       * What keeps a second run from working beside this one: the `lock`
+       * its registry definition declares (`lockedPass`), or a marker in the
+       * named function.
        */
       exclusive: "lockedPass" | { marker: string; at: SourceSite };
       why: string;
@@ -177,7 +178,10 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     runtime: "long",
     expireInSeconds: PERIOD_NARRATIVE_EXPIRE_SECONDS,
     expiryVia: ["PERIOD_NARRATIVE_EXPIRE_SECONDS"],
-    stop: "binding",
+    stop: {
+      file: "lib/jobs/reminder/status-handlers.ts",
+      fn: "handlePeriodNarrative",
+    },
     exclusive: "lockedPass",
     why: "On a boundary night up to 200 accounts with a provider call per period each; a single-account warm is short.",
   },
@@ -198,7 +202,10 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     runtime: "long",
     expireInSeconds: ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS,
     expiryVia: ["ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS"],
-    stop: "binding",
+    stop: {
+      file: "lib/jobs/reminder/rollup-handlers.ts",
+      fn: "handleRollupFullBackfill",
+    },
     exclusive: "lockedPass",
     why: "One account's five-year fold: four aggregates under the statement timeout and four persist transactions of up to 120 s each, about thirteen minutes at worst under the defaults and unbounded when the operator lifts the statement timeout.",
   },
@@ -220,22 +227,34 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   ),
   "mean-consolidation": {
     runtime: "budgeted",
-    budget: "binding",
+    budget: {
+      file: "lib/jobs/reminder/rollup-handlers.ts",
+      fn: "handleMeanConsolidation",
+    },
     why: "One account's whole history, a day at a time; stops at three quarters of the default expiry and resumes.",
   },
   "dense-intraday-retention": {
     runtime: "budgeted",
-    budget: "binding",
+    budget: {
+      file: "lib/jobs/reminder/rollup-handlers.ts",
+      fn: "handleDenseIntradayRetention",
+    },
     why: "A dense account's history, a day at a time; stops at three quarters of the default expiry and resumes.",
   },
   "dense-intraday-hourly-rebuild": {
     runtime: "budgeted",
-    budget: "binding",
+    budget: {
+      file: "lib/jobs/reminder/rollup-handlers.ts",
+      fn: "handleDenseIntradayHourlyRebuild",
+    },
     why: "A dense account's hourly rows, a day at a time; stops at three quarters of the default expiry and resumes.",
   },
   "drain-per-sample-cumulative": {
     runtime: "budgeted",
-    budget: "binding",
+    budget: {
+      file: "lib/jobs/reminder/rollup-handlers.ts",
+      fn: "drainCumulativeHandler",
+    },
     why: "Every account's per-sample drains; stops at three quarters of the default expiry and hands the rest to a continuation job.",
   },
 
@@ -471,7 +490,10 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     runtime: "long",
     expireInSeconds: CONTENT_INDEX_BACKFILL_EXPIRE_SECONDS,
     expiryVia: ["CONTENT_INDEX_BACKFILL_EXPIRE_SECONDS"],
-    stop: "binding",
+    stop: {
+      file: "lib/jobs/reminder/document-handlers.ts",
+      fn: "handleContentIndexBackfill",
+    },
     exclusive: "lockedPass",
     why: "Up to 200 documents of one account, a provider transcription each.",
   },

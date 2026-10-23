@@ -34,11 +34,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
-
-export const DOCUMENT_THUMBNAIL_QUEUE = "document-thumbnail";
-
-/** Serial concurrency — canvas/pdfjs decode, kept off the request pool. */
-export const DOCUMENT_THUMBNAIL_CONCURRENCY = 1;
+import { DOCUMENT_THUMBNAIL_QUEUE } from "./document-thumbnail-queue";
 
 export interface DocumentThumbnailPayload {
   userId: string;

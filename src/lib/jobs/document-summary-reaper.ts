@@ -30,10 +30,6 @@ import { getWorkerPrisma } from "@/lib/jobs/reminder/shared";
 import { SUMMARY_PENDING_TTL_MS } from "@/lib/documents/store";
 import type { PrismaClient } from "@/generated/prisma/client";
 
-export const DOCUMENT_SUMMARY_REAPER_QUEUE = "document-summary-reaper";
-/** Hourly at :50 — off the maintenance herd's minute marks. */
-export const DOCUMENT_SUMMARY_REAPER_CRON = "50 * * * *";
-
 export interface DocumentSummaryReaperPayload {
   triggeredAt?: string;
 }

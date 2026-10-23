@@ -91,13 +91,6 @@ import {
 export { INSIGHT_PREGENERATE_QUEUE, enqueueForceWarm };
 export type { InsightPregeneratePayload };
 
-/**
- * 04:30 Europe/Berlin. Slots between the cumulative drain (03:30) and
- * the feedback aggregator (04:00) maintenance window's tail so the
- * LLM-bound pass doesn't contend with the SQL-bound nightly folds.
- */
-export const INSIGHT_PREGENERATE_CRON = "30 4 * * *";
-
 /** Stale-cache threshold for the nightly discovery pass.
  *
  * The cron runs every 24 h and the advisor cache lives 24 h — so ANY

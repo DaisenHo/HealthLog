@@ -90,10 +90,8 @@ import {
   holdAccountFoldLock,
 } from "@/lib/export/restore-lock";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
-import {
-  COMPACTION_TOMBSTONE_PURGE_QUEUE,
-  COMPACTION_TOMBSTONE_PURGE_SINGLETON_KEY,
-} from "@/lib/jobs/compaction-tombstone-purge";
+import { COMPACTION_TOMBSTONE_PURGE_SINGLETON_KEY } from "@/lib/jobs/compaction-tombstone-purge";
+import { COMPACTION_TOMBSTONE_PURGE_QUEUE } from "@/lib/jobs/compaction-tombstone-purge-queue";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { reportJobRun, type JobRunCandidate } from "@/lib/jobs/job-run-report";
@@ -136,8 +134,7 @@ import {
 } from "@/lib/measurements/fold-constituents";
 import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 import { localDayWindow } from "@/lib/tz/local-day";
-
-export const MEASUREMENT_FOLD_REPAIR_QUEUE = "measurement-fold-repair";
+import { MEASUREMENT_FOLD_REPAIR_QUEUE } from "./measurement-fold-repair-queue";
 
 /** Delay before the follow-up of a run that stopped early, in seconds. */
 export const FOLD_REPAIR_CONTINUATION_DELAY_SECONDS = 30;
