@@ -1808,9 +1808,16 @@ model MentalHealthAssessment {
   id                 String               @id @default(cuid())
   userId             String               @map("user_id")
   instrument         AssessmentInstrument
-  /// The validated translation actually presented (officially-validated wording
-  /// per locale, English fallback otherwise — recorded for the audit trail).
+  /// The reader's app language when the administration was taken. It selects
+  /// the crisis-resource copy; with `wording` it says which text was shown.
   locale             String
+  /// Which text the answers were given in: "validated" (the published
+  /// validated version for `locale`, the original for English),
+  /// "unvalidated_translation" (the app's own translation, shown with a note)
+  /// or "original_en" (the English original, chosen by a reader of another
+  /// language). Null on rows recorded before it was stored. Closed set:
+  /// ASSESSMENT_WORDINGS in src/lib/mental-health/instrument-wording.ts.
+  wording            String?
   /// Instrument variant identifier (e.g. "standard"); future-proofs revisions.
   version            String               @default("standard")
   /// Encrypted JSON blob: { items: number[], functionalDifficulty?: 0..3, schema: 1 }.

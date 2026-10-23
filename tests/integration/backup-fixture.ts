@@ -1401,6 +1401,8 @@ export const FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "Biomarker.contextEncrypted": () =>
     encryptContextToBytes("fasted, morning draw"),
   "MoodEntry.tags": JSON.stringify(["round-trip-tag"]),
+  // A closed set (ASSESSMENT_WORDINGS); the export carries nothing else.
+  "MentalHealthAssessment.wording": "unvalidated_translation",
   "CorrelationPattern.qValue": 0.04,
   "CorrelationPattern.dismissedEvidenceHash": "ab".repeat(32),
   // CHECK in migration 0408: the profile is built from samples or from hour buckets.

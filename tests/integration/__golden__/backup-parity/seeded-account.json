@@ -1780,6 +1780,7 @@
         "userId": "round-trip-owner",
         "instrument": "GAD7",
         "locale": "en",
+        "wording": null,
         "version": "standard",
         "responsesEncrypted": "<sealed:v1:{\"items\":[1,1,0,1,0,1,0],\"schema\":1}>",
         "totalScore": 4,
@@ -1792,14 +1793,15 @@
         "externalId": null,
         "syncVersion": 0,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-05T13:56:01.000Z",
-        "updatedAt": "2026-05-05T13:57:01.000Z"
+        "createdAt": "2026-05-05T13:57:01.000Z",
+        "updatedAt": "2026-05-05T13:58:01.000Z"
       },
       {
         "id": "<id:100>",
         "userId": "round-trip-owner",
         "instrument": "PHQ9",
         "locale": "de",
+        "wording": "unvalidated_translation",
         "version": "rt-MentalHealthAssessment-version",
         "responsesEncrypted": "<sealed:v1:{\"items\":[2,1,2,2,1,1,2,1,2],\"schema\":1}>",
         "totalScore": 14,
@@ -1812,8 +1814,8 @@
         "externalId": "rt-MentalHealthAssessment-externalId",
         "syncVersion": 3,
         "deletedAt": null,
-        "createdAt": "2026-05-05T13:56:00.000Z",
-        "updatedAt": "2026-05-05T13:57:00.000Z"
+        "createdAt": "2026-05-05T13:57:00.000Z",
+        "updatedAt": "2026-05-05T13:58:00.000Z"
       }
     ],
     "ConsentReceipt": [
