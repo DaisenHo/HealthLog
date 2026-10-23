@@ -27,6 +27,28 @@ ones: `src/__tests__/test-realism-ratchet.test.ts` counts route tests that mock
 those numbers may only fall. Mock at the process boundary you do not own instead: provider HTTP
 (`safeFetch`), APNs, SMTP, the model.
 
+## Critical journeys
+
+A few e2e journeys carry `@critical` in their test titles: signing in with a
+password and a passkey and signing out, a reading reaching the dashboard, a
+dose moving compliance, a mood entry, a lab CSV import, a questionnaire in
+German and Brazilian Portuguese, a setting that persists, a backup coming
+back, sharing a record, and the offline page. `pnpm e2e:critical` runs them.
+
+They run against the real server and a seeded Postgres. A spec file that
+carries the tag may not intercept anything under `/api`, directly or through
+a helper it imports; `src/__tests__/e2e-critical-no-api-stub-guard.test.ts`
+refuses it and keeps a floor on the number of tagged tests. Stubbing an
+unreachable third-party host that is not the journey's subject is allowed,
+with the reason next to the call.
+
+A journey that writes gets an account nobody else writes. The accounts in
+`e2e/setup/critical-fixture.ts` are seeded by global setup, one per journey
+and per Chromium project, so a journey runs at both widths without the two
+projects meeting. Reset what a previous run left with `resetCriticalAccount`
+in a `beforeEach`, and read results through the app's own routes rather than
+through the database.
+
 ## The route test kit
 
 `tests/kit/` holds two modules for tests under `tests/integration/`.

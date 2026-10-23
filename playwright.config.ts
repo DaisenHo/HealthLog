@@ -27,6 +27,14 @@ import {
  *
  * To run locally: `pnpm dlx playwright install --with-deps chromium`
  * once, then `pnpm e2e`.
+ *
+ * The journeys tagged `@critical` (`pnpm e2e:critical`) are the exception to
+ * the route interception above: they intercept nothing under `/api`, which
+ * `src/__tests__/e2e-critical-no-api-stub-guard.test.ts` holds. Most of them
+ * run in both Chromium projects on an account per project
+ * (`e2e/setup/critical-fixture.ts`), so they need no entry in the
+ * `chromium-mobile` ignore list below; the ones that are on that list are
+ * there for the reason written beside them.
  */
 /**
  * Drawn once here, before any server or worker exists, and published through
