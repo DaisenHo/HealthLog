@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2911,
-  "total": 9658,
+  "count": 2909,
+  "total": 9577,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -321,7 +321,6 @@
     "app/api/insights/coach/nudge-status/route.ts": 1,
     "app/api/insights/coach/seen/route.ts": 1,
     "app/api/insights/comprehensive/__tests__/route.test.ts": 9,
-    "app/api/insights/comprehensive/route.ts": 24,
     "app/api/insights/correlations/__tests__/route.test.ts": 10,
     "app/api/insights/correlations/route.ts": 9,
     "app/api/insights/derived/__tests__/route.test.ts": 4,
@@ -334,7 +333,6 @@
     "app/api/insights/ecg/route.ts": 1,
     "app/api/insights/feedback/route.ts": 2,
     "app/api/insights/generate/__tests__/route.test.ts": 12,
-    "app/api/insights/generate/route.ts": 57,
     "app/api/insights/glp1-plateau/route.ts": 2,
     "app/api/insights/glp1-timeline/route.ts": 4,
     "app/api/insights/health-status/route.ts": 3,
