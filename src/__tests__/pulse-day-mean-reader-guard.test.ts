@@ -177,7 +177,7 @@ const TS_READERS: Record<string, Entry> = {
   "app/api/insights/cards/route.ts": {
     exempt: "pulse is summarised from day means (readDayMeanSeries)",
   },
-  "app/api/insights/comprehensive/route.ts": {
+  "lib/insights/comprehensive-overview/build.ts": {
     exempt: "summarises the mood series only",
   },
 };
