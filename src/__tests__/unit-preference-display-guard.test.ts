@@ -506,7 +506,7 @@ const READER_UNIT_PRODUCERS = [
   "lib/ai/prompts/weight.ts",
   "lib/insights/features-units.ts",
   "lib/insights/comprehensive-generate.ts",
-  "app/api/insights/generate/route.ts",
+  "lib/insights/briefing-request/features.ts",
   "lib/insights/weight-status.ts",
   "lib/insights/metric-status.ts",
   "lib/insights/narrative/period-narrative.ts",
