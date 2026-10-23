@@ -1,0 +1,32 @@
+{
+  "status": 500,
+  "body": {
+    "data": null,
+    "error": "Interner Serverfehler",
+    "meta": {
+      "errorCode": "http.internal",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 500,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": {
+        "type": "TypeError",
+        "message": "Invalid authentication tag length: 0"
+      }
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "insightsCachedAt": null,
+    "insightsCachedLocale": null,
+    "cachedPayload": null,
+    "snapshotHash": null,
+    "audit": [],
+    "usage": []
+  }
+}
