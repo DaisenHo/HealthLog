@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2911,
-  "total": 9688,
+  "total": 9684,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -163,7 +163,7 @@
     "app/api/auth/mfa/verify/route.ts": 1,
     "app/api/auth/mfa/webauthn/verify/route.ts": 1,
     "app/api/auth/oidc/callback/__tests__/route.test.ts": 1,
-    "app/api/auth/oidc/callback/route.ts": 7,
+    "app/api/auth/oidc/callback/route.ts": 3,
     "app/api/auth/oidc/login/route.ts": 2,
     "app/api/auth/passkey/login-options/route.ts": 1,
     "app/api/auth/passkey/login-verify/__tests__/native-token.test.ts": 2,
