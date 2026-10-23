@@ -508,7 +508,7 @@ export function coverageSpan(
 }
 
 /** The temperature every specialised card runs at, matching the archetype cards. */
-export const STATUS_CARD_TEMPERATURE = 0.45;
+const STATUS_CARD_TEMPERATURE = 0.45;
 
 /** What a card's snapshot stage hands the pipeline. */
 export interface StatusCardBuild<I> {
