@@ -66,8 +66,8 @@ const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
   "lib/jobs/measurement-tombstone-cleanup.ts": "tombstone purge",
   "lib/ai/coach/tools/availability.ts":
     "whether any intake history exists, and its date range",
-  "app/api/medications/[id]/intake/route.ts":
-    "one medication's recorded history, listed or written",
+  "lib/medications/list-intake-events.ts":
+    "one medication's recorded history, listed",
   "app/api/medications/[id]/intake/bulk-delete/route.ts":
     "deletes rows the person chose",
   "lib/medications/update-medication/write.ts":

@@ -439,6 +439,9 @@ const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
     "lib/medications/update-medication/update-medication.ts",
     "lib/medications/delete-medication.ts",
   ],
+  "app/api/medications/[id]/intake/route.ts": [
+    "lib/medications/record-intake/record-intake.ts",
+  ],
   "app/api/medications/[id]/intake/[eventId]/route.ts": [
     "lib/medications/update-intake-event.ts",
     "lib/medications/delete-intake-event.ts",
