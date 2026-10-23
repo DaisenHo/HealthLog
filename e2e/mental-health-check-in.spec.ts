@@ -42,9 +42,16 @@ const CASES: readonly Case[] = [
 
 async function expectNoSeriousViolations(page: Page, label: string) {
   // The pointer rests where the last tap landed; a hover tint under it is
-  // not what the screen shows at rest.
+  // not what the screen shows at rest. Moving it away starts the tint's
+  // transition back, so the scan waits for every transition to settle rather
+  // than for a guessed number of milliseconds. Transitions only: a spinner's
+  // or a skeleton's endless animation would never settle.
   await page.mouse.move(0, 0);
-  await page.waitForTimeout(300);
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every((a) => !(a instanceof CSSTransition) || a.playState !== "running"),
+  );
   const results = await new AxeBuilder({ page })
     .include(
       '[data-slot="mental-health-check-in"], [data-slot="mental-health-result"]',
