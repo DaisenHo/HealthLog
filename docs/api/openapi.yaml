@@ -48307,6 +48307,32 @@ components:
           description: Time asleep across those naps, in minutes.
           type: number
           minimum: 0
+        sleepStages:
+          description: The main night's minutes per stage (`IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP`, `REM`), each the union of
+            that stage's spans; empty on a day of naps alone.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: number
+            minimum: 0
+        inBedMinutes:
+          description: The main night's time in bed in minutes, or null when no in-bed span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakeMinutes:
+          description: The main night's time awake in bed in minutes, or null when no awake span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakenings:
+          description: Awake spans between the main night's first and last time asleep.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
       required:
         - id
         - type
@@ -49077,6 +49103,32 @@ components:
           description: Time asleep across those naps, in minutes.
           type: number
           minimum: 0
+        sleepStages:
+          description: The main night's minutes per stage (`IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP`, `REM`), each the union of
+            that stage's spans; empty on a day of naps alone.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: number
+            minimum: 0
+        inBedMinutes:
+          description: The main night's time in bed in minutes, or null when no in-bed span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakeMinutes:
+          description: The main night's time awake in bed in minutes, or null when no awake span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakenings:
+          description: Awake spans between the main night's first and last time asleep.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
       required:
         - id
         - type
@@ -49105,6 +49157,16 @@ components:
           type: integer
           minimum: 0
           maximum: 9007199254740991
+        minValue:
+          description: The lowest reading in the bucket; absent on a summed (cumulative) type.
+          type:
+            - number
+            - "null"
+        maxValue:
+          description: The highest reading in the bucket; absent on a summed (cumulative) type.
+          type:
+            - number
+            - "null"
         unit:
           type: string
       required:
@@ -49282,6 +49344,32 @@ components:
           description: Time asleep across those naps, in minutes.
           type: number
           minimum: 0
+        sleepStages:
+          description: The main night's minutes per stage (`IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP`, `REM`), each the union of
+            that stage's spans; empty on a day of naps alone.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: number
+            minimum: 0
+        inBedMinutes:
+          description: The main night's time in bed in minutes, or null when no in-bed span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakeMinutes:
+          description: The main night's time awake in bed in minutes, or null when no awake span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakenings:
+          description: Awake spans between the main night's first and last time asleep.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
         status:
           type: string
           enum:
@@ -49306,11 +49394,11 @@ components:
       properties:
         data:
           anyOf:
+            - $ref: "#/components/schemas/NamedSleepStageMeasurement"
             - $ref: "#/components/schemas/MeasurementResource"
             - type: array
               items:
                 $ref: "#/components/schemas/MeasurementResource"
-            - $ref: "#/components/schemas/NamedSleepStageMeasurement"
         error:
           type: "null"
         meta:
