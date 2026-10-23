@@ -72,6 +72,21 @@ vi.mock("@/lib/jobs/pr-detection", async (importOriginal) => {
   };
 });
 
+vi.mock("@/lib/insights/status-invalidation", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/insights/status-invalidation")>();
+  const { effectRecorder } = await import("../../../kit/parity");
+  return {
+    ...actual,
+    // Detached from the request but inside its context: run for real, its
+    // annotate can land on the request's wide event or miss it, depending on
+    // timing. Recorded instead, like the other tails.
+    invalidateStatusInsightsForTypes: async (...args: unknown[]) => {
+      effectRecorder.record("invalidateStatusInsightsForTypes", args);
+    },
+  };
+});
+
 const prisma = getPrismaClient();
 const NOW = new Date("2026-10-15T12:00:00.000Z");
 

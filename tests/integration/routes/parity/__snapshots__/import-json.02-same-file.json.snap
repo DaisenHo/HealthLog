@@ -35,6 +35,20 @@
         "<id:1>",
         []
       ]
+    },
+    {
+      "effect": "invalidateStatusInsightsForTypes",
+      "args": [
+        "<id:1>",
+        [
+          "WEIGHT",
+          "BLOOD_GLUCOSE",
+          "SLEEP_DURATION"
+        ],
+        {
+          "source": "manual"
+        }
+      ]
     }
   ],
   "stored": {
