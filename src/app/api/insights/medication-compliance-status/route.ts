@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/api-response";
-import {
-  generateMedicationComplianceStatusForUser,
-  resolveMedicationComplianceStatusLocale,
-} from "@/lib/insights/medication-compliance-status";
+import { generateMedicationComplianceStatusForUser } from "@/lib/insights/medication-compliance-status";
+import { normalizeLocale as resolveMedicationComplianceStatusLocale } from "@/lib/insights/status-shared";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
