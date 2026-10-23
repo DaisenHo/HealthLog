@@ -38,6 +38,9 @@ const SCOPES = [
   "app/api/insights/",
   "app/api/analytics/",
   "app/api/dashboard/",
+  // Request-handler logic moved out of its route into a service keeps the
+  // route's scope.
+  "lib/dashboard/widgets/",
 ];
 
 /** `model@file` → why this read includes deleted rows. */
