@@ -11,13 +11,8 @@ import type { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -38,10 +33,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAdmin();
   annotate({ action: { name: "admin.encryption.keyBackup.confirm" } });
 
-  const body = await safeJson(request, { maxBytes: 1024 });
-  if (body.error) return body.error;
-  const parsed = confirmSchema.safeParse(body.data);
-  if (!parsed.success) return returnAllZodIssues(parsed.error);
+  const parsed = await parseJsonBody(request, confirmSchema, {
+    maxBytes: 1024,
+  });
+  if (!parsed.ok) return parsed.error;
 
   const result = await confirmKeyBackup({
     keyId: parsed.data.keyId,
