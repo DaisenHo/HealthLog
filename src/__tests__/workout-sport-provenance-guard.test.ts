@@ -189,9 +189,10 @@ describe("T2 — the set of files writing Workout rows is frozen", () => {
    * already resolved, so the provenance rule does not reach them.
    */
   const NON_MAPPING_WRITERS: Record<string, string> = {
-    // The iOS / client batch endpoint. The client sends an enum value and MAY
+    // The iOS / client batch endpoint (its write, behind
+    // `/api/workouts/batch`). The client sends an enum value and MAY
     // send its own `metadata`; no server-side label mapping happens here.
-    "app/api/workouts/batch/route.ts": "client-supplied enum",
+    "lib/workouts/batch-ingest/write.ts": "client-supplied enum",
     // Backup restore replays rows this app previously wrote, provenance and
     // all.
     "lib/export/workouts-backup.ts": "restore replay",

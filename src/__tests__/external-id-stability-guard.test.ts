@@ -404,7 +404,10 @@ describe("the batch surfaces refuse per entry, never whole-batch", () => {
     ],
     "app/api/mood-entries/bulk/route.ts": [],
     "app/api/medications/intake/bulk/route.ts": [],
-    "app/api/workouts/batch/route.ts": [],
+    "app/api/workouts/batch/route.ts": [
+      "lib/workouts/batch-ingest/entries.ts",
+      "lib/workouts/batch-ingest/ingest.ts",
+    ],
     "app/api/cycle/day-logs/bulk/route.ts": [],
     "app/api/import/route.ts": [],
   };
