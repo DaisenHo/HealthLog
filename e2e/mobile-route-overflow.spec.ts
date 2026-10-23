@@ -6,7 +6,6 @@ import type { APIRequestContext } from "@playwright/test";
 import { ADMIN_SECTION_SLUGS } from "@/components/admin/section-slugs";
 import { MODULE_SETTINGS_PAGE_IDS } from "@/components/settings/module-settings-page-ids";
 import { SETTINGS_SECTION_SLUGS } from "@/lib/settings/section-slugs";
-import { TOPIC_KEYS } from "@/lib/topics/registry";
 
 import { expect, test } from "./setup/test";
 import { MOBILE_ROUTES_STORAGE_STATE_PATH } from "./setup/global-setup";
@@ -173,9 +172,6 @@ const DYNAMIC_ROUTES: Record<string, Resolver> = {
       )}`,
     ];
   },
-  // Every topic (preview). The sweep account has the preview on; a topic its
-  // modules do not offer still renders its frame and the refusal card.
-  "/topics/[topic]": async () => TOPIC_KEYS.map((topic) => `/topics/${topic}`),
   // An ECG strip only arrives through a device sync; no route writes one. The
   // detail page is swept in its not-found state, which is still the frame,
   // header and back link a phone renders.
