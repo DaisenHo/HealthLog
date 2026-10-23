@@ -8,13 +8,39 @@ import { useTranslations } from "@/lib/i18n/context";
 
 import { MEASUREMENT_TYPE_LABEL_KEYS as TYPE_LABEL_KEYS } from "../measurement-list-meta";
 
-import type { Measurement } from "./list-model";
+import { isGroupedRow, type Measurement } from "./list-model";
+import type { MeasurementRowDisplay } from "./use-measurement-row-display";
 
 type Translate = ReturnType<typeof useTranslations>["t"];
 
 /** A type's name, or the raw type for one the catalogue does not know. */
 export function typeLabel(type: string, t: Translate): string {
   return TYPE_LABEL_KEYS[type] ? t(TYPE_LABEL_KEYS[type]) : type;
+}
+
+/** What every row of either layout needs from the list around it. */
+export interface MeasurementRowContext {
+  canManage: boolean;
+  selectedIds: ReadonlySet<string>;
+  expandedDayKeys: ReadonlySet<string>;
+  toggleExpand: (dayKey: string) => void;
+  navigateForType: (type: string) => void;
+  startEdit: (m: Measurement) => void;
+  onToggleRow: (id: string) => void;
+  onDelete: (id: string) => void;
+  display: MeasurementRowDisplay;
+}
+
+/** A row's grouping, selection and drill-down state. */
+export function rowState(m: Measurement, rows: MeasurementRowContext) {
+  const isGrouped = isGroupedRow(m);
+  return {
+    isGrouped,
+    isSelected: rows.selectedIds.has(m.id),
+    isExpanded: isGrouped
+      ? rows.expandedDayKeys.has(m.dayKey as string)
+      : false,
+  };
 }
 
 /**
@@ -24,25 +50,20 @@ export function typeLabel(type: string, t: Translate): string {
  */
 export function MeasurementRowActions({
   m,
+  rows,
   isGrouped,
   isExpanded,
   drilldownId,
-  canManage,
   layout,
-  toggleExpand,
-  startEdit,
-  onDelete,
 }: {
   m: Measurement;
+  rows: MeasurementRowContext;
   isGrouped: boolean;
   isExpanded: boolean;
   drilldownId: string;
-  canManage: boolean;
   layout: "desktop" | "mobile";
-  toggleExpand: (dayKey: string) => void;
-  startEdit: (m: Measurement) => void;
-  onDelete: (id: string) => void;
 }) {
+  const { canManage, toggleExpand, startEdit, onDelete } = rows;
   const { t } = useTranslations();
   const desktop = layout === "desktop";
   const size = desktop ? "icon" : "icon-lg";

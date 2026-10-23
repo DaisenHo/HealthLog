@@ -16,60 +16,31 @@ import {
 } from "../measurement-list-meta";
 
 import { DayDrillDown, SleepNightCaption } from "./day-drill-down";
-import { MeasurementRowActions, typeLabel } from "./row-actions";
+import {
+  MeasurementRowActions,
+  rowState,
+  typeLabel,
+  type MeasurementRowContext,
+} from "./row-actions";
 import {
   formatMeasurementSource,
-  isGroupedRow,
   sourceBadgeClass,
   truncateComment,
   type Measurement,
 } from "./list-model";
-import type { MeasurementListData } from "./use-measurement-list-data";
-import type { MeasurementListFilters } from "./use-measurement-list-filters";
-import type { MeasurementRowDisplay } from "./use-measurement-row-display";
 
 /** The phone list: one card per reading, day or night. */
 export function MeasurementCardList({
   measurements,
-  canManage,
-  filters,
-  list,
-  display,
-  expandedDayKeys,
-  toggleExpand,
-  navigateForType,
-  startEdit,
+  rows,
 }: {
   measurements: Measurement[];
-  canManage: boolean;
-  filters: MeasurementListFilters;
-  list: MeasurementListData;
-  display: MeasurementRowDisplay;
-  expandedDayKeys: ReadonlySet<string>;
-  toggleExpand: (dayKey: string) => void;
-  navigateForType: (type: string) => void;
-  startEdit: (m: Measurement) => void;
+  rows: MeasurementRowContext;
 }) {
-  const { selectedIds } = filters;
-  const { onToggleRow, deleteMutation } = list;
   return (
     <div data-slot="measurement-rows" className="space-y-2 md:hidden">
       {measurements.map((m) => (
-        <MeasurementCard
-          key={m.id}
-          m={m}
-          canManage={canManage}
-          isSelected={selectedIds.has(m.id)}
-          isExpanded={
-            isGroupedRow(m) ? expandedDayKeys.has(m.dayKey as string) : false
-          }
-          onToggleRow={onToggleRow}
-          onDelete={(id) => deleteMutation.mutate(id)}
-          display={display}
-          toggleExpand={toggleExpand}
-          navigateForType={navigateForType}
-          startEdit={startEdit}
-        />
+        <MeasurementCard key={m.id} m={m} rows={rows} />
       ))}
     </div>
   );
@@ -78,32 +49,17 @@ export function MeasurementCardList({
 /** One card, and under a grouped card its open drill-down. */
 function MeasurementCard({
   m,
-  canManage,
-  isSelected,
-  isExpanded,
-  onToggleRow,
-  onDelete,
-  display,
-  toggleExpand,
-  navigateForType,
-  startEdit,
+  rows,
 }: {
   m: Measurement;
-  canManage: boolean;
-  isSelected: boolean;
-  isExpanded: boolean;
-  onToggleRow: (id: string) => void;
-  onDelete: (id: string) => void;
-  display: MeasurementRowDisplay;
-  toggleExpand: (dayKey: string) => void;
-  navigateForType: (type: string) => void;
-  startEdit: (m: Measurement) => void;
+  rows: MeasurementRowContext;
 }) {
+  const { canManage, onToggleRow, navigateForType, display } = rows;
+  const { isGrouped, isSelected, isExpanded } = rowState(m, rows);
   const { t } = useTranslations();
   const fmt = useFormatters();
   const { rowDisplay, rowIdentityAttrs } = display;
   const Icon = TYPE_ICONS[m.type];
-  const isGrouped = isGroupedRow(m);
   const isSleep = m.type === "SLEEP_DURATION";
   const drilldownId = `drilldown-mobile-${m.dayKey ?? m.id}`;
   const label = typeLabel(m.type, t);
@@ -229,14 +185,11 @@ function MeasurementCard({
         <div className="flex shrink-0 items-center gap-1">
           <MeasurementRowActions
             m={m}
+            rows={rows}
             isGrouped={isGrouped}
             isExpanded={isExpanded}
             drilldownId={drilldownId}
-            canManage={canManage}
             layout="mobile"
-            toggleExpand={toggleExpand}
-            startEdit={startEdit}
-            onDelete={onDelete}
           />
         </div>
       </div>

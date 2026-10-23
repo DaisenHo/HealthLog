@@ -24,6 +24,7 @@ import { MeasurementEditSheet } from "./list/measurement-edit-sheet";
 import { MeasurementFilterRail } from "./list/measurement-filter-rail";
 import { MeasurementTable } from "./list/measurement-table";
 import type { Measurement } from "./list/list-model";
+import type { MeasurementRowContext } from "./list/row-actions";
 import { useMeasurementEdit } from "./list/use-measurement-edit";
 import { useMeasurementListData } from "./list/use-measurement-list-data";
 import { useMeasurementListFilters } from "./list/use-measurement-list-filters";
@@ -149,15 +150,16 @@ export function MeasurementList({
     );
   }
 
-  const rowProps = {
+  const rows: MeasurementRowContext = {
     canManage,
-    filters,
-    list,
-    display,
+    selectedIds: filters.selectedIds,
     expandedDayKeys,
     toggleExpand,
     navigateForType,
-    startEdit: (m: Measurement) => edit.startEdit(m),
+    startEdit: edit.startEdit,
+    onToggleRow: list.onToggleRow,
+    onDelete: (id) => list.deleteMutation.mutate(id),
+    display,
   };
 
   return (
@@ -202,13 +204,15 @@ export function MeasurementList({
             {!isMobile && (
               <MeasurementTable
                 measurements={data.measurements}
-                {...rowProps}
+                rows={rows}
+                filters={filters}
+                list={list}
               />
             )}
             {isMobile && (
               <MeasurementCardList
                 measurements={data.measurements}
-                {...rowProps}
+                rows={rows}
               />
             )}
           </>

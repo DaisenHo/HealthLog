@@ -21,44 +21,37 @@ import { measurementUnitLabel } from "@/lib/measurements/unit-label";
 import { MEASUREMENT_TYPE_COLORS as TYPE_COLORS } from "../measurement-list-meta";
 
 import { DayDrillDown, SleepNightCaption } from "./day-drill-down";
-import { MeasurementRowActions, typeLabel } from "./row-actions";
+import {
+  MeasurementRowActions,
+  rowState,
+  typeLabel,
+  type MeasurementRowContext,
+} from "./row-actions";
 import {
   formatMeasurementSource,
-  isGroupedRow,
   sourceBadgeClass,
   truncateComment,
   type Measurement,
 } from "./list-model";
 import type { MeasurementListData } from "./use-measurement-list-data";
 import type { MeasurementListFilters } from "./use-measurement-list-filters";
-import type { MeasurementRowDisplay } from "./use-measurement-row-display";
 
 /** The desktop table: one row per reading, day or night, sortable columns. */
 export function MeasurementTable({
   measurements,
-  canManage,
+  rows,
   filters,
   list,
-  display,
-  expandedDayKeys,
-  toggleExpand,
-  navigateForType,
-  startEdit,
 }: {
   measurements: Measurement[];
-  canManage: boolean;
+  rows: MeasurementRowContext;
   filters: MeasurementListFilters;
   list: MeasurementListData;
-  display: MeasurementRowDisplay;
-  expandedDayKeys: ReadonlySet<string>;
-  toggleExpand: (dayKey: string) => void;
-  navigateForType: (type: string) => void;
-  startEdit: (m: Measurement) => void;
 }) {
   const { t } = useTranslations();
-  const { sortBy, sortDir, toggleSort, selectedIds } = filters;
-  const { selectAll, pageIds, onToggleSelectAll, onToggleRow, deleteMutation } =
-    list;
+  const { canManage } = rows;
+  const { sortBy, sortDir, toggleSort } = filters;
+  const { selectAll, pageIds, onToggleSelectAll } = list;
   return (
     <div
       // `measurement-rows` marks the READ rows, not the list frame:
@@ -122,23 +115,7 @@ export function MeasurementTable({
         </TableHeader>
         <TableBody>
           {measurements.map((m) => (
-            <MeasurementTableRow
-              key={m.id}
-              m={m}
-              canManage={canManage}
-              isSelected={selectedIds.has(m.id)}
-              isExpanded={
-                isGroupedRow(m)
-                  ? expandedDayKeys.has(m.dayKey as string)
-                  : false
-              }
-              onToggleRow={onToggleRow}
-              onDelete={(id) => deleteMutation.mutate(id)}
-              display={display}
-              toggleExpand={toggleExpand}
-              navigateForType={navigateForType}
-              startEdit={startEdit}
-            />
+            <MeasurementTableRow key={m.id} m={m} rows={rows} />
           ))}
         </TableBody>
       </Table>
@@ -149,31 +126,16 @@ export function MeasurementTable({
 /** One table row, and under a grouped row its open drill-down. */
 function MeasurementTableRow({
   m,
-  canManage,
-  isSelected,
-  isExpanded,
-  onToggleRow,
-  onDelete,
-  display,
-  toggleExpand,
-  navigateForType,
-  startEdit,
+  rows,
 }: {
   m: Measurement;
-  canManage: boolean;
-  isSelected: boolean;
-  isExpanded: boolean;
-  onToggleRow: (id: string) => void;
-  onDelete: (id: string) => void;
-  display: MeasurementRowDisplay;
-  toggleExpand: (dayKey: string) => void;
-  navigateForType: (type: string) => void;
-  startEdit: (m: Measurement) => void;
+  rows: MeasurementRowContext;
 }) {
+  const { canManage, onToggleRow, navigateForType, display } = rows;
+  const { isGrouped, isSelected, isExpanded } = rowState(m, rows);
   const { t } = useTranslations();
   const fmt = useFormatters();
   const { rowDisplay, rowIdentityAttrs } = display;
-  const isGrouped = isGroupedRow(m);
   // A sleep night is grouped (its chevron opens the stage segments) but
   // reads as a duration with a nap caption, not as a daily total.
   const isSleep = m.type === "SLEEP_DURATION";
@@ -289,14 +251,11 @@ function MeasurementTableRow({
           <div className="flex items-center justify-end gap-1">
             <MeasurementRowActions
               m={m}
+              rows={rows}
               isGrouped={isGrouped}
               isExpanded={isExpanded}
               drilldownId={drilldownId}
-              canManage={canManage}
               layout="desktop"
-              toggleExpand={toggleExpand}
-              startEdit={startEdit}
-              onDelete={onDelete}
             />
           </div>
         </TableCell>
