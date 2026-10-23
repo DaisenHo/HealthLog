@@ -509,7 +509,9 @@
     "documents": "Dokumente",
     "vaccinations": "Impfungen",
     "mentalWellbeing": "Seelisches Wohlbefinden",
-    "timeline": "Zeitleiste"
+    "timeline": "Zeitleiste",
+    "topics": "Themen",
+    "previewBadge": "Beta"
   },
   "auth": {
     "login": "Anmelden",
@@ -6142,6 +6144,10 @@
       "access": {
         "title": "Geteilter Zugriff",
         "subtitle": "Wer deine Gesundheitsakte öffnen kann und wessen Akte du öffnen kannst."
+      },
+      "preview": {
+        "title": "Vorschau-Funktionen",
+        "subtitle": "Probier aus, was noch nicht fertig ist. Alles hier bleibt aus, bis du es einschaltest."
       }
     },
     "profile": "Profil",
@@ -7627,6 +7633,17 @@
     "passkeyRemovedToast": "Passkey entfernt.",
     "integrationDisconnected": "{provider} getrennt.",
     "integrationDisconnectFailed": "{provider} konnte nicht getrennt werden.",
+    "preview": {
+      "topics": {
+        "title": "Themen",
+        "description": "Fügt einen Bereich Themen hinzu, der zusammengehörige Werte bündelt, neben deinen Insights-Seiten.",
+        "detail": "Acht Themen, von Herz bis Zyklus, zeigen deine Werte nebeneinander, wie sie zusammenhängen, und führen in die Einzelseiten, die du schon kennst. Deine Insights-Seiten, die Navigation und alle Links bleiben genau, wie sie sind. Alles wird aus deinen eigenen Werten berechnet, ohne KI. Ausschalten entfernt den Eintrag und löscht nichts.",
+        "savedOn": "Themen-Vorschau eingeschaltet.",
+        "savedOff": "Themen-Vorschau ausgeschaltet.",
+        "open": "Themen öffnen"
+      },
+      "loadError": "Deine Vorschau-Einstellungen konnten nicht geladen werden."
+    },
     "timezoneSaved": "Zeitzone gespeichert.",
     "moduleState": {
       "on": "An",
@@ -13824,6 +13841,172 @@
       "asNeeded": "Bei Bedarf",
       "startsOn": "Beginn",
       "endsOn": "Ende"
+    }
+  },
+  "topics": {
+    "overview": {
+      "title": "Themen",
+      "description": "Zusammengehörige Werte, aus deinen eigenen Daten gebündelt; öffne ein Thema, um sie nebeneinander zu sehen.",
+      "emptyTitle": "Noch nichts zum Bündeln",
+      "emptyDescription": "Themen erscheinen, sobald es Werte dafür gibt: von einem Gerät, aus einem Import oder von dir eingetragen.",
+      "notRecorded": "Noch keine Werte für: {topics}.",
+      "hiddenByModule": "Ausgeblendet, weil das Modul aus ist: {topics}.",
+      "modulesLink": "Module in den Einstellungen ändern"
+    },
+    "detail": {
+      "back": "Alle Themen"
+    },
+    "loadError": "Die Themen konnten nicht geladen werden.",
+    "previewNote": "Das ist eine Vorschau. Sie kann sich zwischen Versionen ändern, und deine Einzelseiten bleiben, wie sie sind.",
+    "recorded": "Erfasste Werte: {count} von {total}",
+    "tone": {
+      "steady": "Stabil",
+      "watch": "Einen Blick wert",
+      "learning": "Lernt noch"
+    },
+    "summary": {
+      "outsideAbove": "{signal} liegt über deinem üblichen Bereich.",
+      "outsideBelow": "{signal} liegt unter deinem üblichen Bereich.",
+      "labs": "{count} von {total} Laborwerten liegen im Referenzbereich.",
+      "cycleDay": "Zyklustag {day}.",
+      "steadyAll": "Alles Erfasste liegt in deinem üblichen Bereich.",
+      "steadySome": "{count} von {total} Werten liegen in deinem üblichen Bereich; für die übrigen lernt HealthLog noch.",
+      "learning": "Dein üblicher Bereich wird noch gelernt. Eine Woche mit Werten reicht.",
+      "empty": "Noch nichts erfasst."
+    },
+    "headline": {
+      "labsValue": "{count}/{total}",
+      "labsUnit": "im Bereich",
+      "cycleDay": "Tag {day}"
+    },
+    "signals": {
+      "mood": "Stimmung"
+    },
+    "units": {
+      "moodScale": "von 5"
+    },
+    "names": {
+      "heart": {
+        "title": "Herz",
+        "description": "Ruhepuls, Herzfrequenzvariabilität und Fitness, mit dem Schlaf und Training, die sie bewegen."
+      },
+      "body": {
+        "title": "Körper",
+        "description": "Gewicht und Körperzusammensetzung im Verlauf."
+      },
+      "bloodPressure": {
+        "title": "Blutdruck",
+        "description": "Systolisch, diastolisch und Puls, mit Schlaf und Aktivität drumherum."
+      },
+      "sleep": {
+        "title": "Schlaf",
+        "description": "Schlafdauer und die Werte, die nachts gemessen werden."
+      },
+      "activity": {
+        "title": "Aktivität & Training",
+        "description": "Schritte, Trainingsminuten, aktive Energie und Trainingslast."
+      },
+      "metabolism": {
+        "title": "Stoffwechsel & Labor",
+        "description": "Blutzucker und deine Laborwerte, mit dem Trend jedes Markers."
+      },
+      "mind": {
+        "title": "Psyche",
+        "description": "Stimmung und Fragebögen neben Schlaf und Aktivität."
+      },
+      "cycle": {
+        "title": "Zyklus",
+        "description": "Dein Zyklus mit der Temperatur und dem Ruhepuls, die ihm folgen."
+      }
+    },
+    "sources": {
+      "heart": "Diese Werte kommen von einer Uhr, einem Ring oder Brustgurt, aus Apple Health oder Health Connect oder von dir eingetragen.",
+      "body": "Diese Werte kommen von einer Waage, aus einem Import oder von dir eingetragen.",
+      "bloodPressure": "Diese Werte kommen von einem Blutdruckmessgerät, aus einem Import oder von dir eingetragen.",
+      "sleep": "Diese Werte kommen von einer Uhr oder einem Ring, aus Apple Health oder Health Connect oder von dir eingetragen.",
+      "activity": "Diese Werte kommen von Handy, Uhr oder Ring oder aus Apple Health oder Health Connect.",
+      "metabolism": "Blutzucker kommt von einem Messgerät, aus einem Sensor-Import oder von dir; Laborwerte aus einem Laborbericht oder von dir eingetragen.",
+      "mind": "Diese Werte kommen aus deinen Stimmungseinträgen und den Fragebögen auf der Seite Seelisches Wohlbefinden.",
+      "cycle": "Diese Werte kommen aus deinem Zyklusprotokoll und einem Temperatursensor am Handgelenk."
+    },
+    "today": {
+      "title": "Heute",
+      "usual": "Üblich {low}–{high}",
+      "learning": "Üblicher Bereich wird noch gelernt",
+      "asOf": "Stand {date}",
+      "details": "Details"
+    },
+    "state": {
+      "within": "Im Bereich",
+      "above": "Über üblich",
+      "below": "Unter üblich",
+      "learning": "Lernt noch"
+    },
+    "chart": {
+      "title": "Nebeneinander",
+      "legend": "Schattiert: dein üblicher Bereich.",
+      "label": "{signals} im gewählten Zeitraum, je eine Zeile."
+    },
+    "range": {
+      "label": "Zeitraum",
+      "7d": "7 T",
+      "30d": "30 T",
+      "90d": "90 T",
+      "1y": "1 J"
+    },
+    "relationships": {
+      "title": "Wie sie zusammenhängen",
+      "insufficient": "{x} und {y}: bisher {count} von {required} gemeinsamen Tagen.",
+      "noClearLink": "Kein klarer Zusammenhang zwischen {x} und {y} über {count} gemeinsame Tage.",
+      "splitHigher": "Wenn {x} unter {threshold} lag, war {y} um {amount} höher als an anderen Tagen.",
+      "splitLower": "Wenn {x} unter {threshold} lag, war {y} um {amount} niedriger als an anderen Tagen.",
+      "splitDays": "Tage darunter: {below}. Andere Tage: {other}.",
+      "correlationSameDayHigher": "Wenn {x} höher liegt, ist auch {y} meist höher (r = {r}).",
+      "correlationSameDayLower": "Wenn {x} höher liegt, ist {y} meist niedriger (r = {r}).",
+      "correlationNextDayHigher": "Wenn {x} höher liegt, ist {y} am nächsten Tag meist höher (r = {r}).",
+      "correlationNextDayLower": "Wenn {x} höher liegt, ist {y} am nächsten Tag meist niedriger (r = {r}).",
+      "pairedDays": "Gemeinsame Tage: {count}",
+      "footnote": "Erscheint, sobald zwei Werte an mindestens 14 Tagen zusammen vorliegen. Ein Muster, keine Ursache.",
+      "scatterCaption": "Jeder Punkt ist ein Tag: {x} nach rechts, {y} nach oben."
+    },
+    "trends": {
+      "title": "Trends",
+      "window": "90 Tage, Wochenmittel",
+      "insufficient": "Braucht 14 Tage, bisher {count}"
+    },
+    "labs": {
+      "title": "Laborwerte",
+      "above": "Über dem Bereich",
+      "below": "Unter dem Bereich",
+      "trendsTitle": "Trends",
+      "trendNeeds": "Ein Trend braucht drei Werte über mindestens ein Jahr. Noch nicht so weit: {markers}."
+    },
+    "screeners": {
+      "title": "Fragebögen",
+      "none": "Noch keine Fragebögen ausgefüllt.",
+      "checkIns": "Ausgefüllt: {count}",
+      "improved": "Besser als beim ersten Mal",
+      "worsened": "Schlechter als beim ersten Mal",
+      "within_threshold": "Im üblichen Schwankungsbereich",
+      "single": "Bisher einmal ausgefüllt",
+      "open": "Seelisches Wohlbefinden öffnen"
+    },
+    "cycle": {
+      "title": "Zyklus",
+      "today": "Zyklustag {day}.",
+      "todayWithPhase": "Zyklustag {day}, {phase}.",
+      "average": "Durchschnittliche Zykluslänge: {days} Tage.",
+      "needs": "Ein Durchschnitt braucht zwei erfasste Periodenbeginne; bisher sind es {count}.",
+      "lengths": "Letzte Zyklen in Tagen: {lengths}",
+      "open": "Zyklus öffnen"
+    },
+    "links": {
+      "title": "Einzelseiten",
+      "workouts": "Workouts"
+    },
+    "missing": {
+      "title": "Noch nicht erfasst: {signals}.",
+      "connect": "Quelle verbinden"
     }
   }
 }

@@ -509,7 +509,9 @@
     "documents": "Dokumenty",
     "vaccinations": "Szczepienia",
     "mentalWellbeing": "Dobrostan psychiczny",
-    "timeline": "Oś czasu"
+    "timeline": "Oś czasu",
+    "topics": "Tematy",
+    "previewBadge": "Beta"
   },
   "auth": {
     "login": "Zaloguj się",
@@ -6142,6 +6144,10 @@
       "access": {
         "title": "Udostępniony dostęp",
         "subtitle": "Kto może otworzyć twoją kartę zdrowia i czyją kartę możesz otworzyć ty."
+      },
+      "preview": {
+        "title": "Funkcje w wersji próbnej",
+        "subtitle": "Wypróbuj to, co jeszcze nie jest gotowe. Wszystko tutaj pozostaje wyłączone, dopóki tego nie włączysz."
       }
     },
     "profile": "Profil",
@@ -7627,6 +7633,17 @@
     "passkeyRemovedToast": "Usunięto passkey.",
     "integrationDisconnected": "Rozłączono {provider}.",
     "integrationDisconnectFailed": "Nie udało się rozłączyć {provider}.",
+    "preview": {
+      "topics": {
+        "title": "Tematy",
+        "description": "Dodaje obszar Tematy, który zbiera powiązane wartości, obok Twoich stron Insights.",
+        "detail": "Osiem tematów, od serca po cykl, pokazuje Twoje wartości obok siebie, jak zmieniają się razem, oraz linki do stron pojedynczych wskaźników, których już używasz. Strony Insights, nawigacja i linki zostają dokładnie takie, jakie są. Wszystko jest liczone z Twoich własnych wartości, bez AI. Wyłączenie usuwa wpis i niczego nie kasuje.",
+        "savedOn": "Wersja próbna Tematów włączona.",
+        "savedOff": "Wersja próbna Tematów wyłączona.",
+        "open": "Otwórz Tematy"
+      },
+      "loadError": "Nie udało się wczytać ustawień wersji próbnych."
+    },
     "timezoneSaved": "Strefa czasowa zapisana.",
     "moduleState": {
       "on": "Włączone",
@@ -13824,6 +13841,172 @@
       "asNeeded": "W razie potrzeby",
       "startsOn": "Początek",
       "endsOn": "Koniec"
+    }
+  },
+  "topics": {
+    "overview": {
+      "title": "Tematy",
+      "description": "Powiązane wartości zebrane z Twoich danych; otwórz temat, aby zobaczyć je obok siebie.",
+      "emptyTitle": "Na razie nie ma czego zebrać",
+      "emptyDescription": "Tematy pojawiają się, gdy są dla nich wartości: z urządzenia, z importu lub wpisane przez Ciebie.",
+      "notRecorded": "Brak jeszcze wartości dla: {topics}.",
+      "hiddenByModule": "Ukryte, bo moduł jest wyłączony: {topics}.",
+      "modulesLink": "Zmień moduły w ustawieniach"
+    },
+    "detail": {
+      "back": "Wszystkie tematy"
+    },
+    "loadError": "Nie udało się wczytać tematów.",
+    "previewNote": "To wersja próbna. Może się zmieniać między wydaniami, a strony pojedynczych wskaźników zostają bez zmian.",
+    "recorded": "Zapisane wartości: {count} z {total}",
+    "tone": {
+      "steady": "Stabilnie",
+      "watch": "Warto zerknąć",
+      "learning": "W trakcie nauki"
+    },
+    "summary": {
+      "outsideAbove": "{signal} jest powyżej Twojego zwykłego zakresu.",
+      "outsideBelow": "{signal} jest poniżej Twojego zwykłego zakresu.",
+      "labs": "{count} z {total} wyników badań mieści się w zakresie referencyjnym.",
+      "cycleDay": "Dzień cyklu {day}.",
+      "steadyAll": "Wszystko, co zapisane, mieści się w Twoim zwykłym zakresie.",
+      "steadySome": "{count} z {total} wartości mieści się w Twoim zwykłym zakresie; pozostałe są jeszcze poznawane.",
+      "learning": "Twój zwykły zakres jest jeszcze poznawany. Wystarczy tydzień pomiarów.",
+      "empty": "Nic jeszcze nie zapisano."
+    },
+    "headline": {
+      "labsValue": "{count}/{total}",
+      "labsUnit": "w zakresie",
+      "cycleDay": "Dzień {day}"
+    },
+    "signals": {
+      "mood": "Nastrój"
+    },
+    "units": {
+      "moodScale": "z 5"
+    },
+    "names": {
+      "heart": {
+        "title": "Serce",
+        "description": "Tętno spoczynkowe, zmienność rytmu serca i wydolność, wraz ze snem i treningiem, które na nie wpływają."
+      },
+      "body": {
+        "title": "Ciało",
+        "description": "Masa ciała i skład ciała w czasie."
+      },
+      "bloodPressure": {
+        "title": "Ciśnienie krwi",
+        "description": "Skurczowe, rozkurczowe i tętno, wraz ze snem i aktywnością wokół nich."
+      },
+      "sleep": {
+        "title": "Sen",
+        "description": "Czas snu i wartości mierzone w nocy."
+      },
+      "activity": {
+        "title": "Aktywność i trening",
+        "description": "Kroki, minuty ćwiczeń, aktywna energia i obciążenie treningowe."
+      },
+      "metabolism": {
+        "title": "Metabolizm i badania",
+        "description": "Glukoza i Twoje wyniki badań, z trendem każdego markera."
+      },
+      "mind": {
+        "title": "Psychika",
+        "description": "Nastrój i kwestionariusze obok snu i aktywności."
+      },
+      "cycle": {
+        "title": "Cykl",
+        "description": "Twój cykl wraz z temperaturą i tętnem spoczynkowym, które za nim podążają."
+      }
+    },
+    "sources": {
+      "heart": "Te wartości pochodzą z zegarka, pierścienia lub pasa piersiowego, z Apple Zdrowie lub Health Connect albo z Twoich wpisów.",
+      "body": "Te wartości pochodzą z inteligentnej wagi, z importu lub z Twoich wpisów.",
+      "bloodPressure": "Te wartości pochodzą z ciśnieniomierza, z importu lub z Twoich wpisów.",
+      "sleep": "Te wartości pochodzą z zegarka lub pierścienia, z Apple Zdrowie lub Health Connect albo z Twoich wpisów.",
+      "activity": "Te wartości pochodzą z telefonu, zegarka lub pierścienia albo z Apple Zdrowie lub Health Connect.",
+      "metabolism": "Glukoza pochodzi z glukometru, importu z sensora lub Twoich wpisów; wyniki badań z raportu laboratoryjnego lub Twoich wpisów.",
+      "mind": "Te wartości pochodzą z Twoich wpisów nastroju i kwestionariuszy na stronie Dobrostan psychiczny.",
+      "cycle": "Te wartości pochodzą z Twojego dziennika cyklu i czujnika temperatury na nadgarstku."
+    },
+    "today": {
+      "title": "Dziś",
+      "usual": "Zwykle {low}–{high}",
+      "learning": "Zwykły zakres jest jeszcze poznawany",
+      "asOf": "Stan na {date}",
+      "details": "Szczegóły"
+    },
+    "state": {
+      "within": "W zakresie",
+      "above": "Powyżej zwykłego",
+      "below": "Poniżej zwykłego",
+      "learning": "W trakcie nauki"
+    },
+    "chart": {
+      "title": "Obok siebie",
+      "legend": "Zacieniowane: Twój zwykły zakres.",
+      "label": "{signals} w wybranym okresie, każdy w osobnym wierszu."
+    },
+    "range": {
+      "label": "Okres",
+      "7d": "7 d",
+      "30d": "30 d",
+      "90d": "90 d",
+      "1y": "1 r"
+    },
+    "relationships": {
+      "title": "Jak zmieniają się razem",
+      "insufficient": "{x} i {y}: na razie {count} z {required} wspólnych dni.",
+      "noClearLink": "Brak wyraźnego związku między {x} a {y} w ciągu {count} wspólnych dni.",
+      "splitHigher": "Gdy {x} było poniżej {threshold}, {y} było o {amount} wyższe niż w inne dni.",
+      "splitLower": "Gdy {x} było poniżej {threshold}, {y} było o {amount} niższe niż w inne dni.",
+      "splitDays": "Dni poniżej: {below}. Pozostałe dni: {other}.",
+      "correlationSameDayHigher": "Gdy {x} jest wyższe, {y} zwykle też jest wyższe (r = {r}).",
+      "correlationSameDayLower": "Gdy {x} jest wyższe, {y} zwykle jest niższe (r = {r}).",
+      "correlationNextDayHigher": "Gdy {x} jest wyższe, następnego dnia {y} zwykle jest wyższe (r = {r}).",
+      "correlationNextDayLower": "Gdy {x} jest wyższe, następnego dnia {y} zwykle jest niższe (r = {r}).",
+      "pairedDays": "Wspólne dni: {count}",
+      "footnote": "Pokazywane, gdy dwie wartości pokrywają się przez co najmniej 14 dni. Wzorzec, nie przyczyna.",
+      "scatterCaption": "Każdy punkt to jeden dzień: {x} w poziomie, {y} w pionie."
+    },
+    "trends": {
+      "title": "Trendy",
+      "window": "90 dni, średnie tygodniowe",
+      "insufficient": "Potrzeba 14 dni, na razie {count}"
+    },
+    "labs": {
+      "title": "Wyniki badań",
+      "above": "Powyżej zakresu",
+      "below": "Poniżej zakresu",
+      "trendsTitle": "Trendy",
+      "trendNeeds": "Trend wymaga trzech wartości w ciągu co najmniej roku. Jeszcze nie: {markers}."
+    },
+    "screeners": {
+      "title": "Kwestionariusze",
+      "none": "Nie wypełniono jeszcze żadnego kwestionariusza.",
+      "checkIns": "Wypełnione: {count}",
+      "improved": "Lepiej niż za pierwszym razem",
+      "worsened": "Gorzej niż za pierwszym razem",
+      "within_threshold": "W granicach zwykłych wahań",
+      "single": "Na razie wypełniony raz",
+      "open": "Otwórz Dobrostan psychiczny"
+    },
+    "cycle": {
+      "title": "Cykl",
+      "today": "Dzień cyklu {day}.",
+      "todayWithPhase": "Dzień cyklu {day}, faza: {phase}.",
+      "average": "Średnia długość cyklu: {days} dni.",
+      "needs": "Średnia wymaga dwóch zapisanych początków miesiączki; na razie jest ich {count}.",
+      "lengths": "Ostatnie cykle w dniach: {lengths}",
+      "open": "Otwórz stronę cyklu"
+    },
+    "links": {
+      "title": "Strony wskaźników",
+      "workouts": "Treningi"
+    },
+    "missing": {
+      "title": "Jeszcze nie zapisano: {signals}.",
+      "connect": "Połącz źródło"
     }
   }
 }

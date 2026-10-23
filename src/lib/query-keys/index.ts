@@ -49,6 +49,7 @@ import { vaccinationKeys } from "./vaccinations";
 import { workoutKeys } from "./workouts";
 import { activityKeys } from "./activity";
 import { provenanceKeys } from "./provenance";
+import { topicKeys } from "./topics";
 
 export const queryKeys = {
   ...authKeys,
@@ -64,6 +65,7 @@ export const queryKeys = {
   ...workoutKeys,
   ...activityKeys,
   ...provenanceKeys,
+  ...topicKeys,
   ...settingsKeys,
   ...cycleKeys,
   ...measurementReminderKeys,
@@ -165,6 +167,7 @@ export const measurementDependentKeys = [
   // write to this one evicts both roots.
   queryKeys.dayRoot(),
   queryKeys.timelineRoot(),
+  queryKeys.topicsRoot(),
 ];
 
 /**
@@ -199,6 +202,7 @@ export const moodDependentKeys = [
   // write to this one evicts both roots.
   queryKeys.dayRoot(),
   queryKeys.timelineRoot(),
+  queryKeys.topicsRoot(),
 ];
 
 /**
@@ -254,6 +258,7 @@ export const medicationDependentKeys = [
   // write to this one evicts both roots.
   queryKeys.dayRoot(),
   queryKeys.timelineRoot(),
+  queryKeys.topicsRoot(),
   // v1.43 — a taken supplement dose adds to the day's micronutrients
   // (`source = SUPPLEMENT`), so a dose write evicts the nutrient reads.
   queryKeys.nutrientsRoot(),
@@ -274,6 +279,7 @@ export const cycleDependentKeys = [
   // write to this one evicts both roots.
   queryKeys.dayRoot(),
   queryKeys.timelineRoot(),
+  queryKeys.topicsRoot(),
 ];
 
 /**
@@ -297,6 +303,7 @@ export const illnessDependentKeys = [
   // write to this one evicts both roots.
   queryKeys.dayRoot(),
   queryKeys.timelineRoot(),
+  queryKeys.topicsRoot(),
 ];
 
 /**
@@ -330,6 +337,7 @@ export const encounterDependentKeys = [
   // write to this one evicts both roots.
   queryKeys.dayRoot(),
   queryKeys.timelineRoot(),
+  queryKeys.topicsRoot(),
 ];
 
 /**
@@ -357,6 +365,7 @@ export const vaccinationDependentKeys = [
   // write to this one evicts both roots.
   queryKeys.dayRoot(),
   queryKeys.timelineRoot(),
+  queryKeys.topicsRoot(),
 ];
 
 /**

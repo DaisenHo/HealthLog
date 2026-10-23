@@ -509,7 +509,9 @@
     "documents": "Documenten",
     "vaccinations": "Vaccinaties",
     "mentalWellbeing": "Mentaal welzijn",
-    "timeline": "Tijdlijn"
+    "timeline": "Tijdlijn",
+    "topics": "Thema's",
+    "previewBadge": "Bèta"
   },
   "auth": {
     "login": "Inloggen",
@@ -6142,6 +6144,10 @@
       "access": {
         "title": "Gedeelde toegang",
         "subtitle": "Wie je gezondheidsdossier kan openen, en wiens dossier jij kunt openen."
+      },
+      "preview": {
+        "title": "Voorvertoningen",
+        "subtitle": "Probeer wat nog niet af is. Alles hier blijft uit tot je het aanzet."
       }
     },
     "profile": "Profiel",
@@ -7627,6 +7633,17 @@
     "passkeyRemovedToast": "Passkey verwijderd.",
     "integrationDisconnected": "{provider} ontkoppeld.",
     "integrationDisconnectFailed": "{provider} kon niet worden ontkoppeld.",
+    "preview": {
+      "topics": {
+        "title": "Thema's",
+        "description": "Voegt een gedeelte Thema's toe dat samenhangende waarden bundelt, naast je Inzichten-pagina's.",
+        "detail": "Acht thema's, van hart tot cyclus, tonen je waarden naast elkaar, hoe ze samen bewegen en links naar de pagina's per meetwaarde die je al gebruikt. Je Inzichten-pagina's, de navigatie en alle links blijven precies zoals ze zijn. Alles wordt uit je eigen waarden berekend, zonder AI. Uitzetten haalt de ingang weg en verwijdert niets.",
+        "savedOn": "Voorvertoning Thema's aangezet.",
+        "savedOff": "Voorvertoning Thema's uitgezet.",
+        "open": "Thema's openen"
+      },
+      "loadError": "Je voorvertoningsinstellingen konden niet worden geladen."
+    },
     "timezoneSaved": "Tijdzone opgeslagen.",
     "moduleState": {
       "on": "Aan",
@@ -13757,6 +13774,172 @@
       "asNeeded": "Zo nodig",
       "startsOn": "Begin",
       "endsOn": "Einde"
+    }
+  },
+  "topics": {
+    "overview": {
+      "title": "Thema's",
+      "description": "Samenhangende waarden, gebundeld uit je eigen gegevens; open een thema om ze naast elkaar te zien.",
+      "emptyTitle": "Nog niets om te bundelen",
+      "emptyDescription": "Thema's verschijnen zodra er waarden voor zijn: van een apparaat, uit een import of door jou ingevoerd.",
+      "notRecorded": "Nog niets vastgelegd voor: {topics}.",
+      "hiddenByModule": "Verborgen omdat de module uit staat: {topics}.",
+      "modulesLink": "Modules wijzigen in de instellingen"
+    },
+    "detail": {
+      "back": "Alle thema's"
+    },
+    "loadError": "De thema's konden niet worden geladen.",
+    "previewNote": "Dit is een voorvertoning. Die kan per versie veranderen, en je pagina's per meetwaarde blijven zoals ze zijn.",
+    "recorded": "Vastgelegde waarden: {count} van {total}",
+    "tone": {
+      "steady": "Stabiel",
+      "watch": "Het bekijken waard",
+      "learning": "Leert nog"
+    },
+    "summary": {
+      "outsideAbove": "{signal} ligt boven je gebruikelijke bereik.",
+      "outsideBelow": "{signal} ligt onder je gebruikelijke bereik.",
+      "labs": "{count} van {total} labwaarden liggen binnen hun referentiebereik.",
+      "cycleDay": "Cyclusdag {day}.",
+      "steadyAll": "Alles wat is vastgelegd ligt binnen je gebruikelijke bereik.",
+      "steadySome": "{count} van {total} waarden liggen binnen je gebruikelijke bereik; de andere worden nog geleerd.",
+      "learning": "Je gebruikelijke bereik wordt nog geleerd. Een week aan metingen is genoeg.",
+      "empty": "Nog niets vastgelegd."
+    },
+    "headline": {
+      "labsValue": "{count}/{total}",
+      "labsUnit": "binnen bereik",
+      "cycleDay": "Dag {day}"
+    },
+    "signals": {
+      "mood": "Stemming"
+    },
+    "units": {
+      "moodScale": "van 5"
+    },
+    "names": {
+      "heart": {
+        "title": "Hart",
+        "description": "Rusthartslag, hartslagvariabiliteit en conditie, met de slaap en training die ze beïnvloeden."
+      },
+      "body": {
+        "title": "Lichaam",
+        "description": "Gewicht en lichaamssamenstelling door de tijd."
+      },
+      "bloodPressure": {
+        "title": "Bloeddruk",
+        "description": "Systolisch, diastolisch en hartslag, met de slaap en activiteit eromheen."
+      },
+      "sleep": {
+        "title": "Slaap",
+        "description": "Slaapduur en de waarden die 's nachts worden gemeten."
+      },
+      "activity": {
+        "title": "Activiteit en training",
+        "description": "Stappen, trainingsminuten, actieve energie en trainingsbelasting."
+      },
+      "metabolism": {
+        "title": "Stofwisseling en lab",
+        "description": "Bloedglucose en je labwaarden, met de trend van elke marker."
+      },
+      "mind": {
+        "title": "Geest",
+        "description": "Stemming en vragenlijsten naast slaap en activiteit."
+      },
+      "cycle": {
+        "title": "Cyclus",
+        "description": "Je cyclus met de temperatuur en rusthartslag die ermee meebewegen."
+      }
+    },
+    "sources": {
+      "heart": "Deze waarden komen van een horloge, ring of borstband, uit Apple Gezondheid of Health Connect, of van je eigen invoer.",
+      "body": "Deze waarden komen van een slimme weegschaal, een import of je eigen invoer.",
+      "bloodPressure": "Deze waarden komen van een bloeddrukmeter, een import of je eigen invoer.",
+      "sleep": "Deze waarden komen van een horloge of ring, uit Apple Gezondheid of Health Connect, of van je eigen invoer.",
+      "activity": "Deze waarden komen van een telefoon, horloge of ring, of uit Apple Gezondheid of Health Connect.",
+      "metabolism": "Glucose komt van een meter, een sensorimport of je eigen invoer; labwaarden uit een labrapport of je eigen invoer.",
+      "mind": "Deze waarden komen uit je stemmingsregistraties en de vragenlijsten op de pagina Mentaal welzijn.",
+      "cycle": "Deze waarden komen uit je cycluslogboek en een temperatuursensor aan de pols."
+    },
+    "today": {
+      "title": "Vandaag",
+      "usual": "Gebruikelijk {low}–{high}",
+      "learning": "Gebruikelijk bereik wordt nog geleerd",
+      "asOf": "Per {date}",
+      "details": "Details"
+    },
+    "state": {
+      "within": "Binnen bereik",
+      "above": "Boven gebruikelijk",
+      "below": "Onder gebruikelijk",
+      "learning": "Leert nog"
+    },
+    "chart": {
+      "title": "Naast elkaar",
+      "legend": "Gearceerd: je gebruikelijke bereik.",
+      "label": "{signals} in de gekozen periode, elk op een eigen rij."
+    },
+    "range": {
+      "label": "Periode",
+      "7d": "7 d",
+      "30d": "30 d",
+      "90d": "90 d",
+      "1y": "1 j"
+    },
+    "relationships": {
+      "title": "Hoe ze samen bewegen",
+      "insufficient": "{x} en {y}: tot nu toe {count} van {required} gedeelde dagen.",
+      "noClearLink": "Geen duidelijk verband tussen {x} en {y} over {count} gedeelde dagen.",
+      "splitHigher": "Als {x} onder {threshold} lag, was {y} {amount} hoger dan op andere dagen.",
+      "splitLower": "Als {x} onder {threshold} lag, was {y} {amount} lager dan op andere dagen.",
+      "splitDays": "Dagen eronder: {below}. Andere dagen: {other}.",
+      "correlationSameDayHigher": "Als {x} hoger is, is {y} meestal ook hoger (r = {r}).",
+      "correlationSameDayLower": "Als {x} hoger is, is {y} meestal lager (r = {r}).",
+      "correlationNextDayHigher": "Als {x} hoger is, is {y} de volgende dag meestal hoger (r = {r}).",
+      "correlationNextDayLower": "Als {x} hoger is, is {y} de volgende dag meestal lager (r = {r}).",
+      "pairedDays": "Gedeelde dagen: {count}",
+      "footnote": "Verschijnt zodra twee waarden op minstens 14 dagen samenvallen. Een patroon, geen oorzaak.",
+      "scatterCaption": "Elke stip is één dag: {x} horizontaal, {y} verticaal."
+    },
+    "trends": {
+      "title": "Trends",
+      "window": "90 dagen, weekgemiddelden",
+      "insufficient": "Heeft 14 dagen nodig, nu {count}"
+    },
+    "labs": {
+      "title": "Labwaarden",
+      "above": "Boven het bereik",
+      "below": "Onder het bereik",
+      "trendsTitle": "Trends",
+      "trendNeeds": "Een trend heeft drie waarden over minstens een jaar nodig. Nog niet: {markers}."
+    },
+    "screeners": {
+      "title": "Vragenlijsten",
+      "none": "Nog geen vragenlijsten ingevuld.",
+      "checkIns": "Ingevuld: {count}",
+      "improved": "Beter dan de eerste keer",
+      "worsened": "Slechter dan de eerste keer",
+      "within_threshold": "Binnen de gebruikelijke schommeling",
+      "single": "Tot nu toe één keer ingevuld",
+      "open": "Mentaal welzijn openen"
+    },
+    "cycle": {
+      "title": "Cyclus",
+      "today": "Cyclusdag {day}.",
+      "todayWithPhase": "Cyclusdag {day}, {phase}.",
+      "average": "Gemiddelde cycluslengte: {days} dagen.",
+      "needs": "Een gemiddelde heeft twee vastgelegde menstruatiestarts nodig; nu zijn het er {count}.",
+      "lengths": "Recente cycli in dagen: {lengths}",
+      "open": "Cycluspagina openen"
+    },
+    "links": {
+      "title": "Pagina's per meetwaarde",
+      "workouts": "Workouts"
+    },
+    "missing": {
+      "title": "Nog niet vastgelegd: {signals}.",
+      "connect": "Een bron koppelen"
     }
   }
 }

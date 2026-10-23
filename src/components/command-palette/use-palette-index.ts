@@ -10,6 +10,7 @@ import { useAiCapability } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
 import { useModuleEnabledState } from "@/hooks/use-module-toggle";
 import { useNavModules } from "@/hooks/use-nav-modules";
+import { usePreviewFeatures } from "@/hooks/use-preview-features";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
   buildPaletteIndex,
@@ -32,6 +33,7 @@ export function usePaletteIndex(): PaletteEntry[] {
   const { t } = useTranslations();
   const { user } = useAuth();
   const navModules = useNavModules();
+  const previews = usePreviewFeatures();
   const capabilities = useRecordCapabilities();
   const { inSharedRecord, sections, recordKind, level } = capabilities;
   const coach = useAiCapability("coach");
@@ -64,6 +66,7 @@ export function usePaletteIndex(): PaletteEntry[] {
         t,
         modules: user?.modules,
         navModules,
+        previews,
         inSharedRecord,
         sections,
         isAdmin: user?.role === "ADMIN",
@@ -85,6 +88,7 @@ export function usePaletteIndex(): PaletteEntry[] {
       user?.modules,
       user?.role,
       navModules,
+      previews,
       inSharedRecord,
       sections,
       recordKind,

@@ -18,6 +18,7 @@ import { SETTINGS_SECTIONS } from "@/components/settings/settings-shell";
 import { SUB_PAGE_SLUGS } from "@/lib/insights/sub-page-metric";
 import { MODULE_REGISTRY, type ModuleKey } from "@/lib/modules/registry";
 import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
+import type { PreviewFeatures } from "@/lib/settings/preview-features";
 import type { ShareDomain } from "@/lib/sharing/scope";
 
 import {
@@ -74,6 +75,8 @@ export interface PaletteIndexInput {
   modules: SurfaceModuleMap | undefined;
   /** The same map with `coach` following the AI capability (`useNavModules`). */
   navModules: SurfaceModuleMap | undefined;
+  /** The person's own preview opt-ins; null offers no preview page. */
+  previews: PreviewFeatures | null;
   inSharedRecord: boolean;
   /** The shared record's covered sections, when there is one. */
   sections: ReadonlyArray<ShareDomain> | null;
@@ -121,6 +124,7 @@ export function buildPaletteIndex(input: PaletteIndexInput): PaletteEntry[] {
     true,
     input.inSharedRecord,
     input.sections,
+    input.previews,
   );
   const navHrefs = new Set(nav.map((d) => d.href));
   for (const d of nav) {

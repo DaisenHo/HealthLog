@@ -215,6 +215,42 @@ describe("mobileMoreHubDestinations — the F-1 mobile invariant (feature-only h
   });
 });
 
+describe("a preview entry (Topics)", () => {
+  it("exists only while the person reading switched the preview on", () => {
+    const hrefs = (previews: { topics: boolean } | null, mounted = true) =>
+      visibleNavDestinations({}, mounted, false, null, previews).map(
+        (d) => d.href,
+      );
+    expect(hrefs(null)).not.toContain("/topics");
+    expect(hrefs({ topics: false })).not.toContain("/topics");
+    expect(hrefs({ topics: true })).toContain("/topics");
+    // Fail-closed before mount, so SSR and the first paint agree.
+    expect(hrefs({ topics: true }, false)).not.toContain("/topics");
+  });
+
+  it("sits directly below Insights in the sidebar", () => {
+    const hrefs = visibleNavDestinations({}, true, false, null, {
+      topics: true,
+    }).map((d) => d.href);
+    expect(hrefs[hrefs.indexOf("/insights") + 1]).toBe("/topics");
+  });
+
+  it("leads the phone's More hub with its badge and never takes a bottom-bar slot", () => {
+    const hub = mobileMoreHubDestinations({
+      modules: {},
+      previews: { topics: true },
+    });
+    expect(hub[0]).toMatchObject({ href: "/topics", preview: "topics" });
+    expect(BOTTOM_NAV_PRIMARY_SLOT_HREFS).not.toContain("/topics");
+    expect(
+      mobileMoreHubDestinations({
+        modules: {},
+        previews: { topics: false },
+      }).map((d) => d.href),
+    ).not.toContain("/topics");
+  });
+});
+
 describe("isNavDestinationActive most-specific resolution", () => {
   it("matches the dashboard only on an exact path", () => {
     expect(isNavDestinationActive("/", "/")).toBe(true);
