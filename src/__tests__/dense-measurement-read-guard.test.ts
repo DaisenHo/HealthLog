@@ -67,6 +67,8 @@ const SCOPED_DIRS = [
   // Request-handler logic moved out of its route into a service keeps the
   // route's scope.
   "lib/measurements/batch-ingest/",
+  "lib/measurements/create/",
+  "lib/measurements/list/measurement-list.ts",
 ];
 
 /** Types a device writes at sampling rate rather than a few times a day. */
@@ -108,7 +110,7 @@ const ALLOWED: Record<string, string> = {
     "The 30-day per-context glucose summary, the same window and bound as the dashboard and coach glucose panels: at a sensor's fixed rate, below 45 000 rows.",
   "lib/measurements/batch-ingest/write-measurements.ts::p.row.type as MeasurementType":
     "Cross-source merge probe: one ±tolerance window around each posted reading's instant, so the rows found are bounded by the batch size.",
-  "app/api/measurements/route.ts::(shorthand)":
+  "lib/measurements/create/create-sleep-stage.ts::(shorthand)":
     "Cross-source merge probe for one posted sleep segment: SLEEP_DURATION in a ±tolerance window around its end.",
   "lib/targets/build-response.ts::{ in: recentTypes":
     "Thirty days of weight, blood pressure, resting heart rate, body fat and steps (drained to one row per day). PULSE is filtered out of `recentTypes` and folds in SQL.",

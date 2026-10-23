@@ -68,7 +68,8 @@ const WRITERS: Record<string, Disposition> = {
   "lib/measurements/reconcile-external-measurement.ts": { kind: "gate" },
 
   // ── Person-driven write paths, validated ──────────────────────────────
-  "app/api/measurements/route.ts": {
+  // The hand-entry writes behind `POST /api/measurements`.
+  "lib/measurements/create/create-readings.ts": {
     kind: "upstream",
     validatedIn: "lib/validations/measurement.ts",
   },
