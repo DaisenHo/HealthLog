@@ -524,8 +524,9 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
-    file: "components/medications/dose-history-ledger.tsx",
+    file: "components/medications/dose-history/use-dose-history-ledger.ts",
     destroys: "one intake event",
+    triggers: ["components/medications/dose-history/ledger-confirms.tsx"],
     recovery: "tombstoned-no-restore",
     confirm: ["AlertDialog"],
   },

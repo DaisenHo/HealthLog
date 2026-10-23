@@ -252,7 +252,7 @@ const RAW_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
     why: "The `yyyy-MM-dd` key the ledger groups doses by. The heading a reader sees is rendered separately, through the preference-aware `formatDateWithWeekdaySmart`.",
   },
   {
-    file: "src/components/medications/dose-history-ledger.tsx",
+    file: "src/components/medications/dose-history/use-dose-history-ledger.ts",
     why: "The same key shape for `today`, compared against those buckets. A comparison, not a label.",
   },
   {

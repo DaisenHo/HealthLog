@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 405,
-  "total": 140305,
+  "count": 403,
+  "total": 139587,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 314,
@@ -183,8 +183,6 @@
     "components/medications/detail/efficacy/efficacy-chart.tsx :: EfficacyChart": 361,
     "components/medications/detail/medication-detail-tabs.tsx :: MedicationDetailTabs": 771,
     "components/medications/dose-history-add-dialog.tsx :: LedgerAddDialog": 223,
-    "components/medications/dose-history-ledger.tsx :: DoseHistoryLedger": 404,
-    "components/medications/dose-history-ledger.tsx :: LedgerRowItem": 314,
     "components/medications/dose-strength-curve.tsx :: DoseStrengthCurve": 266,
     "components/medications/glp1-medication-card.tsx :: Glp1MedicationCard": 405,
     "components/medications/injection-site-picker.tsx :: InjectionSitePicker": 287,

@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 118,
-  "total": 136542,
+  "count": 117,
+  "total": 135490,
   "entries": {
     "app/api/dashboard/summary/route.ts": 1032,
     "app/api/documents/inbound/route.ts": 811,
@@ -26,7 +26,6 @@
     "components/measurement-reminders/vorsorge-section.tsx": 1536,
     "components/measurements/measurement-form.tsx": 815,
     "components/medications/detail/medication-detail-tabs.tsx": 1160,
-    "components/medications/dose-history-ledger.tsx": 1052,
     "components/medications/medication-table.tsx": 853,
     "components/medications/wizard/wizard-payload.ts": 1414,
     "components/mood/mood-list.tsx": 1408,

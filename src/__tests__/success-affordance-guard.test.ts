@@ -248,8 +248,13 @@ const PINNED_AFFORDANCES: Record<
   "src/components/medications/dose-history-add-dialog.tsx": {
     "toast.success": 2,
   },
-  "src/components/medications/dose-history-ledger.tsx": {
-    "text-success": 2,
+  "src/components/medications/dose-history/ledger-row-item.tsx": {
+    "text-success": 1,
+  },
+  "src/components/medications/dose-history/ledger-summary-chart.tsx": {
+    "text-success": 1,
+  },
+  "src/components/medications/dose-history/use-dose-history-ledger.ts": {
     "toast.success": 4,
   },
   "src/components/medications/intake-edit-dialog.tsx": { "toast.success": 1 },

@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2950,
-  "total": 10294,
+  "count": 2949,
+  "total": 10287,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1171,7 +1171,6 @@
     "components/medications/detail/medication-detail-tabs.tsx": 28,
     "components/medications/dose-history-add-dialog.tsx": 2,
     "components/medications/dose-history-ledger-compute.ts": 5,
-    "components/medications/dose-history-ledger.tsx": 7,
     "components/medications/dose-strength-curve.tsx": 2,
     "components/medications/drug-level-chart.tsx": 2,
     "components/medications/glp1-medication-card.tsx": 36,
