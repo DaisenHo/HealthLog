@@ -1,7 +1,7 @@
 {
   "$comment": "tests that read a source file by path, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 359,
-  "total": 359,
+  "count": 358,
+  "total": 358,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 1,
     "__tests__/admin-data-wipe-completeness.test.ts": 1,
@@ -263,7 +263,6 @@
     "components/timeline/__tests__/no-template-key-guard.test.ts": 1,
     "components/ui/__tests__/card-density.test.tsx": 1,
     "components/ui/__tests__/card-header-rows.test.ts": 1,
-    "components/ui/__tests__/filter-bar.test.tsx": 1,
     "hooks/__tests__/use-insight-status.test.ts": 1,
     "lib/__tests__/geo-offline-detection.test.ts": 1,
     "lib/__tests__/query-keys.test.ts": 1,

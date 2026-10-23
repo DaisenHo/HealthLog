@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2950,
-  "total": 10294,
+  "count": 2949,
+  "total": 10293,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1448,7 +1448,6 @@
     "components/timeline/__tests__/timeline-view-keys.test.tsx": 1,
     "components/timeline/__tests__/value-options.test.ts": 1,
     "components/timeline/life-event-form.lazy.tsx": 1,
-    "components/ui/__tests__/filter-bar.test.tsx": 1,
     "components/ui/back-link.tsx": 1,
     "components/ui/button.tsx": 1,
     "components/ui/card.tsx": 1,

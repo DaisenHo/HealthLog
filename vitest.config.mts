@@ -132,8 +132,13 @@ export default defineConfig({
         // Pre-bundle every dependency the browser files reach before the
         // first one loads. Discovered late, a dependency makes Vite re-bundle
         // and reload the page mid-run, which fails the file that was
-        // importing it; CI starts every run on an empty cache.
+        // importing it; CI starts every run on an empty cache. `force`
+        // makes a local run start there too: a cache warmed before a new
+        // browser file existed does not know that file's dependencies, and
+        // the late re-bundle loads a second React ("Invalid hook call").
+        // A cold bundle costs about half a second.
         optimizeDeps: {
+          force: true,
           entries: ["src/**/*.browser.test.tsx", "tests/browser/**/*.{ts,tsx}"],
         },
         test: {
