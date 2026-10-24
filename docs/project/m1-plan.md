@@ -24,16 +24,16 @@ M1 不做：新的健康数据模型、目标引擎、设备适配、HealthKit �
 
 已确认入口：
 
-| 入口 | 最小工作 |
-| --- | --- |
-| `messages/en.json` 及新增中文 catalog | 沿用键结构，完成中文翻译，校验插值、复数及格式占位符；不批量改名 |
-| `src/lib/i18n/config.ts` | 注册简体中文的统一 locale、显示名和语言名称，复用现有配置 |
-| `project.inlang/settings.json` | 同步注册语言，保留已有 9 个语言及工具链 |
-| `src/lib/i18n/load-locale.ts` | 补齐中文动态加载；沿用 SSR / boot bundle / 英语 fallback |
-| `src/lib/i18n/server-catalogs.ts` | 验证新增 catalog 可读取、缓存与 fallback 正确，无需先重写加载器 |
-| `src/app/api/auth/me/locale/route.ts`、现有语言设置 UI | 检查服务端校验、用户偏好、cookie 与首次渲染一致；必要时补入中文选项 |
+| 入口                                                               | 最小工作                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `messages/en.json` 及新增中文 catalog                              | 沿用键结构，完成中文翻译，校验插值、复数及格式占位符；不批量改名         |
+| `src/lib/i18n/config.ts`                                           | 注册简体中文的统一 locale、显示名和语言名称，复用现有配置                |
+| `project.inlang/settings.json`                                     | 同步注册语言，保留已有 9 个语言及工具链                                  |
+| `src/lib/i18n/load-locale.ts`                                      | 补齐中文动态加载；沿用 SSR / boot bundle / 英语 fallback                 |
+| `src/lib/i18n/server-catalogs.ts`                                  | 验证新增 catalog 可读取、缓存与 fallback 正确，无需先重写加载器          |
+| `src/app/api/auth/me/locale/route.ts`、现有语言设置 UI             | 检查服务端校验、用户偏好、cookie 与首次渲染一致；必要时补入中文选项      |
 | `src/lib/format-locale.ts`、`src/components/ui/calendar-locale.ts` | 搜索对应调用与语言表，补齐中文日期、数字、日历映射，保持既有用户格式偏好 |
-| `scripts/generate-i18n-boot.mjs`、Docker/Next 打包配置 | 确认生成与部署包包含中文资源 |
+| `scripts/generate-i18n-boot.mjs`、Docker/Next 打包配置             | 确认生成与部署包包含中文资源                                             |
 
 - [ ] 在修改共享 locale 代码前搜索全部调用方、`Record<Locale,...>`、校验枚举、语言白名单、后台文案及测试语言列表，形成最小受影响清单。
 - [ ] 沿用仓库现有语言标识约定；如果选择 `zh-CN` 或 `zh-Hans`，集中定义映射，不能在 API/cookie/catalog 之间混用未映射值。

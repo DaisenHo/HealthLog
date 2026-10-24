@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { DayLayerMount } from "@/components/day/day-layer";
 import { AchievementUnlockNotifier } from "@/components/gamification/achievement-unlock-notifier";
+import { LanguageSelect } from "@/components/i18n/language-select";
 import { MaintainershipBanner } from "@/components/i18n/maintainership-banner";
 import { LayoutCoachFab } from "@/components/insights/layout-coach-fab";
 import { LayoutCoachMount } from "@/components/insights/layout-coach-mount";
@@ -281,14 +282,13 @@ export function AuthShell({
     if (isStandalonePublicPage) {
       return <>{children}</>;
     }
-    // `min-h-dvh`, not `h-dvh`: a phone held sideways is ~390 px tall, and
-    // a sign-in form that is taller than a fixed-height box centres out of
-    // it at the top, where nothing can scroll back to it. A minimum lets the
-    // box grow and the document scroll. The safe-area padding keeps the form
-    // off the status bar and the home indicator in an installed app.
+    // A minimum height lets sign-in forms scroll on short screens.
     return (
       <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)] pl-[env(safe-area-inset-left,0px)]">
         {demoMode ? <DemoBanner /> : null}
+        <div className="mx-auto w-full max-w-sm px-4 pt-4">
+          <LanguageSelect id="auth-language-select" />
+        </div>
         <MaintainershipBanner />
         <main
           id="main-content"

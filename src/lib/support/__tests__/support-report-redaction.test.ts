@@ -382,6 +382,8 @@ describe("host names under every app language's country codes", () => {
     ko: ["kr"],
     nl: ["nl", "be"],
     "pt-BR": ["br", "pt", "ao", "mz"],
+
+    "zh-CN": ["uk", "ie", "us", "ca", "au", "nz"],
   };
 
   it("covers every shipped locale", () => {

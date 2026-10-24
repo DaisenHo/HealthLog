@@ -1,5 +1,5 @@
 /**
- * First-paint locale ladder (root layout): cookie → User.locale →
+ * First-paint locale ladder (root layout): User.locale → cookie →
  * Accept-Language → "en" hard floor.
  *
  * The User.locale step is the Safari-ITP fix: the script-written
@@ -48,10 +48,10 @@ beforeEach(() => {
 });
 
 describe("resolveInitialLocale", () => {
-  it("returns the cookie locale without consulting the session", async () => {
+  it("uses the cookie for a guest without an account preference", async () => {
     mockCookies.mockResolvedValue(cookieStoreWith("de"));
     await expect(resolveInitialLocale()).resolves.toBe("de");
-    expect(mockGetSessionUserLocale).not.toHaveBeenCalled();
+    expect(mockGetSessionUserLocale).toHaveBeenCalledOnce();
   });
 
   it("ignores an unsupported cookie value and walks the ladder", async () => {

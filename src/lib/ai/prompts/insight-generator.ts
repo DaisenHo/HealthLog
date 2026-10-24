@@ -991,7 +991,7 @@ const SYSTEM_PROMPT_DE = composeInsightPrompt("de");
  */
 export function getStrictInsightsSystemPrompt(locale: Locale): string {
   if (locale === "de") return SYSTEM_PROMPT_DE;
-  if (locale === "en") return SYSTEM_PROMPT_EN;
+  if (locale === "en" || locale === "zh-CN") return SYSTEM_PROMPT_EN;
   // ko, nl and pt-BR ship no safety-contract matrix, so they are not a
   // NativeCoachLocale.
   if (locale === "ko" || locale === "nl" || locale === "pt-BR") {

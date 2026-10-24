@@ -17,6 +17,7 @@ import type { MeasurementReminder } from "@/hooks/use-measurement-reminders";
 // v1.27.6 — a screening reminder's primary action navigates to the
 // check-in page via the app router, which the SSR harness doesn't mount.
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));
 

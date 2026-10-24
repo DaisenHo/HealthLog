@@ -41,6 +41,7 @@
  * the caller, there is no grant to narrow to, and every value below is
  * resolved from the same row it always was.
  */
+import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { apiSuccess } from "@/lib/api-response";
 import { apiHandler, requireActorAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -355,11 +356,10 @@ export const GET = apiHandler(async () => {
     avatarUrl: user.avatarUpdatedAt
       ? buildAvatarUrl(user.id, user.avatarUpdatedAt)
       : null,
+    locale: await resolveJobLocale(user.locale),
     // The stored choice, published as the closed pair the contract names.
     glucoseUnit: storedGlucoseUnit(user.glucoseUnit),
-    // v1.7.0 — global metric/imperial display preference. Canonical
-    // storage stays SI; this only drives the display-time transform
-    // branch. Null defaults to "metric" on the client.
+    // Storage stays SI; this preference only affects display units.
     unitPreference: user.unitPreference === "imperial" ? "imperial" : "metric",
     // Hour-cycle display preference (AUTO follows the locale convention,
     // H12 / H24 pin the cycle). Clients mirror this into their formatters.

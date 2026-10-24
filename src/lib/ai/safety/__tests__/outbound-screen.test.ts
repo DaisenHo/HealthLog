@@ -26,6 +26,8 @@ const DOSE_VIOLATIONS: Record<Locale, string> = {
   nl: "Verhoog je dosis volgende week naar 2,4 mg.",
   "pt-BR": "Aumente sua dose para 2,4 mg na próxima semana.",
   ko: "다음 주에 2.4mg으로 늘려 보세요.",
+
+  "zh-CN": "You should step up to 2.4 mg next week.",
 };
 
 /**
@@ -43,6 +45,8 @@ const DOSE_CLEAN: Record<Locale, string> = {
   nl: "Je zit in week 3 op 7,5 mg, en je gewicht gaat omlaag.",
   "pt-BR": "Você está na semana 3 com 7,5 mg, e seu peso está diminuindo.",
   ko: "3주째 7.5mg을 복용 중이고, 체중은 내려가고 있어요.",
+
+  "zh-CN": "You're in week 3 on 7.5 mg, and your weight is tracking down.",
 };
 
 describe("screenModelOutput — dose-prescription, all six locales", () => {
@@ -103,6 +107,8 @@ const RISK_VIOLATIONS: Record<Locale, string> = {
   nl: "Je risico ligt op ongeveer 12%.",
   "pt-BR": "Seu risco é de cerca de 12%.",
   ko: "10년 심혈관 위험도는 약 12%예요.",
+
+  "zh-CN": "Your 10-year cardiovascular risk is about 12%.",
 };
 
 /** A plain percentage that is NOT a clinical risk claim must pass. */
@@ -116,6 +122,8 @@ const RISK_CLEAN: Record<Locale, string> = {
   nl: "Je therapietrouw was 92% in de afgelopen 30 dagen.",
   "pt-BR": "Sua adesão foi de 92% nos últimos 30 dias.",
   ko: "지난 30일 복약 순응도는 92%였어요.",
+
+  "zh-CN": "Your adherence was 92% over the last 30 days.",
 };
 
 describe("screenModelOutput — risk-score, all six locales", () => {
@@ -374,6 +382,8 @@ const CAUSAL_VIOLATIONS: Record<Locale, string> = {
   nl: "Je gewicht daalde omdat je meer sliep.",
   "pt-BR": "Seu peso caiu porque você dormiu mais.",
   ko: "수면 때문에 체중이 줄었어요.",
+
+  "zh-CN": "Your weight fell because you slept more.",
 };
 
 /** Descriptive association framing is what the contract REQUIRES. */
@@ -387,6 +397,8 @@ const CAUSAL_CLEAN: Record<Locale, string> = {
   nl: "Je gewicht bewoog deze week mee met je slaap.",
   "pt-BR": "Seu peso acompanhou o seu sono nesta semana.",
   ko: "이번 주 체중은 수면과 함께 움직였어요.",
+
+  "zh-CN": "Your weight moved with your sleep this week.",
 };
 
 describe("screenModelOutput — causal claims, all six locales", () => {
@@ -623,6 +635,34 @@ const DOSE_CLASS_VIOLATIONS: Record<Locale, readonly string[]> = {
     "저녁 인슐린 용량을 건너뛰세요.",
     "메트포르민 복용을 중단하세요.",
   ],
+
+  "zh-CN": [
+    "Reduce your dose by half.",
+    "Cut your dose in half.",
+    "Take half a dose.",
+    "Take half your usual dose.",
+    "Reduce your dose.",
+    "Increase your insulin.",
+    "Lower your ramipril a little.",
+    "Increase your metformin to 2000 mg daily.",
+    "Raise your insulin by 4 units tonight.",
+    "Up your metformin to 1500 mg.",
+    "Bump the semaglutide to 1 mg next week.",
+    "Titrate your evening insulin up to 20 units.",
+    "Reduce your metformin from 2000 mg to 1000 mg.",
+    "Lower your lisinopril to 5 mg.",
+    "Halve your metformin to 500 mg.",
+    "Double your vitamin D to 4000 IU.",
+    "Take 2000 mg daily.",
+    "Take 3 tablets of metformin with dinner.",
+    "Here's the plan: take 2 pills in the morning.",
+    "Your glucose ran high.\nTake 1000 mg more tonight.",
+    "It might be worth increasing your metformin to 2000 mg.",
+    "Skip your evening dose tonight.",
+    "Consider skipping tonight's insulin dose.",
+    "Stop taking metformin.",
+    "You should stop taking your lisinopril.",
+  ],
 };
 
 /**
@@ -750,6 +790,35 @@ const DOSE_CLASS_CLEAN: Record<Locale, readonly string[]> = {
     "용량을 늘릴지 의사와 상담하세요.",
     "담배를 끊으세요.",
     "혈당을 140mg/dL 아래로 유지해 보세요.",
+  ],
+
+  "zh-CN": [
+    "Reduce your sugar intake by half.",
+    "Cut your screen time in half.",
+    "Take half an hour to walk.",
+    "Reduce your salt.",
+    "Ask your doctor whether to reduce your dose.",
+    "Your dose was reduced by half in May.",
+    "Don't reduce your dose.",
+    "Increase your activity.",
+    "Lower your blood pressure with walks.",
+    "Take your medication as prescribed.",
+    "You take 1000 mg twice daily.",
+    "Your log shows 2000 mg.",
+    "Your log shows you take 1000 mg twice daily, and you haven't missed a dose.",
+    "Ask your doctor whether to increase your dose.",
+    "Talk to your doctor before you stop taking your metformin.",
+    "Don't skip your evening dose.",
+    "Never stop taking metformin without talking to your prescriber.",
+    "Your dose was increased to 2000 mg in May.",
+    "Since your metformin was raised to 2000 mg, your fasting glucose dropped.",
+    "Double your steps for two weeks.",
+    "Skip the evening walk if it rains.",
+    "Stop using your phone an hour before bed.",
+    "Lower your sodium to 1500 mg a day.",
+    "Increase your water intake to 2000 ml.",
+    "Try to keep your glucose under 140 mg/dL after meals.",
+    "Aim to bring your LDL down to 100 mg/dL with your doctor.",
   ],
 };
 

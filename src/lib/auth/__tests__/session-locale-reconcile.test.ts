@@ -1,18 +1,4 @@
-/**
- * `getSession` keeps `User.locale` in step with the language the browser is
- * actually reading.
- *
- * The column is the only signal a cookie-blind path has — the nightly
- * briefing warm, the Coach nudge, the reminder senders, the native dashboard
- * aggregate. The screen in front of the user resolves from the
- * `healthlog-locale` cookie first. When those two disagree nothing looks
- * wrong until a job writes a sentence, and then one paragraph of an
- * otherwise correct page comes back in the wrong language.
- *
- * Closing that used to be a fire-and-forget PUT from a mount effect, so a
- * lost request left the divergence standing for the life of the account.
- * These pin the server-side reconcile that replaced it as the mechanism.
- */
+/** Reading a session refreshes a stale locale cookie without mutating the account language. */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const cookieState = vi.hoisted(() => ({
@@ -35,6 +21,10 @@ vi.mock("@/lib/db", () => ({
     },
     user: { update: vi.fn(async () => ({})) },
   },
+}));
+
+vi.mock("@/lib/app-settings", () => ({
+  getOperatorDefaultLocale: vi.fn(async () => "de"),
 }));
 
 vi.mock("@/lib/db-compat", () => ({
@@ -64,7 +54,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { getSession } from "../session";
+import { getSession, getSessionUserLocale } from "../session";
 
 /** A cookie value in the shape `mintSessionSecret` produces. */
 const SECRET = `hls_${"a".repeat(64)}`;
@@ -93,7 +83,13 @@ beforeEach(() => {
 });
 
 describe("getSession — locale column reconcile", () => {
-  it("writes the column when the browser reads a different language", async () => {
+  it("uses the same operator fallback as background jobs when no language was chosen", async () => {
+    seedSession(null);
+    cookieState.locale = "fr";
+    await expect(getSessionUserLocale()).resolves.toBe("de");
+  });
+
+  it("keeps the account language when an old browser sends another language", async () => {
     // The row the production instance actually held: a German reader whose
     // column said English, so every generated sentence came back English.
     seedSession("en");
@@ -101,15 +97,16 @@ describe("getSession — locale column reconcile", () => {
 
     const result = await getSession();
 
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { locale: "de" },
-    });
-    // The same request must not answer with the value just replaced.
-    expect(result?.user.locale).toBe("de");
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(result?.user.locale).toBe("en");
+    expect(cookieState.set).toHaveBeenCalledWith(
+      "healthlog-locale",
+      "en",
+      expect.objectContaining({ httpOnly: false }),
+    );
   });
 
-  it("backfills a column that was never written at all", async () => {
+  it("does not turn a guest cookie into a stored account preference", async () => {
     // The account that never opened the language picker: the cookie is the
     // client's own mount-time write of the Accept-Language paint.
     seedSession(null);
@@ -117,10 +114,7 @@ describe("getSession — locale column reconcile", () => {
 
     await getSession();
 
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { locale: "de" },
-    });
+    expect(prisma.user.update).not.toHaveBeenCalled();
   });
 
   it("writes nothing once the two agree", async () => {

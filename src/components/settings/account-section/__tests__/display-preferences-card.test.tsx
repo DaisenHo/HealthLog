@@ -7,10 +7,15 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { DisplayPreferencesCard } from "../index";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/settings/account",
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
 
 function render(): string {
   const client = new QueryClient({

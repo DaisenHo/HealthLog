@@ -554,7 +554,7 @@ export const profileUpdateRequest = z
       .describe(
         "Trimmed before its bound is checked. Null, an empty string or only spaces clears it; an omitted field is left untouched.",
       ),
-    locale: z.enum(["de", "en"]).nullable().optional(),
+    locale: z.enum(locales).nullable().optional(),
     timezone: z.string().min(1).max(64).optional(),
     timeFormat: z
       .enum(["AUTO", "H12", "H24"])
@@ -2374,12 +2374,32 @@ export const profilePaths: NonNullable<ZodOpenApiObject["paths"]> = {
     },
   },
   "/api/auth/me/locale": {
+    get: {
+      tags: ["Auth"],
+      summary: "Read the account interface language",
+      description:
+        "Reads the caller's persisted interface language. Accounts without a supported preference use the operator default, then English, matching background jobs. Browser cookies never overwrite this preference. Accepts cookie sessions and Bearer tokens.",
+      responses: {
+        "200": {
+          description: "The account language.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ locale: z.enum(locales) }),
+                "LocaleGetEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
     put: {
       tags: ["Auth"],
       summary: "Set the interface language",
       description:
         "Writes the account's UI language and mirrors it into the locale cookie via `Set-Cookie`. Both halves matter: the column is what server-side work reads when there is no request to take a cookie from — a scheduled nudge, a Telegram message — and without it those went out in English however the person reads the app. The server-set cookie outlives the client-written one, which some browsers cap at seven days.\n\n" +
-        "An ACTOR surface, and the clearest case for that mode existing: the interface language belongs to the person reading the screen, never to the record on it. Under a record scope this would write a delegate's choice onto the owner's row and then mail the owner in a language they may not read. A request that attaches the per-request account selector (the `AccountSelector` header parameter) is refused with 403 `sharing.not_permitted`. It keeps answering while a switch is on rather than merely refusing safely, because the language switcher fires a mount-time backfill on every page load.\n\n" +
+        "An ACTOR surface, and the clearest case for that mode existing: the interface language belongs to the person reading the screen, never to the record on it. Under a record scope this would write a delegate's choice onto the owner's row and then mail the owner in a language they may not read. A request that attaches the per-request account selector (the `AccountSelector` header parameter) is refused with 403 `sharing.not_permitted`. It keeps answering while a switch is on rather than merely refusing safely, so the reader can choose their language without changing the record owner's preference.\n\n" +
         "Idempotent: when the column already matches, the write is skipped and only the cookie is refreshed. Body capped at 4 KB.",
       requestBody: {
         required: true,

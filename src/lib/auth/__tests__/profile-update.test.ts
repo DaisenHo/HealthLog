@@ -271,7 +271,7 @@ describe("applyProfileUpdate partial-field save", () => {
   it("writes nothing and reports every rejected field when the whole body is invalid", async () => {
     const result = await applyProfileUpdate(USER_ID, {
       gender: "male",
-      locale: "fr",
+      locale: "unsupported",
     });
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -294,7 +294,7 @@ describe("applyProfileUpdate top-level error message", () => {
   const RAW_ZOD_ENUM_PATTERN = /expected one of/i;
 
   it("never lets the raw Zod enum message reach the top-level `message`", async () => {
-    const result = await applyProfileUpdate(USER_ID, { locale: "fr" });
+    const result = await applyProfileUpdate(USER_ID, { locale: "unsupported" });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.message).not.toMatch(RAW_ZOD_ENUM_PATTERN);
@@ -318,7 +318,7 @@ describe("applyProfileUpdate top-level error message", () => {
   });
 
   it("carries a stable errorCode so the web client can localize the sentence", async () => {
-    const result = await applyProfileUpdate(USER_ID, { locale: "fr" });
+    const result = await applyProfileUpdate(USER_ID, { locale: "unsupported" });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.errorCode).toBe("profile.update.nothingSaved");

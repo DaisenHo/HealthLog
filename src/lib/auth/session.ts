@@ -8,6 +8,7 @@ import { getEvent } from "@/lib/logging/context";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isInputRefusal, isP2025 } from "@/lib/prisma-errors";
 import { SessionStoreUnavailableError } from "@/lib/api-errors";
+import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
 
@@ -372,70 +373,17 @@ export async function getSession(): Promise<{
       .catch(() => {});
   }
 
-  const rawLocaleCookie = cookieStore.get(LOCALE_COOKIE)?.value;
-  const cookieLocale =
-    rawLocaleCookie && (locales as readonly string[]).includes(rawLocaleCookie)
-      ? (rawLocaleCookie as Locale)
-      : null;
-
+  const savedLocale = session.user.locale;
   if (
-    session.user.locale &&
-    (locales as readonly string[]).includes(session.user.locale) &&
-    !cookieLocale
+    savedLocale &&
+    (locales as readonly string[]).includes(savedLocale) &&
+    cookieStore.get(LOCALE_COOKIE)?.value !== savedLocale
   ) {
-    // Locale-cookie refresh: Safari's ITP expires the script-written
-    // `healthlog-locale` cookie after 7 days, so a returning user's first
-    // paint fell back to the browser language once a week. When the user
-    // has a persisted locale but the cookie is gone, re-emit it here —
-    // Set-Cookie is exempt from the ITP cap. Fail-soft: in a
-    // server-component render the cookie store is read-only and `set`
-    // throws — the next route-handler request re-attempts.
     try {
-      setLocaleCookie(cookieStore, session.user.locale as Locale);
+      setLocaleCookie(cookieStore, savedLocale as Locale);
     } catch {
-      // Read-only cookie context — skip; nothing depends on this write.
+      // Server-component renders cannot write cookies; handlers refresh them.
     }
-  } else if (cookieLocale && cookieLocale !== session.user.locale) {
-    // The column follows the language the browser is actually reading.
-    //
-    // `User.locale` is the ONLY signal every cookie-blind path has: the
-    // nightly briefing warm, the Coach nudge, the reminder senders and the
-    // native aggregate all resolve from the column alone, while the screen
-    // in front of the user resolves from this cookie first. The two can
-    // therefore disagree indefinitely, and the disagreement is invisible —
-    // it surfaces as one generated paragraph in the wrong language inside
-    // an otherwise correct page.
-    //
-    // Keeping them in step used to be the client's job: a fire-and-forget
-    // `PUT /api/auth/me/locale` from a mount effect, best-effort by
-    // construction. A 401 on the paint before sign-in, an offline blip, a
-    // tab closed mid-flight — every one of those loses the write silently,
-    // and the next mount repeats the same unreliable attempt rather than
-    // noticing the column is still wrong. So the column stayed on a
-    // language the user had left behind, for as long as the account existed.
-    //
-    // This arm closes it from the side that cannot miss. The cookie is only
-    // ever written alongside a committed UI locale (client `persistLocale`,
-    // or this function's own refresh above), so it is a statement about what
-    // the person is reading, not a guess: Accept-Language never reaches the
-    // column this way. Fire-and-forget like the `lastActiveAt` stamp, and
-    // self-limiting — once the two agree the condition is false and no
-    // further write is attempted.
-    //
-    // A second browser whose cookie still carries the older choice will move
-    // the column back. That is the same last-writer-wins the client PUT
-    // already had, and it is coherent: that browser is showing the older
-    // language too, because the cookie outranks the column on its first
-    // paint as well.
-    void prisma.user
-      .update({
-        where: { id: session.user.id },
-        data: { locale: cookieLocale },
-      })
-      .catch(() => {});
-    // Keep THIS request coherent — a handler resolving the locale from the
-    // returned row must not answer with the value we just replaced.
-    session.user.locale = cookieLocale;
   }
 
   return {
@@ -480,7 +428,7 @@ export async function getSession(): Promise<{
  * mutation — the root layout renders on every request in a context where
  * the cookie store is read-only, so the full session touch is both dead
  * weight and a throw hazard there. Returns null for missing/expired
- * sessions and users without a persisted locale.
+ * sessions. Accounts without a choice use the same fallback as background jobs.
  */
 export async function getSessionUserLocale(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -492,7 +440,7 @@ export async function getSessionUserLocale(): Promise<string | null> {
   // refresh or clear here.
   const session = await findSessionByCookie(cookieValue);
   if (!session || session.expiresAt < new Date()) return null;
-  return session.user.locale;
+  return resolveJobLocale(session.user.locale);
 }
 
 export async function destroySession(): Promise<void> {

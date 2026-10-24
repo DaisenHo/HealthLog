@@ -25,6 +25,7 @@ vi.mock("@/lib/api/api-fetch", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: vi.fn() }),
 }));
 

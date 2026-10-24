@@ -11,10 +11,12 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import {
   locales,
   defaultLocale,
+  isLocale,
   localeFromLanguageTag,
   type Locale,
 } from "./config";
@@ -40,14 +42,15 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 interface I18nContextValue {
   locale: Locale;
-  setLocale: (locale: Locale) => void;
+  setLocale: (locale: Locale) => Promise<boolean>;
   /**
-   * Non-null while a locale switch is waiting on its message bundle
-   * (dynamic import). The switcher uses it for a short pending state;
+   * Non-null while a locale switch loads its bundle and saves the account
+   * preference. The switcher uses it for a short pending state;
    * `locale` / `t` only flip once the bundle is in so the UI never
    * renders the new locale with the old (or fallback) strings.
    */
   pendingLocale: Locale | null;
+  localeErrorKey: string | null;
   t: (key: string, params?: Record<string, string | number>) => string;
   /**
    * Plural-aware `t`. Resolves `<baseKey><One|Few|Other>` under the active
@@ -91,9 +94,11 @@ function getSavedLocale(): Locale | null {
   // render avoids a hydration flash of the wrong language.
   const fromCookie = readLocaleCookie();
   if (fromCookie) return fromCookie;
-  const saved = localStorage.getItem("healthlog-locale");
-  if (saved && (locales as readonly string[]).includes(saved)) {
-    return saved as Locale;
+  try {
+    const saved = localStorage.getItem("healthlog-locale");
+    if (isLocale(saved)) return saved;
+  } catch {
+    // Storage can be unavailable in private browsing.
   }
   return null;
 }
@@ -104,37 +109,15 @@ function getSavedLocale(): Locale | null {
 // alongside the `setActive` flip so a failed bundle load never leaves
 // the persisted locale pointing at strings the UI isn't showing.
 function persistLocale(newLocale: Locale) {
-  localStorage.setItem("healthlog-locale", newLocale);
+  try {
+    localStorage.setItem("healthlog-locale", newLocale);
+  } catch {
+    // The server preference and cookie still preserve the choice.
+  }
   // 1-year expiry, Lax samesite, not HttpOnly so the client continues
   // to own it.
   document.cookie = `healthlog-locale=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
   document.documentElement.lang = newLocale;
-}
-
-// Mirror the active locale onto `User.locale` so server-side background work
-// (the proactive Coach nudge, the Telegram test message) renders in the
-// user's language. The cookie/localStorage choice is invisible to a cron that
-// has no request context.
-//
-// This is no longer what the column depends on. Being fire-and-forget, it
-// loses the write on a 401, an offline blip or a tab closed mid-flight, and
-// nothing retried — the column then held a language the user had left behind
-// for good. `getSession` reconciles the column from the locale cookie on the
-// next request instead, which is ordered by the request pipeline and needs no
-// cooperation from the client. What this call still earns its place for is
-// the server-set cookie the route emits in reply: Safari's ITP caps the
-// script-written copy at 7 days, and a Set-Cookie is exempt.
-function persistLocaleToServer(newLocale: Locale) {
-  void apiFetchRaw("/api/auth/me/locale", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ locale: newLocale }),
-    credentials: "same-origin",
-    keepalive: true,
-  }).catch(() => {
-    // Best-effort: the cookie remains the first-paint source of truth, and
-    // the next mount retries the backfill.
-  });
 }
 
 export function I18nProvider({
@@ -155,53 +138,31 @@ export function I18nProvider({
    */
   initialMessages?: MessageBundle;
 }) {
-  // Locale + messages live in ONE state cell so a locale switch flips
-  // both atomically — `locale` never points at a bundle that hasn't
-  // arrived yet.
   const [active, setActive] = useState<{
     locale: Locale;
     messages: MessageBundle;
   }>(() => {
-    // Prefer the server-resolved initial locale to eliminate the hydration
-    // flash where the server renders EN ("Loading…") and the client then
-    // flips to DE ("Laden…") once localStorage/cookie is read at mount.
     const locale =
       initialLocale && (locales as readonly string[]).includes(initialLocale)
         ? initialLocale
         : (getSavedLocale() ?? detectSystemLocale());
     if (initialMessages && locale === initialLocale) {
-      // Seed the switch cache too, so switching away and back is instant.
-      // Idempotent, so safe under StrictMode's double initializer call.
       primeMessages(locale, initialMessages);
       return { locale, messages: initialMessages };
     }
-    // Cache miss on every ladder rung (boot script failed AND the locale
-    // isn't EN-cached): render with an empty bundle for one frame — the
-    // backfill effect below dynamic-imports the bundle and flips state.
-    // In the app this only happens when the boot script is unreachable
-    // (evicted HTTP cache offline); keys render raw briefly rather than
-    // in the wrong language.
     return {
       locale,
       messages: getCachedMessages(locale) ?? getFallbackMessages() ?? {},
     };
   });
   const { locale, messages } = active;
+  const pathname = usePathname();
   const [pendingLocale, setPendingLocale] = useState<Locale | null>(null);
-  // Bumped when the lazily-loaded EN fallback bundle lands so every t()
-  // consumer re-renders with the fallback floor in place. The EN catalog is
-  // no longer a static import (it cost ~106 KB gz on every route); it loads
-  // on demand the first time a key actually misses the active bundle.
+  const [localeErrorKey, setLocaleErrorKey] = useState<string | null>(null);
+  const localeGeneration = useRef(0);
   const [, setFallbackTick] = useState(0);
   const fallbackRequestedRef = useRef(false);
-  // Tracks the most recent switch request so a slow bundle load can't
-  // clobber a newer one (last click wins).
   const requestedLocaleRef = useRef<Locale | null>(null);
-
-  // Degenerate mount (no server-passed bundle, non-EN locale from
-  // localStorage / navigator): backfill the bundle asynchronously. In
-  // the app this path never runs — the root layout always passes the
-  // active locale's messages — but standalone mounts stay correct.
   useEffect(() => {
     if (getCachedMessages(locale)) return;
     let cancelled = false;
@@ -216,51 +177,86 @@ export function I18nProvider({
     };
   }, [locale]);
 
-  // v1.25.0 — keep `User.locale` in step with the committed UI locale. Runs on
-  // mount (backfilling the column for users who set their language before this
-  // landed) and on every switch, so the proactive Coach nudge and other
-  // cookie-blind background paths render in the language the user reads.
   useEffect(() => {
-    persistLocaleToServer(locale);
-  }, [locale]);
-
-  const setLocale = useCallback((newLocale: Locale) => {
-    if (!(locales as readonly string[]).includes(newLocale)) return;
-
-    const cached = getCachedMessages(newLocale);
-    if (cached) {
-      requestedLocaleRef.current = null;
-      setPendingLocale(null);
-      persistLocale(newLocale);
-      setActive({ locale: newLocale, messages: cached });
-      return;
+    const controller = new AbortController();
+    async function syncAccountLocale() {
+      if (!navigator.onLine || requestedLocaleRef.current !== null) return;
+      const generation = ++localeGeneration.current;
+      try {
+        const response = await apiFetchRaw("/api/auth/me/locale", {
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const body: { data?: { locale?: unknown } } = await response.json();
+        const next = body.data?.locale;
+        if (!isLocale(next)) return;
+        const loaded = await loadMessages(next);
+        if (
+          controller.signal.aborted ||
+          generation !== localeGeneration.current
+        )
+          return;
+        persistLocale(next);
+        setActive((prev) =>
+          prev.locale === next ? prev : { locale: next, messages: loaded },
+        );
+      } catch {}
     }
+    void syncAccountLocale();
+    window.addEventListener("focus", syncAccountLocale);
+    window.addEventListener("online", syncAccountLocale);
+    return () => {
+      controller.abort();
+      window.removeEventListener("focus", syncAccountLocale);
+      window.removeEventListener("online", syncAccountLocale);
+    };
+  }, [pathname]);
 
-    requestedLocaleRef.current = newLocale;
-    setPendingLocale(newLocale);
-    loadMessages(newLocale)
-      .then((loaded) => {
-        if (requestedLocaleRef.current !== newLocale) return;
-        requestedLocaleRef.current = null;
-        setPendingLocale(null);
-        // Persist atomically with the flip — never before the bundle is
-        // in hand, so cookie / <html lang> / localStorage can't drift
-        // onto a locale the UI failed to load.
+  const setLocale = useCallback(
+    async (newLocale: Locale): Promise<boolean> => {
+      if (!isLocale(newLocale)) return false;
+      const generation = ++localeGeneration.current;
+      setLocaleErrorKey(null);
+      if (!navigator.onLine) {
+        setLocaleErrorKey("settings.languageOffline");
+        return false;
+      }
+      requestedLocaleRef.current = newLocale;
+      setPendingLocale(newLocale);
+      try {
+        const loaded = await loadMessages(newLocale);
+        const response = await apiFetchRaw("/api/auth/me/locale", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locale: newLocale }),
+          credentials: "same-origin",
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (response.ok) {
+          const saved: { data?: { locale?: unknown } } = await response.json();
+          if (saved.data?.locale !== newLocale)
+            throw new Error("Locale save failed");
+        } else if (response.status !== 401 || !pathname?.startsWith("/auth/")) {
+          throw new Error("Locale save failed");
+        }
+        if (generation !== localeGeneration.current) return false;
         persistLocale(newLocale);
         setActive({ locale: newLocale, messages: loaded });
-      })
-      .catch(() => {
-        // Bundle fetch failed (offline mid-session, …) — stay on the
-        // current locale rather than rendering the new one in EN, and
-        // leave cookie / <html lang> / localStorage untouched.
-        if (requestedLocaleRef.current !== newLocale) return;
-        requestedLocaleRef.current = null;
-        setPendingLocale(null);
-      });
-  }, []);
-
-  // Keep the HTML lang and the cookie in sync with the active locale on
-  // mount. The cookie acts as the SSR handoff for the next request.
+        return true;
+      } catch {
+        if (generation === localeGeneration.current) {
+          setLocaleErrorKey("settings.languageSaveFailed");
+        }
+        return false;
+      } finally {
+        if (generation === localeGeneration.current) {
+          requestedLocaleRef.current = null;
+          setPendingLocale(null);
+        }
+      }
+    },
+    [pathname],
+  );
   useEffect(() => {
     document.documentElement.lang = locale;
     document.cookie = `healthlog-locale=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
@@ -269,44 +265,22 @@ export function I18nProvider({
   const t = useCallback(
     (key: string, params?: Record<string, string | number>): string => {
       let value = resolveKey(messages, key);
-
-      // Fallback to English if key missing in current locale
       if (value === undefined && locale !== "en") {
         const fallback = getFallbackMessages();
         if (fallback) {
           value = resolveKey(fallback, key);
         } else if (!fallbackRequestedRef.current) {
-          // First miss without the EN floor in hand: fetch it once, then
-          // re-render so this key (and any sibling misses) resolve. The
-          // locale-integrity guard keeps every locale key-complete, so in
-          // practice this path only runs against a drifted cached bundle.
           fallbackRequestedRef.current = true;
           void loadMessages("en")
             .then(() => setFallbackTick((n) => n + 1))
-            .catch(() => {
-              // Leave the ref set — retrying every render would hammer a
-              // dead network; the raw key remains the last resort.
-            });
+            .catch(() => {});
         }
       }
-
-      // Fallback to key itself
       if (value === undefined) {
         return key;
       }
-
-      // Replace {param} placeholders
       if (params) {
         for (const [k, v] of Object.entries(params)) {
-          // A REPLACER FUNCTION, not a replacement string. `String.replace`
-          // reads `$&`, `$\``, `$'`, `$1` and `$$` out of a replacement
-          // STRING, so a value carrying one of them rewrites the sentence
-          // around it: a display name of `$\'` splices everything after the
-          // placeholder back in, and `$\`` splices everything before it. Every
-          // interpolated value here is user-controlled — a person's display
-          // name is the common one, and it lands in sentences on the sharing
-          // panel that describe who did what. A function replacement is
-          // substituted verbatim and has no `$` grammar at all.
           value = value.replace(new RegExp(`\\{${k}\\}`, "g"), () => String(v));
         }
       }
@@ -326,8 +300,15 @@ export function I18nProvider({
   );
 
   const value = useMemo(
-    () => ({ locale, setLocale, pendingLocale, t, tCount }),
-    [locale, setLocale, pendingLocale, t, tCount],
+    () => ({
+      locale,
+      setLocale,
+      pendingLocale,
+      localeErrorKey,
+      t,
+      tCount,
+    }),
+    [locale, setLocale, pendingLocale, localeErrorKey, t, tCount],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

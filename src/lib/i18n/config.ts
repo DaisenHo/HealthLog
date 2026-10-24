@@ -8,6 +8,7 @@ export const locales = [
   "ko",
   "nl",
   "pt-BR",
+  "zh-CN",
 ] as const;
 export type Locale = (typeof locales)[number];
 
@@ -38,11 +39,17 @@ export function isLocale(value: unknown): value is Locale {
 export function localeFromLanguageTag(
   tag: string | null | undefined,
 ): Locale | null {
-  const lower = tag?.trim().toLowerCase();
+  const lower = tag?.trim().replaceAll("_", "-").toLowerCase();
   if (!lower) return null;
   const exact = locales.find((l) => l.toLowerCase() === lower);
   if (exact) return exact;
   const primary = lower.split("-")[0];
+  if (primary === "zh") {
+    if (lower.includes("-hant")) return null;
+    return lower === "zh" || /^zh-(?:hans|cn|sg)(?:-|$)/.test(lower)
+      ? "zh-CN"
+      : null;
+  }
   return locales.find((l) => l.toLowerCase().split("-")[0] === primary) ?? null;
 }
 
@@ -68,6 +75,7 @@ export const localeLanguageNames: Record<Locale, string> = {
   ko: "Korean",
   nl: "Dutch",
   "pt-BR": "Brazilian Portuguese",
+  "zh-CN": "Simplified Chinese",
 };
 
 export const localeLabels: Record<Locale, string> = {
@@ -80,6 +88,7 @@ export const localeLabels: Record<Locale, string> = {
   ko: "한국어",
   nl: "Nederlands",
   "pt-BR": "Português (Brasil)",
+  "zh-CN": "简体中文",
 };
 
 /**

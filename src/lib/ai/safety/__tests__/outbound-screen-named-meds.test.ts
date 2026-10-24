@@ -36,6 +36,8 @@ const NAMES: Record<Locale, readonly string[]> = {
   nl: ["Ramipril 5 mg", "Amlodipine", "Eliquis"],
   "pt-BR": ["Ramipril 5 mg", "Anlodipino", "Eliquis"],
   ko: ["라미프릴", "암로디핀", "엘리퀴스"],
+
+  "zh-CN": ["Ramipril 5 mg", "Amlodipine", "Eliquis"],
 };
 
 const VIOLATIONS: Record<Locale, readonly string[]> = {
@@ -123,6 +125,22 @@ const VIOLATIONS: Record<Locale, readonly string[]> = {
     "항응고제를 중단하세요.",
     "인슐린을 추가로 맞으세요.",
     "하루 두 알 드세요.",
+  ],
+
+  "zh-CN": [
+    "Then take an extra ramipril.",
+    "skip the amlodipine",
+    "take one more tablet of ramipril",
+    "Stop your blood thinner before the run.",
+    "Take two tablets of ramipril tonight.",
+    "Take another amlodipine if your pressure is high.",
+    "Leave out the Eliquis tomorrow.",
+    "Leave your Eliquis out tomorrow.",
+    "Pause your Eliquis for the weekend.",
+    "Take an additional dose of insulin before the run.",
+    "You should stop your Eliquis before the race.",
+    "Consider stopping your ramipril for a week.",
+    "Take half a tablet of amlodipine.",
   ],
 };
 
@@ -222,6 +240,34 @@ const CLEAN: Record<Locale, readonly string[]> = {
     "암로디핀을 건너뛰지 마세요.",
     "물을 한 잔 더 드세요.",
     "라미프릴을 한 알 더 드시지 마세요.",
+  ],
+
+  "zh-CN": [
+    "Your ramipril log shows every dose taken.",
+    "Don't skip your ramipril.",
+    "Never take an extra amlodipine to make up for a missed one.",
+    "You took an extra ramipril on Tuesday, according to your log.",
+    "Your log shows you skipped the amlodipine twice last week.",
+    "Your schedule has one tablet of ramipril every morning.",
+    "Your Eliquis was stopped in March, as your log shows.",
+    "Ask your doctor whether to stop your blood thinner before surgery.",
+    "Ask your doctor whether you should stop your Eliquis before surgery.",
+    "Talk to your prescriber before you skip any ramipril.",
+    "Ramipril and amlodipine both lower blood pressure.",
+    "Take an extra walk after dinner.",
+    "Take an extra minute to log your medication.",
+    "Skip the extra coffee today.",
+    "Stop your run if you feel dizzy.",
+    "Take one more lap around the block.",
+    "Stop worrying about your medication; your log is complete.",
+    "Take your ramipril as prescribed.",
+    "Your April readings were steady.",
+    "Take a reading before your morning amlodipine.",
+    "Take one more reading tonight to confirm the trend.",
+    "Ask your doctor if you should skip the amlodipine before surgery.",
+    "I'd suggest asking your doctor before stopping your ramipril.",
+    "Please don't take an extra ramipril to catch up.",
+    "Two tablets of metformin a day is what your schedule shows.",
   ],
 };
 

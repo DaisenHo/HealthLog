@@ -13,6 +13,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   useSearchParams: () => new URLSearchParams(""),
 }));

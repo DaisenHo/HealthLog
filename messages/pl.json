@@ -7633,7 +7633,9 @@
       "off": "Wyłączone",
       "change": "Zmień w Modułach"
     },
-    "timezoneUseDevice": "Użyj strefy czasowej tego urządzenia ({zone})"
+    "timezoneUseDevice": "Użyj strefy czasowej tego urządzenia ({zone})",
+    "languageOffline": "Zmiana języka konta wymaga połączenia. Nadal używany jest zapisany język.",
+    "languageSaveFailed": "Nie udało się zapisać języka. Sprawdź połączenie i spróbuj ponownie."
   },
   "admin": {
     "title": "Administracja",

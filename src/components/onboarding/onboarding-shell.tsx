@@ -1,3 +1,4 @@
+import { LanguageSelect } from "@/components/i18n/language-select";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -79,6 +80,10 @@ export async function OnboardingShell({
             : null}
         </p>
       </header>
+
+      <div className="mb-6">
+        <LanguageSelect id="onboarding-language-select" />
+      </div>
 
       {/* A landmark of its own: every piece of page content sits inside one
           (axe `region`), and the step list is the flow's navigation. */}

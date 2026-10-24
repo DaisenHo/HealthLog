@@ -14,6 +14,7 @@ import type { ProfileClaimPreview } from "@/lib/queries/use-profile-claim";
 let previewData: ProfileClaimPreview | undefined;
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ replace: () => {}, refresh: () => {}, push: () => {} }),
 }));
 vi.mock("@/hooks/use-auth", () => ({

@@ -1,3 +1,4 @@
+import { resolveJobLocale } from "./job-locale";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 import {
@@ -49,9 +50,8 @@ interface ResolveOptions {
  *
  * Priority:
  *   1. Explicit override (e.g. `?locale=…` query param).
- *   2. healthlog-locale / userLocale cookie (set by the client when the user
- *      switches language).
- *   3. The User.locale column (persisted preference).
+ *   2. The User.locale column, or the operator default for an account without a choice.
+ *   3. healthlog-locale / userLocale cookie for guests and cached reads.
  *   4. Accept-Language header.
  *   5. defaultLocale (English).
  */
@@ -59,6 +59,8 @@ export async function resolveServerLocale(
   options: ResolveOptions = {},
 ): Promise<Locale> {
   if (isLocale(options.override)) return options.override;
+  if (options.userLocale !== undefined)
+    return resolveJobLocale(options.userLocale);
 
   try {
     const cookieStore = await cookies();
@@ -69,8 +71,6 @@ export async function resolveServerLocale(
   } catch {
     // cookies() throws outside a request context — ignore.
   }
-
-  if (isLocale(options.userLocale)) return options.userLocale;
 
   const accept = options.request?.headers.get("accept-language") ?? null;
   const fromHeader = pickLocaleFromAcceptLanguage(accept);

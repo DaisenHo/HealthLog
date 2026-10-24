@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // The page surface reads `useRouter` (Conversations routes via the app router).
 const pushMock = vi.fn();
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: pushMock }),
 }));
 

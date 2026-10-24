@@ -32,6 +32,7 @@ import {
 import { createMfaChallenge } from "@/lib/auth/mfa/challenge";
 import { syncMfaEnrollCookie } from "@/lib/auth/mfa-enrollment";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { resolveServerDefaultTimezone } from "@/lib/tz/resolver";
 import {
   buildNativeCallbackUrl,
@@ -482,10 +483,9 @@ export const GET = apiHandler(async (req: NextRequest) => {
             .then((u: unknown) => u !== null),
         );
 
-        // Same server-default resolution the register route uses — an
-        // SSO-provisioned account has no registration form to carry the
-        // browser-detected timezone.
+        // SSO has no form carrying the browser timezone, so use the server default.
         const timezone = await resolveServerDefaultTimezone();
+        const locale = await resolveServerLocale({ request: req });
 
         // v1.28.48 — the first provisioned user becomes ADMIN. Deriving that
         // role from the early `userCount` (read above, before username
@@ -515,6 +515,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
               passwordHash: null,
               role,
               timezone,
+              locale,
               oidcIssuer: metadata.issuer,
               oidcSub: identity.sub,
             },

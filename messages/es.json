@@ -7633,7 +7633,9 @@
       "off": "Desactivado",
       "change": "Cambiar en Módulos"
     },
-    "timezoneUseDevice": "Usar la zona horaria de este dispositivo ({zone})"
+    "timezoneUseDevice": "Usar la zona horaria de este dispositivo ({zone})",
+    "languageOffline": "Se necesita conexión para cambiar el idioma de la cuenta. Se mantiene el idioma guardado.",
+    "languageSaveFailed": "No se pudo guardar el idioma. Comprueba la conexión e inténtalo de nuevo."
   },
   "admin": {
     "title": "Administration",

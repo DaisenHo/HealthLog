@@ -175,6 +175,25 @@ const HARMLESS: Record<Locale, readonly string[]> = {
     "운동량을 천천히 늘리세요.",
     "담배를 끊으세요.",
   ],
+
+  "zh-CN": [
+    "Talk to your doctor before you change your dose.",
+    "Discuss with your doctor: reduce your dose?",
+    "If your doctor agrees, then reduce your dose gradually.",
+    "Don't reduce your dose for now.",
+    "Never reduce your dose for a missed meal without guidance.",
+    "Do not take half a tablet unless your pharmacist says it is scored.",
+    "Increase your dose? Not without your doctor.",
+    "Should you lower your insulin? That is a question for your diabetes team.",
+    "Reduce your dose of caffeine in the afternoon.",
+    "Cut your salt a little this week.",
+    "Increase your activity gradually.",
+    "Your doctor said to reduce your dose for a week.",
+    "You take metformin 1000 mg twice daily, as your plan says.",
+    "Keep taking ramipril 5 mg as before.",
+    "Reduce your sugar intake by half.",
+    "Ask your pharmacist whether the tablet can be split in half.",
+  ],
 };
 
 describe("dose screen false-positive corpus", () => {

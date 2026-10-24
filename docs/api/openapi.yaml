@@ -10172,6 +10172,24 @@ paths:
         "422": *a4
         "429": *a5
   /api/auth/me/locale:
+    get:
+      tags:
+        - Auth
+      summary: Read the account interface language
+      description: Reads the caller's persisted interface language. Accounts without a supported preference use the operator
+        default, then English, matching background jobs. Browser cookies never overwrite this preference. Accepts cookie
+        sessions and Bearer tokens.
+      responses:
+        "200":
+          description: The account language.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocaleGetEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
     put:
       tags:
         - Auth
@@ -10187,8 +10205,8 @@ paths:
         reading the screen, never to the record on it. Under a record scope this would write a delegate's choice onto
         the owner's row and then mail the owner in a language they may not read. A request that attaches the per-request
         account selector (the `AccountSelector` header parameter) is refused with 403 `sharing.not_permitted`. It keeps
-        answering while a switch is on rather than merely refusing safely, because the language switcher fires a
-        mount-time backfill on every page load.
+        answering while a switch is on rather than merely refusing safely, so the reader can choose their language
+        without changing the record owner's preference.
 
 
         Idempotent: when the column already matches, the write is skipped and only the cookie is refreshed. Body capped
@@ -27544,6 +27562,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - zh-CN
         practiceName:
           type: string
           maxLength: 120
@@ -28239,6 +28258,14 @@ components:
               enum:
                 - de
                 - en
+                - fr
+                - es
+                - it
+                - pl
+                - ko
+                - nl
+                - pt-BR
+                - zh-CN
             - type: "null"
         timezone:
           type: string
@@ -30051,6 +30078,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - zh-CN
         today:
           description: "Optional override of the reference date used to resolve relative phrases (\"tomorrow\", \"next Monday\").
             Format: `YYYY-MM-DD`. Defaults to the account's own day in its time zone."
@@ -31020,6 +31048,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - zh-CN
           description: One of the interface locales this build ships.
       required:
         - locale
@@ -36365,6 +36394,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - zh-CN
         timezone:
           type: string
           minLength: 1
@@ -36421,6 +36451,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - zh-CN
         timezone:
           type: string
           minLength: 1
@@ -36640,6 +36671,7 @@ components:
                 - ko
                 - nl
                 - pt-BR
+                - zh-CN
             - type: "null"
         timezone:
           type: string
@@ -59248,6 +59280,40 @@ components:
         - data
         - error
       additionalProperties: false
+    LocaleGetEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            locale:
+              type: string
+              enum:
+                - de
+                - en
+                - fr
+                - es
+                - it
+                - pl
+                - ko
+                - nl
+                - pt-BR
+                - zh-CN
+          required:
+            - locale
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     LocalePutEnvelope:
       type: object
       properties:
@@ -59266,6 +59332,7 @@ components:
                 - ko
                 - nl
                 - pt-BR
+                - zh-CN
           required:
             - locale
           additionalProperties: false
@@ -85116,6 +85183,19 @@ components:
           type: string
         username:
           type: string
+        locale:
+          type: string
+          enum:
+            - de
+            - en
+            - fr
+            - es
+            - it
+            - pl
+            - ko
+            - nl
+            - pt-BR
+            - zh-CN
         timezone:
           type: string
           description: "The IANA zone the server cuts this account's days in: the stored zone, or the instance default when the
@@ -87592,6 +87672,7 @@ components:
                 - ko
                 - nl
                 - pt-BR
+                - zh-CN
             - type: "null"
         timezone:
           type: string

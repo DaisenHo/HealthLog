@@ -15,6 +15,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { CalendarDay } from "../types";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useSearchParams: () => new URLSearchParams(),
 }));
 

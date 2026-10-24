@@ -7633,7 +7633,9 @@
       "off": "Aus",
       "change": "Unter Module ändern"
     },
-    "timezoneUseDevice": "Zeitzone dieses Geräts übernehmen ({zone})"
+    "timezoneUseDevice": "Zeitzone dieses Geräts übernehmen ({zone})",
+    "languageOffline": "Zum Ändern der Kontosprache ist eine Verbindung erforderlich. Die gespeicherte Sprache bleibt aktiv.",
+    "languageSaveFailed": "Die Sprache konnte nicht gespeichert werden. Bitte prüfe die Verbindung und versuche es erneut."
   },
   "admin": {
     "title": "Administration",

@@ -257,6 +257,8 @@ describe("tone harness — deterministic fallbacks", () => {
     nl: /geen beoordeling/,
     "pt-BR": /n[aã]o h[áa] (?:uma )?avalia[çc][aã]o/i,
     ko: /평가가 없어요/,
+
+    "zh-CN": /No assessment/,
   };
 
   describe.each(FLOORS)("$name floor", ({ build }) => {

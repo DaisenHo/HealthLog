@@ -1,26 +1,4 @@
-/**
- * The UI language and the stored language are resolved from different
- * evidence, and only one of them is ever shown to the person reading.
- *
- * `resolveServerLocale` / `resolveInitialLocale` answer a REQUEST: the
- * `healthlog-locale` cookie first, then `User.locale`, then Accept-Language.
- * Two of those three rungs are invisible to anything without a request, so
- * a browser can render the whole app in German while the column says
- * English.
- *
- * Everything written outside a request reads the column alone —
- * `resolveJobLocale` for the nightly writers, `resolveLocaleForUser` for the
- * Coach tool executor and the MCP reads. So a diverged column does not show
- * up as a wrong menu or a wrong button. It shows up as one paragraph of
- * generated prose in the wrong language, sitting in a page that is otherwise
- * correct, which is exactly how it was reported.
- *
- * These are the two ways a browser gets a language the column never hears
- * about. They are the reason `getSession` reconciles the column from the
- * cookie: the client's fire-and-forget PUT is the only thing that ever
- * closed this gap, and a request that never arrives leaves the divergence
- * standing for as long as the account exists.
- */
+/** Account language wins over stale browser preferences; guests still follow their browser. */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockCookies = vi.fn();
@@ -66,10 +44,10 @@ beforeEach(() => {
   mockGetSessionUserLocale.mockResolvedValue(null);
 });
 
-describe("a browser can read German while the column says English", () => {
-  it("Accept-Language alone: German UI, English background prose", async () => {
-    // The account has never opened the language picker, so the column is
-    // NULL, and the browser asks for German.
+describe("account language and browser language", () => {
+  it("keeps a guest browser preference separate from account defaults", async () => {
+    // With no signed-in session, the browser preference is independent of
+    // the default used for an account that has not chosen a language.
     mockGetSessionUserLocale.mockResolvedValue(null);
     mockHeaders.mockResolvedValue(headersWith("de-DE,de;q=0.9,en;q=0.5"));
 
@@ -77,24 +55,24 @@ describe("a browser can read German while the column says English", () => {
     await expect(resolveJobLocale(null)).resolves.toBe("en");
   });
 
-  it("cookie alone: German UI, English background prose", async () => {
+  it("a stale cookie cannot change the account interface or background language", async () => {
     // The picker was used at some point, so the cookie carries German —
     // but the column was left holding the language of the paint that
     // preceded the choice.
     mockCookies.mockResolvedValue(cookieStoreWith("de"));
     mockGetSessionUserLocale.mockResolvedValue("en");
 
-    await expect(resolveInitialLocale()).resolves.toBe("de");
+    await expect(resolveInitialLocale()).resolves.toBe("en");
     await expect(resolveJobLocale("en")).resolves.toBe("en");
   });
 
-  it("the cookie outranks the column on every request that has one", async () => {
+  it("a cached language does not bypass the account lookup", async () => {
     // Which is why the divergence is invisible: nothing the user looks at
     // reads the column, so a wrong column produces no wrong screen until a
     // job writes a sentence with it.
     mockCookies.mockResolvedValue(cookieStoreWith("de"));
     mockGetSessionUserLocale.mockResolvedValue("en");
-    await expect(resolveInitialLocale()).resolves.toBe("de");
-    expect(mockGetSessionUserLocale).not.toHaveBeenCalled();
+    await expect(resolveInitialLocale()).resolves.toBe("en");
+    expect(mockGetSessionUserLocale).toHaveBeenCalledOnce();
   });
 });

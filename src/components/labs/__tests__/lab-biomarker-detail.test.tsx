@@ -35,6 +35,7 @@ vi.mock("@/lib/api/api-fetch", async (importOriginal) => ({
 }));
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: vi.fn() }),
 }));
 

@@ -679,16 +679,16 @@ describe("population-norm banks, one per locale", () => {
     nl: "Gezonde volwassenen slapen 7 tot 9 uur.",
     ko: "건강한 성인은 7~9시간 자요.",
     "pt-BR": "A maioria dos adultos precisa de 7 a 9 horas de sono.",
+
+    "zh-CN": "Healthy adults usually sleep 7 to 9 hours.",
   };
 
   it.each(locales)("%s reads its reference sentence as a norm", (locale) => {
     expect(hasPopulationNormFraming(REFERENCE_SENTENCE[locale], locale)).toBe(
       true,
     );
-    if (locale !== "en") {
-      expect(hasPopulationNormFraming(REFERENCE_SENTENCE[locale], "en")).toBe(
-        false,
-      );
-    }
+    expect(hasPopulationNormFraming(REFERENCE_SENTENCE[locale], "en")).toBe(
+      locale === "en" || locale === "zh-CN",
+    );
   });
 });

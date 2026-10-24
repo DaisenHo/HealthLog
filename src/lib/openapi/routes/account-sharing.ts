@@ -1,3 +1,4 @@
+import { locales } from "@/lib/i18n/config";
 /**
  * OpenAPI route table — account sharing (v1.36.0).
  *
@@ -508,6 +509,7 @@ const accountPayload = z
   .looseObject({
     id: z.string(),
     username: z.string(),
+    locale: z.enum(locales).optional(),
     // Enumerated because clients cut days and convert glucose by them: the
     // day key and the unit must be the server's, not the device's.
     timezone: z

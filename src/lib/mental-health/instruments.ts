@@ -616,4 +616,7 @@ export const AUDIT_C_STANDARD_DRINK: Readonly<Record<string, string>> = {
   "pt-BR":
     "Uma bebida corresponde a uma dose padrão de cerca de 10 g de álcool puro, a definição da OMS na qual estas perguntas se baseiam.",
   ko: "표준 1잔: 양주잔으로 양주 1잔, 와인잔으로 와인 1잔, 막걸리 1사발이 각각 표준 1잔이다. 맥주는 캔맥주 1캔 또는 작은 병맥주 1병이며 생맥주는 500 mL가 표준 1잔이다. 소주는 1/4병이 표준 1잔에 해당한다.",
+
+  "zh-CN":
+    "One drink means a standard drink of about 10 g of pure alcohol, for example 330 ml of beer at 5%, 140 ml of wine at 12% or 40 ml of spirits at 40%.",
 };

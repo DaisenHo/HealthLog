@@ -1,8 +1,8 @@
 /**
  * The reader's locale for a server-internal caller that only has a user id.
  *
- * Route handlers resolve the locale from the request (cookie first, then the
- * stored preference, then Accept-Language) via `resolveServerLocale`. A few
+ * Route handlers use the stored preference, then the operator default for an
+ * account without a choice, via `resolveServerLocale`. A few
  * server-internal fan-outs reach a prose-writing engine without a request of
  * their own — the Coach tool executor and the MCP rich reads both take a user
  * id and nothing else. This looks their stored preference up and hands it to
@@ -10,8 +10,7 @@
  * sentence is written in, not two.
  *
  * Deliberately its own module rather than a second export on `server-locale`:
- * that file is imported by page components, and it must not start pulling
- * Prisma along with it.
+ * this helper alone needs to look up a user row before resolving its language.
  */
 import { prisma } from "@/lib/db";
 import type { Locale } from "./config";

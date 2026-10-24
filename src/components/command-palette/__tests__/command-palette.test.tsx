@@ -7,6 +7,7 @@ import type { PaletteEntry } from "@/components/command-palette/build-index";
 import type { SearchResponse } from "@/lib/search/contract";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: vi.fn() }),
 }));
 vi.mock("@/hooks/use-auth", () => ({

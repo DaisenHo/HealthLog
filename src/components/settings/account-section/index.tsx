@@ -24,7 +24,7 @@ import {
   resolveHeightUnitAdapter,
   type HeightDraft,
 } from "@/lib/profile/height-unit-display";
-import { locales, localeLabels, type Locale } from "@/lib/i18n/config";
+import { LanguageSelect } from "@/components/i18n/language-select";
 import { useTranslations } from "@/lib/i18n/context";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
@@ -729,7 +729,7 @@ export function DisplayPreferencesCard({
 }: {
   isAuthenticated: boolean;
 }) {
-  const { t, locale, setLocale, pendingLocale } = useTranslations();
+  const { t } = useTranslations();
   return (
     <SettingsCard data-testid="settings-display-card">
       <SettingsCardHeader
@@ -742,29 +742,7 @@ export function DisplayPreferencesCard({
           unit system because metric countries are split on which unit they
           read glucose in. */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="language-select">{t("settings.language")}</Label>
-          {/* While a switch waits on its message bundle (dynamic import per
-              locale), show the target value and lock the control — the
-              context only flips locale + strings together once the bundle
-              arrived. */}
-          <NativeSelect
-            id="language-select"
-            value={pendingLocale ?? locale}
-            disabled={pendingLocale !== null}
-            aria-busy={pendingLocale !== null}
-            onChange={(e) => setLocale(e.target.value as Locale)}
-          >
-            {locales.map((loc) => (
-              <option key={loc} value={loc}>
-                {localeLabels[loc as Locale]}
-              </option>
-            ))}
-          </NativeSelect>
-          <p className="text-muted-foreground text-xs">
-            {t("settings.languageDescription")}
-          </p>
-        </div>
+        <LanguageSelect />
         <UnitPreferenceSelect isAuthenticated={isAuthenticated} />
         <GlucoseUnitSelect isAuthenticated={isAuthenticated} />
         <TimeFormatSelect isAuthenticated={isAuthenticated} />

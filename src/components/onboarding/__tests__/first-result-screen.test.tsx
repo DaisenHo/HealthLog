@@ -30,6 +30,7 @@ import {
 } from "@/lib/onboarding/needs";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 

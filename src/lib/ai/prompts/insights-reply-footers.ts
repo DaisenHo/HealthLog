@@ -10,6 +10,7 @@ export const INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK: Record<
   Exclude<Locale, "de" | "en">,
   string
 > = {
+  "zh-CN": "\n\nREPLY LANGUAGE: respond in English.",
   fr: "\n\nREPLY LANGUAGE: render all user-facing strings in French. Use natural French health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
   es: "\n\nREPLY LANGUAGE: render all user-facing strings in Spanish (peninsular preferred). Use natural Spanish health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",
   it: "\n\nREPLY LANGUAGE: render all user-facing strings in Italian. Use natural Italian health vocabulary. The severity / sourceWindow / sourceMetric / topic enum values stay in lowercase English exactly as listed in OUTPUT FORMAT — those are contract keys, NOT translations.",

@@ -1252,6 +1252,7 @@ const LOCALE_REPLY_FOOTER_FALLBACK: Record<
   Exclude<Locale, "de" | "en">,
   string
 > = {
+  "zh-CN": "\n\nREPLY LANGUAGE: respond in English.",
   fr: "\n\nREPLY LANGUAGE: respond in French. Mirror the user's register; use natural French health vocabulary.",
   es: "\n\nREPLY LANGUAGE: respond in Spanish. Mirror the user's register; use natural Spanish health vocabulary.",
   it: "\n\nREPLY LANGUAGE: respond in Italian. Mirror the user's register; use natural Italian health vocabulary.",
@@ -1295,7 +1296,7 @@ export function getCoachSystemPrompt(
   let base: string;
   if (locale === "de") {
     base = COACH_PROMPT_DE;
-  } else if (locale === "en") {
+  } else if (locale === "en" || locale === "zh-CN") {
     base = COACH_PROMPT_EN;
   } else if (locale === "ko" || locale === "nl" || locale === "pt-BR") {
     // ko, nl and pt-BR ship no safety-contract matrix, so they are not a

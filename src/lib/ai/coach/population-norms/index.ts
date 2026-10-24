@@ -28,4 +28,6 @@ export const POPULATION_NORM_PATTERNS: Readonly<
   nl,
   "pt-BR": ptBR,
   ko,
+
+  "zh-CN": en,
 };

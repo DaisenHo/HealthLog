@@ -1,7 +1,7 @@
 {
   "$comment": "tests that read a source file by path, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 367,
-  "total": 367,
+  "count": 366,
+  "total": 366,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 1,
     "__tests__/admin-data-wipe-completeness.test.ts": 1,
@@ -306,7 +306,6 @@
     "lib/format/__tests__/bytes.test.ts": 1,
     "lib/google-health/__tests__/sync-module-graph.test.ts": 1,
     "lib/http/__tests__/deprecation.test.ts": 1,
-    "lib/i18n/__tests__/locale-first-paint-single-write.test.tsx": 1,
     "lib/i18n/__tests__/plural-locale-completeness.test.ts": 1,
     "lib/import/__tests__/record-import-rows.test.ts": 1,
     "lib/insights/__tests__/prompt-soft-delete-filter.test.ts": 1,

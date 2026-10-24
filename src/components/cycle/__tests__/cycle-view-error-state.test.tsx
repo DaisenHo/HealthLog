@@ -16,6 +16,7 @@ vi.mock("@/hooks/use-unit-display", async () => {
 });
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useSearchParams: () => new URLSearchParams(),
 }));
 

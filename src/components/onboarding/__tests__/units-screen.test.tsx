@@ -23,6 +23,7 @@ import {
 import { UnitsScreen } from "../units-screen";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 

@@ -7633,7 +7633,9 @@
       "off": "Desligado",
       "change": "Alterar em Módulos"
     },
-    "timezoneUseDevice": "Usar o fuso horário deste dispositivo ({zone})"
+    "timezoneUseDevice": "Usar o fuso horário deste dispositivo ({zone})",
+    "languageOffline": "É necessária uma conexão para alterar o idioma da conta. O idioma salvo continua em uso.",
+    "languageSaveFailed": "Não foi possível salvar o idioma. Verifique a conexão e tente novamente."
   },
   "admin": {
     "title": "Administração",

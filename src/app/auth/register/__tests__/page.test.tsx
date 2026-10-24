@@ -30,6 +30,7 @@ const authRef = {
 const inviteRef = { value: null as string | null };
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
   useSearchParams: () => ({
     get: (key: string) => (key === "invite" ? inviteRef.value : null),

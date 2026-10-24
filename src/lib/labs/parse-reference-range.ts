@@ -323,6 +323,13 @@ export const RANGE_PROSE: Record<Locale, RangeProse> = {
     lower: ["최소", "최저"],
     filler: ["참고치", "참고범위", "정상치", "정상범위", "기준치", "기준범위"],
   },
+
+  "zh-CN": {
+    twoSided: ["to", "until"],
+    upper: ["up to", "less than", "below"],
+    lower: ["at least", "greater than", "above"],
+    filler: ["from", "reference", "ref.", "ref"],
+  },
 };
 
 /** Escape a literal for regex use and let any run of whitespace join its words. */

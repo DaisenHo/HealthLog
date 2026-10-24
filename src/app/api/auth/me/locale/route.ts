@@ -1,23 +1,7 @@
 /**
- * PUT /api/auth/me/locale
- *
- * v1.25.0 — persist the user's UI locale onto `User.locale`.
- *
- * The language switcher historically wrote the choice to localStorage,
- * the `healthlog-locale` cookie and `<html lang>` ONLY — never to the
- * user row. Server-side background work (the proactive Coach nudge, the
- * Telegram test message, …) has no request cookie to read, so it falls
- * back to `User.locale`; with the column left null those messages went
- * out in English regardless of the language the user reads the app in.
- *
- * This setter closes the gap: the client persists the active locale here
- * (on every switch, plus a one-time backfill on mount) so the column
- * reliably mirrors the UI language and the cron paths render in it.
- *
- * Auth: cookie session OR Bearer token.
- * Validation: `{ "locale": "de" }` — must be one of the supported
- * locales; anything else is rejected at the surface so the column never
- * holds a value the resolver would later have to defend against.
+ * Account interface language for browser and native clients.
+ * GET reads the saved preference; PUT stores an explicit choice and refreshes
+ * the browser cookie. Cached browser language never writes on a read.
  */
 import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
@@ -26,6 +10,7 @@ import { apiHandler, requireActorAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, safeJson } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { locales, type Locale } from "@/lib/i18n/config";
+import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { setLocaleCookie } from "@/lib/i18n/locale-cookie";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +21,11 @@ function isLocale(value: unknown): value is Locale {
   );
 }
 
+export const GET = apiHandler(async () => {
+  const { user } = await requireActorAuth();
+  return apiSuccess({ locale: await resolveJobLocale(user.locale) });
+});
+
 export const PUT = apiHandler(async (request: NextRequest) => {
   // An actor surface, and the clearest case for the mode existing at all: the
   // UI language belongs to the person reading the screen, never to the record
@@ -43,10 +33,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // the OWNER's row and then send the owner's cron mail in a language they may
   // not read — a preference silently transplanted between two people.
   //
-  // It has to keep working while a switch is on rather than merely refuse
-  // safely: the language switcher fires a mount-time backfill on every page
-  // load, including the shared dashboard, and a 403 there breaks switching
-  // language for as long as the delegate stays inside the record.
+  // The switcher must also work while the actor views a shared record.
   //
   // This is a WRITE on an actor surface, which is exactly right and worth
   // naming, because the mode carries no method escalation: the row it updates
@@ -66,7 +53,7 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   }
 
   // Idempotent: skip the write (and the annotation noise) when the column
-  // already matches — the mount-time backfill fires on every page load.
+  // already matches.
   if (user.locale !== locale) {
     await prisma.user.update({
       where: { id: user.id },
@@ -79,8 +66,8 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   // Set-Cookie. The client's own `document.cookie` write is capped at 7
   // days by Safari ITP; the server-set copy is not, so an explicit choice
   // survives on every device. Runs on the idempotent path too — the
-  // mount-time backfill hitting this route is exactly the weekly refresh
-  // that keeps the cookie alive. Harmless no-op payload for Bearer
+  // session reads also refresh it from the saved account preference.
+  // Harmless no-op payload for Bearer
   // callers (native clients ignore cookies).
   const cookieStore = await cookies();
   setLocaleCookie(cookieStore, locale);

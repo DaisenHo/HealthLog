@@ -178,6 +178,8 @@ const NORMATIVE_KEYWORDS: Record<Locale, readonly string[]> = {
     "superior a",
     "inferior a",
   ],
+
+  "zh-CN": ["target", "should", "normal range", "above", "below"],
 };
 
 /**

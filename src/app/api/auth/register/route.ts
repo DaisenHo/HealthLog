@@ -161,7 +161,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Username or email already taken", 409);
   }
 
-  // Validate password strength (locale-aware feedback)
   const locale = await resolveServerLocale({ request });
   const strength = checkPasswordStrength(password, [username, email], locale);
   if (!strength.isAcceptable) {
@@ -249,6 +248,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
           passwordHash,
           role,
           timezone,
+          locale,
         },
       });
     })

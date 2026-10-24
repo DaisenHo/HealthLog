@@ -184,7 +184,8 @@ function loadFromDisk(locale: Locale): SafetyContractMatrix {
 export function loadSafetyContracts(locale: Locale): SafetyContractMatrix {
   const cached = cache[locale];
   if (cached) return cached;
-  const data = loadFromDisk(locale);
+  // shortcut: Chinese AI prose belongs to T06; retain the reviewed English contract until it is validated.
+  const data = loadFromDisk(locale === "zh-CN" ? "en" : locale);
   cache = { ...cache, [locale]: data };
   return data;
 }
@@ -198,7 +199,7 @@ export function loadSafetyContracts(locale: Locale): SafetyContractMatrix {
 export function getGroundRuleBody(locale: Locale, key: GroundRuleKey): string {
   const matrix = loadSafetyContracts(locale);
   const rule = matrix.ground_rules[key];
-  const body = locale === "en" ? rule.en : rule.locale;
+  const body = locale === "en" || locale === "zh-CN" ? rule.en : rule.locale;
   if (!body) {
     throw new Error(
       `safety-contracts.${locale}.yaml: ground rule "${key}" has no body for locale ${locale}`,

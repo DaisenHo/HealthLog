@@ -7633,7 +7633,9 @@
       "off": "꺼짐",
       "change": "모듈에서 변경"
     },
-    "timezoneUseDevice": "이 기기의 시간대 사용 ({zone})"
+    "timezoneUseDevice": "이 기기의 시간대 사용 ({zone})",
+    "languageOffline": "계정 언어를 변경하려면 연결이 필요합니다. 저장된 언어를 계속 사용합니다.",
+    "languageSaveFailed": "언어를 저장하지 못했습니다. 연결을 확인하고 다시 시도하세요."
   },
   "admin": {
     "title": "관리자",

@@ -85,6 +85,8 @@ const LOCALE_BANKS: Readonly<Record<Locale, LocaleBank>> = {
   nl,
   ko,
   "pt-BR": ptBR,
+
+  "zh-CN": en,
 };
 
 /** One value per locale, read off its bank. */

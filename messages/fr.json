@@ -7633,7 +7633,9 @@
       "off": "Désactivé",
       "change": "Modifier dans Modules"
     },
-    "timezoneUseDevice": "Utiliser le fuseau horaire de cet appareil ({zone})"
+    "timezoneUseDevice": "Utiliser le fuseau horaire de cet appareil ({zone})",
+    "languageOffline": "Une connexion est nécessaire pour modifier la langue du compte. La langue en cache reste active.",
+    "languageSaveFailed": "Impossible d’enregistrer la langue. Vérifiez la connexion et réessayez."
   },
   "admin": {
     "title": "Administration",

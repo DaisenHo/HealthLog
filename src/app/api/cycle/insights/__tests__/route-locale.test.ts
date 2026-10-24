@@ -11,8 +11,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * in English.
  *
  * So what is pinned here is the handoff itself: the resolved locale arriving at
- * `discoverPhaseCorrelations`, from the cookie a language switch sets and from
- * the stored preference when there is no cookie. Without this the route could
+ * `discoverPhaseCorrelations`, from the persisted account preference, even when a browser sends
+ * a stale locale cookie. Without this the route could
  * go back to naming one language outright and nothing in the suite would
  * notice.
  */
@@ -117,8 +117,13 @@ function passedLocale(): unknown {
 }
 
 describe("GET /api/cycle/insights — the reader's language", () => {
-  it("passes the language the switcher's cookie names", async () => {
-    localeCookie.mockReturnValue("de");
+  it("passes the account language instead of a stale browser cookie", async () => {
+    vi.mocked(getSession).mockResolvedValue(
+      sessionWithLocale("de") as unknown as Awaited<
+        ReturnType<typeof getSession>
+      >,
+    );
+    localeCookie.mockReturnValue("fr");
 
     const res = await GET();
 
@@ -141,10 +146,18 @@ describe("GET /api/cycle/insights — the reader's language", () => {
   it("never hard-codes a language of its own", async () => {
     // Two readers, two languages, from the same handler. A route that named
     // one outright would pass this only by accident.
-    localeCookie.mockReturnValue("it");
+    vi.mocked(getSession).mockResolvedValue(
+      sessionWithLocale("it") as unknown as Awaited<
+        ReturnType<typeof getSession>
+      >,
+    );
     await GET();
     const first = passedLocale();
-    localeCookie.mockReturnValue("fr");
+    vi.mocked(getSession).mockResolvedValue(
+      sessionWithLocale("fr") as unknown as Awaited<
+        ReturnType<typeof getSession>
+      >,
+    );
     await GET();
 
     expect([first, passedLocale()]).toEqual(["it", "fr"]);

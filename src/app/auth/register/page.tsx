@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordStrength } from "@/components/ui/password-strength";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { detectBrowserTimezone } from "@/lib/tz/format";
 import { queryKeys } from "@/lib/query-keys";
-import { ApiError, apiFetchRaw, apiPost } from "@/lib/api/api-fetch";
+import { apiFetchRaw, apiPost } from "@/lib/api/api-fetch";
 import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
 
 export default function RegisterPage() {
@@ -77,11 +78,7 @@ export default function RegisterPage() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
       router.push("/");
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("auth.registerFailed"),
-      );
+      setError(localizedApiError(err, t, "auth.registerFailed"));
     } finally {
       setLoading(false);
     }

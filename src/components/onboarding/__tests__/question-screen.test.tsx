@@ -20,6 +20,7 @@ import {
 import { QuestionScreen } from "../question-screen";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 

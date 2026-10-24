@@ -7633,7 +7633,9 @@
       "off": "Off",
       "change": "Change in Modules"
     },
-    "timezoneUseDevice": "Use this device's timezone ({zone})"
+    "timezoneUseDevice": "Use this device's timezone ({zone})",
+    "languageOffline": "Changing the account language requires a connection. The cached language is still in use.",
+    "languageSaveFailed": "Could not save the language. Check your connection and try again."
   },
   "admin": {
     "title": "Administration",

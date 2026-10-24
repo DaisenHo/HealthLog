@@ -29,6 +29,7 @@ import {
 let currentUser: AuthUser | null = null;
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 

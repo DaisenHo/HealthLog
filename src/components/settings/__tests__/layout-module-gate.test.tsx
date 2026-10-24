@@ -8,6 +8,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: vi.fn(), replace }),
 }));
 vi.mock("@/hooks/use-mounted", () => ({ useMounted: () => true }));

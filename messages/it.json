@@ -7633,7 +7633,9 @@
       "off": "Disattivo",
       "change": "Cambia in Moduli"
     },
-    "timezoneUseDevice": "Usa il fuso orario di questo dispositivo ({zone})"
+    "timezoneUseDevice": "Usa il fuso orario di questo dispositivo ({zone})",
+    "languageOffline": "Per cambiare la lingua dell’account serve una connessione. Rimane attiva la lingua salvata.",
+    "languageSaveFailed": "Impossibile salvare la lingua. Controlla la connessione e riprova."
   },
   "admin": {
     "title": "Administration",

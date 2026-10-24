@@ -8,8 +8,7 @@ import { NextRequest } from "next/server";
  * builder can write it in any of the six languages; for months it wrote
  * English on a German page because this route never passed a language and the
  * engine underneath quietly defaulted. So what is pinned here is the handoff
- * itself: the resolved locale reaching `buildCoachReadStrip`, from the cookie a
- * language switch sets and from the stored preference when there is no cookie.
+ * itself: the resolved locale reaching `buildCoachReadStrip`, from the account preference even when a browser sends a stale locale cookie.
  */
 
 const buildCoachReadStrip = vi.fn();
@@ -100,8 +99,13 @@ beforeEach(() => {
 });
 
 describe("GET /api/insights/coach-read — the reader's language", () => {
-  it("passes the language the switcher's cookie names", async () => {
-    localeCookie.mockReturnValue("de");
+  it("passes the account language instead of a stale browser cookie", async () => {
+    vi.mocked(getSession).mockResolvedValue(
+      sessionWithLocale("de") as unknown as Awaited<
+        ReturnType<typeof getSession>
+      >,
+    );
+    localeCookie.mockReturnValue("fr");
 
     const res = await GET(REQUEST());
 
@@ -124,9 +128,17 @@ describe("GET /api/insights/coach-read — the reader's language", () => {
   it("never hard-codes a language of its own", async () => {
     // Two readers, two languages, from the same handler. A route that pinned
     // one would pass this only by accident.
-    localeCookie.mockReturnValue("es");
+    vi.mocked(getSession).mockResolvedValue(
+      sessionWithLocale("es") as unknown as Awaited<
+        ReturnType<typeof getSession>
+      >,
+    );
     await GET(REQUEST());
-    localeCookie.mockReturnValue("de");
+    vi.mocked(getSession).mockResolvedValue(
+      sessionWithLocale("de") as unknown as Awaited<
+        ReturnType<typeof getSession>
+      >,
+    );
     await GET(REQUEST());
 
     expect(buildCoachReadStrip.mock.calls.map((call) => call[2])).toEqual([

@@ -10,6 +10,7 @@ import { I18nProvider } from "@/lib/i18n/context";
  */
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ replace: () => {}, refresh: () => {}, push: () => {} }),
 }));
 vi.mock("@/hooks/use-auth", () => ({

@@ -28,6 +28,7 @@ import type { AchievementProgress } from "@/lib/gamification/achievements";
 // The page bounces a disabled-module direct hit to /insights (it used to
 // render a blank page), so the SSR render needs a router in scope.
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
 }));
 

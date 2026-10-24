@@ -7633,7 +7633,9 @@
       "off": "Uit",
       "change": "Wijzigen in Modules"
     },
-    "timezoneUseDevice": "Tijdzone van dit apparaat gebruiken ({zone})"
+    "timezoneUseDevice": "Tijdzone van dit apparaat gebruiken ({zone})",
+    "languageOffline": "Voor het wijzigen van de accounttaal is een verbinding nodig. De opgeslagen taal blijft actief.",
+    "languageSaveFailed": "De taal kon niet worden opgeslagen. Controleer de verbinding en probeer het opnieuw."
   },
   "admin": {
     "title": "Beheer",

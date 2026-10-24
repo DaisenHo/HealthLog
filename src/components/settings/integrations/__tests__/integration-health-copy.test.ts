@@ -36,6 +36,8 @@ const CATALOGS: Record<Locale, unknown> = {
   nl,
   ko,
   "pt-BR": ptBR,
+
+  "zh-CN": en,
 };
 
 function translator(locale: Locale) {

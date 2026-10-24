@@ -86,6 +86,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { POST } from "../route";
+import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { checkRateLimit, checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { checkPasswordStrength, hashPassword } from "@/lib/auth/password";
@@ -181,6 +182,15 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
     username: "newuser",
     password: "a-very-strong-password-123",
   };
+
+  it("persists the language selected before registration", async () => {
+    vi.mocked(prisma.user.count).mockResolvedValue(1);
+    vi.mocked(resolveServerLocale).mockResolvedValue("zh-CN");
+    expect((await postPathThrough(validBody)).status).toBe(201);
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ locale: "zh-CN" }),
+    });
+  });
 
   it("mints ADMIN when the in-transaction count is 0 (genuine first user)", async () => {
     // Early gate count and in-tx count both 0.

@@ -4,15 +4,15 @@
 
 ## 用户可以直接使用的功能
 
-| 事项 | 官方已确认的行为 |
-|---|---|
-| 添加药品 | 可输入未列出的药名，并设置类型、规格；未提供的规格可自定义。相机识别仅限美国。[Apple 添加说明](https://support.apple.com/zh-cn/105064) |
-| 定时类型 | 支持定时频率与持续时间，包括每周特定日期、循环、每隔几天；也支持按需用药。每天固定时刻的具体配置应在目标手机走一遍验收。[Apple 用药手册](https://support.apple.com/zh-cn/guide/iphone/iph811670c81/ios)、[定时类型与系统限制](https://support.apple.com/zh-cn/105064) |
-| 服用记录 | 可记已服用或已跳过，按需药也能记录；记录时可选实际剂量和时间。支持补录过去日期；更改记录可能表现为删除旧事件并保存新事件。[Apple 记录说明](https://support.apple.com/en-ie/guide/iphone/iph811670c81/ios)、[Apple 开发者演示](https://developer.apple.com/videos/play/wwdc2025/321/) |
-| 提醒 | 定时提醒；30 分钟仍未记录时可跟进提醒；可为药品开启重要提醒，在专注或静音时发声并显示锁屏。[Apple 提醒说明](https://support.apple.com/zh-cn/guide/iphone/iph811670c81/ios) |
-| 设备 | iPhone/iPad 添加与记录，Apple Watch 记录和提醒；Watch 通知可延后 10 分钟。循环和每周特定日需要 iOS/iPadOS 18、watchOS 11 或更高；Apple Watch 亲子设置不支持用药。[Apple 设备说明](https://support.apple.com/zh-cn/105064) |
-| 历史与导出 | 可查看服用/跳过频率和历史；可导出当前药品列表 PDF。不能把“药品列表 PDF”预先承诺为全部逐次事件的统计报表。[Apple 历史与导出说明](https://support.apple.com/en-us/105064) |
-| 地域 | 美国境外仍可手动添加未列出药品。药物相互作用仅美国提供，未列出药品不纳入其考量；其他功能也应按地区和系统版本验收。[Apple 地域说明](https://support.apple.com/en-us/105064) |
+| 事项       | 官方已确认的行为                                                                                                                                                                                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 添加药品   | 可输入未列出的药名，并设置类型、规格；未提供的规格可自定义。相机识别仅限美国。[Apple 添加说明](https://support.apple.com/zh-cn/105064)                                                                                                                                               |
+| 定时类型   | 支持定时频率与持续时间，包括每周特定日期、循环、每隔几天；也支持按需用药。每天固定时刻的具体配置应在目标手机走一遍验收。[Apple 用药手册](https://support.apple.com/zh-cn/guide/iphone/iph811670c81/ios)、[定时类型与系统限制](https://support.apple.com/zh-cn/105064)                |
+| 服用记录   | 可记已服用或已跳过，按需药也能记录；记录时可选实际剂量和时间。支持补录过去日期；更改记录可能表现为删除旧事件并保存新事件。[Apple 记录说明](https://support.apple.com/en-ie/guide/iphone/iph811670c81/ios)、[Apple 开发者演示](https://developer.apple.com/videos/play/wwdc2025/321/) |
+| 提醒       | 定时提醒；30 分钟仍未记录时可跟进提醒；可为药品开启重要提醒，在专注或静音时发声并显示锁屏。[Apple 提醒说明](https://support.apple.com/zh-cn/guide/iphone/iph811670c81/ios)                                                                                                           |
+| 设备       | iPhone/iPad 添加与记录，Apple Watch 记录和提醒；Watch 通知可延后 10 分钟。循环和每周特定日需要 iOS/iPadOS 18、watchOS 11 或更高；Apple Watch 亲子设置不支持用药。[Apple 设备说明](https://support.apple.com/zh-cn/105064)                                                            |
+| 历史与导出 | 可查看服用/跳过频率和历史；可导出当前药品列表 PDF。不能把“药品列表 PDF”预先承诺为全部逐次事件的统计报表。[Apple 历史与导出说明](https://support.apple.com/en-us/105064)                                                                                                              |
+| 地域       | 美国境外仍可手动添加未列出药品。药物相互作用仅美国提供，未列出药品不纳入其考量；其他功能也应按地区和系统版本验收。[Apple 地域说明](https://support.apple.com/en-us/105064)                                                                                                           |
 
 ## HealthLog 可以通过公开 HealthKit 接口获得什么
 

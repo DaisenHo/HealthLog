@@ -42,6 +42,8 @@ const EXPECTED_LANGUAGE_NAME: Record<Locale, string> = {
   nl: "Dutch",
   ko: "Korean",
   "pt-BR": "Brazilian Portuguese",
+
+  "zh-CN": "English",
 };
 
 /** Which body each locale is expected to compose. */
@@ -55,6 +57,8 @@ const EXPECTED_BODY: Record<Locale, "de" | "en"> = {
   nl: "en",
   ko: "en",
   "pt-BR": "en",
+
+  "zh-CN": "en",
 };
 
 describe("output-language helper", () => {
