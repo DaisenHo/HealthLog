@@ -20,7 +20,7 @@
  *      five as missed. Its daily twin, given the identical doses, does.
  *
  * Every assertion addresses a `data-slot` / `data-*` attribute rather than
- * viewport text: the copy is i18n-driven and the wizard runs in German, so
+ * viewport text: the copy is i18n-driven and the locale follows the account choice, so
  * addressing a control by its label would assert the translation.
  *
  * The flows write rows and read counts back off them, so they run on their own
@@ -53,7 +53,6 @@ import {
   expectStep,
   fillStep1Name,
   fillStep3Dose,
-  openCreateWizard,
   pickCadenceRow,
   pickTreatmentRow,
 } from "./medications-wizard-helpers";
@@ -296,7 +295,8 @@ async function createTwiceDailyMedication(
   page: Page,
   name: string,
 ): Promise<{ id: string; times: { open: string; other: string } }> {
-  await openCreateWizard(page);
+  await page.goto("/medications?new=1");
+  await expectStep(page, 1);
   const times = await clockAnchoredDoseTimes(page);
 
   await fillStep1Name(page, { name });
@@ -336,6 +336,28 @@ async function createTwiceDailyMedication(
   await clickNext(page);
 
   await expectStep(page, 7, 7);
+  // Reject one malformed transport request, then retry the untouched form.
+  await page.route(
+    "**/api/medications",
+    async (route) => {
+      const body = route.request().postDataJSON();
+      const response = await route.fetch({
+        postData: JSON.stringify({ ...body, name: "" }),
+      });
+      expect(response.status()).toBe(422);
+      await route.fulfill({ response });
+    },
+    { times: 1 },
+  );
+  await clickSave(page);
+  const chinese = (await page.locator("html").getAttribute("lang")) === "zh-CN";
+  await expect(
+    page.locator('[data-slot="wizard-step8"] [role="alert"]'),
+  ).toHaveText(
+    chinese
+      ? "无法保存药物。请重试。"
+      : "Could not save the medication. Please retry.",
+  );
   await clickSave(page);
 
   await page.waitForURL(/\/medications\/[^/?]+$/, { timeout: 15_000 });
@@ -363,138 +385,246 @@ test.describe("medication adherence journey", () => {
     });
   });
 
-  test("a taken and a skipped dose move the card, the history and the dashboard tile", async ({
-    page,
-  }) => {
-    // The wizard is a seven-step dialog with per-step validation gating Next;
-    // on a loaded runner that settle earns the tripled timeout.
-    test.slow();
-
-    // The tile reads THE LATEST day, and a day boundary crossed mid-flow moves
-    // that day out from under both tile assertions: a fresh day has two doses
-    // scheduled, none taken, and answers 0 where 100 is asserted. The flow is a
-    // couple of minutes long, so declining to start in the last ten of the day
-    // is enough. The clock is the browser's, which the config pins to the zone
-    // the compliance engine falls back to.
-    const minutesLeftInDay = await page.evaluate(
-      () => 24 * 60 - (new Date().getHours() * 60 + new Date().getMinutes()),
-    );
-    test.skip(
-      minutesLeftInDay < 10,
-      "starts inside the last ten minutes of the day — the dashboard tile's latest day would change under the flow",
-    );
-
-    const { id: medicationId } = await createTwiceDailyMedication(
+  for (const locale of ["en", "zh-CN"] as const) {
+    test(`a taken and a skipped dose move the card, history and dashboard in ${locale}`, async ({
       page,
-      "E2E Adhärenz",
-    );
-    // Four days of plan behind it, none of it logged: the engine expects two
-    // doses a day and nobody took any, so the starting rate is a real 0 %.
-    await ageMedication(
-      medicationId,
-      await ageStamps(page, 4),
-      cacheFlusher(page, medicationId, "500 mg"),
-    );
+    }) => {
+      // The wizard is a seven-step dialog with per-step validation gating Next;
+      // on a loaded runner that settle earns the tripled timeout.
+      test.slow();
 
-    // --- before ------------------------------------------------------------
-    await page.goto("/");
-    expect(await readTileLatestRate(page)).toBe(0);
+      // The tile reads THE LATEST day, and a day boundary crossed mid-flow moves
+      // that day out from under both tile assertions: a fresh day has two doses
+      // scheduled, none taken, and answers 0 where 100 is asserted. The flow is a
+      // couple of minutes long, so declining to start in the last ten of the day
+      // is enough. The clock is the browser's, which the config pins to the zone
+      // the compliance engine falls back to.
+      const minutesLeftInDay = await page.evaluate(
+        () => 24 * 60 - (new Date().getHours() * 60 + new Date().getMinutes()),
+      );
+      test.skip(
+        minutesLeftInDay < 10,
+        "starts inside the last ten minutes of the day — the dashboard tile's latest day would change under the flow",
+      );
 
-    await page.goto("/medications");
-    expect(await readCardRate(page, medicationId)).toBe(0);
+      const before = await api<{
+        locale: string;
+        timezone: string | null;
+        unitPreference: string;
+        notificationPrefs: unknown;
+      }>(page, "GET", "/api/auth/me");
+      expect(before.status).toBe(200);
+      try {
+        await page.goto("/settings/account");
+        if ((await page.locator("#language-select").inputValue()) !== locale) {
+          const saved = page.waitForResponse(
+            (res) =>
+              new URL(res.url()).pathname === "/api/auth/me/locale" &&
+              res.request().method() === "PUT",
+          );
+          await page.locator("#language-select").selectOption(locale);
+          expect((await saved).status()).toBe(200);
+        }
+        await page.reload();
+        await expect(page.locator("html")).toHaveAttribute("lang", locale);
 
-    // --- the two gestures --------------------------------------------------
-    const card = page.locator(`[data-medication-id="${medicationId}"]`);
-    const intakePath = `/api/medications/${medicationId}/intake`;
+        const { id: medicationId } = await createTwiceDailyMedication(
+          page,
+          "E2E Fictional Capsule",
+        );
+        // Four days of plan behind it, none of it logged: the engine expects two
+        // doses a day and nobody took any, so the starting rate is a real 0 %.
+        await ageMedication(
+          medicationId,
+          await ageStamps(page, 4),
+          cacheFlusher(page, medicationId, "500 mg"),
+        );
 
-    const takeWritten = page.waitForResponse(
-      (res) =>
-        new URL(res.url()).pathname === intakePath &&
-        res.request().method() === "POST",
-    );
-    await card.locator('[data-slot="medication-intake-take"]').click();
-    expect((await takeWritten).status(), "the take is written").toBe(201);
+        // --- before ------------------------------------------------------------
+        await page.goto("/");
+        expect(await readTileLatestRate(page)).toBe(0);
 
-    // The skip must land on the OTHER dose, so it has to wait for the card to
-    // re-read its schedule: the card binds each write to the slot it is
-    // currently showing, and a skip fired against a stale render would flip
-    // the dose just taken instead of recording a second one. The rate leaving
-    // zero is the card's own confirmation that the refetch landed.
-    await expect
-      .poll(
-        () =>
-          complianceBlock(page, medicationId).getAttribute("data-rate-short"),
-        {
-          timeout: 30_000,
-          message: "the card never re-read its schedule after the take",
-        },
-      )
-      .toMatch(/^[1-9]\d*$/);
-    const skipWritten = page.waitForResponse(
-      (res) =>
-        new URL(res.url()).pathname === intakePath &&
-        res.request().method() === "POST",
-    );
-    await card.locator('[data-slot="medication-intake-skip"]').click();
-    expect((await skipWritten).status(), "the skip is written").toBe(201);
+        await page.goto("/medications");
+        expect(await readCardRate(page, medicationId)).toBe(0);
 
-    // --- the card agrees with the engine -----------------------------------
-    const payload = await api<CompliancePayload>(
-      page,
-      "GET",
-      `/api/medications/${medicationId}/compliance`,
-    );
-    expect(payload.status).toBe(200);
-    const compliance = payload.data as CompliancePayload;
+        // --- the two gestures --------------------------------------------------
+        const card = page.locator(`[data-medication-id="${medicationId}"]`);
+        await expect(card).toContainText(
+          locale === "zh-CN" ? "用药依从率（7 天）" : "Adherence (7 days)",
+        );
+        const intakePath = `/api/medications/${medicationId}/intake`;
 
-    // One dose taken, one deliberately skipped, and the four days of plan
-    // nobody logged still counting against the rate.
-    expect(compliance.compliance7.taken).toBe(1);
-    expect(compliance.compliance7.missed).toBeGreaterThanOrEqual(6);
-    expect(compliance.complianceDisplay.shortDays).toBe(7);
-    expect(compliance.complianceDisplay.short.taken).toBe(1);
+        const takeWritten = page.waitForResponse(
+          (res) =>
+            new URL(res.url()).pathname === intakePath &&
+            res.request().method() === "POST",
+        );
+        await card.locator('[data-slot="medication-intake-take"]').click();
+        expect((await takeWritten).status(), "the take is written").toBe(201);
 
-    // A skip is a decision, not a failure: it never enters the denominator.
-    // So the rate has moved off zero and is nowhere near a hundred — one dose
-    // taken against at least six missed.
-    const rateAfter = await readCardRate(page, medicationId);
-    expect(rateAfter).toBe(compliance.complianceDisplay.short.rate);
-    expect(rateAfter).toBeGreaterThan(0);
-    expect(rateAfter).toBeLessThanOrEqual(20);
+        // The skip must land on the OTHER dose, so it has to wait for the card to
+        // re-read its schedule: the card binds each write to the slot it is
+        // currently showing, and a skip fired against a stale render would flip
+        // the dose just taken instead of recording a second one. The rate leaving
+        // zero is the card's own confirmation that the refetch landed.
+        await expect
+          .poll(
+            () =>
+              complianceBlock(page, medicationId).getAttribute(
+                "data-rate-short",
+              ),
+            {
+              timeout: 30_000,
+              message: "the card never re-read its schedule after the take",
+            },
+          )
+          .toMatch(/^[1-9]\d*$/);
+        const skipWritten = page.waitForResponse(
+          (res) =>
+            new URL(res.url()).pathname === intakePath &&
+            res.request().method() === "POST",
+        );
+        await card.locator('[data-slot="medication-intake-skip"]').click();
+        expect((await skipWritten).status(), "the skip is written").toBe(201);
 
-    // --- the intake history shows both events, each as what it was ----------
-    // The 90-day ledger beside it is a view of the SCHEDULE and stops at now,
-    // so a dose skipped ahead of its window is not in it. The intake history
-    // is the view of what was recorded, and both gestures belong there.
-    await page.goto(`/medications/${medicationId}?tab=verlauf`);
-    await page
-      .locator('[data-slot="medication-verlauf-view-toggle-all"]')
-      .click();
-    const history = page.locator('[data-slot="intake-history-row"]');
-    await expect(history).toHaveCount(2, { timeout: 15_000 });
-    await expect(
-      page.locator('[data-slot="intake-history-row"][data-status="taken"]'),
-    ).toHaveCount(1);
-    await expect(
-      page.locator('[data-slot="intake-history-row"][data-status="skipped"]'),
-    ).toHaveCount(1);
+        // --- the card agrees with the engine -----------------------------------
+        const payload = await api<CompliancePayload>(
+          page,
+          "GET",
+          `/api/medications/${medicationId}/compliance`,
+        );
+        expect(payload.status).toBe(200);
+        const compliance = payload.data as CompliancePayload;
 
-    // --- and the dashboard tile, which answers the skip the same way -------
-    // Today expected two doses; one was taken and one deliberately skipped.
-    //
-    // A skip is a pause, not a miss, on every surface: the card's engine
-    // (`src/lib/analytics/compliance.ts`, the documented single source of the
-    // percentage) drops a skip from the denominator outright
-    // (`src/lib/analytics/compliance/ledger.ts`), and the tile's
-    // schedule-anchored engine (`src/lib/analytics/schedule-anchored-compliance.ts`)
-    // subtracts the day's skips from its expected slots for the same reason,
-    // so the one taken dose over the one remaining slot reads 100 here as it
-    // does on the card. The two engines are held to one figure by
-    // `src/lib/analytics/__tests__/compliance-skip-parity.test.ts`; this read
-    // proves the tile actually paints it.
-    await page.goto("/");
-    expect(await readTileLatestRate(page)).toBe(100);
-  });
+        // One dose taken, one deliberately skipped, and the four days of plan
+        // nobody logged still counting against the rate.
+        expect(compliance.compliance7.taken).toBe(1);
+        expect(compliance.compliance7.missed).toBeGreaterThanOrEqual(6);
+        expect(compliance.complianceDisplay.shortDays).toBe(7);
+        expect(compliance.complianceDisplay.short.taken).toBe(1);
+
+        // A skip is a decision, not a failure: it never enters the denominator.
+        // So the rate has moved off zero and is nowhere near a hundred — one dose
+        // taken against at least six missed.
+        const rateAfter = await readCardRate(page, medicationId);
+        expect(rateAfter).toBe(compliance.complianceDisplay.short.rate);
+        expect(rateAfter).toBeGreaterThan(0);
+        expect(rateAfter).toBeLessThanOrEqual(20);
+
+        // --- the intake history shows both events, each as what it was ----------
+        // The 90-day ledger beside it is a view of the SCHEDULE and stops at now,
+        // so a dose skipped ahead of its window is not in it. The intake history
+        // is the view of what was recorded, and both gestures belong there.
+        await page.goto(`/medications/${medicationId}?tab=verlauf`);
+        await page
+          .locator('[data-slot="medication-verlauf-view-toggle-all"]')
+          .click();
+        const history = page.locator('[data-slot="intake-history-row"]');
+        await expect(history).toHaveCount(2, { timeout: 15_000 });
+        await expect(
+          page.locator('[data-slot="intake-history-row"][data-status="taken"]'),
+        ).toHaveCount(1);
+        await expect(
+          page.locator(
+            '[data-slot="intake-history-row"][data-status="skipped"]',
+          ),
+        ).toHaveCount(1);
+
+        // --- and the dashboard tile, which answers the skip the same way -------
+        // Today expected two doses; one was taken and one deliberately skipped.
+        //
+        // A skip is a pause, not a miss, on every surface: the card's engine
+        // (`src/lib/analytics/compliance.ts`, the documented single source of the
+        // percentage) drops a skip from the denominator outright
+        // (`src/lib/analytics/compliance/ledger.ts`), and the tile's
+        // schedule-anchored engine (`src/lib/analytics/schedule-anchored-compliance.ts`)
+        // subtracts the day's skips from its expected slots for the same reason,
+        // so the one taken dose over the one remaining slot reads 100 here as it
+        // does on the card. The two engines are held to one figure by
+        // `src/lib/analytics/__tests__/compliance-skip-parity.test.ts`; this read
+        // proves the tile actually paints it.
+        await page.goto("/");
+        expect(await readTileLatestRate(page)).toBe(100);
+
+        const detailPath = `/api/medications/${medicationId}`;
+        const original = await api<{
+          name: string;
+          dose: string;
+          schedules: unknown[];
+          notificationsEnabled: boolean;
+        }>(page, "GET", detailPath);
+        expect(original.data).toMatchObject({
+          name: "E2E Fictional Capsule",
+          dose: "500 mg",
+        });
+        await page.goto(`/medications/${medicationId}?tab=zeitplan`);
+        const reminder = page.locator(
+          "#medication-detail-notifications-switch",
+        );
+        await expect(reminder).toBeVisible();
+        const changed = page.waitForResponse(
+          (res) =>
+            new URL(res.url()).pathname === detailPath &&
+            res.request().method() === "PUT",
+        );
+        await reminder.click();
+        expect((await changed).status()).toBe(200);
+        await page.reload();
+        await expect(reminder).toHaveAttribute(
+          "aria-checked",
+          String(!original.data?.notificationsEnabled),
+        );
+        const updated = await api(page, "GET", detailPath);
+        expect(updated.data).toMatchObject({
+          name: original.data?.name,
+          dose: original.data?.dose,
+          schedules: original.data?.schedules,
+          notificationsEnabled: !original.data?.notificationsEnabled,
+        });
+
+        for (const width of [1280, 390]) {
+          await page.setViewportSize({ width, height: 900 });
+          await page.goto(`/medications/${medicationId}?tab=verlauf`);
+          await page
+            .locator('[data-slot="medication-verlauf-view-toggle-all"]')
+            .click();
+          await expect(
+            page.locator('[data-slot="intake-history-row"]'),
+          ).toHaveCount(2);
+          await expect(page.locator("#main-content")).toContainText(
+            locale === "zh-CN" ? "已跳过" : "Skipped",
+          );
+          await page.screenshot({
+            path: `test-results/t04-${locale}-${width}-history.png`,
+            fullPage: true,
+          });
+          await page.goto("/settings/notifications");
+          await expect(page.locator("#mood-reminder")).toContainText(
+            locale === "zh-CN" ? "每日心情提醒" : "Daily mood reminder",
+          );
+          await expect(
+            page.locator('[data-slot="notifications-crosslinks"]'),
+          ).toBeVisible();
+          await page.screenshot({
+            path: `test-results/t04-${locale}-${width}-reminders.png`,
+            fullPage: true,
+          });
+        }
+        const after = await api(page, "GET", "/api/auth/me");
+        expect(after.data).toMatchObject({
+          locale,
+          timezone: before.data?.timezone,
+          unitPreference: before.data?.unitPreference,
+          notificationPrefs: before.data?.notificationPrefs,
+        });
+      } finally {
+        const restored = await api(page, "PUT", "/api/auth/me/locale", {
+          locale: before.data?.locale ?? "en",
+        });
+        expect(restored.status).toBe(200);
+      }
+    });
+  }
 
   test("an intake against an unowned medication, and one against a slot the schedule does not have, are both refused", async ({
     page,
@@ -675,5 +805,130 @@ test.describe("medication adherence journey", () => {
     await page.goto("/medications");
     expect(await readCardRate(page, weekdayId)).toBe(100);
     expect(await readCardRate(page, dailyId)).toBeLessThan(100);
+  });
+  test("target ranges can be validated and saved in English and Chinese", async ({
+    page,
+  }) => {
+    test.slow();
+    const before = await api<{
+      locale: string;
+      timezone: string | null;
+      unitPreference: string;
+    }>(page, "GET", "/api/auth/me");
+    const thresholds = await api<{
+      overrides: { WEIGHT?: { min: number; max: number } };
+    }>(page, "GET", "/api/user/thresholds");
+    const measurement = await api<{ id: string }>(
+      page,
+      "POST",
+      "/api/measurements",
+      {
+        type: "WEIGHT",
+        value: 78.4,
+        unit: "kg",
+        measuredAt: new Date().toISOString(),
+        notes: "T04 synthetic target range",
+      },
+    );
+    expect(measurement.status).toBe(201);
+    expect(
+      (
+        await api(page, "PUT", "/api/user/thresholds", {
+          WEIGHT: { min: 55, max: 85 },
+        })
+      ).status,
+    ).toBe(200);
+    try {
+      for (const locale of ["en", "zh-CN"] as const) {
+        const chinese = locale === "zh-CN";
+        await page.setViewportSize({
+          width: chinese ? 390 : 1280,
+          height: 900,
+        });
+        await page.goto("/settings/account");
+        await page.locator("#language-select").selectOption(locale);
+        await expect(page.locator("html")).toHaveAttribute("lang", locale);
+        await page.goto("/insights/weight");
+        await page.locator('[data-slot="target-adjust-trigger"]').click();
+        const sheet = page.locator('[data-slot="target-edit-sheet"]');
+        await expect(
+          page.getByRole("heading", {
+            name: chinese ? "编辑目标范围：体重" : "Edit target range: Weight",
+            exact: true,
+          }),
+        ).toBeVisible();
+        await expect(sheet).toContainText(chinese ? "最小值" : "Min");
+        await sheet.locator("#target-edit-min").fill("90");
+        await sheet.locator("#target-edit-max").fill("80");
+        const save = page.locator('[data-slot="target-edit-save"]');
+        await expect(save).toBeDisabled();
+        await sheet.locator("#target-edit-min").fill("60");
+        await expect(save).toBeEnabled();
+        await page.route(
+          "**/api/user/thresholds",
+          async (route) => {
+            const response = await route.fetch({
+              postData: JSON.stringify({ WEIGHT: { min: 90, max: 80 } }),
+            });
+            expect(response.status()).toBe(422);
+            await route.fulfill({ response });
+          },
+          { times: 1 },
+        );
+        await save.click();
+        await expect(
+          page.locator("[data-sonner-toast]").filter({
+            hasText: chinese
+              ? "无法保存目标范围"
+              : "Could not save the target range",
+          }),
+        ).toBeVisible();
+        const written = page.waitForResponse(
+          (res) =>
+            new URL(res.url()).pathname === "/api/user/thresholds" &&
+            res.request().method() === "PUT",
+        );
+        await save.click();
+        expect((await written).status()).toBe(200);
+        await expect(sheet).toBeHidden();
+        const updated = await api(page, "GET", "/api/user/thresholds");
+        expect(updated.data).toMatchObject({
+          overrides: { WEIGHT: { min: 60, max: 80 } },
+        });
+        await page.reload();
+        await expect(page.locator("html")).toHaveAttribute("lang", locale);
+        await page.locator('[data-slot="target-adjust-trigger"]').click();
+        await expect(sheet.locator("#target-edit-min")).toHaveValue("60");
+        await expect(sheet.locator("#target-edit-max")).toHaveValue("80");
+        await sheet.locator("#target-edit-min").scrollIntoViewIfNeeded();
+        await page.screenshot({
+          path: `test-results/t04-${locale}-target.png`,
+          fullPage: true,
+        });
+      }
+    } finally {
+      if (measurement.data?.id)
+        expect(
+          (
+            await api(
+              page,
+              "DELETE",
+              `/api/measurements/${measurement.data.id}`,
+            )
+          ).status,
+        ).toBe(200);
+      const oldRange = thresholds.data?.overrides.WEIGHT;
+      const restored = oldRange
+        ? await api(page, "PUT", "/api/user/thresholds", { WEIGHT: oldRange })
+        : await api(page, "DELETE", "/api/user/thresholds?metric=WEIGHT");
+      expect(restored.status).toBe(200);
+      expect(
+        (
+          await api(page, "PUT", "/api/auth/me/locale", {
+            locale: before.data?.locale ?? "en",
+          })
+        ).status,
+      ).toBe(200);
+    }
   });
 });

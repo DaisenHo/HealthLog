@@ -1,5 +1,6 @@
 "use client";
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useId, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
@@ -291,7 +292,7 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
           setOpen(false);
         },
         onError: (err) => {
-          setFormError(err instanceof Error ? err.message : String(err));
+          setFormError(localizedApiError(err, t, "settings.savingError"));
         },
       },
     );

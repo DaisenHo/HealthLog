@@ -20,6 +20,7 @@ import { MedicationStateBadges } from "@/components/medications/card-parts/medic
 import { MedicationCycleStatus } from "@/components/medications/card-parts/medication-cycle-status";
 import { MedicationCardBody } from "@/components/medications/card-parts/medication-card-body";
 import type { CurrentCycle, DoseStatus } from "@/lib/analytics/compliance";
+import zhMessages from "../../../../messages/zh-CN.json";
 
 /**
  * v1.7.2 — the medication-card status pill, compliance bars, intake-action
@@ -58,6 +59,18 @@ function render(node: React.ReactNode, client?: QueryClient) {
 }
 
 describe("medication card-parts — shared presentational components", () => {
+  it("renders Chinese adherence windows without changing the rates", () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="zh-CN" initialMessages={zhMessages}>
+        <MedicationComplianceBars rate7={90} rate30={80} streak={3} />
+      </I18nProvider>,
+    );
+    expect(html).toContain("用药依从率（7 天）");
+    expect(html).toContain("用药依从率（30 天）");
+    expect(html).toContain("90%");
+    expect(html).toContain("80%");
+  });
+
   it("compliance bars render the 7d / 30d labels and the day-streak flame", () => {
     const html = render(
       <MedicationComplianceBars rate7={90} rate30={88} streak={5} />,

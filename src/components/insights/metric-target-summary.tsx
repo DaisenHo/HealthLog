@@ -114,6 +114,16 @@ const SLUG_TO_TARGET_TYPE: Record<string, string> = {
   medications: "MEDICATION_COMPLIANCE",
 };
 
+const TARGET_LABEL_KEYS: Record<string, string> = {
+  BLOOD_PRESSURE: "measurements.typeBloodPressure",
+  WEIGHT: "measurements.typeWeight",
+  BMI: "targets.bmi",
+  PULSE: "thresholds.metricPulse",
+  SLEEP_DURATION: "thresholds.metricSleep",
+  MOOD_SCORE: "insights.moodSectionTitle",
+  MEDICATION_COMPLIANCE: "medications.compliance",
+};
+
 /** Glucose context target types, in the route's emission order. */
 const GLUCOSE_TARGET_TYPES = [
   "BLOOD_GLUCOSE_FASTING",
@@ -190,7 +200,10 @@ export function MetricTargetSummary({ slug }: MetricTargetSummaryProps) {
 
   return (
     <TargetReferencePanel
-      target={target}
+      target={{
+        ...target,
+        label: t(TARGET_LABEL_KEYS[target.type] ?? target.label),
+      }}
       bpDiastolic={
         targetType === "BLOOD_PRESSURE" ? data.bpDiastolic : undefined
       }

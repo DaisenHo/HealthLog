@@ -14,6 +14,8 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+import { queryKeys } from "@/lib/query-keys";
 import { I18nProvider } from "@/lib/i18n/context";
 import { NotificationsSection } from "@/components/medications/sections/notifications-section";
 
@@ -24,6 +26,8 @@ vi.mock("@/hooks/use-auth", () => ({
     isLoading: false,
   }),
 }));
+
+primeLocales("zh-CN");
 
 function makeClient() {
   return new QueryClient({
@@ -37,9 +41,13 @@ function makeClient() {
   });
 }
 
-function render(node: React.ReactNode, client: QueryClient) {
+function render(
+  node: React.ReactNode,
+  client: QueryClient,
+  locale: "en" | "zh-CN" = "en",
+) {
   return renderToStaticMarkup(
-    <I18nProvider initialLocale="en">
+    <I18nProvider initialLocale={locale}>
       <QueryClientProvider client={client}>{node}</QueryClientProvider>
     </I18nProvider>,
   );
@@ -65,4 +73,30 @@ describe("<NotificationsSection> — split title ids (F-1 H-1)", () => {
       'aria-labelledby="medication-detail-notifications-row-label"',
     );
   });
+  it.each(["en", "zh-CN"] as const)(
+    "keeps iPhone-managed reminders read-only in %s",
+    (locale) => {
+      const client = makeClient();
+      client.setQueryData(queryKeys.authMe(), {
+        notificationPrefs: { medication: { clientManaged: true } },
+      });
+      const html = render(
+        <NotificationsSection
+          medicationId="med-1"
+          notificationsEnabled={true}
+        />,
+        client,
+        locale,
+      );
+      expect(html).toContain(
+        locale === "zh-CN" ? "由 iPhone 管理" : "Managed by iPhone",
+      );
+      expect(html).toContain(
+        locale === "zh-CN"
+          ? "你的 iPhone 管理此药物的提醒。"
+          : "Your iPhone manages reminders for this medication.",
+      );
+      expect(html).not.toContain('role="switch"');
+    },
+  );
 });

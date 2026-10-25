@@ -16,6 +16,7 @@
  * without a manual refresh.
  */
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -37,7 +38,7 @@ import {
   medicationDependentKeys,
   queryKeys,
 } from "@/lib/query-keys";
-import { ApiError, apiGet, apiPut } from "@/lib/api/api-fetch";
+import { apiGet, apiPut } from "@/lib/api/api-fetch";
 
 export interface ApiTokensRowProps {
   medicationId: string;
@@ -182,9 +183,7 @@ export function ApiTokensRow({
       });
     } catch (err) {
       showErrorToast(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("medications.detail.api.mintFailed"),
+        localizedApiError(err, t, "medications.detail.api.mintFailed"),
         { cause: err },
       );
     } finally {

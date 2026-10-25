@@ -1,0 +1,218 @@
+{
+  "milestone": "M1/T04",
+  "status": "partial-unreleased",
+  "includePrefixes": [
+    "medications",
+    "medicationReminders",
+    "lowStockReminders",
+    "moodReminders",
+    "measurementReminders",
+    "coachNudges",
+    "notifications",
+    "settings.sections.notifications",
+    "settings.notificationStatus",
+    "settings.ai.coachReminders"
+  ],
+  "includeKeys": [
+    "apiErrors.medications.ingredients.extract.budgetExceeded",
+    "apiErrors.medications.ingredients.extract.failed",
+    "apiErrors.medications.ingredients.extract.fileTooLarge",
+    "apiErrors.medications.ingredients.extract.fileType",
+    "apiErrors.medications.ingredients.extract.rateLimited",
+    "apiErrors.medications.ingredients.invalid",
+    "apiErrors.medications.ingredients.unitMismatch",
+    "apiErrors.medications.notFound",
+    "i18n.maintainershipBanner.notice",
+    "nutrients.names.biotin",
+    "nutrients.names.caffeine",
+    "nutrients.names.calcium",
+    "nutrients.names.chromium",
+    "nutrients.names.copper",
+    "nutrients.names.dha",
+    "nutrients.names.epa",
+    "nutrients.names.folate",
+    "nutrients.names.iodine",
+    "nutrients.names.iron",
+    "nutrients.names.magnesium",
+    "nutrients.names.manganese",
+    "nutrients.names.molybdenum",
+    "nutrients.names.niacin",
+    "nutrients.names.pantothenic_acid",
+    "nutrients.names.phosphorus",
+    "nutrients.names.riboflavin",
+    "nutrients.names.selenium",
+    "nutrients.names.thiamin",
+    "nutrients.names.vitamin_a",
+    "nutrients.names.vitamin_b12",
+    "nutrients.names.vitamin_b6",
+    "nutrients.names.vitamin_c",
+    "nutrients.names.vitamin_d",
+    "nutrients.names.vitamin_e",
+    "nutrients.names.vitamin_k",
+    "nutrients.names.water",
+    "nutrients.names.zinc",
+    "settings.botToken",
+    "settings.chatId",
+    "settings.email",
+    "settings.emailDescription",
+    "settings.emailEnable",
+    "settings.emailRecipient",
+    "settings.enableNotifications",
+    "settings.ntfy",
+    "settings.ntfyAuthToken",
+    "settings.ntfyAuthTokenHint",
+    "settings.ntfyDescription",
+    "settings.ntfyEnable",
+    "settings.ntfyServer",
+    "settings.ntfyTopic",
+    "settings.savingError",
+    "settings.sections.export.downloadFailed",
+    "settings.telegram",
+    "settings.telegramDescription",
+    "settings.telegramStep1",
+    "settings.telegramStep2",
+    "settings.telegramStep3",
+    "settings.testConnection.errors.connection_failed",
+    "settings.testConnection.errors.credentials_rejected",
+    "settings.testConnection.errors.credentials_unreadable",
+    "settings.testConnection.errors.endpoint_not_found",
+    "settings.testConnection.errors.generic",
+    "settings.testConnection.errors.not_configured",
+    "settings.testConnection.errors.private_origin_not_approved",
+    "settings.testConnection.errors.private_origin_not_grantable",
+    "settings.testConnection.errors.rate_limited",
+    "settings.testConnection.errors.rate_limited_self",
+    "settings.testConnection.errors.redirected",
+    "settings.testConnection.errors.timeout",
+    "settings.testConnection.errors.upstream_error",
+    "settings.testConnection.errors.upstream_invalid_json",
+    "settings.testConnection.errors.upstream_rejected",
+    "settings.testConnection.errors.url_invalid",
+    "settings.testConnection.errors.url_not_public",
+    "settings.testConnection.errors.vapid_not_configured",
+    "settings.testConnection.ok",
+    "settings.testConnection.saveFirst",
+    "settings.testConnection.test",
+    "settings.testConnection.testing",
+    "settings.webPush",
+    "settings.webPushDenied",
+    "settings.webPushDescription",
+    "settings.webPushNotConfigured",
+    "settings.webPushNotSupported",
+    "settings.webPushSubscribe",
+    "settings.webPushSubscribeFailed",
+    "settings.webPushSubscribed",
+    "settings.webPushUnsubscribe",
+    "settings.webPushUnsubscribed",
+    "settings.webhook",
+    "settings.webhookDescription",
+    "settings.webhookEnable",
+    "settings.webhookFormat",
+    "settings.webhookFormatGeneric",
+    "settings.webhookFormatGenericHint",
+    "settings.webhookFormatGotify",
+    "settings.webhookFormatGotifyHint",
+    "settings.webhookHeaderName",
+    "settings.webhookHeaderValue",
+    "settings.webhookUrl",
+    "settings.webhookUrlHint"
+  ],
+  "sourceKeys": 1388,
+  "translatedKeys": 1366,
+  "unchangedKeys": [
+    {
+      "key": "measurementReminders.originCoach",
+      "reason": "brand-or-protocol"
+    },
+    {
+      "key": "medications.detail.settings.codes.atcLabel",
+      "reason": "clinical-name-or-code"
+    },
+    {
+      "key": "medications.detail.settings.codes.rxNormLabel",
+      "reason": "clinical-name-or-code"
+    },
+    {
+      "key": "medications.glp1.drug.dulaglutide.name",
+      "reason": "clinical-name-or-code"
+    },
+    {
+      "key": "medications.glp1.drug.exenatide.name",
+      "reason": "clinical-name-or-code"
+    },
+    {
+      "key": "medications.glp1.drug.liraglutide.name",
+      "reason": "clinical-name-or-code"
+    },
+    {
+      "key": "medications.glp1.drug.semaglutide.name",
+      "reason": "clinical-name-or-code"
+    },
+    {
+      "key": "medications.glp1.drug.tirzepatide.name",
+      "reason": "clinical-name-or-code"
+    },
+    {
+      "key": "medications.glp1LastInjection",
+      "reason": "format-only"
+    },
+    {
+      "key": "medications.phasePercent",
+      "reason": "unit"
+    },
+    {
+      "key": "medications.sourceApi",
+      "reason": "brand-or-protocol"
+    },
+    {
+      "key": "medications.titration.doseStep",
+      "reason": "format-only"
+    },
+    {
+      "key": "medications.wizard.steps.step3.unit.g",
+      "reason": "unit"
+    },
+    {
+      "key": "medications.wizard.steps.step3.unit.iu",
+      "reason": "unit"
+    },
+    {
+      "key": "medications.wizard.steps.step3.unit.mcg",
+      "reason": "unit"
+    },
+    {
+      "key": "medications.wizard.steps.step3.unit.mg",
+      "reason": "unit"
+    },
+    {
+      "key": "medications.wizard.steps.step3.unit.ml",
+      "reason": "unit"
+    },
+    {
+      "key": "settings.ntfy",
+      "reason": "brand-or-protocol"
+    },
+    {
+      "key": "settings.telegram",
+      "reason": "brand-or-protocol"
+    },
+    {
+      "key": "settings.webhook",
+      "reason": "brand-or-protocol"
+    },
+    {
+      "key": "settings.webhookFormatGotify",
+      "reason": "brand-or-protocol"
+    },
+    {
+      "key": "settings.webhookUrl",
+      "reason": "brand-or-protocol"
+    }
+  ],
+  "inheritedTargetRanges": {
+    "prefix": "targets",
+    "sourceKeys": 93,
+    "from": "T03"
+  },
+  "deferred": "通用每日/每周/每月目标引擎属于后续 M4；T05/T06 其余模块仍未完成，本清单不代表 M1 发布。"
+}

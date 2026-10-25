@@ -19,6 +19,7 @@
  * and never needs a new endpoint.
  */
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useState } from "react";
 import { Download, Loader2, Upload } from "lucide-react";
 
@@ -73,7 +74,9 @@ export function DataPortabilityRow({
         `healthlog-medication-${stamp}.csv`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(
+        localizedApiError(err, t, "settings.sections.export.downloadFailed"),
+      );
     } finally {
       setBusy(false);
     }

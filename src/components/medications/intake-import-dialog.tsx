@@ -17,6 +17,7 @@
  * never picks up the previous session's text.
  */
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, MoreHorizontal, RotateCcw, Upload } from "lucide-react";
@@ -144,7 +145,7 @@ export function IntakeImportDialog({
         setResult({
           kind: "notice",
           tone: "error",
-          text: err.message || t("medications.importFailed"),
+          text: localizedApiError(err, t, "medications.importFailed"),
         });
       }
     } catch (err) {
@@ -154,7 +155,7 @@ export function IntakeImportDialog({
         text:
           err instanceof SyntaxError
             ? t("medications.importInvalidFormat")
-            : (err as Error).message || t("medications.importFailed"),
+            : localizedApiError(err, t, "medications.importFailed"),
       });
     } finally {
       setImporting(false);

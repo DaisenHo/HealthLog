@@ -47,4 +47,20 @@ describe("server catalogs", () => {
     const fr = serverCatalog("fr") as { common: { save: string } };
     expect(t.t("common.save")).toBe(fr.common.save);
   });
+  it("formats Chinese reminder text without translating the medication or dose", () => {
+    const { t } = getServerTranslator("zh-CN");
+    expect(
+      t("medicationReminders.phaseYellowMessage", {
+        medName: "Fictional Capsule",
+        doseInfo: "500 mg",
+        timeWindow: "08:00–09:00",
+        minutes: 12,
+      }),
+    ).toBe(
+      "🟡 即将到期：\n<b>Fictional Capsule</b>（500 mg，08:00–09:00）\n还剩 12 分钟。",
+    );
+    expect(t("lowStockReminders.title", { medName: "Fictional Capsule" })).toBe(
+      "库存不足：Fictional Capsule",
+    );
+  });
 });

@@ -48,7 +48,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useTranslations } from "@/lib/i18n/context";
-import { apiFetchRaw } from "@/lib/api/api-fetch";
+import { apiFetch } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { invalidateKeys, medicationDependentKeys } from "@/lib/query-keys";
 
 import { NaturalLanguageExtractor } from "@/components/medications/scheduling/natural-language-extractor";
@@ -332,29 +333,27 @@ function WizardDialogShell({
           : "/api/medications";
       const method = mode === "edit" ? "PUT" : "POST";
 
-      const res = await apiFetchRaw(url, {
+      const data = await apiFetch<{ id: string }>(url, {
         method,
+        signal: null, // Preserve the existing save behavior without a timeout.
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const json = (await res.json()) as {
-        data?: { id: string };
-        error?: string;
-      };
-      const successStatus = mode === "edit" ? 200 : 201;
-      if (res.status === successStatus && json.data?.id) {
+      if (data?.id) {
         await invalidateKeys(queryClient, medicationDependentKeys);
         toast.success(t("common.saved"));
-        onSuccess?.(json.data.id);
+        onSuccess?.(data.id);
         onOpenChange(false);
         if (mode === "create" && navigateOnCreate) {
-          router.push(`/medications/${json.data.id}`);
+          router.push(`/medications/${data.id}`);
         }
         return;
       }
-      setSubmitError(json.error ?? t("medications.wizard.errors.submitFailed"));
-    } catch {
       setSubmitError(t("medications.wizard.errors.submitFailed"));
+    } catch (error) {
+      setSubmitError(
+        localizedApiError(error, t, "medications.wizard.errors.submitFailed"),
+      );
     } finally {
       setSubmitting(false);
     }

@@ -258,10 +258,7 @@ function TargetEditSheetBody({
       onOpenChange(false);
     },
     onError: (err) =>
-      showErrorToast(
-        err instanceof Error ? err.message : t("targets.edit.saveError"),
-        { cause: err },
-      ),
+      showErrorToast(t("targets.edit.saveError"), { cause: err }),
   });
 
   const resetMutation = useMutation({
