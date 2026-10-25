@@ -5,6 +5,7 @@ import { Activity } from "lucide-react";
 import { TrendCard } from "../trend-card";
 import { SleepSourceDiscrepancyMarker } from "@/components/insights/sleep-source-discrepancy-marker";
 import { I18nProvider } from "@/lib/i18n/context";
+import zhMessages from "../../../../messages/zh-CN.json";
 
 /**
  * v1.5 — metric-aware trend-arrow colour. Each metric tile gets a
@@ -30,6 +31,29 @@ function render(node: React.ReactNode) {
 }
 
 describe("<TrendCard> directionSentiment", () => {
+  it("shows Chinese trend and comparison captions without changing the reading or unit", () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="zh-CN" initialMessages={zhMessages}>
+        <TrendCard
+          label="体重"
+          latest={78.4}
+          unit="kg"
+          avg7={79.2}
+          avg30={80}
+          slope30={STABLE}
+          icon={Activity}
+          trend7Delta={-0.8}
+          compareBaseline="lastMonth"
+          compareDelta={-1.6}
+        />
+      </I18nProvider>,
+    );
+    expect(html).toContain("7 天趋势");
+    expect(html).toContain("与上个月相比");
+    expect(html).toContain("78.4");
+    expect(html).toContain("kg");
+  });
+
   const baseProps = {
     label: "Weight",
     latest: 80,

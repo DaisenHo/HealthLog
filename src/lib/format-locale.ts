@@ -243,7 +243,7 @@ export function makeFormatters(
   // builds the same `Intl.DateTimeFormat` internally — so rendered output is
   // unchanged. The options carry `timeZone` + the hour-cycle/date-field shape,
   // so the cache key already distinguishes every variant.
-  return {
+  const formatters: Formatters = {
     number: (value, fractionDigits) =>
       getNumberFormat(intlLocale, {
         minimumFractionDigits: fractionDigits,
@@ -354,6 +354,21 @@ export function makeFormatters(
         month: "short",
       }).format(asDate(value)),
   };
+
+  // Numeric field order must not switch Chinese weekday or clock wording to German/English.
+  if (locale === "zh-CN" && dateFormat !== "AUTO") {
+    const weekday = (value: DateInput) =>
+      getDateTimeFormat(intlLocale, { timeZone: tz, weekday: "short" }).format(
+        asDate(value),
+      );
+    formatters.dateTime = (value) =>
+      `${formatters.date(value)} ${formatters.time(value)}`;
+    formatters.dateWithWeekday = (value) =>
+      `${weekday(value)} ${formatters.dateShort(value)}`;
+    formatters.dateWithWeekdaySmart = (value) =>
+      `${weekday(value)} ${formatters.dateShortSmart(value)}`;
+  }
+  return formatters;
 }
 
 /**

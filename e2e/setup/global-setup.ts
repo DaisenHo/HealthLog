@@ -53,6 +53,17 @@ export const E2E_USER = {
   role: "ADMIN",
 } as const;
 
+export const E2E_HEALTH_RECORDS = {
+  email: "e2e-health-records@healthlog.test",
+  username: "e2e-health-records",
+  password: E2E_USER.password,
+} as const;
+
+export const HEALTH_RECORDS_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateHealthRecords.json",
+);
+
 /**
  * v1.36.0 — the SECOND account, so account sharing has two sides to test.
  *
@@ -755,6 +766,36 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     const passwordHash = await hashPassword(E2E_USER.password);
     const now = new Date();
     const dob = new Date("1985-06-15T00:00:00.000Z");
+
+    // A separate account keeps the bilingual chart journey independent of other specs' readings and preferences.
+    await pool.query(
+      `INSERT INTO users
+        (id, username, email, password_hash, role, created_at, updated_at,
+         height_cm, date_of_birth, gender, onboarding_completed_at,
+         onboarding_tour_completed, locale, timezone, unit_preference, time_format, date_format, module_preferences_json)
+       VALUES ($1, $2, $3, $4, 'USER', $5, $5,
+               180, $6, 'MALE', $5, true, 'en', 'Asia/Shanghai', 'metric', 'H24', 'AUTO', '{"timeline":true}'::jsonb)
+       ON CONFLICT (username) DO UPDATE SET
+         password_hash = EXCLUDED.password_hash,
+         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+         onboarding_tour_completed = true,
+         locale = EXCLUDED.locale, timezone = EXCLUDED.timezone,
+         unit_preference = EXCLUDED.unit_preference,
+         time_format = EXCLUDED.time_format, date_format = EXCLUDED.date_format,
+         module_preferences_json = EXCLUDED.module_preferences_json`,
+      [
+        cuid(),
+        E2E_HEALTH_RECORDS.username,
+        E2E_HEALTH_RECORDS.email,
+        passwordHash,
+        now,
+        dob,
+      ],
+    );
+    await pool.query(
+      `DELETE FROM measurements WHERE user_id IN (SELECT id FROM users WHERE username = $1)`,
+      [E2E_HEALTH_RECORDS.username],
+    );
 
     // Postgres-native upsert keyed on the unique username column. The
     // SET clause clears any leftover Codex / insights state from a
@@ -1613,6 +1654,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
     // The shared jar every authenticated spec reads.
     await capture(E2E_USER, STORAGE_STATE_PATH);
+    await capture(E2E_HEALTH_RECORDS, HEALTH_RECORDS_STORAGE_STATE_PATH);
 
     // v1.36.0 — the owner's jar. The sharing journey needs both sides of a
     // grant signed in at once, and the login endpoint is IP-rate-limited, so

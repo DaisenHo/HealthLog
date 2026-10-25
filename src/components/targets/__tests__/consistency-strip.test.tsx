@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 import { ConsistencyStrip } from "../consistency-strip";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
+import zhMessages from "../../../../messages/zh-CN.json";
 
 primeLocales("de");
 
@@ -27,6 +28,21 @@ function render(
 }
 
 describe("<ConsistencyStrip>", () => {
+  it("reads sparse coverage and missing-day accessibility labels in Chinese", () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="zh-CN" initialMessages={zhMessages}>
+        <ConsistencyStrip
+          days={[null, null, null, null, null, null, "in"]}
+          daysInRange={1}
+          daysLogged={1}
+        />
+      </I18nProvider>,
+    );
+    expect(html).toContain("7 天中已记录 1 天");
+    expect(html).toContain("最近 7 天，各日是否在范围内");
+    expect(html).toContain("未记录");
+  });
+
   it("renders 7 dots with their band class and the caption", () => {
     const html = render({
       days: ["in", "in", "near", "in", "out", "in", "in"],

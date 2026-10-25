@@ -44,6 +44,25 @@ describe("parseLocaleFromAcceptLanguage", () => {
 });
 
 describe("makeFormatters", () => {
+  it.each([
+    ["DMY", "19.02.2000", "19.02."],
+    ["MDY", "02/19/2000", "02/19"],
+    ["YMD", "2000-02-19", "02-19"],
+  ] as const)(
+    "keeps Chinese words with the explicit %s date order",
+    (order, date, shortDate) => {
+      const instant = new Date("2000-02-19T15:05:00Z");
+      const h12 = makeFormatters("zh-CN", "Asia/Shanghai", "H12", order);
+      const h24 = makeFormatters("zh-CN", "Asia/Shanghai", "H24", order);
+      expect(h12.date(instant)).toBe(date);
+      expect(h12.dateTime(instant)).toBe(`${date} 下午11:05`);
+      expect(h24.dateTime(instant)).toBe(`${date} 23:05`);
+      expect(h12.dateWithWeekdaySmart(instant)).toBe(`周六 ${date}`);
+      expect(h12.dateWithWeekday(instant)).toBe(`周六 ${shortDate}`);
+      expect(h12.number(78.4, 1)).toBe("78.4");
+    },
+  );
+
   const deFmt = makeFormatters("de", undefined, "AUTO", "AUTO");
   const enFmt = makeFormatters("en", undefined, "AUTO", "AUTO");
   const sample = new Date("2026-04-18T14:30:00Z"); // 16:30 Europe/Berlin (CEST)

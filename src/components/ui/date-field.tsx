@@ -320,7 +320,8 @@ function resolveOrder(
   if (dateFormat === "DMY") return "DMY";
   if (dateFormat === "MDY") return "MDY";
   if (dateFormat === "YMD") return "YMD";
-  // AUTO: en → MDY, every other shipped locale → DMY.
+  // Match the Chinese AUTO display order when parsing free-typed dates.
+  if (locale === "zh-CN") return "YMD";
   return locale === "en" ? "MDY" : "DMY";
 }
 

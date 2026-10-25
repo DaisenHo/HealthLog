@@ -30,6 +30,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { DateField } from "../date-field";
+import zhMessages from "../../../../messages/zh-CN.json";
 
 function render(node: React.ReactNode, locale: "de" | "en" = "en"): string {
   return renderToStaticMarkup(
@@ -38,6 +39,17 @@ function render(node: React.ReactNode, locale: "de" | "en" = "en"): string {
 }
 
 describe("<DateField>", () => {
+  it("paints Chinese AUTO dates and an accessible calendar while retaining the ISO value", () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="zh-CN" initialMessages={zhMessages}>
+        <DateField name="measurementDate" value="2026-02-19" />
+      </I18nProvider>,
+    );
+    expect(html).toContain('value="2026/02/19"');
+    expect(html).toContain('value="2026-02-19"');
+    expect(html).toContain('aria-label="选择日期"');
+  });
+
   it("keeps the ISO value on a hidden mirror input carrying the name", () => {
     const html = render(<DateField id="dob" name="dob" value="2026-02-19" />);
     // The real value lives on a hidden mirror input (the form's source of

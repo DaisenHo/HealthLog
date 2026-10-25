@@ -157,6 +157,8 @@ export default defineConfig({
       // layout checks, so running a second project against the same stamps
       // would test session interference rather than the record journeys.
       testIgnore: [
+        // This account-mutating journey exercises both viewport sizes in one worker.
+        "health-records-locale.spec.ts",
         "v137-sharing-managed-profiles.spec.ts",
         "v137-sharing-managed-profiles-a11y.spec.ts",
         "v138-managed-record-capabilities.spec.ts",

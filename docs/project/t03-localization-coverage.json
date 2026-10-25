@@ -1,0 +1,328 @@
+{
+  "milestone": "M1/T03",
+  "status": "partial-unreleased",
+  "includePrefixes": [
+    "dashboard",
+    "measurements",
+    "metricCatalog",
+    "charts",
+    "chart",
+    "comparison",
+    "insights",
+    "thresholds",
+    "gettingStarted",
+    "trendHints",
+    "dataList",
+    "daily",
+    "day",
+    "timeline",
+    "lifeEvents",
+    "series",
+    "activityCalendar",
+    "sourceProvenance",
+    "customMetrics",
+    "modules",
+    "moduleOff",
+    "errorBoundary",
+    "notFound",
+    "offlineBanner",
+    "demoBanner",
+    "apiErrors.measurement",
+    "targets",
+    "environment.chip",
+    "environment.pollen",
+    "recordSharing.delegate.addOnlyNote",
+    "recordSharing.toast.savedTo",
+    "mood.dayContext.notRecorded",
+    "mood.dayContext.linkedSleep",
+    "mood.dayContext.linkedSteps",
+    "mood.dayContext.linkedActiveEnergy",
+    "mood.dayContext.linkedRestingHeartRate",
+    "mood.dayContext.linkedHrv",
+    "mood.context",
+    "mood.dimension",
+    "i18n.maintainershipBanner.notice"
+  ],
+  "excludePrefixes": ["insights.coach"],
+  "includeOverrides": ["insights.coach.readStrip"],
+  "sourceKeys": 2750,
+  "translatedKeys": 2701,
+  "unchangedKeys": [
+    {
+      "key": "charts.spo2",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "daily.today.valueWithUnit",
+      "reason": "format-only"
+    },
+    {
+      "key": "daily.todayFact.sleep.plain",
+      "reason": "format-only"
+    },
+    {
+      "key": "dashboard.metric.title.bmi",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "dashboard.metric.unit.bloodPressure",
+      "reason": "unit"
+    },
+    {
+      "key": "dashboard.metric.unit.bmi",
+      "reason": "unit"
+    },
+    {
+      "key": "dashboard.metric.unit.bodyFat",
+      "reason": "unit"
+    },
+    {
+      "key": "dashboard.metric.unit.boneMass",
+      "reason": "unit"
+    },
+    {
+      "key": "dashboard.metric.unit.glucose",
+      "reason": "unit"
+    },
+    {
+      "key": "dashboard.metric.unit.mood",
+      "reason": "format-only"
+    },
+    {
+      "key": "dashboard.metric.unit.oxygenSaturation",
+      "reason": "unit"
+    },
+    {
+      "key": "dashboard.metric.unit.pulse",
+      "reason": "unit"
+    },
+    {
+      "key": "dashboard.metric.unit.sleep",
+      "reason": "unit"
+    },
+    {
+      "key": "dashboard.metric.unit.totalBodyWater",
+      "reason": "unit"
+    },
+    {
+      "key": "dashboard.metric.unit.weight",
+      "reason": "unit"
+    },
+    {
+      "key": "dashboard.vo2MaxUnit",
+      "reason": "unit"
+    },
+    {
+      "key": "day.movement.kilometres",
+      "reason": "unit"
+    },
+    {
+      "key": "day.movement.miles",
+      "reason": "unit"
+    },
+    {
+      "key": "insights.bmiSectionTitle",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "insights.coach.readStrip.driver",
+      "reason": "format-only"
+    },
+    {
+      "key": "insights.derived.anatomy.outOf",
+      "reason": "format-only"
+    },
+    {
+      "key": "insights.derived.composite.READINESS.component.hrv",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "insights.derived.coverage.ratioLabel",
+      "reason": "format-only"
+    },
+    {
+      "key": "insights.deviceScore.unitBpm",
+      "reason": "unit"
+    },
+    {
+      "key": "insights.deviceScore.unitKj",
+      "reason": "unit"
+    },
+    {
+      "key": "insights.ecg.meta.bpmValue",
+      "reason": "unit"
+    },
+    {
+      "key": "insights.ecg.meta.durationValue",
+      "reason": "unit"
+    },
+    {
+      "key": "insights.ecg.meta.hzValue",
+      "reason": "unit"
+    },
+    {
+      "key": "insights.ecg.meta.unknown",
+      "reason": "format-only"
+    },
+    {
+      "key": "insights.mood.inTargetValue",
+      "reason": "format-only"
+    },
+    {
+      "key": "insights.mood.stability.value",
+      "reason": "format-only"
+    },
+    {
+      "key": "insights.navBmi",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "insights.workouts.detail.splitsKm",
+      "reason": "unit"
+    },
+    {
+      "key": "measurements.sourceFitbit",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.sourceGoogleHealth",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.sourceHealthConnect",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.sourceMcp",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.sourceNightscout",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.sourceOura",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.sourcePolar",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.sourceStrava",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.sourceTelegram",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.sourceWhoop",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.sourceWithings",
+      "reason": "brand"
+    },
+    {
+      "key": "measurements.typeHrvRmssd",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "modules.coach.label",
+      "reason": "brand"
+    },
+    {
+      "key": "sourceProvenance.pickedSplit",
+      "reason": "format-only"
+    },
+    {
+      "key": "targets.bmi",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "thresholds.unitSuffix",
+      "reason": "format-only"
+    }
+  ],
+  "areas": [
+    {
+      "area": "首页",
+      "prefixes": ["dashboard", "daily", "gettingStarted"],
+      "keys": 302,
+      "translated": 287,
+      "unchanged": 15
+    },
+    {
+      "area": "测量与自定义指标",
+      "prefixes": [
+        "measurements",
+        "customMetrics",
+        "dataList",
+        "apiErrors.measurement"
+      ],
+      "keys": 268,
+      "translated": 256,
+      "unchanged": 12
+    },
+    {
+      "area": "图表与参考范围",
+      "prefixes": [
+        "charts",
+        "chart",
+        "comparison",
+        "thresholds",
+        "trendHints",
+        "series",
+        "targets"
+      ],
+      "keys": 265,
+      "translated": 262,
+      "unchanged": 3
+    },
+    {
+      "area": "趋势分析",
+      "prefixes": [
+        "insights",
+        "mood.context",
+        "mood.dimension",
+        "mood.dayContext"
+      ],
+      "keys": 1457,
+      "translated": 1442,
+      "unchanged": 15
+    },
+    {
+      "area": "时间线与日历",
+      "prefixes": ["timeline", "day", "lifeEvents", "activityCalendar"],
+      "keys": 345,
+      "translated": 343,
+      "unchanged": 2
+    },
+    {
+      "area": "来源说明",
+      "prefixes": ["metricCatalog", "sourceProvenance"],
+      "keys": 45,
+      "translated": 44,
+      "unchanged": 1
+    },
+    {
+      "area": "共享状态",
+      "prefixes": [
+        "modules",
+        "moduleOff",
+        "errorBoundary",
+        "notFound",
+        "offlineBanner",
+        "demoBanner",
+        "environment",
+        "recordSharing",
+        "i18n"
+      ],
+      "keys": 68,
+      "translated": 67,
+      "unchanged": 1
+    }
+  ],
+  "deferred": "T04 独立用药与目标流程；T05 其他健康模块；T06 Coach 对话及模型文案、报告、分享、管理及其余文案。此清单不代表 M1 完整发布。"
+}
