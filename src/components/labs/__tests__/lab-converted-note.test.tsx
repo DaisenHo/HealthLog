@@ -6,11 +6,11 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { LabConvertedNote } from "../lab-converted-note";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
-primeLocales("de");
+primeLocales("de", "zh-CN");
 
 function render(
   reading: Parameters<typeof LabConvertedNote>[0]["reading"],
-  locale: "en" | "de" = "en",
+  locale: "en" | "de" | "zh-CN" = "en",
 ) {
   return renderToStaticMarkup(
     <I18nProvider initialLocale={locale}>
@@ -34,6 +34,15 @@ describe("<LabConvertedNote>", () => {
     expect(
       render({ converted: true, sourceValue: 5.6, sourceUnit: "mmol/L" }, "de"),
     ).toContain("umgerechnet aus 5,6 mmol/L");
+  });
+
+  it("explains a converted reading in Chinese without changing its source value or unit", () => {
+    expect(
+      render(
+        { converted: true, sourceValue: 5.6, sourceUnit: "mmol/L" },
+        "zh-CN",
+      ),
+    ).toContain("换算自 5.6 mmol/L");
   });
 
   it("prints the figure the report printed, with every digit", () => {

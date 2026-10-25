@@ -63,4 +63,17 @@ describe("server catalogs", () => {
       "库存不足：Fictional Capsule",
     );
   });
+  it("distinguishes Chinese absence choices from comparison controls", () => {
+    const { t } = getServerTranslator("zh-CN");
+    expect(t("symptoms.entry.anchorLow")).toBe("无");
+    expect(t("cycle.flow.NONE")).toBe("无出血");
+    expect(t("comparison.baseline.none")).toBe("不对比");
+  });
+
+  it("explains the background scan queue in Chinese", () => {
+    const { t } = getServerTranslator("zh-CN");
+    expect(t("aiRuns.backgroundScan")).toBe(
+      "正在后台读取。模型较慢时可能需要几分钟。",
+    );
+  });
 });

@@ -31,6 +31,7 @@
  * question reintroduces an ungated Delete, and nothing here will fail. Ask at
  * the caller, or move the check in here for everyone.
  */
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -128,8 +129,7 @@ export function EncounterSheet({
       onSaved?.(saved);
       onOpenChange(false);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("encounters.saveFailed");
+      const message = localizedApiError(err, t, "encounters.saveFailed");
       setError(message);
       showErrorToast(message, { cause: err });
     }

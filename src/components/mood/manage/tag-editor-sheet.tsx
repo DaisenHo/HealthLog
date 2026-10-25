@@ -1,5 +1,6 @@
 "use client";
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
@@ -144,10 +145,9 @@ export function TagEditorSheet({
       if (err instanceof ApiError && err.status === 422) {
         showErrorToast(t("mood.manage.tagLimitReached"), { cause: err });
       } else {
-        showErrorToast(
-          err instanceof ApiError ? err.message : t("common.error"),
-          { cause: err },
-        );
+        showErrorToast(localizedApiError(err, t, "common.error"), {
+          cause: err,
+        });
       }
     } finally {
       setSaving(false);

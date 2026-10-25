@@ -618,5 +618,5 @@ export const AUDIT_C_STANDARD_DRINK: Readonly<Record<string, string>> = {
   ko: "표준 1잔: 양주잔으로 양주 1잔, 와인잔으로 와인 1잔, 막걸리 1사발이 각각 표준 1잔이다. 맥주는 캔맥주 1캔 또는 작은 병맥주 1병이며 생맥주는 500 mL가 표준 1잔이다. 소주는 1/4병이 표준 1잔에 해당한다.",
 
   "zh-CN":
-    "One drink means a standard drink of about 10 g of pure alcohol, for example 330 ml of beer at 5%, 140 ml of wine at 12% or 40 ml of spirits at 40%.",
+    "一份酒指含约 10 g 纯酒精的标准份量，例如 330 ml 酒精度 5% 的啤酒、140 ml 酒精度 12% 的葡萄酒，或 40 ml 酒精度 40% 的烈酒。",
 };

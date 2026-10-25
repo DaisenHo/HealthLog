@@ -159,6 +159,7 @@ export default defineConfig({
       testIgnore: [
         // This account-mutating journey exercises both viewport sizes in one worker.
         "health-records-locale.spec.ts",
+        "health-modules-locale.spec.ts",
         "v137-sharing-managed-profiles.spec.ts",
         "v137-sharing-managed-profiles-a11y.spec.ts",
         "v138-managed-record-capabilities.spec.ts",

@@ -6,6 +6,9 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import en from "../../../../messages/en.json";
 import nl from "../../../../messages/nl.json";
+import { primeLocales } from "@/__tests__/helpers/prime-locales";
+
+primeLocales("zh-CN");
 
 /**
  * Mental-wellbeing surface redesign (v1.25.3). The SSR-only convention
@@ -33,7 +36,10 @@ import type { AssessmentRow, CreateResponse } from "../types";
 
 const mh = en.mentalHealth;
 
-function withProviders(node: React.ReactNode): string {
+function withProviders(
+  node: React.ReactNode,
+  locale: "en" | "zh-CN" = "en",
+): string {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -49,10 +55,36 @@ function withProviders(node: React.ReactNode): string {
   });
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
-      <I18nProvider initialLocale="en">{node}</I18nProvider>
+      <I18nProvider initialLocale={locale}>{node}</I18nProvider>
     </QueryClientProvider>,
   );
 }
+
+describe("Chinese questionnaire chrome", () => {
+  it.each([
+    ["PHQ9", "Little interest or pleasure in doing things"],
+    ["GAD7", "Feeling nervous, anxious, or on edge"],
+    ["WHO5", "I have felt cheerful and in good spirits"],
+    ["SCI", "how long does it take you to fall asleep?"],
+  ] as const)(
+    "keeps original %s items with a Chinese language notice",
+    (instrument, original) => {
+      const html = withProviders(
+        <CheckInWizard
+          instrument={instrument}
+          onSubmit={() => {}}
+          onBack={() => {}}
+          isPending={false}
+          isError={false}
+        />,
+        "zh-CN",
+      );
+      expect(html).toContain("题目使用英文原文显示");
+      expect(html).toContain(original);
+      expect(html).toContain("第 1 题，共");
+    },
+  );
+});
 
 describe("landing chrome (v1.25.5 — disclaimer + heading removed)", () => {
   it("does NOT render the voluntary-self-test disclaimer anywhere", () => {

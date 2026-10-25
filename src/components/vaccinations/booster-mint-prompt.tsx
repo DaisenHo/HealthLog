@@ -16,6 +16,7 @@
  * The prompt never blocks: the create has already completed and the sheet has
  * already closed by the time this appears.
  */
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useState } from "react";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
@@ -105,10 +106,9 @@ export function BoosterMintPrompt({
       });
       toastWrittenOutcome("success", t("vaccinations.booster.planned"));
     } catch (err) {
-      showErrorToast(
-        err instanceof Error ? err.message : t("vaccinations.booster.failed"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "vaccinations.booster.failed"), {
+        cause: err,
+      });
     } finally {
       onClose();
     }

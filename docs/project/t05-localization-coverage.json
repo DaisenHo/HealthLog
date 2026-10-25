@@ -1,0 +1,246 @@
+{
+  "milestone": "M1/T05",
+  "status": "partial-unreleased",
+  "includePrefixes": [
+    "mood",
+    "cycle",
+    "cycleReminders",
+    "labs",
+    "vaccinations",
+    "illness",
+    "records",
+    "mentalHealth",
+    "nutrients",
+    "encounters",
+    "checkups",
+    "practitioners",
+    "links",
+    "bodySites",
+    "symptoms",
+    "documents",
+    "environment",
+    "apiErrors.mood",
+    "apiErrors.labs",
+    "apiErrors.biomarkers",
+    "apiErrors.symptoms",
+    "settings.ai.aboutMe",
+    "moduleList",
+    "settings.sections.anamnesis",
+    "settings.sections.gesundheitsakte",
+    "settings.sections.mood",
+    "settings.sections.labs",
+    "settings.sections.illness",
+    "settings.sections.vorsorge"
+  ],
+  "includeKeys": [
+    "aiRuns.backgroundDocument",
+    "aiRuns.backgroundScan",
+    "aiRuns.errorTimedOut",
+    "aiRuns.errorWorkerUnavailable",
+    "aiRuns.waitingForWorker",
+    "i18n.maintainershipBanner.notice",
+    "insights.mood.correlation.strengthNone",
+    "settings.sections.layout.backToHub",
+    "settings.sections.layout.dashboard.description",
+    "settings.sections.layout.dashboard.title",
+    "settings.sections.layout.documents.description",
+    "settings.sections.layout.documents.title",
+    "settings.sections.layout.illness.description",
+    "settings.sections.layout.illness.title",
+    "settings.sections.layout.insights.description",
+    "settings.sections.layout.insights.title",
+    "settings.sections.layout.labs.description",
+    "settings.sections.layout.labs.title",
+    "settings.sections.layout.medications.description",
+    "settings.sections.layout.medications.title",
+    "settings.sections.layout.subtitle",
+    "settings.sections.layout.title",
+    "settings.sections.layout.vorsorge.description",
+    "settings.sections.layout.vorsorge.title"
+  ],
+  "sourceKeys": 2325,
+  "translatedKeys": 2302,
+  "unchangedKeys": [
+    {
+      "key": "cycle.bbt.tooltipTemp",
+      "reason": "format-only"
+    },
+    {
+      "key": "cycle.predictions.nextPeriodWindow",
+      "reason": "format-only"
+    },
+    {
+      "key": "cycle.ring.dayUnknown",
+      "reason": "format-only"
+    },
+    {
+      "key": "documents.card.deleteKey",
+      "reason": "keyboard-key"
+    },
+    {
+      "key": "illness.vital.HRV_RMSSD",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "labs.catalog.alt",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "labs.catalog.ast",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "labs.catalog.egfr",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "labs.catalog.ggt",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "labs.catalog.hba1c",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "labs.catalog.hs-crp",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "labs.catalog.tsh",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "mentalHealth.crisisResource.crisisTextLine.name",
+      "reason": "official-service-or-product-name"
+    },
+    {
+      "key": "mentalHealth.crisisResource.lifeline988.name",
+      "reason": "official-service-or-product-name"
+    },
+    {
+      "key": "mood.noteCharCount",
+      "reason": "format-only"
+    },
+    {
+      "key": "mood.sourceDaylio",
+      "reason": "official-service-or-product-name"
+    },
+    {
+      "key": "mood.sourceMoodlog",
+      "reason": "official-service-or-product-name"
+    },
+    {
+      "key": "mood.sourceTelegram",
+      "reason": "official-service-or-product-name"
+    },
+    {
+      "key": "nutrients.micronutrients.sourcePart",
+      "reason": "format-only"
+    },
+    {
+      "key": "nutrients.units.IU",
+      "reason": "unit"
+    },
+    {
+      "key": "symptoms.intensityPill",
+      "reason": "format-only"
+    },
+    {
+      "key": "vaccinations.catalog.covid-19",
+      "reason": "clinical-abbreviation"
+    },
+    {
+      "key": "vaccinations.catalog.rsv",
+      "reason": "clinical-abbreviation"
+    }
+  ],
+  "excludedInstrumentWording": {
+    "source": "src/lib/mental-health/instrument-wording.ts",
+    "reason": "zh-CN 不在现有受验证题目语言白名单内；这 79 个键继续不进入中文 catalog，运行时显示英文原文。未扩大例外或语言白名单。",
+    "keys": [
+      "mentalHealth.functional.0",
+      "mentalHealth.functional.1",
+      "mentalHealth.functional.2",
+      "mentalHealth.functional.3",
+      "mentalHealth.functionalTitle",
+      "mentalHealth.gad7Options.0",
+      "mentalHealth.gad7Options.1",
+      "mentalHealth.gad7Options.2",
+      "mentalHealth.gad7Options.3",
+      "mentalHealth.items.gad7.1",
+      "mentalHealth.items.gad7.2",
+      "mentalHealth.items.gad7.3",
+      "mentalHealth.items.gad7.4",
+      "mentalHealth.items.gad7.5",
+      "mentalHealth.items.gad7.6",
+      "mentalHealth.items.gad7.7",
+      "mentalHealth.items.phq9.1",
+      "mentalHealth.items.phq9.2",
+      "mentalHealth.items.phq9.3",
+      "mentalHealth.items.phq9.4",
+      "mentalHealth.items.phq9.5",
+      "mentalHealth.items.phq9.6",
+      "mentalHealth.items.phq9.7",
+      "mentalHealth.items.phq9.8",
+      "mentalHealth.items.phq9.9",
+      "mentalHealth.items.sci.1",
+      "mentalHealth.items.sci.2",
+      "mentalHealth.items.sci.3",
+      "mentalHealth.items.sci.4",
+      "mentalHealth.items.sci.5",
+      "mentalHealth.items.sci.6",
+      "mentalHealth.items.sci.7",
+      "mentalHealth.items.sci.8",
+      "mentalHealth.items.who5.1",
+      "mentalHealth.items.who5.2",
+      "mentalHealth.items.who5.3",
+      "mentalHealth.items.who5.4",
+      "mentalHealth.items.who5.5",
+      "mentalHealth.options.0",
+      "mentalHealth.options.1",
+      "mentalHealth.options.2",
+      "mentalHealth.options.3",
+      "mentalHealth.sciOptions.duration.0",
+      "mentalHealth.sciOptions.duration.1",
+      "mentalHealth.sciOptions.duration.2",
+      "mentalHealth.sciOptions.duration.3",
+      "mentalHealth.sciOptions.duration.4",
+      "mentalHealth.sciOptions.impact.0",
+      "mentalHealth.sciOptions.impact.1",
+      "mentalHealth.sciOptions.impact.2",
+      "mentalHealth.sciOptions.impact.3",
+      "mentalHealth.sciOptions.impact.4",
+      "mentalHealth.sciOptions.nights.0",
+      "mentalHealth.sciOptions.nights.1",
+      "mentalHealth.sciOptions.nights.2",
+      "mentalHealth.sciOptions.nights.3",
+      "mentalHealth.sciOptions.nights.4",
+      "mentalHealth.sciOptions.problemDuration.0",
+      "mentalHealth.sciOptions.problemDuration.1",
+      "mentalHealth.sciOptions.problemDuration.2",
+      "mentalHealth.sciOptions.problemDuration.3",
+      "mentalHealth.sciOptions.problemDuration.4",
+      "mentalHealth.sciOptions.quality.0",
+      "mentalHealth.sciOptions.quality.1",
+      "mentalHealth.sciOptions.quality.2",
+      "mentalHealth.sciOptions.quality.3",
+      "mentalHealth.sciOptions.quality.4",
+      "mentalHealth.stems.gad7.period",
+      "mentalHealth.stems.phq9.period",
+      "mentalHealth.stems.sci.finally",
+      "mentalHealth.stems.sci.impact",
+      "mentalHealth.stems.sci.night",
+      "mentalHealth.stems.who5.period",
+      "mentalHealth.who5Options.0",
+      "mentalHealth.who5Options.1",
+      "mentalHealth.who5Options.2",
+      "mentalHealth.who5Options.3",
+      "mentalHealth.who5Options.4",
+      "mentalHealth.who5Options.5"
+    ]
+  },
+  "nonCatalogHelp": [
+    "src/lib/mental-health/instruments.ts: AUDIT_C_STANDARD_DRINK.zh-CN（仅标准份量帮助文案，题目、选项、评分、界值及来源保持原样）"
+  ],
+  "deferred": "T06：报告、分享的完整流程、导出、管理、Coach 对话/模型文案及其余配置辅助文案。本清单不代表 M1 完整发布。"
+}

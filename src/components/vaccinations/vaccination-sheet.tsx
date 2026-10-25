@@ -18,6 +18,7 @@
  * mount that skips either question reintroduces an ungated control with
  * nothing failing.
  */
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -99,8 +100,7 @@ export function VaccinationSheet({
         onCreated?.(created);
       }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("vaccinations.saveFailed");
+      const message = localizedApiError(err, t, "vaccinations.saveFailed");
       setError(message);
       showErrorToast(message, { cause: err });
     }

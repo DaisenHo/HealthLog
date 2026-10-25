@@ -1,5 +1,6 @@
 "use client";
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useId, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -47,7 +48,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ApiError, apiPatch, apiPut } from "@/lib/api/api-fetch";
+import { apiPatch, apiPut } from "@/lib/api/api-fetch";
 import {
   readUpdatedAtToken,
   withBaseToken,
@@ -168,10 +169,7 @@ export function TagManagerCard({ catalog }: TagManagerCardProps) {
         toast.message(t("common.conflictReloaded"));
         return false;
       }
-      showErrorToast(
-        err instanceof ApiError ? err.message : t("common.error"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "common.error"), { cause: err });
       return false;
     } finally {
       void invalidateMoodTagCaches(queryClient);
@@ -243,10 +241,7 @@ export function TagManagerCard({ catalog }: TagManagerCardProps) {
       }
     } catch (err) {
       rollback();
-      showErrorToast(
-        err instanceof ApiError ? err.message : t("common.error"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "common.error"), { cause: err });
     } finally {
       void invalidateMoodTagCaches(queryClient);
     }
@@ -283,10 +278,7 @@ export function TagManagerCard({ catalog }: TagManagerCardProps) {
         toast.message(t("common.conflictReloaded"));
         return;
       }
-      showErrorToast(
-        err instanceof ApiError ? err.message : t("common.error"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "common.error"), { cause: err });
     } finally {
       void invalidateMoodTagCaches(queryClient);
     }

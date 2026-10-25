@@ -62,10 +62,12 @@ export interface LabLoincMapping {
  * resolved before resolves to the same key now.
  */
 export function normaliseLabKey(s: string): string {
-  // Hangul syllables are kept alongside the ASCII range: stripping to
-  // [a-z0-9] alone reduced every Korean analyte name to the empty string, so
-  // `buildLocalisedAliases` indexed none of them and no Korean label resolved.
-  return stripDiacritics(s.toLowerCase()).replace(/[^a-z0-9가-힣]/g, "");
+  // Keep Hangul and Han labels so translated analytes do not collapse to
+  // empty keys; retain the existing folding for every other character.
+  return stripDiacritics(s.toLowerCase()).replace(
+    /[^a-z0-9가-힣\p{Script=Han}]/gu,
+    "",
+  );
 }
 
 /**
@@ -432,7 +434,8 @@ function normaliseUnit(unit: string): string {
   // through the same table so equivalent spellings collapse.
   const lower = trimmed.toLowerCase();
   if (UNIT_NORMALISATION[lower]) return UNIT_NORMALISATION[lower];
-  const stripped = normaliseLabKey(trimmed);
+  // Unit matching keeps its existing fold; Han preservation is for analyte labels.
+  const stripped = normaliseLabKey(trimmed.replace(/\p{Script=Han}/gu, ""));
   return UNIT_NORMALISATION[stripped] ?? trimmed;
 }
 

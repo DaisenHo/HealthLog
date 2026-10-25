@@ -73,6 +73,16 @@ describe("AUDIT-C instrument", () => {
     }
   });
 
+  it("keeps the English instrument with Chinese standard-drink help", () => {
+    const instrument = auditCInstrument("zh-CN");
+    expect(instrument.locale).toBe("en");
+    expect(instrument.validatedLocale).toBe(false);
+    expect(instrument.items[0].stem).toBe(
+      "How often do you have a drink containing alcohol?",
+    );
+    expect(instrument.standardDrink).toContain("约 10 g 纯酒精");
+  });
+
   it("knows which languages are validated", () => {
     expect(["de", "en", "ko", "pl"].every(isValidatedAuditCLocale)).toBe(true);
     expect(["es", "fr", "it"].some(isValidatedAuditCLocale)).toBe(false);

@@ -1,5 +1,6 @@
 "use client";
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArchiveRestore, Trash2 } from "lucide-react";
@@ -74,10 +75,9 @@ export function ArchivedTagsCard({ catalog }: ArchivedTagsCardProps) {
       if (err instanceof ApiError && err.status === 422) {
         showErrorToast(t("mood.manage.tagLimitReached"), { cause: err });
       } else {
-        showErrorToast(
-          err instanceof ApiError ? err.message : t("common.error"),
-          { cause: err },
-        );
+        showErrorToast(localizedApiError(err, t, "common.error"), {
+          cause: err,
+        });
       }
     } finally {
       void invalidateMoodTagCaches(queryClient);
@@ -94,10 +94,7 @@ export function ArchivedTagsCard({ catalog }: ArchivedTagsCardProps) {
       toast.success(t("mood.manage.purged"));
     } catch (err) {
       rollback();
-      showErrorToast(
-        err instanceof ApiError ? err.message : t("common.error"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "common.error"), { cause: err });
     } finally {
       void invalidateMoodTagCaches(queryClient);
     }

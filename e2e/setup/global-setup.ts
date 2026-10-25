@@ -64,6 +64,17 @@ export const HEALTH_RECORDS_STORAGE_STATE_PATH = resolve(
   "e2e/setup/storageStateHealthRecords.json",
 );
 
+export const E2E_HEALTH_MODULES = {
+  email: "e2e-health-modules@healthlog.test",
+  username: "e2e-health-modules",
+  password: E2E_USER.password,
+} as const;
+
+export const HEALTH_MODULES_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateHealthModules.json",
+);
+
 /**
  * v1.36.0 — the SECOND account, so account sharing has two sides to test.
  *
@@ -767,9 +778,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     const now = new Date();
     const dob = new Date("1985-06-15T00:00:00.000Z");
 
-    // A separate account keeps the bilingual chart journey independent of other specs' readings and preferences.
-    await pool.query(
-      `INSERT INTO users
+    // Independent accounts keep the bilingual journeys from changing each other's language.
+    for (const account of [E2E_HEALTH_RECORDS, E2E_HEALTH_MODULES]) {
+      await pool.query(
+        `INSERT INTO users
         (id, username, email, password_hash, role, created_at, updated_at,
          height_cm, date_of_birth, gender, onboarding_completed_at,
          onboarding_tour_completed, locale, timezone, unit_preference, time_format, date_format, module_preferences_json)
@@ -783,18 +795,17 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
          unit_preference = EXCLUDED.unit_preference,
          time_format = EXCLUDED.time_format, date_format = EXCLUDED.date_format,
          module_preferences_json = EXCLUDED.module_preferences_json`,
-      [
-        cuid(),
-        E2E_HEALTH_RECORDS.username,
-        E2E_HEALTH_RECORDS.email,
-        passwordHash,
-        now,
-        dob,
-      ],
-    );
+        [cuid(), account.username, account.email, passwordHash, now, dob],
+      );
+      await pool.query(
+        `DELETE FROM measurements WHERE user_id IN (SELECT id FROM users WHERE username = $1)`,
+        [account.username],
+      );
+    }
+    // Only this journey owns these synthetic mood entries; distinct UI times avoid tombstone collisions.
     await pool.query(
-      `DELETE FROM measurements WHERE user_id IN (SELECT id FROM users WHERE username = $1)`,
-      [E2E_HEALTH_RECORDS.username],
+      `DELETE FROM mood_entries WHERE user_id IN (SELECT id FROM users WHERE username = $1)`,
+      [E2E_HEALTH_MODULES.username],
     );
 
     // Postgres-native upsert keyed on the unique username column. The
@@ -1655,6 +1666,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // The shared jar every authenticated spec reads.
     await capture(E2E_USER, STORAGE_STATE_PATH);
     await capture(E2E_HEALTH_RECORDS, HEALTH_RECORDS_STORAGE_STATE_PATH);
+    await capture(E2E_HEALTH_MODULES, HEALTH_MODULES_STORAGE_STATE_PATH);
 
     // v1.36.0 — the owner's jar. The sharing journey needs both sides of a
     // grant signed in at once, and the login endpoint is IP-rate-limited, so

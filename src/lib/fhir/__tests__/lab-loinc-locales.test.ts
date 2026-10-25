@@ -20,6 +20,11 @@ import { BIOMARKER_CATALOG } from "@/lib/labs/biomarker-catalog";
  */
 describe("resolveLabCoding — the analyte name in every shipped locale", () => {
   it.each([
+    ["总胆固醇", "2093-3"],
+    ["肌酐", "2160-0"],
+    ["空腹血糖", "1558-6"],
+    ["铁蛋白", "2276-4"],
+    ["血红蛋白", "718-7"],
     ["Cholestérol total", "2093-3"],
     ["Colesterol total", "2093-3"],
     ["Colesterolo totale", "2093-3"],
@@ -62,12 +67,26 @@ describe("resolveLabCoding — the analyte name in every shipped locale", () => 
     }
   });
 
+  it("preserves the existing unit-symbol fold with a Chinese annotation", () => {
+    expect(resolveLabCoding("Total cholesterol", "mg/dL（血清）")?.ucum).toBe(
+      "mg/dL",
+    );
+  });
+
   it("stamps the canonical UCUM when the recorded unit matches", () => {
     expect(resolveLabCoding("Cholestérol total", "mg/dL")).toEqual({
       loinc: "2093-3",
       display: "Cholesterol [Mass/volume] in Serum or Plasma",
       ucum: "mg/dL",
     });
+  });
+
+  it("keeps an unknown Chinese analyte text-only", () => {
+    expect(resolveLabCoding("未收录的自定义项目", "mg/L")).toBeNull();
+  });
+
+  it("preserves existing Greek-prefix alias folding", () => {
+    expect(resolveLabCoding("γ-GGT", "U/L")?.loinc).toBe("2324-2");
   });
 
   it("still keeps an unmapped analyte text-only", () => {
