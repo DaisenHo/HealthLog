@@ -6,6 +6,7 @@
  */
 import type { Locale } from "@/lib/i18n/config";
 
+import { patterns as zh } from "./zh";
 import { patterns as en } from "./en";
 import { patterns as de } from "./de";
 import { patterns as fr } from "./fr";
@@ -29,5 +30,5 @@ export const POPULATION_NORM_PATTERNS: Readonly<
   "pt-BR": ptBR,
   ko,
 
-  "zh-CN": en,
+  "zh-CN": zh,
 };

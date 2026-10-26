@@ -44,7 +44,7 @@ export function RuntimeActionsRow({
   /** A closing statement rendered above the action row (the data posture). */
   footnote?: ReactNode;
 }) {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   // "Regenerate" writes the daily briefing, so it is offered only while the
   // `briefing` capability is available (operator switch, AI analysis opt-out,
   // provider, consent). The connection test stays: it is how a provider gets
@@ -107,10 +107,8 @@ export function RuntimeActionsRow({
         );
         return;
       }
-      // Provider-call failures now arrive as 200 + { ok:false, reasonCode }
-      // so the body is never rewritten by a proxy. Map the stable code to a
-      // localised string; fall back to the server's plain `reason` for any
-      // unmapped / legacy code, then to a generic message.
+      // Stable failure codes use native copy; Chinese legacy responses use
+      // a generic fallback rather than showing untranslated server prose.
       if (json.data && json.data.ok === false) {
         setTestOk(false);
         setTestMsg(
@@ -119,6 +117,7 @@ export function RuntimeActionsRow({
             json.data.reasonCode,
             json.data.reason,
             json.data.httpStatus,
+            locale,
           ) ??
             t("settings.ai.testFailedShort", { message: `HTTP ${res.status}` }),
         );

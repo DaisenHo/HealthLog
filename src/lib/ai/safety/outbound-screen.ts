@@ -42,6 +42,7 @@
  */
 import { locales, type Locale } from "@/lib/i18n/config";
 
+import { bank as zh } from "./outbound-screen/locales/zh";
 import { bank as en } from "./outbound-screen/locales/en";
 import { bank as de } from "./outbound-screen/locales/de";
 import { bank as fr } from "./outbound-screen/locales/fr";
@@ -86,7 +87,7 @@ const LOCALE_BANKS: Readonly<Record<Locale, LocaleBank>> = {
   ko,
   "pt-BR": ptBR,
 
-  "zh-CN": en,
+  "zh-CN": zh,
 };
 
 /** One value per locale, read off its bank. */
@@ -136,7 +137,7 @@ function medicationNameAlternation(
   for (const raw of names.slice(0, 64)) {
     const base = (raw ?? "")
       .toLowerCase()
-      .split(/[\d([{/,;+]/)[0]
+      .split(/[\d([{/,;+（，；、]/)[0]
       .replace(/[.\s]+$/, "")
       .replace(/\s+/g, " ")
       .trim();
@@ -146,18 +147,30 @@ function medicationNameAlternation(
       candidates.push(first);
     }
     for (const candidate of candidates) {
-      if ([...candidate].length < 3 || NAME_ALIAS_DENY.has(candidate)) continue;
+      if (
+        ([...candidate].length < 3 &&
+          !/^\p{Script=Han}{2,}$/u.test(candidate)) ||
+        NAME_ALIAS_DENY.has(candidate)
+      )
+        continue;
       const stem =
         candidate.length >= 6 ? candidate.replace(/[aeiouyę]$/, "") : candidate;
       stems.add(stem);
     }
   }
   if (stems.size === 0) return null;
-  const alternation = [...stems]
+  const chineseTail =
+    "(?:的|剂量|药量|服用|口服|注射|加量|减量|增加|减少|调整|停|暂|跳|再|多|额外|为|每|按|和|及)";
+  return [...stems]
     .sort((x, y) => y.length - x.length)
-    .map((stem) => escapeRegExp(stem).replace(/ /g, "\\s+"))
+    .map((stem) => {
+      const name = escapeRegExp(stem).replace(/ /g, "\\s+");
+      const end = `(?=[\\s.,;:!?'’")。，；：！？、\\d]|${chineseTail}|$)`;
+      return /\p{Script=Han}/u.test(stem)
+        ? `(?:${name})${end}`
+        : `(?<![${LETTER}])(?:${name})[^\\s.,;:!?。，；：！？、]{0,4}${end}`;
+    })
     .join("|");
-  return `(?<![${LETTER}])(?:${alternation})[^\\s.,;:!?]{0,4}(?=[\\s.,;:!?'’")]|$)`;
 }
 
 /**
@@ -341,7 +354,7 @@ const DOSE_CHANGE_STEM = perLocale((bank) => bank.changeStem);
 
 /** Sentence-level split — the dose exemption must be scoped to one sentence. */
 function splitSentences(text: string): string[] {
-  return text.split(/(?<=[.?!\n])\s+/);
+  return text.split(/(?<=[。！？])\s*|(?<=[.?!\n])\s+/);
 }
 
 /** Every leading-magnitude dose value in one sentence ("keep your 7.5 mg" → [7.5]). */
@@ -372,7 +385,7 @@ const INN_STEM_RE = new RegExp(INN_STEM, "i");
  * (a decimal comma, "7,5", is not one), a semicolon, "and" / "or".
  */
 const CLAUSE_SPLIT =
-  /,(?=\s)|;|\s(?:and|und|en|et|y|e|i|oraz|plus|sowie|ou|o|or|oder)\s|그리고|및/i;
+  /[，；、]|,(?=\s)|;|\s(?:and|und|en|et|y|e|i|oraz|plus|sowie|ou|o|or|oder)\s|그리고|및/i;
 
 /**
  * True when every amount a continuation sentence states is paired with one

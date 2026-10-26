@@ -692,3 +692,50 @@ describe("population-norm banks, one per locale", () => {
     );
   });
 });
+
+describe("Chinese numeric grounding", () => {
+  it("keeps decimal points, grouping and structural dates separate from health claims", () => {
+    expect(
+      findUnverifiedCoachNumbers(
+        "2026年10月26日，你的平均体重为72.4 kg。",
+        [{ weightMean: 72.4 }],
+        "zh-CN",
+      ),
+    ).toEqual([]);
+    expect(
+      findUnverifiedCoachNumbers(
+        "你记录了10,000步。",
+        [{ steps: 10000 }],
+        "zh-CN",
+      ),
+    ).toEqual([]);
+  });
+  it("does not ground a Chinese duration against a glucose value", () => {
+    expect(
+      findUnverifiedCoachNumbers(
+        "你的平均睡眠为7.4小时。",
+        [{ metric: "glucose", mean: 7.4, unit: "mmol/L" }],
+        "zh-CN",
+      ),
+    ).toHaveLength(1);
+    expect(
+      findUnverifiedCoachNumbers(
+        "你的平均睡眠为7.4小时。",
+        [{ metric: "sleep", mean: 444 }],
+        "zh-CN",
+      ),
+    ).toEqual([]);
+  });
+  it("does not let a population sentence excuse a later personal figure", () => {
+    expect(
+      findUnverifiedCoachNumbers(
+        "一般成年人的参考范围为60至100。你的读数是999。",
+        [{ weightMean: 72.4 }],
+        "zh-CN",
+      ).some((f) => f.value === 999),
+    ).toBe(true);
+    expect(
+      hasPopulationNormFraming("你个人的通常范围为60至100。", "zh-CN"),
+    ).toBe(false);
+  });
+});

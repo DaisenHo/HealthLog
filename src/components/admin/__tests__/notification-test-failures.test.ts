@@ -1,3 +1,4 @@
+import { getServerTranslator } from "@/lib/i18n/server-translator";
 /**
  * The admin notification test toast names each failing channel's cause
  * (review L5): the code the route sends is translated and the status is
@@ -7,7 +8,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { describeChannelTestFailures } from "../notification-test-failures";
+import {
+  describeChannelTestFailures,
+  notificationTestMessage,
+} from "../notification-test-failures";
 
 const MESSAGES: Record<string, string> = {
   "settings.testConnection.errors.upstream_rejected":
@@ -70,7 +74,43 @@ describe("describeChannelTestFailures", () => {
       join(process.cwd(), "src/components/admin/reminders-section.tsx"),
       "utf8",
     );
-    expect(src).toMatch(/describeChannelTestFailures\(data\?\.results/);
+    expect(src).toMatch(/describeChannelTestFailures\(\s*data\?\.results/);
     expect(src).toMatch(/description:/);
   });
+});
+
+it("uses a Chinese fallback for unknown diagnostics while preserving status codes", () => {
+  const zh = getServerTranslator("zh-CN").t;
+  expect(
+    describeChannelTestFailures(
+      [
+        {
+          channel: "WEBHOOK",
+          success: false,
+          error: "English transport diagnostic",
+          upstreamStatus: 503,
+        },
+      ],
+      zh,
+      "zh-CN",
+    ),
+  ).toEqual(["Webhook: 发送测试通知失败 (HTTP 503)"]);
+});
+
+it("distinguishes successful delivery from no configured channels in Chinese", () => {
+  const zh = getServerTranslator("zh-CN").t;
+  expect(
+    notificationTestMessage(
+      { sent: true, message: "All 1 channels successful" },
+      zh,
+      "zh-CN",
+    ),
+  ).toBe("测试通知已发送");
+  expect(
+    notificationTestMessage(
+      { sent: false, message: "No enabled notification channels found" },
+      zh,
+      "zh-CN",
+    ),
+  ).toBe("未找到已启用的通知渠道");
 });

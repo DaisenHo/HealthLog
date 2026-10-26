@@ -67,7 +67,7 @@ primeLocales("de");
 function renderShell(props: {
   active?: (typeof SETTINGS_SECTION_SLUGS)[number];
   pathname?: string;
-  locale?: "en" | "de";
+  locale?: "en" | "de" | "zh-CN";
   modules?: Record<string, boolean>;
   activeRecord?: {
     recordKind: "managed" | "shared";

@@ -22,9 +22,11 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { useAdminSettings, useUpdateSettings } from "./_shared";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
 import {
   describeChannelTestFailures,
+  notificationTestMessage,
   type ChannelTestResult,
 } from "./notification-test-failures";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -124,8 +126,35 @@ function NotificationHealthPanel() {
   );
 }
 
+function NotificationTestResults({
+  results,
+}: {
+  results: ChannelTestResult[];
+}) {
+  const { t, locale } = useTranslations();
+  return (
+    <div className="space-y-1">
+      {results.map((r, i) => (
+        <div key={i} className="flex items-center gap-1.5 text-xs">
+          {r.success ? (
+            <CheckCircle2 className="text-success h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <XCircle className="text-destructive h-3.5 w-3.5 shrink-0" />
+          )}
+          <span className="font-medium">{r.channel}</span>
+          {r.error && (
+            <span className="text-muted-foreground">
+              — {describeChannelTestFailures([r], t, locale)[0]}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function RemindersSection() {
-  const { t } = useTranslations();
+  const { t, locale } = useTranslations();
   const { data: settings } = useAdminSettings();
   const updateSettings = useUpdateSettings();
   const [reminderLateDraft, setReminderLateDraft] = useState<number | null>(
@@ -139,6 +168,7 @@ export function RemindersSection() {
     mutationFn: async () => {
       return apiPost<
         | {
+            sent?: boolean;
             message?: string;
             results?: ChannelTestResult[];
           }
@@ -146,26 +176,33 @@ export function RemindersSection() {
       >("/api/admin/notifications/test");
     },
     onSuccess: (data) => {
-      const failures = describeChannelTestFailures(data?.results ?? [], t);
+      const failures = describeChannelTestFailures(
+        data?.results ?? [],
+        t,
+        locale,
+      );
       if (failures.length > 0) {
-        showErrorToast(data?.message ?? t("admin.notificationTestFailed"), {
-          description: (
-            <ul className="space-y-0.5">
-              {failures.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          ),
-        });
+        showErrorToast(
+          locale === "zh-CN"
+            ? t("admin.notificationTestFailed")
+            : (data?.message ?? t("admin.notificationTestFailed")),
+          {
+            description: (
+              <ul className="space-y-0.5">
+                {failures.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            ),
+          },
+        );
       } else {
-        toast.success(data?.message ?? t("admin.notificationTestSuccess"));
+        toast.success(notificationTestMessage(data, t, locale));
       }
     },
     onError: (error) => {
       showErrorToast(
-        error instanceof Error
-          ? error.message
-          : t("admin.notificationTestFailed"),
+        localizedApiError(error, t, "admin.notificationTestFailed"),
         { cause: error },
       );
     },
@@ -201,10 +238,9 @@ export function RemindersSection() {
       toast.success(data?.message ?? t("admin.reminderCheckSuccess"));
     },
     onError: (error) => {
-      showErrorToast(
-        error instanceof Error ? error.message : t("admin.reminderCheckFailed"),
-        { cause: error },
-      );
+      showErrorToast(localizedApiError(error, t, "admin.reminderCheckFailed"), {
+        cause: error,
+      });
     },
   });
 
@@ -285,21 +321,7 @@ export function RemindersSection() {
 
         {testNotification.data?.results &&
           testNotification.data.results.length > 0 && (
-            <div className="space-y-1">
-              {testNotification.data.results.map((r, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-xs">
-                  {r.success ? (
-                    <CheckCircle2 className="text-success h-3.5 w-3.5 shrink-0" />
-                  ) : (
-                    <XCircle className="text-destructive h-3.5 w-3.5 shrink-0" />
-                  )}
-                  <span className="font-medium">{r.channel}</span>
-                  {r.error && (
-                    <span className="text-muted-foreground">— {r.error}</span>
-                  )}
-                </div>
-              ))}
-            </div>
+            <NotificationTestResults results={testNotification.data.results} />
           )}
 
         {reminderCheck.data?.medications &&

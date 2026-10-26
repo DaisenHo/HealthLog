@@ -882,3 +882,151 @@ describe("screenModelOutput — the dose-change class, every locale", () => {
     ).toBe(true);
   });
 });
+
+const chineseCases = {
+  doseBlock: [
+    "请将剂量增加到 5 mg。",
+    "建议把二甲双胍的剂量增加到 2000 mg。",
+    "请服用 2 片。",
+    "请口服 5 mg。",
+    "下周升至 2.4 mg。",
+    "新剂量为 5 mg。",
+    "请将剂量减半。",
+    "请将剂量加倍。",
+    "请降低剂量。",
+    "请停用抗凝药。",
+    "请跳过晚间用药。",
+    "今晚额外服用一片。",
+    "建议再服用一片。",
+    "请将药物暂停。",
+    "You should step up to 2.4 mg next week.",
+  ],
+  namedDoseBlock: [
+    "请停用达比加群酯胶囊。",
+    "请将达比加群酯胶囊暂停。",
+    "请将达比加群酯胶囊再服用一片。",
+    "建议停用 Eliquis。",
+    "今晚额外服用一片达比加群酯胶囊。",
+  ],
+  names: ["达比加群酯胶囊", "Eliquis"],
+  riskBlock: [
+    "你的风险约为12%。",
+    "12%是你的心血管风险。",
+    "你的风险约为百分之十二。",
+    "你的十年心血管风险约为12%。",
+    "约12%是你的十年心血管风险。",
+    "你的ASCVD评分为14分。",
+    "14%是ASCVD给出的结果。",
+    "你的SCORE2处于高风险组。",
+    "你的十年心血管风险偏高。",
+    "你的十年心血管风险为高。",
+    "我无法计算ASCVD，但你的风险约为14%。",
+    "Your 10-year cardiovascular risk is about 12%.",
+  ],
+  causalInsightsOnly: [
+    "因为你睡得更多，所以体重下降了。",
+    "由于睡眠增加，体重下降了。",
+    "睡眠增加导致体重下降。",
+    "体重下降是散步增加的结果。",
+    "体重下降得益于更多散步。",
+  ],
+  allow: [
+    "你目前服用7.5 mg，体重本周有所下降。",
+    "记录显示，医生此前将你的剂量调整为5 mg。",
+    "不要自行停用抗凝药。",
+    "请不要增加剂量。",
+    "请与医生讨论是否减少剂量。",
+    "是否需要降低胰岛素剂量，应咨询药师。",
+    "请把步数增加到8000步。",
+    "请将钠摄入量降低到1500 mg。",
+    "请多散步一次。",
+    "请停止担心药物，先记录你的问题。",
+    "你过去30天的服药依从率为92%。",
+    "你的恢复评分为72分。",
+    "SCORE2是一种临床风险评估工具。",
+    "我无法计算你的十年心血管风险，请向医生咨询。",
+    "你的体重与睡眠本周同步变化。",
+    "两项指标存在相关性，相关性不代表因果关系。",
+  ],
+};
+
+describe("Simplified Chinese outbound contracts", () => {
+  it.each(chineseCases.doseBlock)("blocks dose prescriptions: %s", (text) => {
+    expect(
+      screenModelOutput(text, "zh-CN", CONVERSATIONAL_CONTRACTS).reason,
+    ).toBe("dose_prescription");
+  });
+  it.each(chineseCases.riskBlock)(
+    "blocks invented risk results: %s",
+    (text) => {
+      expect(
+        screenModelOutput(text, "zh-CN", CONVERSATIONAL_CONTRACTS).reason,
+      ).toBe("risk_score");
+    },
+  );
+  it.each(chineseCases.allow)(
+    "keeps ordinary factual or deferred prose: %s",
+    (text) => {
+      expect(
+        screenModelOutput(text, "zh-CN", CONVERSATIONAL_CONTRACTS).block,
+      ).toBe(false);
+    },
+  );
+  it.each(chineseCases.namedDoseBlock)(
+    "recognises the recorded medication name: %s",
+    (text) => {
+      expect(
+        screenModelOutput(text, "zh-CN", CONVERSATIONAL_CONTRACTS, {
+          medicationNames: chineseCases.names,
+        }).block,
+      ).toBe(true);
+    },
+  );
+  it.each(chineseCases.causalInsightsOnly)(
+    "keeps causation scoped to insights: %s",
+    (text) => {
+      expect(screenModelOutput(text, "zh-CN", INSIGHTS_CONTRACTS).reason).toBe(
+        "causal_claim",
+      );
+      expect(
+        screenModelOutput(text, "zh-CN", CONVERSATIONAL_CONTRACTS).block,
+      ).toBe(false);
+    },
+  );
+  it("does not let a referral in an earlier Chinese sentence excuse a later dose change", () => {
+    expect(
+      screenModelOutput(
+        "请先咨询医生。请将剂量减半。",
+        "zh-CN",
+        CONVERSATIONAL_CONTRACTS,
+      ).block,
+    ).toBe(true);
+  });
+  it("holds Chinese continuation amounts to the named medication plan", () => {
+    const text = "请继续服用二甲双胍500 mg，按医嘱服用。";
+    expect(
+      screenModelOutput(text, "zh-CN", CONVERSATIONAL_CONTRACTS, {
+        dosePlan: [{ name: "二甲双胍", dose: 500 }],
+      }).block,
+    ).toBe(false);
+    expect(
+      screenModelOutput(text, "zh-CN", CONVERSATIONAL_CONTRACTS).block,
+    ).toBe(true);
+    expect(
+      screenModelOutput(
+        text.replace("500", "1000"),
+        "zh-CN",
+        CONVERSATIONAL_CONTRACTS,
+        { dosePlan: [{ name: "二甲双胍", dose: 500 }] },
+      ).block,
+    ).toBe(true);
+    expect(
+      screenModelOutput(
+        text.replace("二甲双胍", "二甲双胍缓释片"),
+        "zh-CN",
+        CONVERSATIONAL_CONTRACTS,
+        { dosePlan: [{ name: "二甲双胍", dose: 500 }] },
+      ).block,
+    ).toBe(true);
+  });
+});

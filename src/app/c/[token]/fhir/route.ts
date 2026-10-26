@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 
 import { apiHandler } from "@/lib/api-handler";
 import { resolveShareReportDownload } from "@/lib/clinician-share/report-download";
+import { resolveShareViewLocale } from "@/lib/clinician-share/request-locale";
 import { buildFhirDocumentBundle } from "@/lib/fhir/build-bundle";
 
 type RouteParams = { params: Promise<{ token: string }> };
@@ -30,9 +31,14 @@ export const GET = apiHandler(
     // reach the owner's own export through a separate read that this surface
     // does not perform, so the bundle carries exactly the aggregated payload
     // the page renders and nothing beside it.
-    const bundle = buildFhirDocumentBundle(resolved.report, {
-      insuranceNumber: null,
-    });
+    const bundle = buildFhirDocumentBundle(
+      resolved.report,
+      {
+        insuranceNumber: null,
+      },
+      undefined,
+      { locale: await resolveShareViewLocale() },
+    );
     // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: file name stamp, not a day shown or compared
     const stamp = new Date().toISOString().slice(0, 10);
     return new NextResponse(JSON.stringify(bundle), {

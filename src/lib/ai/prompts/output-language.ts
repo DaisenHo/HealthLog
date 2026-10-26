@@ -58,6 +58,8 @@ export function targetLanguageName(locale: Locale): string {
       return "Korean";
     case "nl":
       return "Dutch";
+    case "zh-CN":
+      return "Simplified Chinese";
     case "pt-BR":
       return "Brazilian Portuguese";
     default:
@@ -90,6 +92,8 @@ function fallbackDirective(locale: Locale): string {
  */
 export function outputLanguageDirective(locale: Locale): string {
   if (locale === "de" || locale === "en") return "";
+  if (locale === "zh-CN")
+    return "OUTPUT LANGUAGE: 请用简体中文书写所有面向用户的内容，数字使用阿拉伯数字，保持协议字段、枚举值、药名及单位原样。";
 
   let directive: string;
   try {

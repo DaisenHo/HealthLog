@@ -74,13 +74,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
     return operationOutcome(400, "invalid", paging.error);
   }
   const { count, offset } = paging;
-  const { data, identity, germanAtc, records } = await loadFhirContext(user.id);
+  const { data, identity, germanAtc, records, locale } = await loadFhirContext(
+    user.id,
+  );
 
   const document = buildFhirDocumentBundle(
     data,
     identity,
     undefined,
-    { germanAtc },
+    { germanAtc, locale },
     records,
   );
   const all = document.entry;

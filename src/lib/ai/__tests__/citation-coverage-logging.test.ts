@@ -333,3 +333,14 @@ describe("normative-claim detection across the shipped locales", () => {
     ).toBe(false);
   });
 });
+
+describe("Chinese normative wording", () => {
+  it("matches a normative word inside unspaced Chinese prose", () => {
+    expect(
+      detectsNormativeClaim("你的收缩压应该低于目标值130 mmHg。", "zh-CN"),
+    ).toBe(true);
+    expect(
+      detectsNormativeClaim("你7天的平均值比90天的中位数高4 mmHg。", "zh-CN"),
+    ).toBe(false);
+  });
+});

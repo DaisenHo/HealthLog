@@ -8565,6 +8565,15 @@
       "defaultAboveCeiling": "Le niveau par défaut ne peut pas dépasser le niveau le plus élevé.",
       "gapLabel": "Heures entre deux mises à jour des cartes après une synchronisation (Standard)",
       "gapHint": "Heures entières de 1 à 48. Laissez vide pour utiliser AI_SYNC_REGEN_GAP_HOURS, sinon 6. En vigueur : {hours} h."
+    },
+    "notificationTestNoChannels": "Aucun canal de notification activé trouvé",
+    "reminderCheckDetails": {
+      "daily": "Tous les jours",
+      "skipped": "Aucune prise prévue aujourd’hui",
+      "open": "Créneau encore ouvert (fin à {end})",
+      "threshold": "Créneau terminé depuis {minutes} min (seuil : {threshold} min)",
+      "missed": "Seuil de prise manquée atteint ({minutes} min > {threshold} min)",
+      "summary": "{count} médicaments vérifiés, {sent} notifications envoyées"
     }
   },
   "achievements": {
@@ -10712,7 +10721,9 @@
     "refusal": {
       "outOfScope": "Je peux uniquement t'aider avec les données de santé de ton journal : mesures, médicaments, humeur, tendances. Je ne réponds pas aux questions en dehors de ce cadre.",
       "promptInjection": "J'ai repéré des instructions qui cherchent à contourner mes consignes. Je suis le Coach HealthLog et je résume uniquement tes propres données de santé. Reformule ta question dans ce cadre, s'il te plaît.",
-      "conversationPoisoned": "Un message précédent de cette conversation contient des instructions qui cherchent à contourner mes consignes. Démarre une nouvelle conversation, s'il te plaît."
+      "conversationPoisoned": "Un message précédent de cette conversation contient des instructions qui cherchent à contourner mes consignes. Démarre une nouvelle conversation, s'il te plaît.",
+      "outboundDose": "Je ne peux pas suggérer une dose précise de médicament ni une modification de dose : cette décision revient au professionnel qui vous le prescrit. Je peux vous aider à comprendre vos propres données autour du traitement ; posez-moi une question à ce sujet et je m’appuierai sur vos chiffres.",
+      "outboundRisk": "Je ne peux pas chiffrer ce risque clinique : vos données ne permettent pas ce calcul, et inventer un chiffre serait trompeur. Interrogez-moi sur un indicateur précis pour comprendre vos mesures et leur évolution."
     },
     "noRecordedData": "Aucune mesure n'est enregistrée pour ce que tu demandes, je ne peux donc te donner aucun chiffre. Dès que tu en auras saisi, repose-moi la question et je partirai de tes propres valeurs.",
     "step": {
@@ -11968,7 +11979,8 @@
       "titleMany": "Supprimer {count} documents ?",
       "body": "Vous pouvez annuler juste après. Au bout de 30 jours, la suppression est définitive.",
       "action": "Supprimer"
-    }
+    },
+    "summaryBlocked": "Je ne peux pas résumer ce document de manière sûre : la description contient des conseils ou des chiffres cliniques que cette vue ne peut pas fournir. Vous pouvez ouvrir le document lui-même ou lire le texte extrait."
   },
   "selfDescription": {
     "dataPosture": "HealthLog est auto-hébergé : vos données de santé se trouvent dans la base de données de votre propre instance. Les notes et autres textes libres, les documents, les réponses aux questionnaires, les textes rédigés par l'IA et les jetons d'accès sont chiffrés au repos ; les valeurs de mesure, les résultats de laboratoire, les noms de médicaments et les scores d'humeur sont stockés en clair et dépendent de la sécurité de votre serveur. Les fonctions d'IA n'envoient des données qu'au fournisseur d'IA configuré pour votre compte, et il n'y a aucune analyse tierce de vos données de santé."
@@ -13800,5 +13812,31 @@
       "startsOn": "Début",
       "endsOn": "Fin"
     }
+  },
+  "fhir": {
+    "counts": "{observations} observation(s), {medications} médicament(s), {administrations} administration(s).",
+    "period": "du {start} au {end}",
+    "olderOmitted": "Les entrées plus anciennes ont été omises.",
+    "insuranceTitle": "Informations d’assurance",
+    "moodAverage": "{label} (moyenne sur la période)",
+    "wellnessScore": "Score de bien-être",
+    "cycleVariability": "Variabilité de la durée du cycle (écart absolu médian) : ±{variability} days sur {count} cycles observés.",
+    "cycleDescriptive": "Phase déduite des limites de cycle consignées ; descriptive, sans évaluation clinique.",
+    "spotEstimate": "Estimation à partir de mesures ponctuelles, et non d’un profil de suivi continu.",
+    "screeningNotDiagnosis": "Résultat de dépistage, pas un diagnostic.",
+    "noSexCutoff": "Aucun seuil spécifique au sexe appliqué (aucun sexe binaire dans le profil).",
+    "sourceUnnamed": "source non précisée",
+    "packYearsSource": "Calculé à partir du nombre de cigarettes par jour et des années de tabagisme déclarés.",
+    "activityValue": "{minutes} minutes d’activité modérée à intense par semaine (Exercise Vital Sign)",
+    "sittingValue": "{hours} hours en position assise lors d’une journée de travail",
+    "activityLabel": "Activité physique autodéclarée",
+    "workSituation": "Situation professionnelle : {value}",
+    "workNature": "Exigences physiques du travail : {value}",
+    "nightWork": "Travail de nuit : {value}",
+    "exposures": "Expositions : {value}",
+    "workLabel": "Contexte professionnel autodéclaré",
+    "conditionNote": "Entrée du journal de santé consignée par la personne ({lifecycle}) ; autodéclarée, sans diagnostic clinique.",
+    "allergyNote": "Allergie/intolérance consignée par la personne ; autodéclarée, sans diagnostic clinique.",
+    "familyHistoryNote": "Antécédents familiaux consignés par la personne ; autodéclarés, sans diagnostic clinique."
   }
 }

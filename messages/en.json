@@ -8565,6 +8565,15 @@
       "defaultAboveCeiling": "The default level cannot be above the highest level.",
       "gapLabel": "Hours between card refreshes after a sync (Standard)",
       "gapHint": "Whole hours from 1 to 48. Leave empty to use AI_SYNC_REGEN_GAP_HOURS, else 6. In effect now: {hours} h."
+    },
+    "notificationTestNoChannels": "No enabled notification channels found",
+    "reminderCheckDetails": {
+      "daily": "Daily",
+      "skipped": "Not a scheduled day today",
+      "open": "Window still open (ends at {end})",
+      "threshold": "Window ended {minutes} min ago (threshold: {threshold} min)",
+      "missed": "Missed threshold reached ({minutes} min > {threshold} min)",
+      "summary": "{count} medications checked, {sent} notifications sent"
     }
   },
   "achievements": {
@@ -10712,7 +10721,9 @@
     "refusal": {
       "outOfScope": "I can only help with the health metrics in your log: measurements, medications, mood, trends. I cannot answer questions outside that scope.",
       "promptInjection": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data. Please rephrase your question in those terms.",
-      "conversationPoisoned": "An earlier message in this conversation contains wording that overrides my instructions. Please start a new conversation."
+      "conversationPoisoned": "An earlier message in this conversation contains wording that overrides my instructions. Please start a new conversation.",
+      "outboundDose": "I can't suggest a specific medication dose or a change to one: dose decisions belong with your prescribing clinician. I can help you read what your own data shows around your medication; ask me about that and I'll stay grounded in your numbers.",
+      "outboundRisk": "I can't put a number on a clinical risk like that: it isn't something your tracked data lets me compute, and an invented figure would be misleading. I can walk you through what your own measurements are doing instead; ask me about a specific metric."
     },
     "noRecordedData": "I don't have any recorded readings for what you asked about, so there is nothing I can give you a figure from. Once you log some, ask me again and I'll work from your own numbers.",
     "step": {
@@ -12047,7 +12058,8 @@
       "titleMany": "Delete {count} documents?",
       "body": "You can undo this right afterwards. After 30 days it is removed for good.",
       "action": "Delete"
-    }
+    },
+    "summaryBlocked": "I can't summarise this document safely: my description drifted into advice or a clinical figure, which this view is not allowed to give. You can open the document itself, or read the extracted text."
   },
   "selfDescription": {
     "dataPosture": "HealthLog is self-hosted: your health data lives in your own instance's database. Notes and other free text, documents, questionnaire answers, AI-written text and access tokens are encrypted at rest; measurement values, lab values, medication names and mood scores are stored unencrypted and rely on the security of your server. AI features send data only to the AI provider set up for your account, and there is no third-party analytics on your health data."
@@ -13879,5 +13891,31 @@
       "startsOn": "Start",
       "endsOn": "End"
     }
+  },
+  "fhir": {
+    "counts": "{observations} observation(s), {medications} medication(s), {administrations} administration(s).",
+    "period": "{start} to {end}",
+    "olderOmitted": "Older entries omitted.",
+    "insuranceTitle": "Insurance",
+    "moodAverage": "{label} (average over period)",
+    "wellnessScore": "Wellness score",
+    "cycleVariability": "Cycle-length variability (median absolute deviation): ±{variability} days over {count} observed cycle(s).",
+    "cycleDescriptive": "Phase derived from logged cycle boundaries; descriptive, not a clinical assessment.",
+    "spotEstimate": "Spot-reading estimate from individual measurements, not a continuous-monitor profile.",
+    "screeningNotDiagnosis": "Screening result, not a diagnosis.",
+    "noSexCutoff": "No sex-specific cut-off applied (no binary sex in the profile).",
+    "sourceUnnamed": "source not named",
+    "packYearsSource": "Computed from self-reported cigarettes per day and years smoked.",
+    "activityValue": "{minutes} minutes of moderate to strenuous activity per week (Exercise Vital Sign)",
+    "sittingValue": "{hours} hours sitting on a workday",
+    "activityLabel": "Self-reported physical activity",
+    "workSituation": "situation: {value}",
+    "workNature": "physical nature: {value}",
+    "nightWork": "night work: {value}",
+    "exposures": "exposures: {value}",
+    "workLabel": "Self-reported work context",
+    "conditionNote": "Self-recorded {lifecycle} condition journal entry; patient-reported, not a clinical diagnosis.",
+    "allergyNote": "Self-recorded allergy/intolerance; patient-reported, not a clinical diagnosis.",
+    "familyHistoryNote": "Self-recorded family history; patient-reported, not a clinical diagnosis."
   }
 }

@@ -1,3 +1,5 @@
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import type { FhirBuildOptions } from "./common";
 /**
  * v1.15.0 — the cycle / reproductive-health Observations from the opt-in cycle
  * summary: LMP (LOINC 8665-2, a date value), average cycle length and average
@@ -32,7 +34,9 @@ const CYCLE_PHASE_DISPLAY: Record<string, string> = {
 
 export function cycleObservationsFromReportData(
   data: DoctorReportData,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   const cycle = data.cycle;
   if (!cycle) return [];
   const observations: FhirObservation[] = [];
@@ -56,7 +60,7 @@ export function cycleObservationsFromReportData(
             display: "Last menstrual period start date",
           },
         ],
-        text: "Last menstrual period (LMP)",
+        text: t ? t("doctorReport.cycleLmp") : "Last menstrual period (LMP)",
       },
       subject: patientRef,
       effectivePeriod,
@@ -73,7 +77,11 @@ export function cycleObservationsFromReportData(
       category: [categoryConcept("survey")],
       // Text-only: no LOINC term for a cycle length averaged over the
       // observed cycles (see `loinc-map.ts`).
-      code: { text: "Average menstrual cycle length" },
+      code: {
+        text: t
+          ? t("doctorReport.cycleAvgLength")
+          : "Average menstrual cycle length",
+      },
       subject: patientRef,
       effectivePeriod,
       valueQuantity: ucumQuantity(cycle.averageCycleLengthDays, "d"),
@@ -81,7 +89,12 @@ export function cycleObservationsFromReportData(
         ? {
             note: [
               {
-                text: `Cycle-length variability (median absolute deviation): ±${cycle.cycleLengthVariabilityDays} days over ${cycle.observedCycleCount} observed cycle(s).`,
+                text: t
+                  ? t("fhir.cycleVariability", {
+                      variability: cycle.cycleLengthVariabilityDays,
+                      count: cycle.observedCycleCount,
+                    })
+                  : `Cycle-length variability (median absolute deviation): ±${cycle.cycleLengthVariabilityDays} days over ${cycle.observedCycleCount} observed cycle(s).`,
               },
             ],
           }
@@ -96,7 +109,9 @@ export function cycleObservationsFromReportData(
       status: "final",
       category: [categoryConcept("survey")],
       // Text-only, like the cycle length above.
-      code: { text: "Average period length" },
+      code: {
+        text: t ? t("doctorReport.cycleAvgPeriod") : "Average period length",
+      },
       subject: patientRef,
       effectivePeriod,
       valueQuantity: ucumQuantity(cycle.averagePeriodLengthDays, "d"),
@@ -109,14 +124,22 @@ export function cycleObservationsFromReportData(
       id: next(),
       status: "final",
       category: [categoryConcept("survey")],
-      code: { text: "Current menstrual cycle phase" },
+      code: {
+        text: t
+          ? t("doctorReport.cyclePhase")
+          : "Current menstrual cycle phase",
+      },
       subject: patientRef,
       effectivePeriod,
       valueString:
-        CYCLE_PHASE_DISPLAY[cycle.currentPhase] ?? cycle.currentPhase,
+        t && CYCLE_PHASE_DISPLAY[cycle.currentPhase]
+          ? t(`doctorReport.cyclePhases.${cycle.currentPhase}`)
+          : (CYCLE_PHASE_DISPLAY[cycle.currentPhase] ?? cycle.currentPhase),
       note: [
         {
-          text: "Phase derived from logged cycle boundaries; descriptive, not a clinical assessment.",
+          text: t
+            ? t("fhir.cycleDescriptive")
+            : "Phase derived from logged cycle boundaries; descriptive, not a clinical assessment.",
         },
       ],
     });

@@ -1,3 +1,4 @@
+import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
@@ -45,6 +46,63 @@ interface MedicationResult {
   eventsToday: number;
 }
 
+function weekdayLabels(
+  t: ReturnType<typeof getServerTranslator>["t"] | null,
+): string[] {
+  return t
+    ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) =>
+        t(`medications.days${day}`),
+      )
+    : dayLabels;
+}
+
+function classifySchedule(
+  {
+    dayMatch,
+    minutesPastEnd,
+    missedMinutes,
+    windowEnd,
+  }: {
+    dayMatch: boolean;
+    minutesPastEnd: number;
+    missedMinutes: number;
+    windowEnd: string;
+  },
+  t: ReturnType<typeof getServerTranslator>["t"] | null,
+): Pick<ScheduleStatus, "status" | "label"> {
+  let status: ScheduleStatus["status"];
+  let label: string;
+  if (!dayMatch) {
+    status = "skipped";
+    label = t
+      ? t("admin.reminderCheckDetails.skipped")
+      : "Heute kein geplanter Tag";
+  } else if (minutesPastEnd <= 0) {
+    status = "open";
+    label = t
+      ? t("admin.reminderCheckDetails.open", { end: windowEnd })
+      : `Fenster noch offen (endet um ${windowEnd})`;
+  } else if (minutesPastEnd <= missedMinutes) {
+    status = "threshold";
+    label = t
+      ? t("admin.reminderCheckDetails.threshold", {
+          minutes: minutesPastEnd,
+          threshold: missedMinutes,
+        })
+      : `Fenster vorbei seit ${minutesPastEnd} Min (Threshold: ${missedMinutes} Min)`;
+  } else {
+    status = "missed";
+    label = t
+      ? t("admin.reminderCheckDetails.missed", {
+          minutes: minutesPastEnd,
+          threshold: missedMinutes,
+        })
+      : `Missed-Threshold erreicht (${minutesPastEnd} Min > ${missedMinutes} Min)`;
+  }
+
+  return { status, label };
+}
+
 /**
  * POST: Execute the reminder check — analyses medications AND sends
  * notifications for overdue schedules (late + missed). Returns detailed
@@ -69,7 +127,8 @@ interface MedicationResult {
  * this handler at all, and the field only ever removes rows from the `where`.
  */
 export const POST = apiHandler(async (request: NextRequest) => {
-  await requireAdmin();
+  const { user } = await requireAdmin();
+  const t = user.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
 
   // A bodyless POST is the admin console's own call (`apiPost(path)` sends no
   // body and no content-type), so the parse only runs when a JSON body is
@@ -158,26 +217,21 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
       const daysInfo =
         recurrence.daysOfWeek.length > 0
-          ? recurrence.daysOfWeek.map((d) => dayLabels[d]).join(", ")
-          : "Täglich";
+          ? recurrence.daysOfWeek.map((d) => weekdayLabels(t)[d]).join(", ")
+          : t
+            ? t("admin.reminderCheckDetails.daily")
+            : "Täglich";
 
-      let status: ScheduleStatus["status"];
-      let label: string;
+      const { status, label } = classifySchedule(
+        {
+          dayMatch,
+          minutesPastEnd,
+          missedMinutes,
+          windowEnd: schedule.windowEnd,
+        },
+        t,
+      );
       let notificationSent = false;
-
-      if (!dayMatch) {
-        status = "skipped";
-        label = "Heute kein geplanter Tag";
-      } else if (currentMins <= endMins) {
-        status = "open";
-        label = `Fenster noch offen (endet um ${schedule.windowEnd})`;
-      } else if (minutesPastEnd <= missedMinutes) {
-        status = "threshold";
-        label = `Fenster vorbei seit ${minutesPastEnd} Min (Threshold: ${missedMinutes} Min)`;
-      } else {
-        status = "missed";
-        label = `Missed-Threshold erreicht (${minutesPastEnd} Min > ${missedMinutes} Min)`;
-      }
 
       // Send notification for overdue schedules that haven't been taken
       const isOverdue = dayMatch && minutesPastEnd > 0;
@@ -257,7 +311,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       user: med.user.username,
       timezone: userTz,
       localTime: currentTime,
-      dayOfWeek: dayLabels[todayDow],
+      dayOfWeek: weekdayLabels(t)[todayDow],
       notificationsEnabled: med.notificationsEnabled,
       schedules: scheduleStatuses,
       eventsToday: eventCount,
@@ -270,8 +324,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     scoped: scopedUserId !== null,
     medications: results,
     notificationsSent,
-    message:
-      results.length > 0
+    message: t
+      ? t("admin.reminderCheckDetails.summary", {
+          count: results.length,
+          sent: notificationsSent,
+        })
+      : results.length > 0
         ? `${results.length} Medikamente geprüft, ${notificationsSent} Erinnerungen gesendet`
         : "Keine aktiven Medikamente gefunden",
   });

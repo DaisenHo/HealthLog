@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/i18n/config";
 /**
  * Shared types, constants, and pure helpers for the Settings → AI
  * provider components. Extracted from the former 2k-LOC
@@ -156,6 +157,7 @@ export function localiseTestReason(
   reasonCode: string | undefined,
   reason: string | undefined,
   httpStatus?: number | null,
+  locale?: Locale,
 ): string | undefined {
   switch (reasonCode) {
     case "credentials":
@@ -170,11 +172,15 @@ export function localiseTestReason(
     case "bad_request":
       return httpStatus != null
         ? t("settings.ai.testReasonBadRequest", { status: httpStatus })
-        : reason;
+        : locale === "zh-CN"
+          ? t("settings.testConnection.errors.generic")
+          : reason;
     case "unreachable":
       return t("settings.ai.testReasonUnreachable");
     default:
-      return reason;
+      return locale === "zh-CN"
+        ? t("settings.testConnection.errors.generic")
+        : reason;
   }
 }
 

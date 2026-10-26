@@ -8,6 +8,7 @@
  * `glucose` / `medications` / `conditions` / `cycle` can depend on the anchors
  * without depending on each other.
  */
+import type { Locale } from "@/lib/i18n/config";
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import {
   LOINC_SYSTEM,
@@ -57,6 +58,8 @@ export const GERMAN_ATC_DEFAULT_LOCALES = ["de"] as const;
 
 /** Options threaded from the export route into the emitters. Additive, all defaulted. */
 export interface FhirBuildOptions {
+  /** Reader language for app-owned prose; official coding displays stay intact. */
+  locale?: Locale;
   /**
    * When true, additionally emit the German BfArM ATC URI alongside the WHO
    * entry on each medication concept. The WHO coding stays first and

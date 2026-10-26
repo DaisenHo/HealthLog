@@ -8565,6 +8565,15 @@
       "defaultAboveCeiling": "기본 단계는 최고 단계보다 높을 수 없어요.",
       "gapLabel": "동기화 후 카드 새로 고침 간격(시간, 표준 단계)",
       "gapHint": "1에서 48 사이의 정수 시간이에요. 비워 두면 AI_SYNC_REGEN_GAP_HOURS를, 없으면 6을 사용해요. 현재 적용 값: {hours}시간."
+    },
+    "notificationTestNoChannels": "사용 중인 알림 채널이 없어요",
+    "reminderCheckDetails": {
+      "daily": "매일",
+      "skipped": "오늘은 예정된 복용일이 아니에요",
+      "open": "시간 범위가 아직 열려 있어요({end} 종료)",
+      "threshold": "시간 범위 종료 후 {minutes}분 경과(기준: {threshold}분)",
+      "missed": "복용 누락 기준에 도달했어요({minutes}분 > {threshold}분)",
+      "summary": "약물 {count}개 확인, 알림 {sent}개 전송"
     }
   },
   "achievements": {
@@ -10712,7 +10721,9 @@
     "refusal": {
       "outOfScope": "저는 기록에 있는 건강 지표만 도와드릴 수 있어요. 측정값, 약, 기분, 추이 같은 것들이요. 그 범위 밖의 질문에는 답할 수 없어요.",
       "promptInjection": "제 지침을 무시하게 만들려는 표현이 보였어요. 저는 HealthLog 코치이고 본인의 건강 데이터만 정리해 드려요. 그 범위에 맞게 다시 질문해 주세요.",
-      "conversationPoisoned": "이 대화의 앞선 메시지에 제 지침을 무시하게 만드는 표현이 있어요. 새 대화를 시작해 주세요."
+      "conversationPoisoned": "이 대화의 앞선 메시지에 제 지침을 무시하게 만드는 표현이 있어요. 새 대화를 시작해 주세요.",
+      "outboundDose": "구체적인 약물 용량이나 용량 변경은 제안할 수 없어요. 처방 의료진이 결정해야 해요. 약물과 관련된 본인의 데이터 변화를 이해하도록 도와드릴 수 있어요. 이에 관해 질문해 주시면 실제 수치에 근거해 답할게요.",
+      "outboundRisk": "이런 임상 위험을 수치로 제시할 수 없어요. 기록된 데이터로 계산할 수 없고 숫자를 만들어 내면 오해를 줄 수 있어요. 특정 지표를 질문해 주시면 본인의 측정값과 변화를 이해하도록 도와드릴게요."
     },
     "noRecordedData": "물어보신 내용에 대해 기록된 측정값이 없어서 수치를 알려드릴 수 없어요. 기록을 남기신 뒤에 다시 물어보시면 본인 수치로 답해 드릴게요.",
     "step": {
@@ -11928,7 +11939,8 @@
       "titleMany": "문서 {count}개를 삭제할까요?",
       "body": "삭제 직후에는 되돌릴 수 있습니다. 30일이 지나면 완전히 삭제됩니다.",
       "action": "삭제"
-    }
+    },
+    "summaryBlocked": "이 문서를 안전하게 요약할 수 없어요. 설명에 이 화면에서 제공할 수 없는 조언이나 임상 수치가 포함됐어요. 원본 문서를 열거나 추출한 텍스트를 읽을 수 있어요."
   },
   "selfDescription": {
     "dataPosture": "HealthLog는 셀프 호스팅이에요. 건강 데이터는 본인 인스턴스의 데이터베이스에 저장돼요. 메모와 기타 자유 입력 텍스트, 문서, 설문 응답, AI가 작성한 텍스트, 접근 토큰은 저장 시 암호화돼요. 측정값, 검사 수치, 약 이름, 기분 점수는 암호화되지 않은 채 저장되며 서버 자체의 보안에 의존해요. AI 기능은 계정에 설정된 AI 제공자에게만 데이터를 보내고, 건강 데이터에 대한 서드파티 분석은 없어요."
@@ -13760,5 +13772,31 @@
       "startsOn": "시작",
       "endsOn": "종료"
     }
+  },
+  "fhir": {
+    "counts": "관찰 {observations}건, 약물 {medications}개, 투약 {administrations}건.",
+    "period": "{start}부터 {end}까지",
+    "olderOmitted": "이전 기록은 생략했어요.",
+    "insuranceTitle": "보험 정보",
+    "moodAverage": "{label} (기간 평균)",
+    "wellnessScore": "웰빙 점수",
+    "cycleVariability": "주기 길이 변동성(중앙절대편차): 관찰한 주기 {count}개에서 ±{variability} days.",
+    "cycleDescriptive": "기록된 주기 경계에서 추정한 단계예요. 설명용이며 임상 평가가 아니에요.",
+    "spotEstimate": "개별 측정값의 추정치이며 연속 모니터링 결과가 아니에요.",
+    "screeningNotDiagnosis": "선별검사 결과이며 진단이 아니에요.",
+    "noSexCutoff": "프로필에 이분법적 성별이 없어 성별 기준값을 적용하지 않았어요.",
+    "sourceUnnamed": "출처 미기재",
+    "packYearsSource": "본인이 보고한 하루 흡연량과 흡연 연수로 계산했어요.",
+    "activityValue": "주당 중등도~고강도 활동 {minutes} minutes (Exercise Vital Sign)",
+    "sittingValue": "근무일에 앉아 있는 시간 {hours} hours",
+    "activityLabel": "본인이 보고한 신체 활동",
+    "workSituation": "근무 상황: {value}",
+    "workNature": "업무의 신체적 특성: {value}",
+    "nightWork": "야간 근무: {value}",
+    "exposures": "노출 요인: {value}",
+    "workLabel": "본인이 보고한 근무 환경",
+    "conditionNote": "본인이 기록한 질환 일지({lifecycle})이며 임상 진단이 아니에요.",
+    "allergyNote": "본인이 기록한 알레르기/불내성이며 임상 진단이 아니에요.",
+    "familyHistoryNote": "본인이 기록한 가족력이며 임상 진단이 아니에요."
   }
 }

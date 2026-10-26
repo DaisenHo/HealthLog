@@ -94,13 +94,12 @@ const SENTENCES: Record<Locale, readonly string[]> = {
   ],
 
   "zh-CN": [
-    "The normal range is 60 to 100.",
-    "Healthy adults sleep 7 to 9 hours.",
-    "The general population averages 120.",
-    "Guidelines recommend 150 minutes a week.",
-    "Adults generally need 7 hours of sleep.",
-    "The reference range is 4 to 6.",
-    "The recommended amount is 2 litres.",
+    "健康成年人通常睡8小时。",
+    "一般人群的值是120。",
+    "指南建议每周150分钟。",
+    "通常参考范围为60到100。",
+    "成人的正常范围为60到100。",
+    "推荐睡眠时长为8小时。",
   ],
 };
 

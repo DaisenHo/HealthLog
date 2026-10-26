@@ -1,3 +1,5 @@
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import type { FhirBuildOptions } from "./common";
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import { LOINC_SYSTEM } from "@/lib/fhir/loinc-map";
 import {
@@ -12,6 +14,7 @@ const DATA_ABSENT_REASON_SYSTEM =
   "http://terminology.hl7.org/CodeSystem/data-absent-reason";
 
 interface AnamnesisFactDefinition {
+  labelKey: string;
   code: string;
   display: string;
   valueDisplay: Readonly<Record<string, string>>;
@@ -28,6 +31,7 @@ const FACT_DEFINITIONS: Readonly<
   Record<HealthProfileFactKind, AnamnesisFactDefinition>
 > = {
   SMOKING_STATUS: {
+    labelKey: "doctorReport.anamnesisSmoking",
     code: "72166-2",
     display: "Tobacco smoking status",
     valueDisplay: {
@@ -66,6 +70,7 @@ const FACT_DEFINITIONS: Readonly<
     },
   },
   ALCOHOL_PATTERN: {
+    labelKey: "doctorReport.anamnesisAlcohol",
     code: "11331-6",
     display: "History of alcohol use",
     valueDisplay: {
@@ -76,6 +81,7 @@ const FACT_DEFINITIONS: Readonly<
     },
   },
   SHIFT_SCHEDULE: {
+    labelKey: "doctorReport.anamnesisShiftSchedule",
     code: "74159-5",
     display: "Work schedule NIOSH",
     valueDisplay: {
@@ -86,7 +92,11 @@ const FACT_DEFINITIONS: Readonly<
   },
 };
 
-function absentReason(unreadable: boolean): FhirCodeableConcept {
+function absentReason(
+  unreadable: boolean,
+  options: FhirBuildOptions,
+): FhirCodeableConcept {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   return {
     coding: [
       {
@@ -95,7 +105,15 @@ function absentReason(unreadable: boolean): FhirCodeableConcept {
         display: unreadable ? "Error" : "Unknown",
       },
     ],
-    text: unreadable ? "Recorded value is unreadable" : "Not recorded",
+    text: t
+      ? t(
+          unreadable
+            ? "doctorReport.anamnesisUnreadable"
+            : "doctorReport.anamnesisNotRecorded",
+        )
+      : unreadable
+        ? "Recorded value is unreadable"
+        : "Not recorded",
   };
 }
 
@@ -106,7 +124,9 @@ function absentReason(unreadable: boolean): FhirCodeableConcept {
  */
 export function anamnesisObservationsFromReportData(
   data: DoctorReportData,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   const anamnesis = data.anamnesis;
   if (!anamnesis) return [];
 
@@ -129,7 +149,10 @@ export function anamnesisObservationsFromReportData(
       value && !unreadable
         ? {
             ...(definition.valueCoding?.[value] ?? {}),
-            text: definition.valueDisplay[value] ?? value,
+            text:
+              t && definition.valueDisplay[value]
+                ? t(`records.profileFacts.values.${kind}.${value}`)
+                : (definition.valueDisplay[value] ?? value),
           }
         : undefined;
 
@@ -146,38 +169,70 @@ export function anamnesisObservationsFromReportData(
             display: definition.display,
           },
         ],
-        text: definition.display,
+        text: t ? t(definition.labelKey) : definition.display,
       },
       subject: patientRef,
       ...(valueConcept
         ? { valueCodeableConcept: valueConcept }
-        : { dataAbsentReason: absentReason(unreadable) }),
+        : { dataAbsentReason: absentReason(unreadable, options) }),
       ...(unreadable
-        ? { note: [{ text: "The recorded value could not be read." }] }
+        ? {
+            note: [
+              {
+                text: t
+                  ? t("doctorReport.anamnesisUnreadable")
+                  : "The recorded value could not be read.",
+              },
+            ],
+          }
         : {}),
     };
   });
-  return [...facts, ...lifeObservationsFromReportData(data)];
+  return [...facts, ...lifeObservationsFromReportData(data, options)];
 }
 
 /** Raw narrative text; the document builder performs XHTML escaping once. */
 export function anamnesisNarrativeFromReportData(
   data: DoctorReportData,
+  options: FhirBuildOptions = {},
 ): string | null {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   const anamnesis = data.anamnesis;
   if (!anamnesis) return null;
   const factText = (
     kind: HealthProfileFactKind,
     value: string | null,
   ): string => {
-    if (anamnesis.unreadableFacts.includes(kind)) return "unreadable";
-    if (!value) return "not recorded";
-    return FACT_DEFINITIONS[kind].valueDisplay[value] ?? value;
+    if (anamnesis.unreadableFacts.includes(kind))
+      return t ? t("doctorReport.anamnesisUnreadable") : "unreadable";
+    if (!value)
+      return t ? t("doctorReport.anamnesisNotRecorded") : "not recorded";
+    return t && FACT_DEFINITIONS[kind].valueDisplay[value]
+      ? t(`records.profileFacts.values.${kind}.${value}`)
+      : (FACT_DEFINITIONS[kind].valueDisplay[value] ?? value);
   };
   const conditions = anamnesis.conditionsUnreadable
     ? "unreadable"
     : (anamnesis.conditions ?? "not recorded");
 
+  if (t)
+    return [
+      `${t("doctorReport.anamnesisConditions")}：${anamnesis.conditionsUnreadable ? t("doctorReport.anamnesisUnreadable") : (anamnesis.conditions ?? t("doctorReport.anamnesisNotRecorded"))}。`,
+      `${t("doctorReport.anamnesisSmoking")}：${factText("SMOKING_STATUS", anamnesis.smokingStatus)}。`,
+      `${t("doctorReport.anamnesisAlcohol")}：${factText("ALCOHOL_PATTERN", anamnesis.alcoholPattern)}。`,
+      `${t("doctorReport.anamnesisShiftSchedule")}：${factText("SHIFT_SCHEDULE", anamnesis.shiftSchedule)}。`,
+      ...(anamnesis.life?.packYears != null
+        ? [`${t("doctorReport.lifePackYears")}：${anamnesis.life.packYears}。`]
+        : []),
+      ...(anamnesis.life?.auditC
+        ? [
+            t("doctorReport.lifeAuditCScore", {
+              score: anamnesis.life.auditC.totalScore,
+              date: anamnesis.life.auditC.takenAt.slice(0, 10),
+            }),
+          ]
+        : []),
+    ].join(" ");
   return [
     `Conditions: ${conditions}.`,
     `Smoking status: ${factText("SMOKING_STATUS", anamnesis.smokingStatus)}.`,
@@ -202,7 +257,9 @@ export function anamnesisNarrativeFromReportData(
  */
 function lifeObservationsFromReportData(
   data: DoctorReportData,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   const life = data.anamnesis?.life;
   if (!life) return [];
   const out: FhirObservation[] = [];
@@ -230,13 +287,26 @@ function lifeObservationsFromReportData(
             display: "Total score [AUDIT-C]",
           },
         ],
-        text: "AUDIT-C total score",
+        text: t ? t("doctorReport.lifeAuditC") : "AUDIT-C total score",
       },
       effectiveDateTime: a.takenAt,
       valueInteger: a.totalScore,
       note: [
         {
-          text: `Screening result, not a diagnosis. ${verdict}`,
+          text: t
+            ? t("fhir.screeningNotDiagnosis") +
+              (a.aboveCutoff === null || a.cutoffValue === null
+                ? t("fhir.noSexCutoff")
+                : t(
+                    a.aboveCutoff
+                      ? "doctorReport.lifeAuditCAbove"
+                      : "doctorReport.lifeAuditCBelow",
+                    {
+                      cutoff: a.cutoffValue,
+                      source: a.cutoffSourceLabel ?? t("fhir.sourceUnnamed"),
+                    },
+                  ))
+            : `Screening result, not a diagnosis. ${verdict}`,
         },
       ],
     });
@@ -253,12 +323,14 @@ function lifeObservationsFromReportData(
             display: "Cigarette pack-years",
           },
         ],
-        text: "Cigarette pack-years",
+        text: t ? t("doctorReport.lifePackYears") : "Cigarette pack-years",
       },
       valueQuantity: { value: life.packYears, unit: "pack-years" },
       note: [
         {
-          text: "Computed from self-reported cigarettes per day and years smoked.",
+          text: t
+            ? t("fhir.packYearsSource")
+            : "Computed from self-reported cigarettes per day and years smoked.",
         },
       ],
     });
@@ -271,15 +343,23 @@ function lifeObservationsFromReportData(
     const parts: string[] = [];
     if (life.activityMinutesPerWeek !== null) {
       parts.push(
-        `${life.activityMinutesPerWeek} minutes of moderate to strenuous activity per week (Exercise Vital Sign)`,
+        t
+          ? t("fhir.activityValue", { minutes: life.activityMinutesPerWeek })
+          : `${life.activityMinutesPerWeek} minutes of moderate to strenuous activity per week (Exercise Vital Sign)`,
       );
     }
     if (life.sittingHoursWorkday !== null) {
-      parts.push(`${life.sittingHoursWorkday} hours sitting on a workday`);
+      parts.push(
+        t
+          ? t("fhir.sittingValue", { hours: life.sittingHoursWorkday })
+          : `${life.sittingHoursWorkday} hours sitting on a workday`,
+      );
     }
     out.push({
       ...base("obs-life-activity", "social-history"),
-      code: { text: "Self-reported physical activity" },
+      code: {
+        text: t ? t("fhir.activityLabel") : "Self-reported physical activity",
+      },
       valueString: `${parts.join("; ")}.`,
     });
   }
@@ -287,15 +367,37 @@ function lifeObservationsFromReportData(
   const work = life.work;
   if (work) {
     const parts = [
-      work.situation ? `situation: ${work.situation.replace(/_/g, " ")}` : null,
+      work.situation
+        ? t
+          ? t("fhir.workSituation", {
+              value: t(`records.life.values.situation.${work.situation}`),
+            })
+          : `situation: ${work.situation.replace(/_/g, " ")}`
+        : null,
       work.physicalNature
-        ? `physical nature: ${work.physicalNature.replace(/_/g, " ")}`
+        ? t
+          ? t("fhir.workNature", {
+              value: t(
+                `records.life.values.physicalNature.${work.physicalNature}`,
+              ),
+            })
+          : `physical nature: ${work.physicalNature.replace(/_/g, " ")}`
         : null,
       work.nightWork === null
         ? null
-        : `night work: ${work.nightWork ? "yes" : "no"}`,
+        : t
+          ? t("fhir.nightWork", {
+              value: t(work.nightWork ? "records.life.yes" : "records.life.no"),
+            })
+          : `night work: ${work.nightWork ? "yes" : "no"}`,
       work.exposures.length > 0
-        ? `exposures: ${work.exposures.map((e) => e.replace(/_/g, " ")).join(", ")}`
+        ? t
+          ? t("fhir.exposures", {
+              value: work.exposures
+                .map((e) => t(`records.life.values.exposures.${e}`))
+                .join("、"),
+            })
+          : `exposures: ${work.exposures.map((e) => e.replace(/_/g, " ")).join(", ")}`
         : null,
     ].filter((part): part is string => part !== null);
     if (parts.length > 0) {
@@ -309,7 +411,7 @@ function lifeObservationsFromReportData(
               display: "History of Occupation",
             },
           ],
-          text: "Self-reported work context",
+          text: t ? t("fhir.workLabel") : "Self-reported work context",
         },
         valueString: `${parts.join("; ")}.`,
       });

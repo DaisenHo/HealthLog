@@ -12,6 +12,7 @@
  * document is UNTRUSTED DATA to be described, never instructions (prompt-
  * injection framing copied from `extract.ts`).
  */
+import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { singleUserTurn, type AIProvider } from "@/lib/ai/types";
 import { annotate } from "@/lib/logging/context";
@@ -49,6 +50,8 @@ const DOCUMENT_SUMMARY_BLOCKED_DE =
   "Diese Zusammenfassung kann ich nicht sicher ausgeben — sie ist in Beratung oder eine klinische Kennzahl abgeglitten, was diese Ansicht nicht darf. Du kannst das Dokument selbst öffnen oder den extrahierten Text lesen.";
 
 export function documentSummaryBlockedCopy(locale: Locale): string {
+  if (locale === "zh-CN")
+    return getServerTranslator(locale).t("documents.summaryBlocked");
   return locale === "de"
     ? DOCUMENT_SUMMARY_BLOCKED_DE
     : DOCUMENT_SUMMARY_BLOCKED_EN;

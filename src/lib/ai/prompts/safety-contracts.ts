@@ -184,7 +184,7 @@ function loadFromDisk(locale: Locale): SafetyContractMatrix {
 export function loadSafetyContracts(locale: Locale): SafetyContractMatrix {
   const cached = cache[locale];
   if (cached) return cached;
-  // shortcut: Chinese AI prose belongs to T06; retain the reviewed English contract until it is validated.
+  // Chinese output uses the reviewed English policy body plus a native output directive.
   const data = loadFromDisk(locale === "zh-CN" ? "en" : locale);
   cache = { ...cache, [locale]: data };
   return data;

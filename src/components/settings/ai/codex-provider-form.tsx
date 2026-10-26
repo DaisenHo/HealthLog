@@ -4,6 +4,7 @@
  * Codex (ChatGPT account) form — connect / disconnect / status.
  * ──────────────────────────────────────────────────────────────── */
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, Sparkles, Trash2 } from "lucide-react";
@@ -88,7 +89,7 @@ export function CodexProviderForm({
         intervalSeconds: json.data.intervalSeconds,
       });
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : t("settings.savingError"));
+      setMsg(localizedApiError(err, t, "settings.savingError"));
       setMsgType("error");
       setDevicePolling(false);
     }
@@ -120,7 +121,7 @@ export function CodexProviderForm({
         if (!cancelled) setTimeout(tick, intervalMs);
       } catch (err) {
         if (cancelled) return;
-        setMsg(err instanceof Error ? err.message : t("settings.savingError"));
+        setMsg(localizedApiError(err, t, "settings.savingError"));
         setMsgType("error");
         setDeviceCode(null);
         setDevicePolling(false);
@@ -155,7 +156,7 @@ export function CodexProviderForm({
       setMsgType("success");
       void invalidateKeys(queryClient, aiInputDependentKeys);
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : t("settings.savingError"));
+      setMsg(localizedApiError(err, t, "settings.savingError"));
       setMsgType("error");
     } finally {
       setDisconnecting(false);

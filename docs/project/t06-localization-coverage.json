@@ -1,0 +1,918 @@
+{
+  "milestone": "M1/T06",
+  "status": "web-implemented-unreleased",
+  "scope": "全部 Web catalog；沿用 T01/T03/T04/T05 的译文，T06 补齐剩余家族。",
+  "exceptions": [
+    {
+      "key": "achievements.criterionHint",
+      "value": "{current} / {target}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "achievements.metricCount",
+      "value": "{count}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "achievements.metricPercent",
+      "value": "{count}%",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "achievements.progressPercent",
+      "value": "{percent}%",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "admin.aiServerKey.keyPlaceholder",
+      "value": "sk-...",
+      "reason": "API 密钥前缀的格式示例（sk-），省略号只表示后续字符；不能翻译或改写为中文值。"
+    },
+    {
+      "key": "admin.assistant.coach.title",
+      "value": "Coach",
+      "reason": "Coach 是本产品既定的功能品牌名；主 agent 明确要求保留品牌原文，不是遗漏翻译的普通名词。"
+    },
+    {
+      "key": "admin.coachFeedback.colN",
+      "value": "n",
+      "reason": "统计样本量符号 n；保留统计记法，不能译为普通字母名称。"
+    },
+    {
+      "key": "admin.glitchtipDsn",
+      "value": "GlitchTip DSN",
+      "reason": "GlitchTip 为服务名，DSN 为连接标识的字段缩写；此标签仅由服务名与技术字段组成。"
+    },
+    {
+      "key": "admin.glitchtipDsnPlaceholder",
+      "value": "https://<public-key>@glitchtip.example.com/<project-id>",
+      "reason": "DSN URL 格式示例；https://、<public-key>、主机与 <project-id> 均为示例结构，须原样保留。"
+    },
+    {
+      "key": "admin.glitchtipEnvironmentPlaceholder",
+      "value": "production",
+      "reason": "环境字段的机器值示例 production，不是向用户显示的整句说明；翻译会使示例与实际配置值不一致。"
+    },
+    {
+      "key": "admin.glitchtipTitle",
+      "value": "GlitchTip",
+      "reason": "GlitchTip 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "admin.heapLimitValue",
+      "value": "{mb} MB",
+      "reason": "数值占位符后仅附计量单位 MB；保持原单位及插值，不随语言改变计量值。"
+    },
+    {
+      "key": "admin.ip",
+      "value": "IP",
+      "reason": "IP 为网络地址术语的标准缩写，单独作为表格列名使用。"
+    },
+    {
+      "key": "admin.keyBackup.platform.composeLabel",
+      "value": "Compose",
+      "reason": "Compose 在此为部署平台选项（对应 docker-compose.yml），属于平台专名而非普通动词。"
+    },
+    {
+      "key": "admin.keyBackup.platform.coolifyLabel",
+      "value": "Coolify",
+      "reason": "Coolify 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "admin.keyBackup.platform.portainerLabel",
+      "value": "Portainer",
+      "reason": "Portainer 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "admin.keyBackup.platform.truenasLabel",
+      "value": "TrueNAS",
+      "reason": "TrueNAS 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "admin.keyBackup.platform.unraidLabel",
+      "value": "Unraid",
+      "reason": "Unraid 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "admin.providerHealth.lastFailureStatus",
+      "value": "HTTP {status}",
+      "reason": "HTTP 为协议名，{status} 为状态码；此项是纯协议状态格式，不含未译的说明。"
+    },
+    {
+      "key": "admin.providerWithings",
+      "value": "Withings",
+      "reason": "Withings 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "admin.section.coach.title",
+      "value": "Coach",
+      "reason": "Coach 是本产品既定的功能品牌名；主 agent 明确要求保留品牌原文，不是遗漏翻译的普通名词。"
+    },
+    {
+      "key": "admin.section.pulseDayMean.result.bucket",
+      "value": "{range} bpm",
+      "reason": "数值占位符后仅附计量单位 bpm；保持原单位及插值，不随语言改变计量值。"
+    },
+    {
+      "key": "admin.section.pulseDayMean.result.maxValue",
+      "value": "{value} bpm",
+      "reason": "数值占位符后仅附计量单位 bpm；保持原单位及插值，不随语言改变计量值。"
+    },
+    {
+      "key": "admin.umamiScriptUrlPlaceholder",
+      "value": "https://analytics.example.com/script.js",
+      "reason": "Umami 脚本 URL 示例，协议、示例域名和 /script.js 路径均须原样保留。"
+    },
+    {
+      "key": "admin.umamiTitle",
+      "value": "Umami",
+      "reason": "Umami 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "admin.umamiWebsiteIdPlaceholder",
+      "value": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+      "reason": "UUID 形状的网站 ID 示例；各段长度与连字符表达字段格式，不应翻译。"
+    },
+    {
+      "key": "admin.webPushVapidPublicKeyPlaceholder",
+      "value": "BElx... (Base64URL)",
+      "reason": "VAPID 公钥的 Base64URL 编码示例，BElx... 与编码名均保留，避免把格式提示变成无效密钥。"
+    },
+    {
+      "key": "admin.webPushVapidSubject",
+      "value": "VAPID subject",
+      "reason": "VAPID 为协议名，subject 为此配置字段的原始标识；此标签仅由协议与字段标识组成，无未译的人类说明句。"
+    },
+    {
+      "key": "admin.webPushVapidSubjectPlaceholder",
+      "value": "mailto:you@example.com",
+      "reason": "VAPID subject 的 mailto: URI 示例，URI scheme 及示例地址须原样保留。"
+    },
+    {
+      "key": "admin.webPushVapidTitle",
+      "value": "Web Push VAPID",
+      "reason": "Web Push 与 VAPID 均为该配置所用的协议名称，标题是协议组合标识，保留便于对应服务器配置。"
+    },
+    {
+      "key": "auth.emailPlaceholder",
+      "value": "name@example.com",
+      "reason": "电子邮箱地址示例，不是说明文字；保留有效地址格式。"
+    },
+    {
+      "key": "charts.spo2",
+      "value": "SpO₂",
+      "reason": "SpO₂/SpO2 为血氧指标的通用科学符号；原有下标形式及拼写保持不变。"
+    },
+    {
+      "key": "clinicianView.noAdherence",
+      "value": "—",
+      "reason": "无可用值的破折号占位符，不包含自然语言。"
+    },
+    {
+      "key": "coach.result.histogramBin",
+      "value": "{from}–{to} {unit}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "coach.step.headerActive",
+      "value": "{label}…",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "cycle.bbt.tooltipTemp",
+      "value": "{temp} {unit}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "cycle.predictions.nextPeriodWindow",
+      "value": "{low}–{high}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "cycle.ring.dayUnknown",
+      "value": "—",
+      "reason": "无可用值的破折号占位符，不包含自然语言。"
+    },
+    {
+      "key": "daily.today.valueWithUnit",
+      "value": "{value} {unit}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "daily.todayFact.sleep.plain",
+      "value": "{duration}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "dashboard.metric.title.bmi",
+      "value": "BMI",
+      "reason": "BMI 为此指标的通用缩写；单独作为指标标签使用，保留以与图表和数据字段对应。"
+    },
+    {
+      "key": "dashboard.metric.unit.bloodPressure",
+      "value": "mmHg",
+      "reason": "mmHg 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.metric.unit.bmi",
+      "value": "kg/m²",
+      "reason": "kg/m² 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.metric.unit.bodyFat",
+      "value": "%",
+      "reason": "% 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.metric.unit.boneMass",
+      "value": "kg",
+      "reason": "kg 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.metric.unit.glucose",
+      "value": "mg/dL",
+      "reason": "mg/dL 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.metric.unit.mood",
+      "value": "/5",
+      "reason": "/5 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.metric.unit.oxygenSaturation",
+      "value": "%",
+      "reason": "% 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.metric.unit.pulse",
+      "value": "bpm",
+      "reason": "bpm 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.metric.unit.sleep",
+      "value": "h",
+      "reason": "h 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.metric.unit.totalBodyWater",
+      "value": "kg",
+      "reason": "kg 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.metric.unit.weight",
+      "value": "kg",
+      "reason": "kg 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "dashboard.vo2MaxUnit",
+      "value": "mL/(kg·min)",
+      "reason": "mL/(kg·min) 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "day.movement.kilometres",
+      "value": "{value} km",
+      "reason": "数值占位符后仅附计量单位 km；保持原单位及插值，不随语言改变计量值。"
+    },
+    {
+      "key": "day.movement.miles",
+      "value": "{value} mi",
+      "reason": "数值占位符后仅附计量单位 mi；保持原单位及插值，不随语言改变计量值。"
+    },
+    {
+      "key": "doctorReport.colN",
+      "value": "n",
+      "reason": "统计样本量符号 n；保留统计记法，不能译为普通字母名称。"
+    },
+    {
+      "key": "documents.card.deleteKey",
+      "value": "Del",
+      "reason": "键盘 Del 键的键帽标记；此键在删除快捷键提示中使用，保留实际键名。"
+    },
+    {
+      "key": "illness.vital.HRV_RMSSD",
+      "value": "HRV (RMSSD)",
+      "reason": "HRV 与 RMSSD 为具体心率变异性指标的标准缩写；保留 RMSSD 以免与 SDNN 指标混淆。"
+    },
+    {
+      "key": "insights.bmiSectionTitle",
+      "value": "BMI",
+      "reason": "BMI 为此指标的通用缩写；单独作为指标标签使用，保留以与图表和数据字段对应。"
+    },
+    {
+      "key": "insights.coach.answer.timeEarlier",
+      "value": "{date}, {time}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "insights.coach.metric.bmi",
+      "value": "BMI",
+      "reason": "BMI 为此指标的通用缩写；单独作为指标标签使用，保留以与图表和数据字段对应。"
+    },
+    {
+      "key": "insights.coach.metric.hrv",
+      "value": "HRV",
+      "reason": "HRV 为心率变异性指标的通用缩写，独立指标标签可保留。"
+    },
+    {
+      "key": "insights.coach.readStrip.driver",
+      "value": "{note}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "insights.coach.transcriptCoach",
+      "value": "Coach",
+      "reason": "Coach 是本产品既定的功能品牌名；主 agent 明确要求保留品牌原文，不是遗漏翻译的普通名词。"
+    },
+    {
+      "key": "insights.derived.anatomy.outOf",
+      "value": "/100",
+      "reason": "/100 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "insights.derived.composite.READINESS.component.hrv",
+      "value": "HRV (SDNN)",
+      "reason": "HRV (SDNN) 为具体心率变异性指标标识；保留 SDNN，以免与 RMSSD 指标混淆。"
+    },
+    {
+      "key": "insights.derived.coverage.ratioLabel",
+      "value": "{present}/{required}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "insights.deviceScore.unitBpm",
+      "value": "bpm",
+      "reason": "bpm 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "insights.deviceScore.unitKj",
+      "value": "kJ",
+      "reason": "kJ 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "insights.ecg.meta.bpmValue",
+      "value": "{bpm} bpm",
+      "reason": "数值占位符后仅附计量单位 bpm；保持原单位及插值，不随语言改变计量值。"
+    },
+    {
+      "key": "insights.ecg.meta.durationValue",
+      "value": "{seconds} s",
+      "reason": "数值占位符后仅附计量单位 s；保持原单位及插值，不随语言改变计量值。"
+    },
+    {
+      "key": "insights.ecg.meta.hzValue",
+      "value": "{hz} Hz",
+      "reason": "数值占位符后仅附计量单位 Hz；保持原单位及插值，不随语言改变计量值。"
+    },
+    {
+      "key": "insights.ecg.meta.unknown",
+      "value": "—",
+      "reason": "无可用值的破折号占位符，不包含自然语言。"
+    },
+    {
+      "key": "insights.mood.inTargetValue",
+      "value": "{pct}%",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "insights.mood.stability.value",
+      "value": "{score}/100",
+      "reason": "心情稳定度评分的数值占位符与固定分母 /100；保持量表尺度和插值。"
+    },
+    {
+      "key": "insights.navBmi",
+      "value": "BMI",
+      "reason": "BMI 为此指标的通用缩写；单独作为指标标签使用，保留以与图表和数据字段对应。"
+    },
+    {
+      "key": "insights.workouts.detail.splitsKm",
+      "value": "km",
+      "reason": "km 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "labs.catalog.alt",
+      "value": "ALT",
+      "reason": "化验项目采用的标准缩写 ALT；保留以与化验报告项目及已有代码映射对应，不是未译的说明文字。"
+    },
+    {
+      "key": "labs.catalog.ast",
+      "value": "AST",
+      "reason": "化验项目采用的标准缩写 AST；保留以与化验报告项目及已有代码映射对应，不是未译的说明文字。"
+    },
+    {
+      "key": "labs.catalog.egfr",
+      "value": "eGFR",
+      "reason": "化验项目采用的标准缩写 eGFR；保留以与化验报告项目及已有代码映射对应，不是未译的说明文字。"
+    },
+    {
+      "key": "labs.catalog.ggt",
+      "value": "GGT",
+      "reason": "化验项目采用的标准缩写 GGT；保留以与化验报告项目及已有代码映射对应，不是未译的说明文字。"
+    },
+    {
+      "key": "labs.catalog.hba1c",
+      "value": "HbA1c",
+      "reason": "化验项目采用的标准缩写 HbA1c；保留以与化验报告项目及已有代码映射对应，不是未译的说明文字。"
+    },
+    {
+      "key": "labs.catalog.hs-crp",
+      "value": "hs-CRP",
+      "reason": "化验项目采用的标准缩写 hs-CRP；保留以与化验报告项目及已有代码映射对应，不是未译的说明文字。"
+    },
+    {
+      "key": "labs.catalog.tsh",
+      "value": "TSH",
+      "reason": "化验项目采用的标准缩写 TSH；保留以与化验报告项目及已有代码映射对应，不是未译的说明文字。"
+    },
+    {
+      "key": "measurementReminders.originCoach",
+      "value": "Coach",
+      "reason": "Coach 是本产品既定的功能品牌名；主 agent 明确要求保留品牌原文，不是遗漏翻译的普通名词。"
+    },
+    {
+      "key": "measurements.sourceFitbit",
+      "value": "Fitbit",
+      "reason": "Fitbit 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "measurements.sourceGoogleHealth",
+      "value": "Google Health",
+      "reason": "Google Health 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "measurements.sourceHealthConnect",
+      "value": "Health Connect",
+      "reason": "Health Connect 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "measurements.sourceMcp",
+      "value": "MCP",
+      "reason": "MCP 为协议名；此来源标签需与连接器协议保持一致。"
+    },
+    {
+      "key": "measurements.sourceNightscout",
+      "value": "Nightscout",
+      "reason": "Nightscout 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "measurements.sourceOura",
+      "value": "Oura",
+      "reason": "Oura 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "measurements.sourcePolar",
+      "value": "Polar",
+      "reason": "Polar 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "measurements.sourceStrava",
+      "value": "Strava",
+      "reason": "Strava 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "measurements.sourceTelegram",
+      "value": "Telegram",
+      "reason": "Telegram 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "measurements.sourceWhoop",
+      "value": "WHOOP",
+      "reason": "WHOOP 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "measurements.sourceWithings",
+      "value": "Withings",
+      "reason": "Withings 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "measurements.typeHrvRmssd",
+      "value": "HRV (RMSSD)",
+      "reason": "HRV 与 RMSSD 为具体心率变异性指标的标准缩写；保留 RMSSD 以免与 SDNN 指标混淆。"
+    },
+    {
+      "key": "medications.detail.settings.codes.atcLabel",
+      "value": "ATC",
+      "reason": "ATC 为药品编码体系的标识；该设置字段需保留编码体系名。"
+    },
+    {
+      "key": "medications.detail.settings.codes.rxNormLabel",
+      "value": "RxNorm",
+      "reason": "RxNorm 为药品编码体系的专名；该设置字段需保留编码体系名。"
+    },
+    {
+      "key": "medications.glp1.drug.dulaglutide.name",
+      "value": "Dulaglutide",
+      "reason": "Dulaglutide 是此内置药品选项采用的通用药名标识。M1 已明确药名不自动翻译；保留该名称以维持图例与药品模型的对应关系，不按语言改换药品身份。"
+    },
+    {
+      "key": "medications.glp1.drug.exenatide.name",
+      "value": "Exenatide",
+      "reason": "Exenatide 是此内置药品选项采用的通用药名标识。M1 已明确药名不自动翻译；保留该名称以维持图例与药品模型的对应关系，不按语言改换药品身份。"
+    },
+    {
+      "key": "medications.glp1.drug.liraglutide.name",
+      "value": "Liraglutide",
+      "reason": "Liraglutide 是此内置药品选项采用的通用药名标识。M1 已明确药名不自动翻译；保留该名称以维持图例与药品模型的对应关系，不按语言改换药品身份。"
+    },
+    {
+      "key": "medications.glp1.drug.semaglutide.name",
+      "value": "Semaglutide",
+      "reason": "Semaglutide 是此内置药品选项采用的通用药名标识。M1 已明确药名不自动翻译；保留该名称以维持图例与药品模型的对应关系，不按语言改换药品身份。"
+    },
+    {
+      "key": "medications.glp1.drug.tirzepatide.name",
+      "value": "Tirzepatide",
+      "reason": "Tirzepatide 是此内置药品选项采用的通用药名标识。M1 已明确药名不自动翻译；保留该名称以维持图例与药品模型的对应关系，不按语言改换药品身份。"
+    },
+    {
+      "key": "medications.glp1LastInjection",
+      "value": "{label}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "medications.phasePercent",
+      "value": "%",
+      "reason": "% 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "medications.titration.doseStep",
+      "value": "{dose} {unit}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "medications.wizard.steps.step3.unit.g",
+      "value": "g",
+      "reason": "g 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "medications.wizard.steps.step3.unit.iu",
+      "value": "IU",
+      "reason": "IU 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "medications.wizard.steps.step3.unit.mcg",
+      "value": "µg",
+      "reason": "µg 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "medications.wizard.steps.step3.unit.mg",
+      "value": "mg",
+      "reason": "mg 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "medications.wizard.steps.step3.unit.ml",
+      "value": "ml",
+      "reason": "ml 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "mentalHealth.crisisResource.crisisTextLine.name",
+      "value": "Crisis Text Line",
+      "reason": "危机支持服务的原始专名 Crisis Text Line；保留名称以与相应联系入口对应，不能把名称翻成普通服务说明或暗示本地资源。"
+    },
+    {
+      "key": "mentalHealth.crisisResource.lifeline988.name",
+      "value": "988 Suicide & Crisis Lifeline",
+      "reason": "危机支持服务的原始专名 988 Suicide & Crisis Lifeline；这是服务名称而非普通英文句子，保留以与联系入口对应。"
+    },
+    {
+      "key": "modules.coach.label",
+      "value": "Coach",
+      "reason": "Coach 是本产品既定的功能品牌名；主 agent 明确要求保留品牌原文，不是遗漏翻译的普通名词。"
+    },
+    {
+      "key": "mood.noteCharCount",
+      "value": "{count}/{max}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "mood.sourceDaylio",
+      "value": "Daylio",
+      "reason": "Daylio 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "mood.sourceMoodlog",
+      "value": "moodLog",
+      "reason": "moodLog 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "mood.sourceTelegram",
+      "value": "Telegram",
+      "reason": "Telegram 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "nutrients.micronutrients.sourcePart",
+      "value": "{source} {value} {unit}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "nutrients.units.IU",
+      "value": "IU",
+      "reason": "IU 为该字段的单位、量表分母或符号；保持单位和计量尺度不随语言变化。"
+    },
+    {
+      "key": "onboarding.flow.sources.options.fitbit",
+      "value": "Fitbit",
+      "reason": "Fitbit 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "onboarding.flow.sources.options.nightscout",
+      "value": "Nightscout",
+      "reason": "Nightscout 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "onboarding.flow.sources.options.oura",
+      "value": "Oura",
+      "reason": "Oura 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "onboarding.flow.sources.options.polar",
+      "value": "Polar",
+      "reason": "Polar 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "onboarding.flow.sources.options.strava",
+      "value": "Strava",
+      "reason": "Strava 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "onboarding.flow.sources.options.whoop",
+      "value": "WHOOP",
+      "reason": "WHOOP 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "onboarding.flow.sources.options.withings",
+      "value": "Withings",
+      "reason": "Withings 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "recordImport.dateOrderOption.iso",
+      "value": "2025-03-01",
+      "reason": "ISO 年-月-日顺序的日期示例，保留 2025-03-01 以准确展示所选输入格式。"
+    },
+    {
+      "key": "reportSelection.groupCount",
+      "value": "{on}/{total}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "settings.ai.openai.apiKeyPlaceholder",
+      "value": "sk-…",
+      "reason": "API 密钥前缀的格式示例（sk-），省略号只表示后续字符；不能翻译或改写为中文值。"
+    },
+    {
+      "key": "settings.ai.openai.baseUrlPlaceholder",
+      "value": "https://api.openai.com/v1",
+      "reason": "OpenAI API 的基础 URL 示例；实际 URL 不能翻译。"
+    },
+    {
+      "key": "settings.ai.openai.modelCustomPlaceholder",
+      "value": "gpt-5",
+      "reason": "gpt-5 是模型标识示例，作为输入值需保持精确拼写。"
+    },
+    {
+      "key": "settings.ai.providerChain.types.anthropic",
+      "value": "Anthropic (Claude)",
+      "reason": "Anthropic 与 Claude 均为服务商/产品专名，括号仅表示品牌关系，无需翻译。"
+    },
+    {
+      "key": "settings.ai.providerChain.types.codex",
+      "value": "ChatGPT (Codex)",
+      "reason": "ChatGPT 与 Codex 均为产品专名，括号仅表示产品关系，无需翻译。"
+    },
+    {
+      "key": "settings.ai.providerSelect.anthropic",
+      "value": "Anthropic (Claude)",
+      "reason": "Anthropic 与 Claude 均为服务商/产品专名，括号仅表示品牌关系，无需翻译。"
+    },
+    {
+      "key": "settings.coach.state.title",
+      "value": "Coach",
+      "reason": "Coach 是本产品既定的功能品牌名；主 agent 明确要求保留品牌原文，不是遗漏翻译的普通名词。"
+    },
+    {
+      "key": "settings.dateFormat.dmy",
+      "value": "DD.MM.YYYY",
+      "reason": "日期格式模板；DD/MM/YYYY 等格式符及其顺序、分隔符用于说明原有显示偏好，保持原样。"
+    },
+    {
+      "key": "settings.dateFormat.mdy",
+      "value": "MM/DD/YYYY",
+      "reason": "日期格式模板；DD/MM/YYYY 等格式符及其顺序、分隔符用于说明原有显示偏好，保持原样。"
+    },
+    {
+      "key": "settings.dateFormat.ymd",
+      "value": "YYYY-MM-DD",
+      "reason": "日期格式模板；DD/MM/YYYY 等格式符及其顺序、分隔符用于说明原有显示偏好，保持原样。"
+    },
+    {
+      "key": "settings.dawarich",
+      "value": "Dawarich",
+      "reason": "Dawarich 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.fitbit",
+      "value": "Fitbit",
+      "reason": "Fitbit 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.fitbitTag",
+      "value": "Fitbit & Pixel",
+      "reason": "Fitbit & Pixel 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.garminInfo.title",
+      "value": "Garmin",
+      "reason": "Garmin 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.googleHealth",
+      "value": "Google Health",
+      "reason": "Google Health 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.googleHealthTag",
+      "value": "Fitbit & Pixel",
+      "reason": "Fitbit & Pixel 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.healthRecord.format_pdf",
+      "value": "PDF",
+      "reason": "PDF 为文件格式名称，导出格式选项保留标准格式标识。"
+    },
+    {
+      "key": "settings.integrations.withings.plan.items.spo2",
+      "value": "SpO2",
+      "reason": "SpO₂/SpO2 为血氧指标的通用科学符号；原有下标形式及拼写保持不变。"
+    },
+    {
+      "key": "settings.nightscout",
+      "value": "Nightscout",
+      "reason": "Nightscout 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.nightscoutTag",
+      "value": "CGM",
+      "reason": "CGM 为连续血糖监测的通用缩写，用作 Nightscout 集成类别标记。"
+    },
+    {
+      "key": "settings.nightscoutUrl",
+      "value": "Nightscout URL",
+      "reason": "Nightscout 为服务名，URL 为地址字段的通用技术标识；标签仅含服务名和字段标识。"
+    },
+    {
+      "key": "settings.ntfy",
+      "value": "ntfy",
+      "reason": "ntfy 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.oura",
+      "value": "Oura",
+      "reason": "Oura 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.polar",
+      "value": "Polar",
+      "reason": "Polar 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sections.sources.metrics.hrvRmssd",
+      "value": "HRV (RMSSD)",
+      "reason": "HRV 与 RMSSD 为具体心率变异性指标的标准缩写；保留 RMSSD 以免与 SDNN 指标混淆。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.FITBIT",
+      "value": "Fitbit",
+      "reason": "Fitbit 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.GOOGLE_HEALTH",
+      "value": "Google Health",
+      "reason": "Google Health 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.HEALTH_CONNECT",
+      "value": "Health Connect",
+      "reason": "Health Connect 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.MCP",
+      "value": "MCP",
+      "reason": "MCP 为协议名；此来源标签需与连接器协议保持一致。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.NIGHTSCOUT",
+      "value": "Nightscout",
+      "reason": "Nightscout 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.OURA",
+      "value": "Oura",
+      "reason": "Oura 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.POLAR",
+      "value": "Polar",
+      "reason": "Polar 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.STRAVA",
+      "value": "Strava",
+      "reason": "Strava 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.TELEGRAM",
+      "value": "Telegram",
+      "reason": "Telegram 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.WHOOP",
+      "value": "WHOOP",
+      "reason": "WHOOP 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sections.sources.sourceLabels.WITHINGS",
+      "value": "Withings",
+      "reason": "Withings 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.sharedRecord.managedSettings.coach.title",
+      "value": "Coach",
+      "reason": "Coach 是本产品既定的功能品牌名；主 agent 明确要求保留品牌原文，不是遗漏翻译的普通名词。"
+    },
+    {
+      "key": "settings.shell.groups.ai",
+      "value": "AI",
+      "reason": "AI 为界面功能分组的通用技术缩写，独立分组标签保留。"
+    },
+    {
+      "key": "settings.strava",
+      "value": "Strava",
+      "reason": "Strava 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.telegram",
+      "value": "Telegram",
+      "reason": "Telegram 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.webhook",
+      "value": "Webhook",
+      "reason": "Webhook 为此集成类型的技术术语，与回调接口类型对应，保留原名。"
+    },
+    {
+      "key": "settings.webhookFormatGotify",
+      "value": "Gotify",
+      "reason": "Gotify 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.webhookUrl",
+      "value": "Webhook URL",
+      "reason": "Webhook 为集成技术类型，URL 为其地址字段标识；标签不含未译的说明句。"
+    },
+    {
+      "key": "settings.whoop",
+      "value": "WHOOP",
+      "reason": "WHOOP 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "settings.withings",
+      "value": "Withings",
+      "reason": "Withings 为此来源、平台、集成或产品的专名；保留原始拼写以与连接服务对应。"
+    },
+    {
+      "key": "sourceProvenance.pickedSplit",
+      "value": "{a} / {b}",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "symptoms.intensityPill",
+      "value": "{value}/10",
+      "reason": "症状强度的数值占位符与固定分母 /10；保持量表尺度和插值。"
+    },
+    {
+      "key": "targets.bmi",
+      "value": "BMI",
+      "reason": "BMI 为此指标的通用缩写；单独作为指标标签使用，保留以与图表和数据字段对应。"
+    },
+    {
+      "key": "thresholds.unitSuffix",
+      "value": "({unit})",
+      "reason": "纯占位符、数值范围、比例或日期时间格式；没有待翻译的自然语言，保持插值及分隔符。"
+    },
+    {
+      "key": "vaccinations.catalog.covid-19",
+      "value": "COVID-19",
+      "reason": "COVID-19 为该疫苗目录项目使用的正式疾病名称标识；保留国际通用标识，避免改变目录项目身份。"
+    },
+    {
+      "key": "vaccinations.catalog.rsv",
+      "value": "RSV",
+      "reason": "RSV 为该疫苗目录项目使用的通用医学缩写；保留缩写以与目录项对应。"
+    }
+  ],
+  "nonCatalog": {
+    "userData": "药名、姓名、健康记录与自由文本保持原文。",
+    "protocol": "CSV 列名、API 字段/枚举、FHIR 官方 coding.display/编码/单位及命令保持原值。",
+    "validatedQuestionnaires": "79 个受限题目/选项继续通过 instrumentText 读取原版英文，不加入中文 catalog 或受验证语言白名单。",
+    "policyInstructions": "中文模型输出沿用已审阅英文机器策略正文，附简体中文输出指令并经过中文护栏；并非面向用户的英文占位。"
+  }
+}

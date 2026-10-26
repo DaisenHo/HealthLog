@@ -1,3 +1,5 @@
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import type { FhirBuildOptions } from "./common";
 /**
  * Glucose Observations: the per-context reading and the clinical panel
  * (time-in-range, mean, GMI, estimated A1C, variability) the one
@@ -82,7 +84,9 @@ export function glucoseContextObservations(
 export function glucoseClinicalObservations(
   data: DoctorReportData,
   nextId: () => string,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   const clinical = data.glucoseClinical;
   if (!clinical || clinical.readingCount <= 0) return [];
 
@@ -122,7 +126,9 @@ export function glucoseClinicalObservations(
         ? {
             note: [
               {
-                text: "Spot-reading estimate from individual measurements, not a continuous-monitor profile.",
+                text: t
+                  ? t("fhir.spotEstimate")
+                  : "Spot-reading estimate from individual measurements, not a continuous-monitor profile.",
               },
             ],
           }
@@ -137,7 +143,13 @@ export function glucoseClinicalObservations(
         display:
           "Glucose measurements in range out of Total glucose measurements during reporting period",
       },
-      text: timeInRangeDisplay(glucoseUnit),
+      text: t
+        ? t("doctorReport.glucoseClinical.tirInRange", {
+            low: convertGlucose(70, glucoseUnit),
+            high: convertGlucose(180, glucoseUnit),
+            unit: glucoseUnit,
+          })
+        : timeInRangeDisplay(glucoseUnit),
       value: Math.round(clinical.distribution.tir * 1000) / 10,
       unit: "%",
     });
@@ -150,7 +162,7 @@ export function glucoseClinicalObservations(
     // involved. A spot-reading mean stays text-only in the display unit.
     if (clinical.isSpotEstimate) {
       push({
-        text: "Mean glucose",
+        text: t ? t("doctorReport.glucoseClinical.mean") : "Mean glucose",
         value: convertGlucose(clinical.meanMgdl, glucoseUnit),
         unit: glucoseUnit,
       });
@@ -161,7 +173,7 @@ export function glucoseClinicalObservations(
           display:
             "Average glucose [Mass/volume] in Interstitial fluid during Reporting Period",
         },
-        text: "Mean glucose",
+        text: t ? t("doctorReport.glucoseClinical.mean") : "Mean glucose",
         value: convertGlucose(clinical.meanMgdl, "mg/dL"),
         unit: "mg/dL",
       });
@@ -173,7 +185,9 @@ export function glucoseClinicalObservations(
         code: GLUCOSE_GMI_LOINC,
         display: "Glucose management indicator",
       },
-      text: "Glucose Management Indicator (GMI)",
+      text: t
+        ? t("doctorReport.glucoseClinical.gmi")
+        : "Glucose Management Indicator (GMI)",
       value: Math.round(clinical.gmi * 10) / 10,
       unit: "%",
     });
@@ -182,14 +196,16 @@ export function glucoseClinicalObservations(
     push({
       // Text-only: no LOINC term exists for an A1C estimated from mean
       // glucose (see `loinc-map.ts`).
-      text: "Estimated A1C",
+      text: t ? t("doctorReport.glucoseClinical.eA1c") : "Estimated A1C",
       value: Math.round(clinical.estimatedA1c * 10) / 10,
       unit: "%",
     });
   }
   if (clinical.variability !== null) {
     push({
-      text: "Glucose variability (coefficient of variation)",
+      text: t
+        ? t("doctorReport.glucoseClinical.cv")
+        : "Glucose variability (coefficient of variation)",
       value: Math.round(clinical.variability.cv * 10) / 10,
       unit: "%",
       survey: true,

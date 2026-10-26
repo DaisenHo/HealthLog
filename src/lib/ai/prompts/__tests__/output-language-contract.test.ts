@@ -43,7 +43,7 @@ const EXPECTED_LANGUAGE_NAME: Record<Locale, string> = {
   ko: "Korean",
   "pt-BR": "Brazilian Portuguese",
 
-  "zh-CN": "English",
+  "zh-CN": "Simplified Chinese",
 };
 
 /** Which body each locale is expected to compose. */
@@ -62,6 +62,11 @@ const EXPECTED_BODY: Record<Locale, "de" | "en"> = {
 };
 
 describe("output-language helper", () => {
+  it("explicitly requests Simplified Chinese from the English instruction body", () => {
+    expect(withOutputLanguage("BODY", "zh-CN")).toContain("简体中文");
+    expect(outputLanguageDirective("zh-CN")).not.toContain("reply in English");
+  });
+
   it("routes only German to the German body — every other locale to English", () => {
     for (const locale of locales) {
       expect(instructionLocale(locale), `instruction body for ${locale}`).toBe(

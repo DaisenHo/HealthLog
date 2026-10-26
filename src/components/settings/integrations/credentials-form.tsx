@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { translateCode } from "@/lib/i18n/translate-code";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -79,7 +80,12 @@ export function CredentialsForm({
         let text = t("settings.savingError");
         try {
           const json = await res.json();
-          if (json.error) text = json.error;
+          text = translateCode(
+            t,
+            "apiErrors",
+            json.meta?.errorCode,
+            "settings.savingError",
+          );
         } catch {
           // keep the generic message
         }

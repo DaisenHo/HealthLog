@@ -11,6 +11,7 @@ import { MEASUREMENT_TYPE_LABEL_KEYS } from "../measurements/type-label-keys";
 import type { DoctorReportData } from "../doctor-report-data";
 import { computeGlucoseClinicalMetrics } from "@/lib/analytics/glucose-metrics";
 import { getServerTranslator } from "../i18n/server-translator";
+import { buildPdfBytes } from "../export/health-record-artefacts";
 
 async function extractText(bytes: Uint8Array): Promise<string> {
   const parser = new PDFParse({ data: bytes });
@@ -101,6 +102,30 @@ function makeData(overrides?: Partial<DoctorReportData>): DoctorReportData {
 }
 
 describe("renderDoctorReportPdfBytes", () => {
+  it.each(["zh-CN", "en"] as const)(
+    "preserves Chinese patient text in a %s report",
+    async (locale) => {
+      const data = makeData();
+      data.patient.username = "虚构用户";
+      const bytes = await buildPdfBytes({
+        data,
+        insuranceNumber: null,
+        records: {},
+        germanAtc: false,
+        includeCharts: false,
+        locale,
+        userTz: "Asia/Shanghai",
+        timeFormat: "H24",
+        dateFormat: "AUTO",
+        t: getServerTranslator(locale).t,
+      });
+      const text = await extractText(bytes);
+      expect(text).toContain(locale === "zh-CN" ? "健康报告" : "Health Report");
+      expect(text).toContain("虚构用户");
+      expect(text).toContain("79.5");
+    },
+  );
+
   it("returns a Uint8Array starting with the %PDF- header", () => {
     const { t } = getServerTranslator("de");
     const bytes = renderDoctorReportPdfBytes(makeData(), {

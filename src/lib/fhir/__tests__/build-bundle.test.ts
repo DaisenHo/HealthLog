@@ -1543,3 +1543,56 @@ describe("buildFhirDocumentBundle — illness episodes (v1.18.1 P4)", () => {
     expect(enc.period?.end).toBeUndefined();
   });
 });
+
+describe("Chinese document prose", () => {
+  it("localises narrative and selected history while preserving official terminology and values", () => {
+    const data = makeData({
+      patient: { ...makeData().patient, fullName: "虚构<&用户" },
+      anamnesis: {
+        conditions: "用户原文<&",
+        conditionsUnreadable: false,
+        smokingStatus: "NEVER",
+        alcoholPattern: "NONE",
+        shiftSchedule: null,
+        unreadableFacts: ["SHIFT_SCHEDULE"],
+      },
+    });
+    const zh = buildFhirDocumentBundle(
+      data,
+      { insuranceNumber: null },
+      FIXED_NOW,
+      { locale: "zh-CN" },
+    );
+    const en = buildFhirDocumentBundle(
+      data,
+      { insuranceNumber: null },
+      FIXED_NOW,
+    );
+    const cover = zh.entry[0].resource as FhirComposition;
+    expect(cover.title).toBe("健康报告");
+    expect(cover.text?.div).toContain("虚构&lt;&amp;用户");
+    expect(cover.text?.div).not.toContain("&amp;lt;");
+    const history = cover.section?.find((s) => s.title === "健康档案");
+    expect(history?.text?.div).toContain("用户原文&lt;&amp;");
+    const smoking = observationsOf(zh).find((o) => o.id === "obs-anamnesis-1");
+    expect(smoking?.valueCodeableConcept?.text).toBe("从未吸烟");
+    const unreadable = observationsOf(zh).find(
+      (o) => o.id === "obs-anamnesis-3",
+    );
+    expect(unreadable?.dataAbsentReason?.coding?.[0].code).toBe("error");
+    expect(unreadable?.dataAbsentReason?.text).toContain("无法读取");
+    for (const z of observationsOf(zh)) {
+      const e = observationsOf(en).find((o) => o.id === z.id)!;
+      expect(z.code.coding).toEqual(e.code.coding);
+      expect(z.valueQuantity).toEqual(e.valueQuantity);
+      expect(z.effectiveDateTime).toEqual(e.effectiveDateTime);
+      expect(z.effectivePeriod).toEqual(e.effectivePeriod);
+      expect(z.valueCodeableConcept?.coding).toEqual(
+        e.valueCodeableConcept?.coding,
+      );
+    }
+    expect(zh.entry.map((e) => e.resource.resourceType)).toEqual(
+      en.entry.map((e) => e.resource.resourceType),
+    );
+  });
+});

@@ -93,7 +93,7 @@ export function StatRow({
 }) {
   return (
     <div className="border-border/40 flex items-baseline justify-between gap-4 border-b py-2 last:border-0">
-      <span className="text-muted-foreground text-sm">{label}</span>
+      <span className="text-muted-foreground min-w-16 text-sm">{label}</span>
       <span
         className={
           emphasise

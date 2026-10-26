@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2952,
-  "total": 10497,
+  "total": 10496,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1786,7 +1786,7 @@
     "lib/ai/prompts/bmi.ts": 2,
     "lib/ai/prompts/compact-sections.ts": 1,
     "lib/ai/prompts/general-status.ts": 3,
-    "lib/ai/prompts/insight-generator.ts": 10,
+    "lib/ai/prompts/insight-generator.ts": 9,
     "lib/ai/prompts/insight-system-prompt.ts": 2,
     "lib/ai/prompts/interpretation-block.ts": 1,
     "lib/ai/prompts/medication-compliance.ts": 2,

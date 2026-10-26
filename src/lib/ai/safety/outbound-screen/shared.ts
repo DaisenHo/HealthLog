@@ -13,14 +13,14 @@
  * the screen recognised and passed every pattern.
  */
 export const COUNT_UNIT =
-  "(?:tablets?|pills?|capsules?|drops?|puffs?|sprays?|tabletten?|kapseln?|tropfen|hübe|hub|sprühstöße|comprimés?|gélules?|gouttes?|bouffées?|comprimidos?|pastillas?|c[áa]psulas?|gotas?|compress[ae]|pastigli[ae]|gocce|goccia|tabletk[aęiy]|tabletek|kapsułk[aęiy]|kapsułek|krople|kropli|druppels?|pillen|pufjes?|pastilhas?|dr[áa]geas?|jatos?|borrifadas?)";
+  "(?:片|粒|颗|支|滴|喷|揿|tablets?|pills?|capsules?|drops?|puffs?|sprays?|tabletten?|kapseln?|tropfen|hübe|hub|sprühstöße|comprimés?|gélules?|gouttes?|bouffées?|comprimidos?|pastillas?|c[áa]psulas?|gotas?|compress[ae]|pastigli[ae]|gocce|goccia|tabletk[aęiy]|tabletek|kapsułk[aęiy]|kapsułek|krople|kropli|druppels?|pillen|pufjes?|pastilhas?|dr[áa]geas?|jatos?|borrifadas?)";
 
 /**
  * Dose units for a target dose a model must never name. Mass and insulin
  * units plus the count forms; `ml` is left out on purpose because
  * "increase your water intake to 2000 ml" is ordinary hydration advice.
  */
-export const DRUG_UNIT = `(?:mg|mcg|µg|iu|ui|i\\.u\\.|units?|unidades?|unità|unités?|jednostek|jednostki|eenheden|eenheid|ie|i\\.e\\.|einheiten|${COUNT_UNIT})`;
+export const DRUG_UNIT = `(?:毫克|微克|国际单位|单位|mg|mcg|µg|iu|ui|i\\.u\\.|units?|unidades?|unità|unités?|jednostek|jednostki|eenheden|eenheid|ie|i\\.e\\.|einheiten|${COUNT_UNIT})`;
 
 /**
  * Dose units, shared across every locale. The GLP-1 + general oral-dose

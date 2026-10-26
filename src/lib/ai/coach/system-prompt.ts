@@ -1252,7 +1252,8 @@ const LOCALE_REPLY_FOOTER_FALLBACK: Record<
   Exclude<Locale, "de" | "en">,
   string
 > = {
-  "zh-CN": "\n\nREPLY LANGUAGE: respond in English.",
+  "zh-CN":
+    "\n\nREPLY LANGUAGE: respond in Simplified Chinese (简体中文). Mirror the user’s register and use natural Chinese health vocabulary; preserve protocol identifiers, medication names and units.",
   fr: "\n\nREPLY LANGUAGE: respond in French. Mirror the user's register; use natural French health vocabulary.",
   es: "\n\nREPLY LANGUAGE: respond in Spanish. Mirror the user's register; use natural Spanish health vocabulary.",
   it: "\n\nREPLY LANGUAGE: respond in Italian. Mirror the user's register; use natural Italian health vocabulary.",
@@ -1296,9 +1297,14 @@ export function getCoachSystemPrompt(
   let base: string;
   if (locale === "de") {
     base = COACH_PROMPT_DE;
-  } else if (locale === "en" || locale === "zh-CN") {
+  } else if (locale === "en") {
     base = COACH_PROMPT_EN;
-  } else if (locale === "ko" || locale === "nl" || locale === "pt-BR") {
+  } else if (
+    locale === "ko" ||
+    locale === "nl" ||
+    locale === "pt-BR" ||
+    locale === "zh-CN"
+  ) {
     // ko, nl and pt-BR ship no safety-contract matrix, so they are not a
     // NativeCoachLocale.
     base = COACH_PROMPT_EN + LOCALE_REPLY_FOOTER_FALLBACK[locale];

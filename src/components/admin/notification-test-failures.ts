@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/i18n/config";
 import {
   CHANNEL_TYPE_LABELS,
   type ChannelType,
@@ -23,6 +24,7 @@ export interface ChannelTestResult {
 export function describeChannelTestFailures(
   results: ReadonlyArray<ChannelTestResult>,
   t: (key: string) => string,
+  locale?: Locale,
 ): string[] {
   return results
     .filter((r) => !r.success)
@@ -30,7 +32,7 @@ export function describeChannelTestFailures(
       const label = CHANNEL_TYPE_LABELS[r.channel as ChannelType] ?? r.channel;
       const cause =
         translateCodeOrNull(t, "settings.testConnection.errors", r.errorCode) ??
-        r.error ??
+        (locale === "zh-CN" ? undefined : r.error) ??
         t("admin.notificationTestFailed");
       const code =
         typeof r.upstreamStatus === "number"
@@ -40,4 +42,19 @@ export function describeChannelTestFailures(
             : "";
       return `${label}: ${cause}${code}`;
     });
+}
+
+/** A successful result can also mean that no channel was configured. */
+export function notificationTestMessage(
+  data: { sent?: boolean; message?: string } | undefined,
+  t: (key: string) => string,
+  locale?: Locale,
+): string {
+  return locale === "zh-CN"
+    ? t(
+        data?.sent === false
+          ? "admin.notificationTestNoChannels"
+          : "admin.notificationTestSuccess",
+      )
+    : (data?.message ?? t("admin.notificationTestSuccess"));
 }

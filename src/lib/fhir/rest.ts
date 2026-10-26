@@ -12,6 +12,8 @@
  * narrow `fhir:read` Bearer scope (cookie sessions also pass); `userId` is
  * always narrowed from the auth context, never accepted from the wire.
  */
+import { resolveJobLocale } from "@/lib/i18n/job-locale";
+import type { Locale } from "@/lib/i18n/config";
 import { NextResponse } from "next/server";
 
 import { decrypt } from "@/lib/crypto";
@@ -274,6 +276,7 @@ export function operationOutcome(
  * missing its gate — a bug to surface, not a flow to serve.
  */
 export async function loadFhirContext(userId: string): Promise<{
+  locale?: Locale;
   data: DoctorReportData;
   identity: { insuranceNumber: string | null };
   germanAtc: boolean;
@@ -332,6 +335,7 @@ export async function loadFhirContext(userId: string): Promise<{
   );
 
   return {
+    locale: await resolveJobLocale(userRow?.locale ?? null),
     data,
     identity: { insuranceNumber },
     germanAtc,

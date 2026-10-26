@@ -975,33 +975,27 @@ const SYSTEM_PROMPT_EN = composeInsightPrompt("en");
 const SYSTEM_PROMPT_DE = composeInsightPrompt("de");
 
 /**
- * v1.4.25 — native locale-specific Insights system prompts.
- *
- * Replaces the W9e REPLY-LANGUAGE-footer plumbing. For FR / ES / IT /
- * PL the prompt body is assembled from the safety-contract matrix in
- * the user's language; severity / sourceWindow / sourceMetric / topic
- * enum values stay in lowercase EN per the matrix's contract_enums
- * pin. DE keeps the hand-curated body (two-year calibration
- * reference). On any matrix-load failure the dispatcher falls back to
- * the W9e EN-body-plus-footer path so the surface stays functional. The
- * footers live in `insights-reply-footers.ts`.
- *
- * Returns the active scope-hardened system prompt for a given locale.
- * Consumed by the comprehensive generation path.
+ * DE/EN retain their reviewed bodies; FR/ES/IT/PL use native safety matrices.
+ * Other locales, including Chinese, append a native reply directive to the
+ * English policy. Protocol enums remain English; matrix failures use the same
+ * language footer so the reader still receives their selected language.
  */
 export function getStrictInsightsSystemPrompt(locale: Locale): string {
   if (locale === "de") return SYSTEM_PROMPT_DE;
-  if (locale === "en" || locale === "zh-CN") return SYSTEM_PROMPT_EN;
-  // ko, nl and pt-BR ship no safety-contract matrix, so they are not a
-  // NativeCoachLocale.
-  if (locale === "ko" || locale === "nl" || locale === "pt-BR") {
-    return SYSTEM_PROMPT_EN + INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK[locale];
+  if (locale === "en") return SYSTEM_PROMPT_EN;
+  if (
+    locale === "fr" ||
+    locale === "es" ||
+    locale === "it" ||
+    locale === "pl"
+  ) {
+    try {
+      return buildNativeInsightsPrompt(locale, PROMPT_VERSION);
+    } catch {
+      /* Retain the reviewed English instructions if the native matrix is unavailable. */
+    }
   }
-  try {
-    return buildNativeInsightsPrompt(locale, PROMPT_VERSION);
-  } catch {
-    return SYSTEM_PROMPT_EN + INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK[locale];
-  }
+  return SYSTEM_PROMPT_EN + INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK[locale];
 }
 
 /**

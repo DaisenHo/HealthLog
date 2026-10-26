@@ -1,3 +1,5 @@
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import type { FhirBuildOptions } from "./resources/common";
 /**
  * v1.25 — FHIR R4 emitters for the structured health records.
  *
@@ -75,6 +77,7 @@ const ALLERGY_TYPE: Record<string, "allergy" | "intolerance"> = {
  */
 export function allergyIntoleranceResources(
   allergies: AllergyDTO[],
+  options: FhirBuildOptions = {},
 ): FhirAllergyIntolerance[] {
   const out: FhirAllergyIntolerance[] = [];
   let seq = 0;
@@ -116,7 +119,10 @@ export function allergyIntoleranceResources(
       ...(a.onsetAt ? { onsetDateTime: a.onsetAt } : {}),
       note: [
         {
-          text: "Self-recorded allergy/intolerance; patient-reported, not a clinical diagnosis.",
+          text:
+            options.locale === "zh-CN"
+              ? getServerTranslator("zh-CN").t("fhir.allergyNote")
+              : "Self-recorded allergy/intolerance; patient-reported, not a clinical diagnosis.",
         },
         ...(a.note ? [{ text: a.note }] : []),
       ],
@@ -169,6 +175,7 @@ const RELATIONSHIP_ROLE: Record<string, { code: string; display: string }> = {
  */
 export function familyMemberHistoryResources(
   entries: FamilyHistoryEntryDTO[],
+  options: FhirBuildOptions = {},
 ): FhirFamilyMemberHistory[] {
   const out: FhirFamilyMemberHistory[] = [];
   let seq = 0;
@@ -184,7 +191,12 @@ export function familyMemberHistoryResources(
         coding: [
           { system: ROLE_CODE_SYSTEM, code: role.code, display: role.display },
         ],
-        text: role.display,
+        text:
+          options.locale === "zh-CN"
+            ? getServerTranslator("zh-CN").t(
+                `records.familyHistory.relationship.${RELATIONSHIP_ROLE[e.relationship] ? e.relationship : "OTHER"}`,
+              )
+            : role.display,
       },
       condition: [
         {
@@ -204,7 +216,10 @@ export function familyMemberHistoryResources(
       ],
       note: [
         {
-          text: "Self-recorded family history; patient-reported, not a clinical diagnosis.",
+          text:
+            options.locale === "zh-CN"
+              ? getServerTranslator("zh-CN").t("fhir.familyHistoryNote")
+              : "Self-recorded family history; patient-reported, not a clinical diagnosis.",
         },
         ...(e.note ? [{ text: e.note }] : []),
       ],

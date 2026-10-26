@@ -1,3 +1,5 @@
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import type { FhirBuildOptions } from "./common";
 /**
  * `Condition` + bounding `Encounter` per illness / condition episode.
  *
@@ -63,21 +65,23 @@ const BODY_STRUCTURE_ID = "bodysite-1";
  * `bodySite.text`, because a receiver that ignores extensions must still read
  * "Knee (left)" rather than a bare "Knee".
  *
- * The side word is English on purpose. The builder takes no locale
- * (`FhirBuildOptions` carries none, unlike the PDF path), and every other
- * generated text in the Bundle is English: section titles, the Condition note,
- * the narratives. The site stays in the words the user wrote, so a German
- * record reads "Knie (left)", the same mix as a German label beside the
- * English "Self-recorded … condition journal entry" note.
+ * Only the app-owned side text follows the reader language; SNOMED stays intact.
  */
 function bodySiteOf(
   bodySite: string | null | undefined,
   laterality: string | null | undefined,
+  options: FhirBuildOptions,
 ): Pick<FhirCondition, "bodySite" | "contained"> {
   const site = bodySite?.trim();
   if (!site) return {};
   const side = laterality ? LATERALITY_SNOMED[laterality] : undefined;
   if (!side) return { bodySite: [{ text: site }] };
+  const sideText =
+    options.locale === "zh-CN"
+      ? getServerTranslator("zh-CN").t(
+          `encounters.laterality.${laterality!.toLowerCase()}`,
+        )
+      : side.text;
   const structure: FhirBodyStructure = {
     resourceType: "BodyStructure",
     id: BODY_STRUCTURE_ID,
@@ -87,7 +91,7 @@ function bodySiteOf(
         coding: [
           { system: SNOMED_SYSTEM, code: side.code, display: side.display },
         ],
-        text: side.text,
+        text: sideText,
       },
     ],
     patient: patientRef,
@@ -102,7 +106,7 @@ function bodySiteOf(
             valueReference: { reference: `#${BODY_STRUCTURE_ID}` },
           },
         ],
-        text: `${site} (${side.text})`,
+        text: `${site} (${sideText})`,
       },
     ],
   };
@@ -127,7 +131,10 @@ function conditionClinicalStatus(resolved: boolean): FhirCodeableConcept {
  * then). Ids run `condition-1..N` / `encounter-1..N`; the Encounter references
  * its Condition so a clinician sees the time-boxed episode.
  */
-export function conditionsFromReportData(data: DoctorReportData): {
+export function conditionsFromReportData(
+  data: DoctorReportData,
+  options: FhirBuildOptions = {},
+): {
   conditions: FhirCondition[];
   encounters: FhirEncounter[];
 } {
@@ -142,7 +149,7 @@ export function conditionsFromReportData(data: DoctorReportData): {
     seq += 1;
     const conditionId = `condition-${seq}`;
     const resolved = ep.resolvedAt !== null;
-    const site = bodySiteOf(ep.bodySite, ep.laterality);
+    const site = bodySiteOf(ep.bodySite, ep.laterality, options);
     conditions.push({
       resourceType: "Condition",
       id: conditionId,
@@ -169,7 +176,10 @@ export function conditionsFromReportData(data: DoctorReportData): {
             },
           ],
           // The journal's broad class as a human-readable category label.
-          text: ep.type,
+          text:
+            options.locale === "zh-CN" && ILLNESS_TYPE_SNOMED[ep.type]
+              ? getServerTranslator("zh-CN").t(`illness.type.${ep.type}`)
+              : ep.type,
         },
       ],
       code: {
@@ -191,7 +201,14 @@ export function conditionsFromReportData(data: DoctorReportData): {
       ...(ep.resolvedAt ? { abatementDateTime: ep.resolvedAt } : {}),
       note: [
         {
-          text: `Self-recorded ${ep.lifecycle.toLowerCase().replace(/_/g, " ")} condition journal entry; patient-reported, not a clinical diagnosis.`,
+          text:
+            options.locale === "zh-CN"
+              ? getServerTranslator("zh-CN").t("fhir.conditionNote", {
+                  lifecycle: getServerTranslator("zh-CN").t(
+                    `illness.lifecycle.${ep.lifecycle}`,
+                  ),
+                })
+              : `Self-recorded ${ep.lifecycle.toLowerCase().replace(/_/g, " ")} condition journal entry; patient-reported, not a clinical diagnosis.`,
         },
       ],
     });

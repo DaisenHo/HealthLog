@@ -179,7 +179,18 @@ const NORMATIVE_KEYWORDS: Record<Locale, readonly string[]> = {
     "inferior a",
   ],
 
-  "zh-CN": ["target", "should", "normal range", "above", "below"],
+  "zh-CN": [
+    "目标",
+    "应该",
+    "应当",
+    "建议",
+    "正常范围",
+    "参考范围",
+    "高于",
+    "低于",
+    "超过",
+    "界值",
+  ],
 };
 
 /**
@@ -201,7 +212,13 @@ const NORMATIVE_MATCHERS: Record<Locale, RegExp> = Object.fromEntries(
     const alternation = bank
       .map((kw) => kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
       .join("|");
-    return [locale, new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternation})`, "u")];
+    return [
+      locale,
+      new RegExp(
+        `${locale === "zh-CN" ? "" : "(?<![\\p{L}\\p{N}])"}(?:${alternation})`,
+        "u",
+      ),
+    ];
   }),
 ) as Record<Locale, RegExp>;
 

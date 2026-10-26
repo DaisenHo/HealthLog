@@ -93,7 +93,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
   }
 
   const context = await loadFhirContext(user.id);
-  const snapshot = observationsFromReportData(context.data);
+  const snapshot = observationsFromReportData(context.data, {
+    locale: context.locale,
+  });
   const all =
     codeValues.length > 0
       ? snapshot.filter((o) => matchesCodeTokens(o, codeValues))

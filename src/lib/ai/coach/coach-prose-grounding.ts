@@ -65,6 +65,7 @@
  */
 import { extractNumbers } from "@/lib/ai/briefing-grounding";
 import type { Locale } from "@/lib/i18n/config";
+import { UNIT_WORDS } from "./unit-words";
 import { POPULATION_NORM_PATTERNS } from "./population-norms";
 
 /** Absolute + relative tolerance — identical basis to the briefing verifier. */
@@ -130,104 +131,6 @@ export type NumKind =
  * already drifted — only one of them knew about "%". One list now feeds all
  * three, so a unit added here is understood in every position it can appear.
  * ────────────────────────────────────────────────────────────────────────── */
-
-/** Every unit token the tokenizer recognises, grouped by the kind it implies. */
-const UNIT_WORDS: Readonly<Record<NumKind, readonly string[]>> = {
-  mass: [
-    "kg",
-    "kgs",
-    "kilogram",
-    "kilograms",
-    "kilogramm",
-    "kilogramme",
-    "kilogrammes",
-    "kilogrammen",
-    "kilogramo",
-    "kilogramos",
-    "chilogrammi",
-    "chilogrammo",
-    "kilogramy",
-    "kilogramow",
-    "kilo",
-    "lb",
-    "lbs",
-    "pound",
-    "pounds",
-    "livre",
-    "livres",
-    "libra",
-    "libras",
-    "quilo",
-    "quilos",
-    "quilograma",
-    "quilogramas",
-    "funt",
-    "funty",
-  ],
-  pressure: ["mmhg"],
-  pulse: ["bpm"],
-  percent: [
-    "%",
-    "percent",
-    "percentage",
-    "per cent",
-    "prozent",
-    "pour cent",
-    "pourcent",
-    "por ciento",
-    "por cento",
-    "porciento",
-    "per cento",
-    "procent",
-  ],
-  duration: [
-    "min",
-    "mins",
-    "minute",
-    "minutes",
-    "minuten",
-    "minuto",
-    "minutos",
-    "minuti",
-    "minut",
-    "minuty",
-    "m",
-    "h",
-    "hr",
-    "hrs",
-    "std",
-    "hour",
-    "hours",
-    "stunde",
-    "stunden",
-    "heure",
-    "heures",
-    "hora",
-    "horas",
-    "ora",
-    "ore",
-    "godzina",
-    "godziny",
-    "godzin",
-  ],
-  count: [
-    "step",
-    "steps",
-    "schritt",
-    "schritte",
-    "pas",
-    "paso",
-    "pasos",
-    "passo",
-    "passi",
-    "passos",
-    "krok",
-    "kroki",
-    "krokow",
-  ],
-  glucose: ["mg/dl", "mmol/l", "mgdl", "mmoll"],
-  dose: [],
-};
 
 /** Unit token in the classifier's normal form → its kind. */
 const UNIT_KIND_BY_TOKEN: ReadonlyMap<string, NumKind> = new Map(
@@ -640,7 +543,7 @@ const MONTHS = [
 /** Parse a raw number token honouring the reply language's separators. */
 function parseLocaleNumber(raw: string, locale: Locale): number | null {
   let normalised: string;
-  if (locale === "en") {
+  if (locale === "en" || locale === "zh-CN") {
     // EN: "," groups thousands, "." is the decimal point.
     normalised = raw.replace(/,/g, "");
   } else {
@@ -671,7 +574,7 @@ function tokenizeMagnitudes(prose: string, locale: Locale): ProseMagnitude[] {
   };
 
   const numFrag =
-    locale === "en"
+    locale === "en" || locale === "zh-CN"
       ? String.raw`[+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?|[+-]?\d+(?:\.\d+)?`
       : String.raw`[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?|[+-]?\d+(?:,\d+)?`;
 
@@ -686,6 +589,16 @@ function tokenizeMagnitudes(prose: string, locale: Locale): ProseMagnitude[] {
       handle(m);
     }
   };
+
+  // Chinese dates and explicit day/week windows are structural, not readings.
+  if (locale === "zh-CN") {
+    runPass(/\d{4}年\d{1,2}月\d{1,2}日/g, (m) => {
+      claim(m.index, m.index + m[0].length);
+    });
+    runPass(/(?:最近|过去|近)\s*\d+\s*(?:天|周|个月|月|年)/g, (m) => {
+      claim(m.index, m.index + m[0].length);
+    });
+  }
 
   // (1) ISO dates — the whole span is benign.
   runPass(/\b\d{4}-\d{2}-\d{2}\b/g, (m) => {
@@ -780,7 +693,10 @@ function tokenizeMagnitudes(prose: string, locale: Locale): ProseMagnitude[] {
   // (9) Unit-suffixed measurements — "72.4 kg", "128 mmHg", "10,000 steps",
   //     "7,4 Stunden", "10 000 pas".
   runPass(
-    new RegExp(String.raw`(${numFrag})\s*(${UNIT_ALTERNATION})\b`, "gi"),
+    new RegExp(
+      String.raw`(${numFrag})\s*(${UNIT_ALTERNATION})(?:\b|(?<=[\u3400-\u9fff]))`,
+      "gi",
+    ),
     (m) => {
       if (!claim(m.index, m.index + m[0].length)) return;
       const value = parseLocaleNumber(m[1], locale);
@@ -851,7 +767,7 @@ interface SentenceSpan {
 
 function sentenceSpans(prose: string): SentenceSpan[] {
   const spans: SentenceSpan[] = [];
-  const re = /[^.?!\n]*[.?!\n]|[^.?!\n]+$/g;
+  const re = /[^。！？.?!\n]*[。！？.?!\n]|[^。！？.?!\n]+$/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(prose)) !== null) {
     if (m[0].length === 0) {

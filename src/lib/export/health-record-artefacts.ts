@@ -8,6 +8,7 @@
  * by construction rather than by three renderers each remembering the scope.
  */
 import { zipSync, strToU8 } from "fflate";
+import { loadDoctorReportFonts } from "@/lib/doctor-report-pdf/cjk-fonts";
 
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import { renderDoctorReportPdfBytes } from "@/lib/doctor-report-pdf-core";
@@ -39,15 +40,18 @@ export function buildBundleJson(input: ArtefactInputs): string {
     input.data,
     { insuranceNumber: input.insuranceNumber },
     undefined,
-    { germanAtc: input.germanAtc },
+    { germanAtc: input.germanAtc, locale: input.locale },
     input.records,
   );
   return JSON.stringify(bundle);
 }
 
 /** The rendered clinical PDF. */
-export function buildPdfBytes(input: ArtefactInputs): Uint8Array {
+export async function buildPdfBytes(
+  input: ArtefactInputs,
+): Promise<Uint8Array> {
   return renderDoctorReportPdfBytes(input.data, {
+    fontData: await loadDoctorReportFonts(input.data, input.locale),
     t: input.t,
     locale: input.locale,
     userTz: input.userTz,
@@ -67,7 +71,7 @@ export function buildPackageZip(
     input.data,
     { insuranceNumber: input.insuranceNumber },
     undefined,
-    { germanAtc: input.germanAtc },
+    { germanAtc: input.germanAtc, locale: input.locale },
     input.records,
   );
   return zipSync(

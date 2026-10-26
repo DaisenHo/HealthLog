@@ -62,6 +62,9 @@ export const GET = apiHandler(
     }
     const context = await loadFhirContext(user.id);
     annotate({ meta: { resourceId: id } });
-    return readResponse(observationsFromReportData(context.data), id);
+    return readResponse(
+      observationsFromReportData(context.data, { locale: context.locale }),
+      id,
+    );
   },
 );

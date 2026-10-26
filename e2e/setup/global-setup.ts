@@ -75,6 +75,17 @@ export const HEALTH_MODULES_STORAGE_STATE_PATH = resolve(
   "e2e/setup/storageStateHealthModules.json",
 );
 
+export const E2E_REPORTS_ADMIN = {
+  email: "e2e-reports-admin@healthlog.test",
+  username: "e2e-reports-admin",
+  password: E2E_USER.password,
+  role: "ADMIN",
+} as const;
+export const REPORTS_ADMIN_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateReportsAdmin.json",
+);
+
 /**
  * v1.36.0 — the SECOND account, so account sharing has two sides to test.
  *
@@ -779,7 +790,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     const dob = new Date("1985-06-15T00:00:00.000Z");
 
     // Independent accounts keep the bilingual journeys from changing each other's language.
-    for (const account of [E2E_HEALTH_RECORDS, E2E_HEALTH_MODULES]) {
+    for (const account of [
+      E2E_HEALTH_RECORDS,
+      E2E_HEALTH_MODULES,
+      E2E_REPORTS_ADMIN,
+    ]) {
       await pool.query(
         `INSERT INTO users
         (id, username, email, password_hash, role, created_at, updated_at,
@@ -802,6 +817,14 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
         [account.username],
       );
     }
+    await pool.query(
+      `UPDATE users SET role = 'ADMIN', report_selection_json = NULL, last_report_practice_name = NULL WHERE username = $1`,
+      [E2E_REPORTS_ADMIN.username],
+    );
+    await pool.query(
+      `DELETE FROM rate_limits WHERE key = 'export:' || (SELECT id FROM users WHERE username = $1)`,
+      [E2E_REPORTS_ADMIN.username],
+    );
     // Only this journey owns these synthetic mood entries; distinct UI times avoid tombstone collisions.
     await pool.query(
       `DELETE FROM mood_entries WHERE user_id IN (SELECT id FROM users WHERE username = $1)`,
@@ -1667,6 +1690,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     await capture(E2E_USER, STORAGE_STATE_PATH);
     await capture(E2E_HEALTH_RECORDS, HEALTH_RECORDS_STORAGE_STATE_PATH);
     await capture(E2E_HEALTH_MODULES, HEALTH_MODULES_STORAGE_STATE_PATH);
+    await capture(E2E_REPORTS_ADMIN, REPORTS_ADMIN_STORAGE_STATE_PATH);
 
     // v1.36.0 — the owner's jar. The sharing journey needs both sides of a
     // grant signed in at once, and the login endpoint is IP-rate-limited, so

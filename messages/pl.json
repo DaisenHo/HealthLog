@@ -8565,6 +8565,15 @@
       "defaultAboveCeiling": "Poziom domyślny nie może być wyższy niż najwyższy poziom.",
       "gapLabel": "Godziny między odświeżeniami kart po synchronizacji (Standardowy)",
       "gapHint": "Pełne godziny od 1 do 48. Zostaw puste, aby użyć AI_SYNC_REGEN_GAP_HOURS, w przeciwnym razie 6. Obecnie obowiązuje: {hours} h."
+    },
+    "notificationTestNoChannels": "Nie znaleziono włączonych kanałów powiadomień",
+    "reminderCheckDetails": {
+      "daily": "Codziennie",
+      "skipped": "Dziś nie jest zaplanowanym dniem",
+      "open": "Okno nadal otwarte (koniec o {end})",
+      "threshold": "Okno zakończone {minutes} min temu (próg: {threshold} min)",
+      "missed": "Osiągnięto próg pominiętej dawki ({minutes} min > {threshold} min)",
+      "summary": "Sprawdzono {count} leków, wysłano {sent} powiadomień"
     }
   },
   "achievements": {
@@ -10712,7 +10721,9 @@
     "refusal": {
       "outOfScope": "Mogę pomóc wyłącznie z danymi zdrowotnymi z Twojego dziennika: pomiarami, lekami, nastrojem, trendami. Na pytania spoza tego zakresu nie odpowiadam.",
       "promptInjection": "Zauważyłem polecenia, które próbują obejść moje wytyczne. Jestem Coachem HealthLog i podsumowuję wyłącznie Twoje własne dane zdrowotne. Sformułuj pytanie w tych ramach.",
-      "conversationPoisoned": "Wcześniejsza wiadomość w tej rozmowie zawiera polecenia, które próbują obejść moje wytyczne. Rozpocznij nową rozmowę."
+      "conversationPoisoned": "Wcześniejsza wiadomość w tej rozmowie zawiera polecenia, które próbują obejść moje wytyczne. Rozpocznij nową rozmowę.",
+      "outboundDose": "Nie mogę sugerować konkretnej dawki leku ani jej zmiany: takie decyzje należą do osoby prowadzącej leczenie. Mogę pomóc zrozumieć Twoje własne dane dotyczące leków; zapytaj o to, a oprę się na Twoich wartościach.",
+      "outboundRisk": "Nie mogę określić liczbowo takiego ryzyka klinicznego: zapisane dane nie pozwalają go obliczyć, a wymyślona liczba byłaby myląca. Zapytaj o konkretny wskaźnik, aby zrozumieć swoje pomiary i ich zmiany."
     },
     "noRecordedData": "Nie masz zapisanych żadnych pomiarów dla tego, o co pytasz, więc nie mogę podać Ci żadnej liczby. Gdy coś zapiszesz, zapytaj ponownie, a wtedy oprę się na Twoich własnych wartościach.",
     "step": {
@@ -11995,7 +12006,8 @@
       "titleMany": "Usunąć dokumenty ({count})?",
       "body": "Zaraz potem możesz to cofnąć. Po 30 dniach zostanie usunięte na stałe.",
       "action": "Usuń"
-    }
+    },
+    "summaryBlocked": "Nie mogę bezpiecznie podsumować tego dokumentu: opis zawiera porady lub wartości kliniczne, których ten widok nie może podawać. Możesz otworzyć sam dokument albo przeczytać wyodrębniony tekst."
   },
   "selfDescription": {
     "dataPosture": "HealthLog jest hostowany samodzielnie: Twoje dane zdrowotne znajdują się w bazie danych Twojej instancji. Notatki i inne teksty swobodne, dokumenty, odpowiedzi w kwestionariuszach, teksty napisane przez AI i tokeny dostępu są zaszyfrowane w spoczynku; wartości pomiarów, wyniki badań laboratoryjnych, nazwy leków i oceny nastroju są przechowywane bez szyfrowania i zależą od bezpieczeństwa Twojego serwera. Funkcje AI wysyłają dane tylko do dostawcy AI skonfigurowanego dla Twojego konta i nie ma analityki firm trzecich na Twoich danych zdrowotnych."
@@ -13827,5 +13839,31 @@
       "startsOn": "Początek",
       "endsOn": "Koniec"
     }
+  },
+  "fhir": {
+    "counts": "{observations} obserwacji, {medications} leków, {administrations} podań.",
+    "period": "od {start} do {end}",
+    "olderOmitted": "Pominięto starsze wpisy.",
+    "insuranceTitle": "Informacje o ubezpieczeniu",
+    "moodAverage": "{label} (średnia w okresie)",
+    "wellnessScore": "Wynik dobrostanu",
+    "cycleVariability": "Zmienność długości cyklu (mediana odchylenia bezwzględnego): ±{variability} days w {count} obserwowanych cyklach.",
+    "cycleDescriptive": "Faza wyznaczona na podstawie zapisanych granic cyklu; opisowa, nie stanowi oceny klinicznej.",
+    "spotEstimate": "Szacunek na podstawie pojedynczych pomiarów, a nie profilu ciągłego monitorowania.",
+    "screeningNotDiagnosis": "Wynik badania przesiewowego, nie diagnoza.",
+    "noSexCutoff": "Nie zastosowano progu zależnego od płci (brak płci binarnej w profilu).",
+    "sourceUnnamed": "nie podano źródła",
+    "packYearsSource": "Obliczono z deklarowanej liczby papierosów dziennie i lat palenia.",
+    "activityValue": "{minutes} minutes umiarkowanej lub intensywnej aktywności tygodniowo (Exercise Vital Sign)",
+    "sittingValue": "{hours} hours siedzenia w dniu roboczym",
+    "activityLabel": "Aktywność fizyczna zgłoszona przez osobę",
+    "workSituation": "Sytuacja zawodowa: {value}",
+    "workNature": "Obciążenie fizyczne w pracy: {value}",
+    "nightWork": "Praca nocna: {value}",
+    "exposures": "Narażenia: {value}",
+    "workLabel": "Kontekst pracy zgłoszony przez osobę",
+    "conditionNote": "Samodzielnie zapisany wpis o chorobie ({lifecycle}); zgłoszony przez osobę, nie stanowi diagnozy klinicznej.",
+    "allergyNote": "Samodzielnie zapisana alergia/nietolerancja; zgłoszona przez osobę, nie stanowi diagnozy klinicznej.",
+    "familyHistoryNote": "Samodzielnie zapisany wywiad rodzinny; zgłoszony przez osobę, nie stanowi diagnozy klinicznej."
   }
 }

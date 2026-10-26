@@ -1,5 +1,6 @@
 "use client";
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useMemo } from "react";
 import { StatTile } from "@/components/admin/_stat-tile";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -311,12 +312,9 @@ export function useUpdateSettings() {
       toast.success(t("common.saved"));
     },
     onError: (err) => {
-      showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.settingsSaveError"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "admin.settingsSaveError"), {
+        cause: err,
+      });
     },
   });
 }

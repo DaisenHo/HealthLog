@@ -1,8 +1,8 @@
 /**
  * Isomorphic PDF renderer for the doctor report.
  *
- * Runs identically in the browser (settings page download) and in Node
- * (the clinician share link's `/c/[token]/report.pdf` route). The comment here
+ * Accepts local font data from the authenticated export and clinician-share
+ * routes; no report text is sent to a font service. The comment here
  * named `/api/doctor-report/pdf` until 2026-08-23; that route was removed and
  * the sweep behind the retired-route registry found the reference still
  * standing. All locale-sensitive
@@ -135,7 +135,28 @@ function patchPdfTextSanitiser(doc: jsPDF): void {
   } as jsPDF["splitTextToSize"];
 }
 
+export interface DoctorReportFontData {
+  normal: string;
+  bold: string;
+}
+
+function registerReportFonts(doc: jsPDF, fonts: DoctorReportFontData): void {
+  // Instance-local aliases also cover existing table and footer font switches.
+  for (const [style, data] of Object.entries({
+    normal: fonts.normal,
+    bold: fonts.bold,
+    italic: fonts.normal,
+    bolditalic: fonts.bold,
+  })) {
+    const file = `HealthLog-CJK-${style}.ttf`;
+    doc.addFileToVFS(file, data);
+    doc.addFont(file, "helvetica", style);
+  }
+  doc.setFont("helvetica", "normal");
+}
+
 export interface DoctorReportRenderOptions {
+  fontData?: DoctorReportFontData;
   t: T;
   locale: Locale;
   /**
@@ -213,6 +234,15 @@ export const DOCTOR_REPORT_VITAL_GROUPS = REPORT_GROUPS.map((group) => ({
  * returned doc) and the server renderer (which calls `.output("arraybuffer")`
  * via `renderDoctorReportPdfBytes`).
  */
+function createReportDocument(options: DoctorReportRenderOptions): jsPDF {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  if (options.fontData) registerReportFonts(doc, options.fontData);
+  else if (options.locale === "zh-CN")
+    throw new Error("Chinese reports require embedded fonts");
+  patchPdfTextSanitiser(doc);
+  return doc;
+}
+
 export function buildDoctorReportPdfDocument(
   data: DoctorReportData,
   options: DoctorReportRenderOptions,
@@ -238,8 +268,7 @@ export function buildDoctorReportPdfDocument(
   const unitFor = (type: string): string =>
     reportStatUnit(type, glucoseUnit, t);
 
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  patchPdfTextSanitiser(doc);
+  const doc = createReportDocument(options);
   doc.setProperties({
     title: t("doctorReport.title"),
     subject: t("doctorReport.subtitle"),

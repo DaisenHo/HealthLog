@@ -302,6 +302,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "*": [
       "./src/lib/ai/prompts/safety-contracts.*.yaml",
+      "./public/fonts/NotoSansSC-*.ttf",
       // Document AI local text extraction runs `pdf-parse` (→ pdfjs-dist)
       // server-side in the content-index job — the provider-free fallback that
       // keeps content search working with no AI configured. Both are pure JS +

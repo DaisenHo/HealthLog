@@ -11,6 +11,7 @@
 
 import { describe, expect, it } from "vitest";
 import en from "../../../../messages/en.json" with { type: "json" };
+import zh from "../../../../messages/zh-CN.json" with { type: "json" };
 import de from "../../../../messages/de.json" with { type: "json" };
 import { SETTINGS_SECTION_SLUGS } from "@/lib/settings/section-slugs";
 
@@ -90,4 +91,13 @@ describe("settings sections — i18n parity (B6)", () => {
       ).not.toBe(enValue);
     }
   });
+});
+
+it("resolves every Chinese settings title and subtitle", () => {
+  for (const slug of SETTINGS_SECTION_SLUGS)
+    for (const field of ["title", "subtitle"]) {
+      const value = lookup(zh as Bag, ["settings", "sections", slug, field]);
+      expect(value, `${slug}.${field}`).toBeTypeOf("string");
+      expect(value?.length).toBeGreaterThan(0);
+    }
 });

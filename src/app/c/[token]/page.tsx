@@ -40,10 +40,13 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 // A shared clinical record must never be indexed.
-export const metadata: Metadata = {
-  title: "Shared health record",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = getServerTranslator(await resolveShareViewLocale());
+  return {
+    title: t("clinicianView.title"),
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function ClinicianSharePage({
   params,

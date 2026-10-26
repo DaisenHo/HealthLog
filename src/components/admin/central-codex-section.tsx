@@ -15,6 +15,7 @@
  * and it is never a default. OFF until the operator connects it.
  */
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, ShieldAlert, Sparkles, Trash2 } from "lucide-react";
@@ -77,10 +78,9 @@ export function CentralCodexSection() {
         intervalSeconds: json.data.intervalSeconds,
       });
     } catch (err) {
-      showErrorToast(
-        err instanceof Error ? err.message : t("admin.centralCodex.error"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "admin.centralCodex.error"), {
+        cause: err,
+      });
       setDevicePolling(false);
     }
   }
@@ -113,10 +113,9 @@ export function CentralCodexSection() {
         if (!cancelled) setTimeout(tick, intervalMs);
       } catch (err) {
         if (cancelled) return;
-        showErrorToast(
-          err instanceof Error ? err.message : t("admin.centralCodex.error"),
-          { cause: err },
-        );
+        showErrorToast(localizedApiError(err, t, "admin.centralCodex.error"), {
+          cause: err,
+        });
         setDeviceCode(null);
         setDevicePolling(false);
       }
@@ -146,10 +145,9 @@ export function CentralCodexSection() {
       });
       void invalidateKeys(queryClient, aiInputDependentKeys);
     } catch (err) {
-      showErrorToast(
-        err instanceof Error ? err.message : t("admin.centralCodex.error"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "admin.centralCodex.error"), {
+        cause: err,
+      });
     } finally {
       setDisconnecting(false);
     }

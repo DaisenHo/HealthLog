@@ -25,6 +25,7 @@
  * all live in the shared module — this file owns only the Coach's contract
  * selection and its fallback copy.
  */
+import { getServerTranslator } from "@/lib/i18n/server-translator";
 import type { Locale } from "@/lib/i18n/config";
 import {
   screenModelOutput,
@@ -82,9 +83,8 @@ export function screenCoachReply(
 }
 
 /**
- * Safe fallback copy when the outbound screen trips. de/en carry a native
- * body; the other UI locales ride the EN body (the Coach itself replies in
- * de/en, so this is the consistent posture with the inbound refusal copy).
+ * Safe fallback copy when the outbound screen trips. de/en/zh-CN carry a
+ * native body; the other UI locales retain the existing English fallback.
  * Exposed as constants so server-only code (tests, logs) can pin the wording.
  */
 export const COACH_OUTBOUND_DOSE_BLOCK_EN =
@@ -104,6 +104,11 @@ export function coachOutboundFallback(
   reason: CoachOutboundReason,
   locale: Locale,
 ): string {
+  if (locale === "zh-CN") {
+    return reason === "dose_prescription"
+      ? getServerTranslator(locale).t("coach.refusal.outboundDose")
+      : getServerTranslator(locale).t("coach.refusal.outboundRisk");
+  }
   const de = locale === "de";
   if (reason === "dose_prescription") {
     return de ? COACH_OUTBOUND_DOSE_BLOCK_DE : COACH_OUTBOUND_DOSE_BLOCK_EN;

@@ -30,6 +30,7 @@
  *   - OWNER-SCOPED TEXT LOADER as a second ownership layer — a corrupted/foreign
  *     join row yields null and the turn refuses (422), never foreign text.
  */
+import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -206,9 +207,13 @@ export function screenFencedInbound(args: {
       replayTurnIndex: i,
       refusalText:
         replayed.message ??
-        (args.locale === "de"
-          ? "Eine frühere Nachricht in dieser Unterhaltung enthält Anweisungen, die meine Vorgaben überschreiben sollen. Beginne bitte eine neue Unterhaltung."
-          : "An earlier message in this conversation contains wording that overrides my instructions. Please start a new conversation."),
+        (args.locale === "zh-CN"
+          ? getServerTranslator(args.locale).t(
+              "coach.refusal.conversationPoisoned",
+            )
+          : args.locale === "de"
+            ? "Eine frühere Nachricht in dieser Unterhaltung enthält Anweisungen, die meine Vorgaben überschreiben sollen. Beginne bitte eine neue Unterhaltung."
+            : "An earlier message in this conversation contains wording that overrides my instructions. Please start a new conversation."),
     };
   }
   return { refuse: false };

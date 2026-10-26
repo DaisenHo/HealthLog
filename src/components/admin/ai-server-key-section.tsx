@@ -1,5 +1,6 @@
 "use client";
 
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, KeyRound, Loader2 } from "lucide-react";
@@ -90,10 +91,9 @@ export function AiServerKeySection() {
       toast.success(t("admin.aiServerKey.saved"));
     },
     onError: (error: unknown) => {
-      showErrorToast(
-        error instanceof Error ? error.message : t("admin.aiServerKey.error"),
-        { cause: error },
-      );
+      showErrorToast(localizedApiError(error, t, "admin.aiServerKey.error"), {
+        cause: error,
+      });
     },
   });
 

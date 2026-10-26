@@ -400,7 +400,7 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     reason:
       "bin widths keyed to a column unit, applied only when the table is in that unit",
   },
-  "lib/ai/coach/coach-prose-grounding.ts": {
+  "lib/ai/coach/unit-words.ts": {
     lines: 1,
     reason:
       "the reply checker's list of unit tokens it recognises in model prose",

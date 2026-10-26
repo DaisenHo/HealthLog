@@ -21,6 +21,7 @@
  * convention. The `Composition.text` narrative is escaped plain text, never
  * user-supplied HTML (no markdown library, no `dangerouslySetInnerHTML`).
  */
+import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { randomUUID } from "node:crypto";
 
 import type { DoctorReportData } from "@/lib/doctor-report-data";
@@ -154,11 +155,43 @@ function isVitalSignsObservation(observation: FhirObservation): boolean {
   );
 }
 
-/**
- * Build a FHIR R4 document Bundle from the aggregated report data.
- *
- * `now` is injectable for deterministic tests.
- */
+/** App-owned cover prose; the bundle builder escapes it once. */
+function documentNarrative(
+  data: DoctorReportData,
+  options: FhirBuildOptions,
+  observations: number,
+  medications: number,
+  administrations: number,
+): string {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
+  const displayName = data.patient.fullName ?? data.patient.username ?? null;
+  const truncation = data.medicationAdministrationsTruncation;
+  return t
+    ? [
+        `${t("doctorReport.patient")}：${displayName ?? t("doctorReport.patient")}。`,
+        `${t("doctorReport.period")}：${t("fhir.period", { start: data.period.start.slice(0, 10), end: data.period.end.slice(0, 10) })}。`,
+        t("fhir.counts", { observations, medications, administrations }),
+        ...(truncation
+          ? [
+              t("clinicianView.doses.showing", {
+                shown: truncation.included,
+                total: truncation.total,
+              }) + t("fhir.olderOmitted"),
+            ]
+          : []),
+      ].join(" ")
+    : [
+        `Health record for ${escapeXml(displayName ?? "patient")}.`,
+        `Reporting period ${data.period.start.slice(0, 10)} to ${data.period.end.slice(0, 10)}.`,
+        `${observations} observation(s), ${medications} medication(s), ${administrations} administration(s).`,
+        ...(truncation
+          ? [
+              `Medication administrations truncated: showing the most recent ${truncation.included} of ${truncation.total} recorded; older entries omitted.`,
+            ]
+          : []),
+      ].join(" ");
+}
+
 export function buildFhirDocumentBundle(
   data: DoctorReportData,
   identity: FhirPatientIdentity,
@@ -166,6 +199,7 @@ export function buildFhirDocumentBundle(
   options: FhirBuildOptions = {},
   records: FhirRecordInputs = {},
 ): FhirBundle {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   const patientRef: FhirReference = {
     reference: `Patient/${PATIENT_RESOURCE_ID}`,
   };
@@ -217,7 +251,7 @@ export function buildFhirDocumentBundle(
   }
 
   // --- Observations (vital / activity / lab / survey, in canonical order)-
-  for (const obs of observationsFromReportData(data)) {
+  for (const obs of observationsFromReportData(data, options)) {
     push(obs);
     const ref: FhirReference = { reference: `Observation/${obs.id}` };
     observationRefs.push(ref);
@@ -228,7 +262,7 @@ export function buildFhirDocumentBundle(
   // v1.15.0 — grouped into their own "Menstrual cycle" Composition section
   // so a reproductive-health finding is never mixed into the vital-signs
   // panel. Absent unless the user toggled the cycle section AND has data.
-  for (const obs of cycleObservationsFromReportData(data)) {
+  for (const obs of cycleObservationsFromReportData(data, options)) {
     push(obs);
     cycleObservationRefs.push({ reference: `Observation/${obs.id}` });
   }
@@ -237,13 +271,13 @@ export function buildFhirDocumentBundle(
   // The collector returns `null` when ANAMNESIS was not selected. When it was
   // selected, all three facts emit even if their value is absent or unreadable
   // so omission cannot be mistaken for consent-based exclusion.
-  for (const obs of anamnesisObservationsFromReportData(data)) {
+  for (const obs of anamnesisObservationsFromReportData(data, options)) {
     push(obs);
     anamnesisObservationRefs.push({
       reference: `Observation/${obs.id}`,
     });
   }
-  const anamnesisNarrative = anamnesisNarrativeFromReportData(data);
+  const anamnesisNarrative = anamnesisNarrativeFromReportData(data, options);
 
   // --- MedicationStatement per active medication -------------------------
   for (const stmt of medicationStatementsFromReportData(data, options)) {
@@ -287,7 +321,7 @@ export function buildFhirDocumentBundle(
   // held an episode (the aggregator gates `data.illnessEpisodes`). Each
   // episode emits a patient-reported Condition (generic SNOMED root, label on
   // `code.text`) plus a bounding Encounter that references it.
-  const { conditions, encounters } = conditionsFromReportData(data);
+  const { conditions, encounters } = conditionsFromReportData(data, options);
   for (const condition of conditions) {
     push(condition);
     conditionRefs.push({ reference: `Condition/${condition.id}` });
@@ -297,16 +331,18 @@ export function buildFhirDocumentBundle(
     encounterRefs.push({ reference: `Encounter/${encounter.id}` });
   }
 
+  const { allergies = [], familyHistory = [] } = records;
+
   // --- AllergyIntolerance per recorded allergy (v1.25) -------------------
   // Always-available structured records (not time-windowed). Patient-reported
   // (verificationStatus unconfirmed); the substance rides `code.text`.
-  for (const allergy of allergyIntoleranceResources(records.allergies ?? [])) {
+  for (const allergy of allergyIntoleranceResources(allergies, options)) {
     push(allergy);
     allergyRefs.push({ reference: `AllergyIntolerance/${allergy.id}` });
   }
 
   // --- FamilyMemberHistory per recorded entry (v1.25) -------------------
-  for (const fmh of familyMemberHistoryResources(records.familyHistory ?? [])) {
+  for (const fmh of familyMemberHistoryResources(familyHistory, options)) {
     push(fmh);
     familyHistoryRefs.push({ reference: `FamilyMemberHistory/${fmh.id}` });
   }
@@ -315,18 +351,13 @@ export function buildFhirDocumentBundle(
   // v1.9.0 — when the aggregator capped the administration set, disclose
   // it in the narrative so the export is honest: it carries the
   // most-recent N of M acted intakes, the oldest having been omitted.
-  const displayName = data.patient.fullName ?? data.patient.username ?? null;
-  const truncation = data.medicationAdministrationsTruncation;
-  const narrativeText = [
-    `Health record for ${escapeXml(displayName ?? "patient")}.`,
-    `Reporting period ${data.period.start.slice(0, 10)} to ${data.period.end.slice(0, 10)}.`,
-    `${observationRefs.length} observation(s), ${medicationRefs.length} medication(s), ${administrationRefs.length} administration(s).`,
-    ...(truncation
-      ? [
-          `Medication administrations truncated: showing the most recent ${truncation.included} of ${truncation.total} recorded; older entries omitted.`,
-        ]
-      : []),
-  ].join(" ");
+  const narrativeText = documentNarrative(
+    data,
+    options,
+    observationRefs.length,
+    medicationRefs.length,
+    administrationRefs.length,
+  );
 
   // A vital-signs panel with no vital signs reports nothing, and R4 forbids
   // the empty `result: []` it would otherwise carry. With no vital-sign
@@ -348,7 +379,7 @@ export function buildFhirDocumentBundle(
                   "Vital signs, weight, height, head circumference, oxygen saturation and BMI panel",
               },
             ],
-            text: "Vital signs panel",
+            text: t ? t("doctorReport.vitalsTitle") : "Vital signs panel",
           },
           subject: patientRef,
           effectivePeriod: { start: data.period.start, end: data.period.end },
@@ -374,12 +405,12 @@ export function buildFhirDocumentBundle(
           display: "Medical records",
         },
       ],
-      text: "Health record",
+      text: t ? t("doctorReport.title") : "Health record",
     },
     subject: patientRef,
     date: now.toISOString(),
     author: [deviceRef],
-    title: "Health Record",
+    title: t ? t("doctorReport.title") : "Health Record",
     // v1.9.0 — top-level document narrative. Section narrative is already
     // present; a strict US-Core-style validator additionally expects a
     // `Composition.text`. Reuses the same escaped plain-text summary.
@@ -393,7 +424,7 @@ export function buildFhirDocumentBundle(
         // NOT the Patient: `Composition.subject` above already names the
         // person the whole document is about, and a subject listed as a
         // section entry reads as a finding.
-        title: "Vital signs",
+        title: t ? t("doctorReport.vitalsTitle") : "Vital signs",
         text: {
           status: "generated",
           div: `<div xmlns="http://www.w3.org/1999/xhtml">${escapeXml(narrativeText)}</div>`,
@@ -407,7 +438,7 @@ export function buildFhirDocumentBundle(
       ...(medicationRefs.length > 0 || administrationRefs.length > 0
         ? [
             {
-              title: "Medications",
+              title: t ? t("doctorReport.colMedication") : "Medications",
               entry: [...medicationRefs, ...administrationRefs],
             },
           ]
@@ -417,7 +448,7 @@ export function buildFhirDocumentBundle(
       ...(cycleObservationRefs.length > 0
         ? [
             {
-              title: "Menstrual cycle",
+              title: t ? t("doctorReport.cycleTitle") : "Menstrual cycle",
               entry: cycleObservationRefs,
             },
           ]
@@ -425,7 +456,7 @@ export function buildFhirDocumentBundle(
       ...(anamnesisNarrative !== null
         ? [
             {
-              title: "Anamnesis",
+              title: t ? t("doctorReport.anamnesisTitle") : "Anamnesis",
               code: {
                 coding: [
                   {
@@ -434,7 +465,7 @@ export function buildFhirDocumentBundle(
                     display: "History general Narrative - Reported",
                   },
                 ],
-                text: "General history",
+                text: t ? t("doctorReport.anamnesisTitle") : "General history",
               },
               text: {
                 status: "generated" as const,
@@ -451,7 +482,7 @@ export function buildFhirDocumentBundle(
       ...(conditionRefs.length > 0
         ? [
             {
-              title: "Conditions",
+              title: t ? t("doctorReport.illnessTitle") : "Conditions",
               entry: [...conditionRefs, ...encounterRefs],
             },
           ]
@@ -461,7 +492,7 @@ export function buildFhirDocumentBundle(
       ...(allergyRefs.length > 0
         ? [
             {
-              title: "Allergies",
+              title: t ? t("doctorReport.allergiesTitle") : "Allergies",
               entry: allergyRefs,
             },
           ]
@@ -470,7 +501,9 @@ export function buildFhirDocumentBundle(
       ...(familyHistoryRefs.length > 0
         ? [
             {
-              title: "Family history",
+              title: t
+                ? t("doctorReport.familyHistoryTitle")
+                : "Family history",
               entry: familyHistoryRefs,
             },
           ]
@@ -480,7 +513,7 @@ export function buildFhirDocumentBundle(
       ...(coverageRefs.length > 0
         ? [
             {
-              title: "Insurance",
+              title: t ? t("fhir.insuranceTitle") : "Insurance",
               entry: coverageRefs,
             },
           ]

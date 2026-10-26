@@ -8565,6 +8565,15 @@
       "defaultAboveCeiling": "Het standaardniveau kan niet hoger zijn dan het hoogste niveau.",
       "gapLabel": "Uren tussen het vernieuwen van kaarten na een synchronisatie (Standaard)",
       "gapHint": "Hele uren van 1 tot 48. Laat leeg om AI_SYNC_REGEN_GAP_HOURS te gebruiken, anders 6. Nu van kracht: {hours} u."
+    },
+    "notificationTestNoChannels": "Geen ingeschakelde meldingskanalen gevonden",
+    "reminderCheckDetails": {
+      "daily": "Dagelijks",
+      "skipped": "Vandaag is geen geplande dag",
+      "open": "Tijdvenster nog open (eindigt om {end})",
+      "threshold": "Tijdvenster {minutes} min geleden gesloten (grens: {threshold} min)",
+      "missed": "Grens voor gemiste inname bereikt ({minutes} min > {threshold} min)",
+      "summary": "{count} medicijnen gecontroleerd, {sent} meldingen verzonden"
     }
   },
   "achievements": {
@@ -10712,7 +10721,9 @@
     "refusal": {
       "outOfScope": "Ik kan alleen helpen met de gezondheidswaarden in je logboek: metingen, medicatie, stemming, trends. Vragen daarbuiten kan ik niet beantwoorden.",
       "promptInjection": "Ik zie formuleringen die mijn instructies proberen te overschrijven. Ik ben de HealthLog Coach en vat alleen je eigen gezondheidsgegevens samen. Stel je vraag opnieuw binnen dat kader.",
-      "conversationPoisoned": "Een eerder bericht in dit gesprek bevat formuleringen die mijn instructies overschrijven. Begin een nieuw gesprek."
+      "conversationPoisoned": "Een eerder bericht in dit gesprek bevat formuleringen die mijn instructies overschrijven. Begin een nieuw gesprek.",
+      "outboundDose": "Ik kan geen specifieke medicatiedosis of wijziging daarvan voorstellen: die beslissing hoort bij je voorschrijvend behandelaar. Ik kan je helpen je eigen gegevens rond je medicatie te begrijpen; vraag me daarnaar en ik baseer me op jouw waarden.",
+      "outboundRisk": "Ik kan dat klinische risico niet in een getal uitdrukken: je vastgelegde gegevens laten die berekening niet toe, en een verzonnen getal zou misleidend zijn. Vraag naar een specifieke waarde om je metingen en veranderingen te begrijpen."
     },
     "noRecordedData": "Ik heb geen vastgelegde metingen voor waar je naar vraagt, dus ik kan je geen cijfer geven. Zodra je er een paar hebt vastgelegd, kun je het me opnieuw vragen en ga ik uit van je eigen cijfers.",
     "step": {
@@ -11928,7 +11939,8 @@
       "titleMany": "{count} documenten verwijderen?",
       "body": "Je kunt dit direct daarna ongedaan maken. Na 30 dagen wordt het definitief verwijderd.",
       "action": "Verwijderen"
-    }
+    },
+    "summaryBlocked": "Ik kan dit document niet veilig samenvatten: de beschrijving bevat advies of klinische cijfers die deze weergave niet mag geven. Je kunt het document zelf openen of de uitgelezen tekst lezen."
   },
   "selfDescription": {
     "dataPosture": "HealthLog is zelf gehost: je gezondheidsgegevens staan in de database van je eigen instantie. Notities en andere vrije tekst, documenten, antwoorden op vragenlijsten, door AI geschreven tekst en toegangstokens worden versleuteld opgeslagen; meetwaarden, labwaarden, medicijnnamen en stemmingsscores worden onversleuteld opgeslagen en zijn afhankelijk van de beveiliging van je server. AI-functies sturen alleen gegevens naar de AI-provider die voor je account is ingesteld, en er is geen analyse door derden van je gezondheidsgegevens."
@@ -13760,5 +13772,31 @@
       "startsOn": "Begin",
       "endsOn": "Einde"
     }
+  },
+  "fhir": {
+    "counts": "{observations} waarneming(en), {medications} medicijn(en), {administrations} toediening(en).",
+    "period": "van {start} tot {end}",
+    "olderOmitted": "Oudere vermeldingen zijn weggelaten.",
+    "insuranceTitle": "Verzekeringsinformatie",
+    "moodAverage": "{label} (gemiddelde over de periode)",
+    "wellnessScore": "Welzijnsscore",
+    "cycleVariability": "Variatie in cycluslengte (mediane absolute afwijking): ±{variability} days over {count} waargenomen cycli.",
+    "cycleDescriptive": "Fase afgeleid uit vastgelegde cyclusgrenzen; beschrijvend, geen klinische beoordeling.",
+    "spotEstimate": "Schatting op basis van losse metingen, geen profiel van continue bewaking.",
+    "screeningNotDiagnosis": "Screeningsresultaat, geen diagnose.",
+    "noSexCutoff": "Geen geslachtsspecifieke grens toegepast (geen binair geslacht in het profiel).",
+    "sourceUnnamed": "bron niet genoemd",
+    "packYearsSource": "Berekend uit het zelf opgegeven aantal sigaretten per dag en rookjaren.",
+    "activityValue": "{minutes} minutes matige tot intensieve activiteit per week (Exercise Vital Sign)",
+    "sittingValue": "{hours} hours zitten op een werkdag",
+    "activityLabel": "Zelf opgegeven lichamelijke activiteit",
+    "workSituation": "Werksituatie: {value}",
+    "workNature": "Lichamelijke belasting van het werk: {value}",
+    "nightWork": "Nachtwerk: {value}",
+    "exposures": "Blootstellingen: {value}",
+    "workLabel": "Zelf opgegeven werkomstandigheden",
+    "conditionNote": "Zelf vastgelegde ziektevermelding ({lifecycle}); door de persoon gemeld, geen klinische diagnose.",
+    "allergyNote": "Zelf vastgelegde allergie/intolerantie; door de persoon gemeld, geen klinische diagnose.",
+    "familyHistoryNote": "Zelf vastgelegde familiegeschiedenis; door de persoon gemeld, geen klinische diagnose."
   }
 }

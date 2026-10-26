@@ -1,3 +1,7 @@
+import { MEASUREMENT_TYPE_LABEL_KEYS } from "@/lib/measurements/type-label-keys";
+import type { MeasurementType } from "@/generated/prisma/client";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import type { FhirBuildOptions } from "./common";
 /**
  * The Observation orchestrator: one array, one continuous `obs-N` sequence,
  * in the canonical order — one latest reading per measurement type, the
@@ -51,7 +55,9 @@ const WELLNESS_SCORE_DISPLAY: Record<string, string> = {
 function measurementObservations(
   data: DoctorReportData,
   nextId: () => string,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   const observations: FhirObservation[] = [];
   for (const [type, mapping] of Object.entries(MEASUREMENT_LOINC)) {
     // BMI is emitted once by the computed-BMI block below (matching the PDF's
@@ -72,7 +78,12 @@ function measurementObservations(
       id: nextId(),
       status: "final",
       category: [categoryConcept(mapping.category)],
-      code: codeableFromMapping(mapping),
+      code: {
+        ...codeableFromMapping(mapping),
+        ...(t
+          ? { text: t(MEASUREMENT_TYPE_LABEL_KEYS[type as MeasurementType]) }
+          : {}),
+      },
       subject: patientRef,
       effectiveDateTime: reading.measuredAt,
       // The registry's display unit is only stamped as a UCUM `code` when it
@@ -88,7 +99,9 @@ function measurementObservations(
 function bloodPressureObservation(
   data: DoctorReportData,
   nextId: () => string,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   const sys = latestReading(data, "BLOOD_PRESSURE_SYS");
   const dia = latestReading(data, "BLOOD_PRESSURE_DIA");
   if (!sys || !dia) return [];
@@ -106,7 +119,7 @@ function bloodPressureObservation(
             display: "Blood pressure panel with all children optional",
           },
         ],
-        text: "Blood pressure",
+        text: t ? t("measurements.typeBloodPressure") : "Blood pressure",
       },
       subject: patientRef,
       // Use the systolic reading's timestamp as the panel effective time.
@@ -145,7 +158,9 @@ function bloodPressureObservation(
 function bmiObservation(
   data: DoctorReportData,
   nextId: () => string,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   if (data.bmi === null || data.bmi === undefined) return [];
   return [
     {
@@ -161,7 +176,9 @@ function bmiObservation(
             display: "Body mass index (BMI) [Ratio]",
           },
         ],
-        text: "Body mass index (BMI) [Ratio]",
+        text: t
+          ? `${t("doctorReport.bmiTitle")} [Ratio]`
+          : "Body mass index (BMI) [Ratio]",
       },
       subject: patientRef,
       effectivePeriod: reportingPeriod(data),
@@ -174,7 +191,9 @@ function bmiObservation(
 function adherenceObservations(
   data: DoctorReportData,
   nextId: () => string,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   const observations: FhirObservation[] = [];
   const period = reportingPeriod(data);
   for (const comp of Object.values(data.compliance)) {
@@ -201,7 +220,9 @@ function adherenceObservations(
               "Adherence to prescribed medication instructions [Reported]",
           },
         ],
-        text: `Medication adherence — ${comp.name}`,
+        text: t
+          ? `${t("doctorReport.complianceTitle")} — ${comp.name}`
+          : `Medication adherence — ${comp.name}`,
       },
       subject: patientRef,
       effectivePeriod: period,
@@ -221,7 +242,9 @@ function adherenceObservations(
 function moodObservation(
   data: DoctorReportData,
   nextId: () => string,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   if (!data.mood) return [];
   return [
     {
@@ -229,7 +252,11 @@ function moodObservation(
       id: nextId(),
       status: "final",
       category: [categoryConcept("survey")],
-      code: { text: "Mood (average over period)" },
+      code: {
+        text: t
+          ? t("fhir.moodAverage", { label: t("doctorReport.moodTitle") })
+          : "Mood (average over period)",
+      },
       subject: patientRef,
       effectivePeriod: reportingPeriod(data),
       valueQuantity: ucumQuantity(
@@ -251,7 +278,9 @@ function moodObservation(
 function wellnessObservations(
   data: DoctorReportData,
   nextId: () => string,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
+  const t = options.locale === "zh-CN" ? getServerTranslator("zh-CN").t : null;
   const observations: FhirObservation[] = [];
   for (const s of data.wellnessScores ?? []) {
     observations.push({
@@ -259,13 +288,23 @@ function wellnessObservations(
       id: nextId(),
       status: "final",
       category: [categoryConcept("survey")],
-      code: { text: WELLNESS_SCORE_DISPLAY[s.type] ?? "Wellness score" },
+      code: {
+        text: t
+          ? ({
+              RECOVERY_SCORE: t("doctorReport.wellnessRecovery"),
+              STRESS_SCORE: t("doctorReport.wellnessStress"),
+              STRAIN_SCORE: t("doctorReport.wellnessStrain"),
+            }[s.type] ?? t("fhir.wellnessScore"))
+          : (WELLNESS_SCORE_DISPLAY[s.type] ?? "Wellness score"),
+      },
       subject: patientRef,
       effectiveDateTime: s.latestAt,
       valueQuantity: ucumQuantity(s.latest, "{score}"),
       note: [
         {
-          text: "Descriptive wellness score (0–100) computed from tracked signals; not a clinical assessment or diagnosis.",
+          text: t
+            ? t("doctorReport.wellnessDisclaimer")
+            : "Descriptive wellness score (0–100) computed from tracked signals; not a clinical assessment or diagnosis.",
         },
       ],
     });
@@ -279,17 +318,18 @@ function wellnessObservations(
  */
 export function observationsFromReportData(
   data: DoctorReportData,
+  options: FhirBuildOptions = {},
 ): FhirObservation[] {
   const nextId = observationIdSequence();
   return [
-    ...measurementObservations(data, nextId),
-    ...bloodPressureObservation(data, nextId),
-    ...bmiObservation(data, nextId),
+    ...measurementObservations(data, nextId, options),
+    ...bloodPressureObservation(data, nextId, options),
+    ...bmiObservation(data, nextId, options),
     ...glucoseContextObservations(data, nextId),
-    ...glucoseClinicalObservations(data, nextId),
+    ...glucoseClinicalObservations(data, nextId, options),
     ...labObservations(data, nextId),
-    ...adherenceObservations(data, nextId),
-    ...moodObservation(data, nextId),
-    ...wellnessObservations(data, nextId),
+    ...adherenceObservations(data, nextId, options),
+    ...moodObservation(data, nextId, options),
+    ...wellnessObservations(data, nextId, options),
   ];
 }

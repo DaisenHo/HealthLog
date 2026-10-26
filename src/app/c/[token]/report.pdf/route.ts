@@ -10,6 +10,7 @@
  * route and the bundle beside it cannot drift apart.
  */
 import { NextResponse } from "next/server";
+import { loadDoctorReportFonts } from "@/lib/doctor-report-pdf/cjk-fonts";
 
 import { apiHandler } from "@/lib/api-handler";
 import { resolveShareReportDownload } from "@/lib/clinician-share/report-download";
@@ -32,6 +33,7 @@ export const GET = apiHandler(
     const locale = await resolveShareViewLocale();
     const { t } = getServerTranslator(locale);
     const bytes = renderDoctorReportPdfBytes(resolved.report, {
+      fontData: await loadDoctorReportFonts(resolved.report, locale),
       t,
       locale,
       // The locale above is the reader's; these two are the OWNER's, and they

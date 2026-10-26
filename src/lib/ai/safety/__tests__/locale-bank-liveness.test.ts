@@ -17,6 +17,7 @@ import { describe, expect, it } from "vitest";
 import { accentedBoundaries } from "@/__tests__/helpers/ascii-boundary";
 import { locales, type Locale } from "@/lib/i18n/config";
 
+import { bank as zh } from "../outbound-screen/locales/zh";
 import { bank as en } from "../outbound-screen/locales/en";
 import { bank as de } from "../outbound-screen/locales/de";
 import { bank as fr } from "../outbound-screen/locales/fr";
@@ -39,7 +40,7 @@ const BANKS: Record<Locale, LocaleBank> = {
   ko,
   "pt-BR": ptBR,
 
-  "zh-CN": en,
+  "zh-CN": zh,
 };
 
 const SENTENCES: Record<Locale, readonly string[]> = {
@@ -380,46 +381,29 @@ const SENTENCES: Record<Locale, readonly string[]> = {
   ],
 
   "zh-CN": [
-    "Reduce your dose by half.",
-    "Take half your usual dose.",
-    "Reduce your dose.",
-    "Increase your metformin to 2000 mg daily.",
-    "You might want to consider increasing your insulin to 20 units.",
-    "Take 2000 mg daily.",
-    "Skip your evening dose.",
-    "Stop taking metformin.",
-    "I'd recommend skipping your evening dose.",
-    "Take an extra ramipril.",
-    "Stop your blood thinner before the run.",
-    "Leave your metformin out tomorrow.",
-    "I'd recommend stopping your blood thinner.",
-    "Step up to 2.4 mg next week.",
-    "Lower it to 5 mg.",
-    "You should try 5 mg.",
-    "Skip your dose for two weeks to see.",
-    "That is a 12% risk.",
-    "Your risk is about 12%.",
-    "Your risk is roughly twelve percent.",
-    "Twelve percent is your risk.",
-    "Your 10-year cardiovascular risk is about 12%.",
-    "About 12% is your 10-year cardiovascular risk.",
-    "Your ASCVD score comes out at 14%.",
-    "A 14% figure is what ASCVD gives.",
-    "SCORE2 would put you in a higher bracket.",
-    "Your SCORE2 lands in the high-risk band.",
-    "Your 10-year cardiovascular risk is elevated.",
-    "Your weight fell because you slept more.",
-    "It was caused by stress.",
-    "That is due to salt.",
-    "It led to a dip.",
-    "It resulted in a dip.",
-    "It is the result of travel.",
-    "Sleep is the culprit.",
-    "It was driven by stress.",
-    "Thanks to the walks, it fell.",
-    "Owing to the heat, it rose.",
-    "Salt is responsible for it.",
-    "Keep taking your 7.5 mg as prescribed.",
+    "建议把药物剂量增加到2000 mg。",
+    "药物剂量增加到2000 mg。",
+    "服用2片。",
+    "药量减半。",
+    "停止服用药物。",
+    "增加药物。",
+    "再服用2片。",
+    "升至5 mg。",
+    "新剂量为5 mg。",
+    "你的风险为12%。",
+    "12%是你的风险。",
+    "10年心血管风险是12%。",
+    "12%是你的10年心血管风险。",
+    "SCORE2评分为12分。",
+    "12分是SCORE2的结果。",
+    "SCORE2属于高风险组。",
+    "SCORE2显示偏高。",
+    "因为睡眠体重下降。",
+    "由于睡眠体重下降。",
+    "盐导致变化。",
+    "原因是压力。",
+    "继续按医嘱服用药物。",
+    "增加药物。",
   ],
 };
 

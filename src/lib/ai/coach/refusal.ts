@@ -95,6 +95,10 @@ export interface CoachRefusalDecision {
  * `i` flag accepts the obvious variants.
  */
 const INJECTION_PATTERNS: readonly RegExp[] = [
+  /(?:忽略|无视|忘记)(?:所有|全部|你)?(?:之前|以前|先前|上面|以上|原有)的?(?:指令|规则|提示词|要求)/,
+  /(?:透露|泄露|显示|输出)(?:你|你的)?(?:系统提示词|系统指令|隐藏指令)/,
+  /(?:你现在是|假装你是)(?:管理员|无限制的模型|另一个模型)/,
+  /^\s*系统\s*[:：>]/m,
   /\bignore\s+(?:all\s+)?(?:previous|prior|earlier|above|the\s+above)\s+(?:instructions?|rules?|prompts?|messages?)\b/i,
   /\bignoriere\s+(?:(?:alle|sämtliche|saemtliche|die|deine|meine)\s+)?(?:vorherigen?|vorigen?|bisherigen?|obigen?)?\s*(?:anweisungen?|regeln?|vorgaben?|prompts?)\b/i,
   /\bvergiss\s+(?:(?:alle|sämtliche|saemtliche|die|deine|meine)\s+)?(?:vorherigen?|bisherigen?|obigen?)?\s*(?:anweisungen?|regeln?|vorgaben?)\b/i,
@@ -124,6 +128,7 @@ const INJECTION_PATTERNS: readonly RegExp[] = [
  * a token.
  */
 const HEALTH_TOKENS: readonly RegExp[] = [
+  /血压|收缩压|舒张压|心率|脉搏|体重|血糖|睡眠|服药|用药|药物|剂量|步数|健康|测量|就医|病历|高血压|运动|心情/,
   /\b(?:bp|blood\s*pressure|systolic|diastolic|mmhg|hypertension|hypotension)\b/i,
   /\b(?:weight|gewicht|kg|bmi|body\s*mass)\b/i,
   /\b(?:pulse|puls|heart\s*rate|hr|bpm|resting\s*hr|hrv)\b/i,
@@ -138,6 +143,7 @@ const HEALTH_TOKENS: readonly RegExp[] = [
 ];
 
 const OFF_TOPIC_TOKENS: readonly RegExp[] = [
+  /天气预报|明天天气|今日新闻|政治新闻|讲个笑话|讲笑话|写首诗|股票行情|比特币|电影推荐|旅游攻略|订机票|订酒店/,
   /\b(?:weather|wetter|forecast|temperature|temperatur)\b/i,
   /\b(?:news|nachricht(?:en)?|politic(?:s|al)|wahl|election)\b/i,
   /\b(?:joke|witz|story|geschichte|poem|gedicht|fanfic|roleplay|rollenspiel)\b/i,
